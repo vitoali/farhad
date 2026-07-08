@@ -176,14 +176,14 @@ export calcMetricsRaw(float trVal, float hlVal, float boost, TrexSettings s) =>
     float piv = trP + eng
     TrexMetrics.new(trP, thP, liveP, pSpin, pStd, pLong, tp, eng, piv)
 
-export fetchMetrics(string tf, TrexSettings s) =>
+fetchMetrics(string tf, TrexSettings s) =>
     int len = lenForTf(tf, s)
     float boost = thBoostForLen(len, s)
     float trVal = request.security(syminfo.tickerid, tf, smaTr(len), barmerge.gaps_off, barmerge.lookahead_off)
     float hlVal = request.security(syminfo.tickerid, tf, barHl(), barmerge.gaps_off, barmerge.lookahead_off)
     calcMetricsRaw(trVal, hlVal, boost, s)
 
-export fetchAllMetrics(TrexSettings s) =>
+fetchAllMetrics(TrexSettings s) =>
     array<TrexMetrics> out = array.new<TrexMetrics>()
     array.push(out, fetchMetrics("1", s))
     array.push(out, fetchMetrics("5", s))
