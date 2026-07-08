@@ -4,7 +4,7 @@
 //@version=5
 library("MarketStructureEngine", overlay=true)
 
-import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+import dorkadehali/KhaksterTrexAtrLib/1 as trex
 
 export type PivotLevel
     int barTime

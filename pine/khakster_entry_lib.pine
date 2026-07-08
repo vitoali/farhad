@@ -4,10 +4,10 @@
 //@version=5
 library("KhaksterEntryLib", overlay=true)
 
-import YOUR_USER/KhaksterTrexAtrLib/1 as trex
-import YOUR_USER/MarketStructureEngine/1 as mse
-import YOUR_USER/KhaksterSmartMoneyLib/1 as sm
-import YOUR_USER/CandleRecognitionLib/1 as cr
+import dorkadehali/KhaksterTrexAtrLib/1 as trex
+import dorkadehali/MarketStructureEngine/1 as mse
+import dorkadehali/KhaksterSmartMoneyLib/1 as sm
+import dorkadehali/CandleRecognitionLib/1 as cr
 
 export const int ENTRY_NONE = 0
 export const int ENTRY_FTC = 1
