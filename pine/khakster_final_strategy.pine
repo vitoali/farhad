@@ -91,33 +91,67 @@ var array<WatchedLevel> watchLv = array.new<WatchedLevel>()
 
 eS.minStructureScore := effectiveMinScore()
 
-tfEnabled(string tf) =>
-    tf == "M" ? useMn : tf == "W" ? useW1 : tf == "D" ? useD1 : tf == "240" ? useH4 : tf == "60" ? useH1 : false
+// HTF pack: ساختار + SM روی همان TF (برای request.security — بدون حلقه)
+bearSpawnPack(mse.MseSettings ms, sm.SmartMoneySettings sms, string tf) =>
+    int len = trex.lenForTf(tf, ms.atr)
+    float boost = trex.thBoostForLen(len, ms.atr)
+    [sig, zTop, zBot, price, bTime, _, _, _, ftcT, ftcB, fc, sc, kind, th] = mse.bearLevelPack(ms, len, boost, tf)
+    [smOk, smCnt, _, _, _] = sm.confluencePackAtZone(zTop, zBot, true, sms)
+    [sig, zTop, zBot, price, bTime, ftcT, ftcB, fc, sc, kind, th, smOk, smCnt]
 
-pollLevel(string tf) =>
-    if tfEnabled(tf)
-        int len = trex.lenForTf(tf, mseS.atr)
-        float boost = trex.thBoostForLen(len, mseS.atr)
-        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc, bKind, bTh] =
-             request.security(syminfo.tickerid, tf, mse.bearLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
-        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc, uKind, uTh] =
-             request.security(syminfo.tickerid, tf, mse.bullLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
-        [bSig, bTop, bBot, bPrice, bTime, bFtcT, bFtcB, bFc, bSc, bKind, bTh, uSig, uTop, uBot, uPrice, uTime, uFtcT, uFtcB, uFc, uSc, uKind, uTh]
+bullSpawnPack(mse.MseSettings ms, sm.SmartMoneySettings sms, string tf) =>
+    int len = trex.lenForTf(tf, ms.atr)
+    float boost = trex.thBoostForLen(len, ms.atr)
+    [sig, zTop, zBot, price, bTime, _, _, _, ftcT, ftcB, fc, sc, kind, th] = mse.bullLevelPack(ms, len, boost, tf)
+    [smOk, smCnt, _, _, _] = sm.confluencePackAtZone(zTop, zBot, false, sms)
+    [sig, zTop, zBot, price, bTime, ftcT, ftcB, fc, sc, kind, th, smOk, smCnt]
 
-spawnIfNew(string tf, int sig, int prevSig, float zTop, float zBot, float price, int bTime, bool isHigh,
-     float ftcT, float ftcB, int fc, int sc, int kind, float th) =>
-    if sig == 1 and prevSig != 1 and entry.levelEligible(sig, sc, kind, fc, eS)
-        [smOk, smCnt, smLiq, smOb, smVol] = request.security(syminfo.tickerid, tf, sm.confluencePackAtZone(zTop, zBot, isHigh, smS), barmerge.gaps_off, barmerge.lookahead_off)
-        if smOk == 1
-            array.push(watchLv, WatchedLevel.new(bTime, price, zTop, zBot, ftcT, ftcB, na, na, fc == 1, isHigh, kind, th, tf, false, false, false, true, smCnt, false, false))
+pushBearIfNew(bool en, string tf, int sig, int prevSig, float zTop, float zBot, float price, int bTime,
+     float ftcT, float ftcB, int fc, int sc, int kind, float th, int smOk, int smCnt) =>
+    if en and sig == 1 and prevSig != 1 and entry.levelEligible(sig, sc, kind, fc, eS) and smOk == 1
+        array.push(watchLv, WatchedLevel.new(bTime, price, zTop, zBot, ftcT, ftcB, na, na, fc == 1, true, kind, th, tf, false, false, false, true, smCnt, false, false))
 
-array<string> htfs = array.from("M", "W", "D", "240", "60")
-for i = 0 to array.size(htfs) - 1
-    string tf = array.get(htfs, i)
-    if tfEnabled(tf)
-        [bSig, bTop, bBot, bPrice, bTime, bFtcT, bFtcB, bFc, bSc, bKind, bTh, uSig, uTop, uBot, uPrice, uTime, uFtcT, uFtcB, uFc, uSc, uKind, uTh] = pollLevel(tf)
-        spawnIfNew(tf, bSig, bSig[1], bTop, bBot, bPrice, bTime, true, bFtcT, bFtcB, bFc, bSc, bKind, bTh)
-        spawnIfNew(tf, uSig, uSig[1], uTop, uBot, uPrice, uTime, false, uFtcT, uFtcB, uFc, uSc, uKind, uTh)
+pushBullIfNew(bool en, string tf, int sig, int prevSig, float zTop, float zBot, float price, int bTime,
+     float ftcT, float ftcB, int fc, int sc, int kind, float th, int smOk, int smCnt) =>
+    if en and sig == 1 and prevSig != 1 and entry.levelEligible(sig, sc, kind, fc, eS) and smOk == 1
+        array.push(watchLv, WatchedLevel.new(bTime, price, zTop, zBot, ftcT, ftcB, na, na, fc == 1, false, kind, th, tf, false, false, false, true, smCnt, false, false))
+
+// ── request.security ثابت برای هر HTF (بدون حلقه) ───────────────────────────
+[mnBSig, mnBTop, mnBBot, mnBPrice, mnBTime, mnBFtcT, mnBFtcB, mnBFc, mnBSc, mnBKind, mnBTh, mnBSmOk, mnBSmCnt] =
+     request.security(syminfo.tickerid, "M", bearSpawnPack(mseS, smS, "M"), barmerge.gaps_off, barmerge.lookahead_off)
+[mnUSig, mnUTop, mnUBot, mnUPrice, mnUTime, mnUFtcT, mnUFtcB, mnUFc, mnUSc, mnUKind, mnUTh, mnUSmOk, mnUSmCnt] =
+     request.security(syminfo.tickerid, "M", bullSpawnPack(mseS, smS, "M"), barmerge.gaps_off, barmerge.lookahead_off)
+
+[wBSig, wBTop, wBBot, wBPrice, wBTime, wBFtcT, wBFtcB, wBFc, wBSc, wBKind, wBTh, wBSmOk, wBSmCnt] =
+     request.security(syminfo.tickerid, "W", bearSpawnPack(mseS, smS, "W"), barmerge.gaps_off, barmerge.lookahead_off)
+[wUSig, wUTop, wUBot, wUPrice, wUTime, wUFtcT, wUFtcB, wUFc, wUSc, wUKind, wUTh, wUSmOk, wUSmCnt] =
+     request.security(syminfo.tickerid, "W", bullSpawnPack(mseS, smS, "W"), barmerge.gaps_off, barmerge.lookahead_off)
+
+[dBSig, dBTop, dBBot, dBPrice, dBTime, dBFtcT, dBFtcB, dBFc, dBSc, dBKind, dBTh, dBSmOk, dBSmCnt] =
+     request.security(syminfo.tickerid, "D", bearSpawnPack(mseS, smS, "D"), barmerge.gaps_off, barmerge.lookahead_off)
+[dUSig, dUTop, dUBot, dUPrice, dUTime, dUFtcT, dUFtcB, dUFc, dUSc, dUKind, dUTh, dUSmOk, dUSmCnt] =
+     request.security(syminfo.tickerid, "D", bullSpawnPack(mseS, smS, "D"), barmerge.gaps_off, barmerge.lookahead_off)
+
+[h4BSig, h4BTop, h4BBot, h4BPrice, h4BTime, h4BFtcT, h4BFtcB, h4BFc, h4BSc, h4BKind, h4BTh, h4BSmOk, h4BSmCnt] =
+     request.security(syminfo.tickerid, "240", bearSpawnPack(mseS, smS, "240"), barmerge.gaps_off, barmerge.lookahead_off)
+[h4USig, h4UTop, h4UBot, h4UPrice, h4UTime, h4UFtcT, h4UFtcB, h4UFc, h4USc, h4UKind, h4UTh, h4USmOk, h4USmCnt] =
+     request.security(syminfo.tickerid, "240", bullSpawnPack(mseS, smS, "240"), barmerge.gaps_off, barmerge.lookahead_off)
+
+[h1BSig, h1BTop, h1BBot, h1BPrice, h1BTime, h1BFtcT, h1BFtcB, h1BFc, h1BSc, h1BKind, h1BTh, h1BSmOk, h1BSmCnt] =
+     request.security(syminfo.tickerid, "60", bearSpawnPack(mseS, smS, "60"), barmerge.gaps_off, barmerge.lookahead_off)
+[h1USig, h1UTop, h1UBot, h1UPrice, h1UTime, h1UFtcT, h1UFtcB, h1UFc, h1USc, h1UKind, h1UTh, h1USmOk, h1USmCnt] =
+     request.security(syminfo.tickerid, "60", bullSpawnPack(mseS, smS, "60"), barmerge.gaps_off, barmerge.lookahead_off)
+
+pushBearIfNew(useMn, "M", mnBSig, mnBSig[1], mnBTop, mnBBot, mnBPrice, mnBTime, mnBFtcT, mnBFtcB, mnBFc, mnBSc, mnBKind, mnBTh, mnBSmOk, mnBSmCnt)
+pushBullIfNew(useMn, "M", mnUSig, mnUSig[1], mnUTop, mnUBot, mnUPrice, mnUTime, mnUFtcT, mnUFtcB, mnUFc, mnUSc, mnUKind, mnUTh, mnUSmOk, mnUSmCnt)
+pushBearIfNew(useW1, "W", wBSig, wBSig[1], wBTop, wBBot, wBPrice, wBTime, wBFtcT, wBFtcB, wBFc, wBSc, wBKind, wBTh, wBSmOk, wBSmCnt)
+pushBullIfNew(useW1, "W", wUSig, wUSig[1], wUTop, wUBot, wUPrice, wUTime, wUFtcT, wUFtcB, wUFc, wUSc, wUKind, wUTh, wUSmOk, wUSmCnt)
+pushBearIfNew(useD1, "D", dBSig, dBSig[1], dBTop, dBBot, dBPrice, dBTime, dBFtcT, dBFtcB, dBFc, dBSc, dBKind, dBTh, dBSmOk, dBSmCnt)
+pushBullIfNew(useD1, "D", dUSig, dUSig[1], dUTop, dUBot, dUPrice, dUTime, dUFtcT, dUFtcB, dUFc, dUSc, dUKind, dUTh, dUSmOk, dUSmCnt)
+pushBearIfNew(useH4, "240", h4BSig, h4BSig[1], h4BTop, h4BBot, h4BPrice, h4BTime, h4BFtcT, h4BFtcB, h4BFc, h4BSc, h4BKind, h4BTh, h4BSmOk, h4BSmCnt)
+pushBullIfNew(useH4, "240", h4USig, h4USig[1], h4UTop, h4UBot, h4UPrice, h4UTime, h4UFtcT, h4UFtcB, h4UFc, h4USc, h4UKind, h4UTh, h4USmOk, h4USmCnt)
+pushBearIfNew(useH1, "60", h1BSig, h1BSig[1], h1BTop, h1BBot, h1BPrice, h1BTime, h1BFtcT, h1BFtcB, h1BFc, h1BSc, h1BKind, h1BTh, h1BSmOk, h1BSmCnt)
+pushBullIfNew(useH1, "60", h1USig, h1USig[1], h1UTop, h1UBot, h1UPrice, h1UTime, h1UFtcT, h1UFtcB, h1UFc, h1USc, h1UKind, h1UTh, h1USmOk, h1USmCnt)
 
 bullPattern() =>
     cr.anyBullishPattern(crFlags)
