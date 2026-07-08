@@ -66,8 +66,13 @@ Three Mountain Top، Three River Bottom، Three Buddha Top، Inverted Three Budd
 
 وقتی استراتژی خودتان را بدهید، این کتابخانه به‌عنوان یکی از شرط‌های ورود/خروج به استراتژی وصل می‌شود.
 
-## منبع
+## منابع (اولویت)
 
-Steve Nison — *Japanese Candlestick Charting Techniques* (فارسی: **الگوهای شمعی ژاپنی** — KohanFx)
+| اولویت | منبع | کاربرد |
+|--------|------|--------|
+| **۱** | انگلیسی — *Japanese Candlestick Charting Techniques* | **قوانین شناسایی الگو** |
+| **۲** | فارسی KohanFx (۱۹۸ صفحه) | نام فارسی روی چارت |
+| **۳** | دو‌زبانه خلاصه (۱۲۶ صفحه) | فهم و نکات تکمیلی |
 
-واژه‌نامه فارسی الگوها: [`docs/pattern-names-fa.md`](docs/pattern-names-fa.md)
+جزئیات: [`docs/book-references.md`](docs/book-references.md)  
+واژه‌نامه فارسی: [`docs/pattern-names-fa.md`](docs/pattern-names-fa.md)

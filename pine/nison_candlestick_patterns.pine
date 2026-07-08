@@ -1,6 +1,12 @@
 // This Pine Script™ library detects candlestick patterns from
-// Steve Nison's "Japanese Candlestick Charting Techniques".
-// Publish this library on TradingView first, then import it in strategies/indicators.
+// Steve Nison — Japanese Candlestick Charting Techniques.
+//
+// Reference priority:
+//   1. English original (pattern rules & thresholds) — Ch. 3–8
+//   2. Persian KohanFx full PDF — display names (patternNameFa)
+//   3. Bilingual abridged PDF — supplementary notes / Persian gloss
+//
+// Publish as Library on TradingView, then import in strategies/indicators.
 //@version=5
 library("NisonCandlestickPatterns", overlay=true)
 
@@ -62,6 +68,13 @@ export inDowntrend(Settings s) =>
 export nearEqual(float a, float b, float pct) =>
     math.abs(a - b) <= math.max(math.abs(a), math.abs(b)) * pct
 
+// Nison: engulfing compares real bodies only (shadows excluded).
+export bodyEngulfs(float o0, float c0, float o1, float c1) =>
+    body(o0, c0) > body(o1, c1) and math.min(o0, c0) <= math.min(o1, c1) and math.max(o0, c0) >= math.max(o1, c1)
+
+export tinyRealBody(float o, float h, float l, float c, Settings s) =>
+    isSmallBody(o, h, l, c, s) or isDoji(o, h, l, c, s)
+
 // ── Single-candle patterns (Chapter 3–4, 8) ────────────────────────────────────
 export patDoji(float o, float h, float l, float c, Settings s) =>
     isDoji(o, h, l, c, s)
@@ -106,12 +119,20 @@ export patBearishBeltHold(float o, float h, float l, float c, Settings s) =>
     isBear(o, c) and isLongBody(o, h, l, c, s) and math.abs(o - h) <= rng(h, l) * 0.05
 
 // ── Two-candle patterns (Chapter 4, 6, 7) ──────────────────────────────────────
+// Engulfing — Ch.4: opposite colors; exception if 1st body is doji-like (Nison p.38).
 export patBullishEngulfing(Settings s) =>
-    isBear(open[1], close[1]) and isBull(open, close) and open <= close[1] and close >= open[1] and body(open, close) > body(open[1], close[1])
+    engulf = bodyEngulfs(open, close, open[1], close[1])
+    classic = isBear(open[1], close[1]) and isBull(open, close) and engulf
+    exception = tinyRealBody(open[1], high[1], low[1], close[1], s) and isBull(open[1], close[1]) and isBull(open, close) and engulf
+    classic or exception
 
 export patBearishEngulfing(Settings s) =>
-    isBull(open[1], close[1]) and isBear(open, close) and open >= close[1] and close <= open[1] and body(open, close) > body(open[1], close[1])
+    engulf = bodyEngulfs(open, close, open[1], close[1])
+    classic = isBull(open[1], close[1]) and isBear(open, close) and engulf
+    exception = tinyRealBody(open[1], high[1], low[1], close[1], s) and isBear(open[1], close[1]) and isBear(open, close) and engulf
+    classic or exception
 
+// Dark Cloud — Ch.4: open above prior high; close below midpoint of white body.
 export patDarkCloudCover(Settings s) =>
     isBull(open[1], close[1]) and isBear(open, close) and open > high[1] and close < (close[1] + open[1]) / 2 and close > open[1]
 
@@ -142,6 +163,7 @@ export patBullishCounterattack(Settings s) =>
 export patBearishCounterattack(Settings s) =>
     isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBear(open, close) and open > high[1] and nearEqual(close, close[1], s.tweezerPct)
 
+// On-neck / In-neck / Thrusting — Ch.4: partial white recovery after long black day.
 export patOnNeck(Settings s) =>
     isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and open < low[1] and nearEqual(close, low[1], s.tweezerPct)
 
