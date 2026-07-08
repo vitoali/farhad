@@ -1,0 +1,211 @@
+// Khakster Final Strategy — MTF: ساختار + Smart Money + FTC/RTP + الگوی کندل
+// چارت: روی تایم تریگر (مثلاً M5) | Publish همه کتابخانه‌ها
+//
+//@version=5
+strategy("Khakster Final MTF", overlay=true, pyramiding=0, max_labels_count=500, max_boxes_count=200,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10, initial_capital=10000,
+     commission_type=strategy.commission.percent, commission_value=0.02)
+
+import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+import YOUR_USER/MarketStructureEngine/1 as mse
+import YOUR_USER/KhaksterEntryLib/1 as entry
+import YOUR_USER/KhaksterSmartMoneyLib/1 as sm
+import YOUR_USER/CandleRecognitionLib/1 as cr
+
+// ── جفت تایم‌فریم (پیشنهاد جمینای) ───────────────────────────────────────────
+grpPair = "TF Pair"
+pairMode = input.string("H1 + M5", "Structure + Trigger", options=["H4 + M15", "H1 + M5", "D + H1", "W + H4"], group=grpPair)
+
+[string stTf, string trTf, string patTf] = switch pairMode
+    "H4 + M15" => ["240", "15", "60"]
+    "D + H1"   => ["D", "60", "240"]
+    "W + H4"   => ["W", "240", "D"]
+    => ["60", "5", "15"]
+
+grpHtf = "HTF scan (ساختار خاکستر)"
+useMn = input.bool(false, "Mn", group=grpHtf, inline="htf")
+useW1 = input.bool(true, "W1", group=grpHtf, inline="htf")
+useD1 = input.bool(true, "D1", group=grpHtf, inline="htf")
+useH4 = input.bool(true, "H4", group=grpHtf, inline="htf2")
+useH1 = input.bool(true, "H1", group=grpHtf, inline="htf2")
+
+grpSm = "Smart Money"
+minSm = input.int(2, "Min SM confirmations", minval=2, maxval=3, group=grpSm)
+
+grpEntry = "Entry"
+minScore = input.int(40, "Min structure score", group=grpEntry)
+useFtcRtp = input.bool(true, "FTC / RTP trigger", group=grpEntry)
+useCandle = input.bool(true, "Candle pattern trigger", group=grpEntry)
+slMult = input.float(0.5, "SL = TH ×", minval=0.1, step=0.1, group=grpEntry)
+tpMult = input.float(3.0, "TP = TH ×", minval=1.0, step=0.5, group=grpEntry)
+
+grpUi = "UI"
+showTable = input.bool(true, "Info table", group=grpUi)
+showZones = input.bool(true, "Draw FTC boxes", group=grpUi)
+
+mseS = mse.defaultMseSettings()
+var entry.EntrySettings eS = entry.defaultEntrySettings()
+eS.structureTf := stTf
+eS.patternTf := patTf
+eS.triggerTf := trTf
+eS.minStructureScore := minScore
+eS.slThMult := slMult
+eS.tpThMult := tpMult
+
+var sm.SmartMoneySettings smS = sm.defaultSmartMoneySettings()
+smS.minConfirmations := minSm
+
+crS = cr.defaultSettings()
+var sm.SmartMoneyState smSt = sm.newSmartMoneyState()
+
+type WatchedLevel
+    int birthTime
+    float pivotPrice
+    float zoneTop
+    float zoneBot
+    float ftcTop
+    float ftcBot
+    float rtpTop
+    float rtpBot
+    bool ftcCred
+    bool isHigh
+    float thPips
+    string srcTf
+    bool ftcSpent
+    bool rtpSet
+    bool broken
+    bool smOk
+    int smCount
+    bool tradedFtc
+    bool tradedRtp
+
+var array<WatchedLevel> watchLv = array.new<WatchedLevel>()
+var int lastSigTime = 0
+
+smSt := sm.tickSmartMoney(smSt, smS)
+
+tfEnabled(string tf) =>
+    tf == "M" ? useMn : tf == "W" ? useW1 : tf == "D" ? useD1 : tf == "240" ? useH4 : tf == "60" ? useH1 : false
+
+pollLevel(string tf) =>
+    if tfEnabled(tf)
+        int len = trex.lenForTf(tf, mseS.atr)
+        float boost = trex.thBoostForLen(len, mseS.atr)
+        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc, bKind, bTh] =
+             request.security(syminfo.tickerid, tf, mse.bearLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc, uKind, uTh] =
+             request.security(syminfo.tickerid, tf, mse.bullLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        [bSig, bTop, bBot, bPrice, bTime, bFtcT, bFtcB, bFc, bSc, bKind, bTh, uSig, uTop, uBot, uPrice, uTime, uFtcT, uFtcB, uFc, uSc, uKind, uTh]
+
+spawnIfNew(string tf, int sig, int prevSig, float zTop, float zBot, float price, int bTime, bool isHigh,
+     float ftcT, float ftcB, int fc, int sc, int kind, float th) =>
+    if sig == 1 and prevSig != 1 and entry.levelEligible(sig, sc, kind, fc, eS)
+        [ok, cnt, liq, ob, vol] = sm.zoneConfluence(smSt, zTop, zBot, isHigh, smS)
+        if ok
+            array.push(watchLv, WatchedLevel.new(bTime, price, zTop, zBot, ftcT, ftcB, na, na, fc == 1, isHigh, th, tf, false, false, false, true, cnt, false, false))
+
+// HTF poll order: high → low
+array<string> htfs = array.from("M", "W", "D", "240", "60")
+for i = 0 to array.size(htfs) - 1
+    string tf = array.get(htfs, i)
+    if tfEnabled(tf)
+        [bSig, bTop, bBot, bPrice, bTime, bFtcT, bFtcB, bFc, bSc, bKind, bTh, uSig, uTop, uBot, uPrice, uTime, uFtcT, uFtcB, uFc, uSc, uKind, uTh] = pollLevel(tf)
+        spawnIfNew(tf, bSig, bSig[1], bTop, bBot, bPrice, bTime, true, bFtcT, bFtcB, bFc, bSc, bKind, bTh)
+        spawnIfNew(tf, uSig, uSig[1], uTop, uBot, uPrice, uTime, false, uFtcT, uFtcB, uFc, uSc, uKind, uTh)
+
+// الگوی ورود کندل (انگالف / پین / ستاره)
+bullPattern() =>
+    cr.isPatternActive(14, crS) or cr.isPatternActive(6, crS) or cr.isPatternActive(37, crS) or cr.isPatternActive(17, crS)
+
+bearPattern() =>
+    cr.isPatternActive(15, crS) or cr.isPatternActive(8, crS) or cr.isPatternActive(38, crS) or cr.isPatternActive(16, crS)
+
+inStructZone(WatchedLevel lv) =>
+    entry.priceInZone(high, low, lv.zoneTop, lv.zoneBot) or entry.priceInZone(high, low, lv.ftcTop, lv.ftcBot) or (lv.rtpSet and entry.priceInZone(high, low, lv.rtpTop, lv.rtpBot))
+
+bool signalLong = false
+bool signalShort = false
+string sigNote = ""
+int sigIdx = -1
+
+if barstate.isconfirmed and array.size(watchLv) > 0
+    for i = 0 to array.size(watchLv) - 1
+        WatchedLevel lv = array.get(watchLv, i)
+        if lv.broken or (lv.tradedFtc or lv.tradedRtp) or not lv.smOk
+            continue
+        int ent = entry.scanEntry(lv.isHigh, high, low, high[1], low[1], lv.ftcTop, lv.ftcBot, lv.rtpTop, lv.rtpBot, lv.ftcCred, mse.PIVOT_REVERSE, lv.broken, lv.ftcSpent, lv.rtpSet, lv.tradedFtc, lv.tradedRtp, eS)
+        bool ftcRtpOk = useFtcRtp and ent != entry.ENTRY_NONE and not lv.isHigh
+        bool ftcRtpShort = useFtcRtp and ent != entry.ENTRY_NONE and lv.isHigh
+        bool patLong = useCandle and not lv.isHigh and bullPattern() and inStructZone(lv)
+        bool patShort = useCandle and lv.isHigh and bearPattern() and inStructZone(lv)
+        if ftcRtpOk or patLong
+            signalLong := true
+            sigNote := ftcRtpOk ? entry.entryKindName(ent) : "PAT"
+            sigIdx := i
+            lv.tradedFtc := ent == entry.ENTRY_FTC ? true : lv.tradedFtc
+            lv.tradedRtp := ent == entry.ENTRY_RTP ? true : lv.tradedRtp
+            if patLong and ent == entry.ENTRY_NONE
+                lv.tradedFtc := true
+        if ftcRtpShort or patShort
+            signalShort := true
+            sigNote := ftcRtpShort ? entry.entryKindName(ent) : "PAT"
+            sigIdx := i
+            lv.tradedFtc := ent == entry.ENTRY_FTC ? true : lv.tradedFtc
+            lv.tradedRtp := ent == entry.ENTRY_RTP ? true : lv.tradedRtp
+            if patShort and ent == entry.ENTRY_NONE
+                lv.tradedFtc := true
+        bool newFtc = not lv.ftcSpent and entry.priceInZone(high, low, lv.ftcTop, lv.ftcBot) and not entry.priceInZone(high[1], low[1], lv.ftcTop, lv.ftcBot)
+        if newFtc
+            lv.ftcSpent := true
+            if not lv.rtpSet
+                [rT, rB] = entry.rtpFromBar(lv.isHigh, open, high, low, close)
+                lv.rtpTop := rT
+                lv.rtpBot := rB
+                lv.rtpSet := true
+        if entry.priceBreakZone(lv.isHigh, close, lv.zoneTop, lv.zoneBot)
+            lv.broken := true
+        array.set(watchLv, i, lv)
+
+if barstate.isconfirmed and sigIdx >= 0
+    WatchedLevel lv = array.get(watchLv, sigIdx)
+    if signalLong and strategy.position_size == 0
+        [sl, tp] = entry.entrySlTp(false, lv.zoneTop, lv.zoneBot, lv.pivotPrice, lv.thPips, eS)
+        strategy.entry("L", strategy.long, comment=sigNote + " " + trex.tfLabel(lv.srcTf))
+        strategy.exit("XL", "L", stop=sl, limit=tp)
+        label.new(bar_index, low, "BUY\n" + sigNote, style=label.style_label_up, color=color.green, textcolor=color.white, size=size.small)
+    if signalShort and strategy.position_size == 0
+        [sl, tp] = entry.entrySlTp(true, lv.zoneTop, lv.zoneBot, lv.pivotPrice, lv.thPips, eS)
+        strategy.entry("S", strategy.short, comment=sigNote + " " + trex.tfLabel(lv.srcTf))
+        strategy.exit("XS", "S", stop=sl, limit=tp)
+        label.new(bar_index, high, "SELL\n" + sigNote, style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small)
+
+while array.size(watchLv) > 40
+    array.shift(watchLv)
+
+if showZones and barstate.islast
+    for i = 0 to array.size(watchLv) - 1
+        WatchedLevel lv = array.get(watchLv, i)
+        if not lv.broken and not lv.tradedFtc and lv.ftcTop > lv.ftcBot
+            box.new(lv.birthTime, lv.ftcTop, time, lv.ftcBot, xloc=xloc.bar_time, bgcolor=color.new(mse.ftcColor(), 92), border_color=color.new(mse.ftcColor(), 50))
+
+// جدول اطلاعات (پیشنهاد جمینای)
+var table info = table.new(position.top_right, 2, 6, bgcolor=color.new(color.black, 80), border_width=1)
+if showTable and barstate.islast
+    table.cell(info, 0, 0, "Pair", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 0, pairMode, text_color=color.white, text_size=size.small)
+    table.cell(info, 0, 1, "Structure", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 1, trex.tfLabel(stTf), text_color=color.white, text_size=size.small)
+    table.cell(info, 0, 2, "Trigger", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 2, trex.tfLabel(trTf), text_color=color.white, text_size=size.small)
+    table.cell(info, 0, 3, "SM min", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 3, str.tostring(minSm) + "/3", text_color=color.white, text_size=size.small)
+    bool inLvl = false
+    if array.size(watchLv) > 0
+        for i = 0 to array.size(watchLv) - 1
+            WatchedLevel lv = array.get(watchLv, i)
+            if not lv.broken and entry.priceInZone(high, low, lv.zoneTop, lv.zoneBot)
+                inLvl := true
+    table.cell(info, 0, 4, "In level", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 4, inLvl ? "YES" : "no", text_color=inLvl ? color.lime : color.gray, text_size=size.small)
+    table.cell(info, 0, 5, "Active Lv", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 5, str.tostring(array.size(watchLv)), text_color=color.white, text_size=size.small)

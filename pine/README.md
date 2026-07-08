@@ -36,6 +36,8 @@ if cr.isPatternActive(37, s)  // Morning Star
 
 **`khakster_smart_money_lib.pine`** → `KhaksterSmartMoneyLib` — همگرایی L/OB/V برای تأیید پول در سطح
 
+**`khakster_final_strategy.pine`** — استراتژی نهایی MTF (MSE + Entry + SM + Candle)
+
 **`smart_money_confluence_chart.pine`** — تست بصری SM
 
 **`trex_atr_panel.pine`** — فقط یادآوری؛ از ipooya استفاده کنید
