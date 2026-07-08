@@ -1,11 +1,8 @@
-// Khakster Market Structure — سطوح معتبر H1 / H4 / D1 / W1 / Mn
-// Publish libraries first: KhaksterTrexAtrLib + MarketStructureEngine
-//
-// import YOUR_USER/KhaksterTrexAtrLib/1 as trex
-// import YOUR_USER/MarketStructureEngine/1 as mse
+// Khakster Market Structure — فاز ۲ (FTC / RTP / اعتبار / خط داینامیک)
+// Publish: KhaksterTrexAtrLib + MarketStructureEngine
 //
 //@version=5
-indicator("Khakster Structure Levels", overlay=true, max_boxes_count=500, max_labels_count=500)
+indicator("Khakster Structure Lv2", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=120)
 
 import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 import YOUR_USER/MarketStructureEngine/1 as mse
@@ -14,18 +11,25 @@ grpTf = "Timeframes"
 showH1 = input.bool(true, "H1", group=grpTf, inline="tf")
 showH4 = input.bool(true, "H4", group=grpTf, inline="tf")
 showD1 = input.bool(true, "D1", group=grpTf, inline="tf")
-showW1 = input.bool(true, "W1", group=grpTf, inline="tf")
-showMn = input.bool(true, "Mn", group=grpTf, inline="tf")
+showW1 = input.bool(true, "W1", group=grpTf, inline="wf")
+showMn = input.bool(true, "Mn", group=grpTf, inline="wf")
 
 grpDisp = "Display"
 showInternal = input.bool(true, "Internal zone", group=grpDisp)
-showLabels = input.bool(true, "TF labels", group=grpDisp)
+showFtc = input.bool(true, "FTC zone", group=grpDisp)
+showRtp = input.bool(true, "RTP (after 1st FTC touch)", group=grpDisp)
+showDynTL = input.bool(true, "Dynamic trendlines", group=grpDisp)
+showLabels = input.bool(true, "Score labels", group=grpDisp)
+minScore = input.int(35, "Min score to draw", minval=0, maxval=100, group=grpDisp)
 zoneTransp = input.int(85, "Zone transparency", minval=50, maxval=95, group=grpDisp)
 
 mseS = mse.defaultMseSettings()
 
 tfEnabled(string tf) =>
     tf == "60" ? showH1 : tf == "240" ? showH4 : tf == "D" ? showD1 : tf == "W" ? showW1 : showMn
+
+tfIdx(string tf) =>
+    tf == "60" ? 0 : tf == "240" ? 1 : tf == "D" ? 2 : tf == "W" ? 3 : 4
 
 zoneColor(string tf) =>
     color.new(mse.tfColor(tf), zoneTransp)
@@ -36,27 +40,116 @@ borderColor(string tf) =>
 internalColor(string tf) =>
     color.new(mse.tfColor(tf), math.min(zoneTransp + 8, 94))
 
-drawPivot(string tf) =>
+// ── ردیابی سطوح فعال (تاچ / RTP / شکست) ─────────────────────────────────────
+var array<mse.StructureLevel> activeLv = array.new<mse.StructureLevel>()
+
+// حافظه پیوت برای خط روند داینامیک [TF][2 نقطه]
+var array<int> memHighT1 = array.new_int(5, 0)
+var array<float> memHighP1 = array.new_float(5, 0.0)
+var array<int> memHighT2 = array.new_int(5, 0)
+var array<float> memHighP2 = array.new_float(5, 0.0)
+var array<int> memLowT1 = array.new_int(5, 0)
+var array<float> memLowP1 = array.new_float(5, 0.0)
+var array<int> memLowT2 = array.new_int(5, 0)
+var array<float> memLowP2 = array.new_float(5, 0.0)
+var array<line> dynHighLn = array.new_line(5)
+var array<line> dynLowLn = array.new_line(5)
+
+pushPivotMem(int idx, bool isHigh, int t, float p) =>
+    if isHigh
+        array.set(memHighT2, idx, array.get(memHighT1, idx))
+        array.set(memHighP2, idx, array.get(memHighP1, idx))
+        array.set(memHighT1, idx, t)
+        array.set(memHighP1, idx, p)
+    else
+        array.set(memLowT2, idx, array.get(memLowT1, idx))
+        array.set(memLowP2, idx, array.get(memLowP1, idx))
+        array.set(memLowT1, idx, t)
+        array.set(memLowP1, idx, p)
+
+drawDynLine(string tf, bool isHigh) =>
+    int idx = tfIdx(tf)
+    int t1 = isHigh ? array.get(memHighT1, idx) : array.get(memLowT1, idx)
+    float p1 = isHigh ? array.get(memHighP1, idx) : array.get(memLowP1, idx)
+    int t2 = isHigh ? array.get(memHighT2, idx) : array.get(memLowT2, idx)
+    float p2 = isHigh ? array.get(memHighP2, idx) : array.get(memLowP2, idx)
+    line ln = isHigh ? array.get(dynHighLn, idx) : array.get(dynLowLn, idx)
+    if t1 != 0 and t2 != 0 and p1 != p2
+        if not na(ln)
+            line.delete(ln)
+        color c = color.new(mse.tfColor(tf), 30)
+        ln := line.new(t2, p2, t1, p1, xloc=xloc.bar_time, extend=extend.right, color=c, width=2, style=line.style_dashed)
+        if isHigh
+            array.set(dynHighLn, idx, ln)
+        else
+            array.set(dynLowLn, idx, ln)
+
+spawnLevel(string tf, int sig, float zTop, float zBot, float price, int bTime, int isHigh, float inTop, float inBot, float ftcTop, float ftcBot, int ftcCred, int sc) =>
+    if sig == 1 and sc >= minScore and bTime != 0
+        bool hi = isHigh == 1
+        bool cred = ftcCred == 1
+        float ftcMid = (ftcTop + ftcBot) * 0.5
+        mse.StructureLevel lv = mse.StructureLevel.new(bTime, price, zTop, zBot, inTop, inBot, ftcTop, ftcBot, ftcMid, cred, na, na, false, false, 0, false, 0.0, sc, tf, hi)
+        array.push(activeLv, lv)
+        box.new(bTime, zTop, bTime, zBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
+        if showInternal and inTop > inBot
+            box.new(bTime, inTop, bTime, inBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
+        if showFtc and ftcTop > ftcBot
+            box.new(bTime, ftcTop, bTime, ftcBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(mse.ftcColor(), 20), bgcolor=color.new(mse.ftcColor(), zoneTransp), border_width=1, border_style=line.style_dotted)
+        if showLabels
+            string side = hi ? " R" : " S"
+            label.new(bTime, price, trex.tfLabel(tf) + side + "\n" + mse.scoreLabel(sc, cred, 0), xloc=xloc.bar_time, style=hi ? label.style_label_down : label.style_label_up, color=borderColor(tf), textcolor=color.white, size=size.tiny)
+        int idx = tfIdx(tf)
+        pushPivotMem(idx, hi, bTime, price)
+        if showDynTL
+            drawDynLine(tf, hi)
+
+pollLevel(string tf) =>
     if tfEnabled(tf)
         int len = trex.lenForTf(tf, mseS.atr)
         float boost = trex.thBoostForLen(len, mseS.atr)
-        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot] = request.security(syminfo.tickerid, tf, mse.bearPivotPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
-        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot] = request.security(syminfo.tickerid, tf, mse.bullPivotPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
-        bool newBear = bSig == 1 and bSig[1] != 1 and bTime != 0
-        bool newBull = uSig == 1 and uSig[1] != 1 and uTime != 0
+        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc] = request.security(syminfo.tickerid, tf, mse.bearLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc] = request.security(syminfo.tickerid, tf, mse.bullLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        bool newBear = bSig == 1 and bSig[1] != 1
+        bool newBull = uSig == 1 and uSig[1] != 1
         if newBear
-            box.new(bTime, bTop, bTime, bBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
-            if showInternal and bInTop > bInBot
-                box.new(bTime, bInTop, bTime, bInBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
-            if showLabels
-                label.new(bTime, bPrice, trex.tfLabel(tf) + " R", xloc=xloc.bar_time, style=label.style_label_down, color=borderColor(tf), textcolor=color.white, size=size.tiny)
+            spawnLevel(tf, bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc)
         if newBull
-            box.new(uTime, uTop, uTime, uBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
-            if showInternal and uInTop > uInBot
-                box.new(uTime, uInTop, uTime, uInBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
-            if showLabels
-                label.new(uTime, uPrice, trex.tfLabel(tf) + " S", xloc=xloc.bar_time, style=label.style_label_up, color=borderColor(tf), textcolor=color.black, size=size.tiny)
+            spawnLevel(tf, uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc)
+
+// به‌روزرسانی تاچ / RTP / شکست
+if array.size(activeLv) > 0
+    for i = 0 to array.size(activeLv) - 1
+        mse.StructureLevel lv = array.get(activeLv, i)
+        if not lv.broken
+            bool inZone = mse.priceInZone(high, low, lv.zoneTop, lv.zoneBot)
+            bool inFtc = mse.priceInZone(high, low, lv.ftcTop, lv.ftcBot)
+            bool wasOutZone = not mse.priceInZone(high[1], low[1], lv.zoneTop, lv.zoneBot)
+            bool wasOutFtc = not mse.priceInZone(high[1], low[1], lv.ftcTop, lv.ftcBot)
+            if (inZone and wasOutZone) or (inFtc and wasOutFtc)
+                lv.touches += 1
+            if inFtc and not lv.ftcSpent and wasOutFtc
+                lv.ftcSpent := true
+                if showRtp
+                    [rTop, rBot] = mse.rtpZoneFromBar(lv.isHigh, open, high, low, close)
+                    lv.rtpTop := rTop
+                    lv.rtpBot := rBot
+                    lv.rtpSet := true
+                    box.new(time, rTop, time, rBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(mse.rtpColor(), 10), bgcolor=color.new(mse.rtpColor(), zoneTransp + 5), border_width=1, border_style=line.style_dashed)
+            lv.throwDistPips := mse.updateThrowDist(lv, high, low)
+            if mse.priceBreakZone(lv.isHigh, close, lv.zoneTop, lv.zoneBot)
+                lv.broken := true
+            array.set(activeLv, i, lv)
+    if array.size(activeLv) > 48
+        array.shift(activeLv)
 
 array<string> tfs = mse.structureTfCodes()
 for i = 0 to array.size(tfs) - 1
-    drawPivot(array.get(tfs, i))
+    pollLevel(array.get(tfs, i))
+
+// هشدار: بیش از ۳ تاچ — انتظار شکست (فصل ۴)
+if barstate.islast and array.size(activeLv) > 0
+    for i = 0 to array.size(activeLv) - 1
+        mse.StructureLevel lv = array.get(activeLv, i)
+        if lv.touches >= mseS.maxTouches + 1 and not lv.broken
+            label.new(bar_index, lv.isHigh ? lv.zoneTop : lv.zoneBot, trex.tfLabel(lv.tf) + " break?", style=lv.isHigh ? label.style_label_down : label.style_label_up, color=color.new(color.orange, 0), textcolor=color.white, size=size.tiny)

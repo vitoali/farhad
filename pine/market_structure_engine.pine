@@ -1,8 +1,5 @@
-// Market Structure Engine — سبک سعید خاکستر (فاز ۱: پیوت + Zone + TF)
+// Market Structure Engine — سبک سعید خاکستر (فاز ۲: FTC + RTP + اعتبار + داینامیک)
 // Depends on: KhaksterTrexAtrLib
-//
-// import YOUR_USER/MarketStructureEngine/1 as mse
-// import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 //
 //@version=5
 library("MarketStructureEngine", overlay=true)
@@ -24,6 +21,28 @@ export type PivotLevel
     int importance
     string pivotKind
 
+export type StructureLevel
+    int birthTime
+    float pivotPrice
+    float zoneTop
+    float zoneBot
+    float zoneInTop
+    float zoneInBot
+    float ftcTop
+    float ftcBot
+    float ftcMid
+    bool ftcCredible
+    float rtpTop
+    float rtpBot
+    bool rtpSet
+    bool ftcSpent
+    int touches
+    bool broken
+    float throwDistPips
+    int score
+    string tf
+    bool isHigh
+
 export type MseSettings
     trex.TrexSettings atr
     float moveMultMin
@@ -34,14 +53,18 @@ export type MseSettings
     float shapePct
     float closeThirdPct
     float zoneHalfAtrPct
+    float ftcBoxPct
+    float patTrRatio
     int maxTouches
 
 export defaultMseSettings() =>
-    MseSettings.new(trex.defaultSettings(), 2.4, 3.6, 1.0, 0.80, 1.20, 0.80, 0.333, 0.50, 3)
+    MseSettings.new(trex.defaultSettings(), 2.4, 3.6, 1.0, 0.80, 1.20, 0.80, 0.333, 0.50, 0.33, 0.46, 3)
 
-// سطوح ساختار: H1, H4, D1, W1, Mn
 export structureTfCodes() =>
     array.from("60", "240", "D", "W", "M")
+
+export patternTfFor(string tf) =>
+    trex.patternTf(tf)
 
 export tfImportance(string tf) =>
     tf == "M" ? 5 : tf == "W" ? 4 : tf == "D" ? 3 : tf == "240" ? 2 : 1
@@ -53,10 +76,19 @@ export tfColor(string tf) =>
      tf == "W" ? color.new(#F44336, 0) :
      tf == "M" ? color.new(#FFEB3B, 0) : color.gray
 
+export ftcColor() =>
+    color.new(#00BCD4, 0)
+
+export rtpColor() =>
+    color.new(#8BC34A, 0)
+
 export trToPrice(float trPips) =>
     trex.pipUnit() * trPips
 
-// ── دسته‌بندی کندل خاکستر (Spin / Std / Long / Spike) ───────────────────────
+export patTrEstimate(float trPips, MseSettings s) =>
+    trPips * s.patTrRatio
+
+// ── کندل خاکستر ───────────────────────────────────────────────────────────────
 export khaksterCandleClass(float o, float h, float l, float c, float trPips, MseSettings s) =>
     float rngP = trex.roundPips(trex.toPips(h - l))
     trex.candleClass(rngP, trPips, s.atr)
@@ -110,17 +142,11 @@ export closeInFinalThird(bool bearPivot, float o, float h, float l, float c, flo
 export engulfMaster(bool bearPivot, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1) =>
     bearPivot ? c1 > math.max(o0, c0) and c1 > h0 : c1 < math.min(o0, c0) and c1 < l0
 
-export imaginaryLineBear(float tipHigh, float trPips) =>
-    tipHigh - trToPrice(trPips)
-
-export imaginaryLineBull(float tipLow, float trPips) =>
-    tipLow + trToPrice(trPips)
-
 export closeBelowImgLine(float c, float tipHigh, float trPips) =>
-    c < imaginaryLineBear(tipHigh, trPips)
+    c < tipHigh - trToPrice(trPips)
 
 export closeAboveImgLine(float c, float tipLow, float trPips) =>
-    c > imaginaryLineBull(tipLow, trPips)
+    c > tipLow + trToPrice(trPips)
 
 export pivotZones(bool isHigh, float o1, float h1, float l1, float c1, float trPips, MseSettings s) =>
     float trU = trToPrice(trPips)
@@ -136,13 +162,80 @@ export pivotZones(bool isHigh, float o1, float h1, float l1, float c1, float trP
         extBot := mid - half * 0.5
     [extTop, extBot, inTop, inBot]
 
+// ── FTC (Failure To Continuation) ─────────────────────────────────────────────
+// باکس قله→کندل پوشاننده، میانه = FTC؛ باند 33% باکس
+export calcFtcBear(float tipHigh, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1, float trPips, MseSettings s) =>
+    float patTr = patTrEstimate(trPips, s)
+    float patU = trToPrice(patTr)
+    float boxTop = tipHigh
+    float boxBot = math.min(l0, c0)
+    float boxMid = (boxTop + boxBot) * 0.5
+    float halfBox = (boxTop - boxBot) * s.ftcBoxPct
+    float atrTop = c0 + patU
+    float atrMid = (atrTop + c0) * 0.5
+    float mid = (boxMid + atrMid) * 0.5
+    float half = math.max(halfBox, patU * 0.25)
+    float nodeTop = math.max(math.max(o1, c1), math.max(o2, c2))
+    bool cred = h0 > nodeTop and c0 < math.min(o1, c1)
+    [mid + half, mid - half, mid, cred]
+
+export calcFtcBull(float tipLow, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1, float trPips, MseSettings s) =>
+    float patTr = patTrEstimate(trPips, s)
+    float patU = trToPrice(patTr)
+    float boxBot = tipLow
+    float boxTop = math.max(h0, c0)
+    float boxMid = (boxTop + boxBot) * 0.5
+    float halfBox = (boxTop - boxBot) * s.ftcBoxPct
+    float atrBot = c0 - patU
+    float atrMid = (atrBot + c0) * 0.5
+    float mid = (boxMid + atrMid) * 0.5
+    float half = math.max(halfBox, patU * 0.25)
+    float nodeBot = math.min(math.min(o1, c1), math.min(o2, c2))
+    bool cred = l0 < nodeBot and c0 > math.max(o1, c1)
+    [mid + half, mid - half, mid, cred]
+
+// ── اعتبار سطح ────────────────────────────────────────────────────────────────
+export levelBirthScore(string tf, bool ftcCred, int candleCls, float trPips, MseSettings s) =>
+    int sc = tfImportance(tf) * 20
+    sc += ftcCred ? 25 : 5
+    sc += candleCls == 2 ? 8 : candleCls >= 3 ? 4 : 0
+    sc
+
+export levelLiveScore(StructureLevel lv, float trPips, MseSettings s) =>
+    int sc = lv.score
+    sc -= lv.touches * 8
+    sc += lv.broken ? lv.touches * 12 : 0
+    sc += int(math.min(lv.throwDistPips / math.max(trPips, 1.0), 5.0)) * 4
+    sc += lv.ftcSpent and lv.rtpSet ? 6 : 0
+    sc -= lv.ftcSpent and not lv.rtpSet ? 10 : 0
+    math.max(sc, 0)
+
+export priceInZone(float hi, float lo, float zTop, float zBot) =>
+    hi >= zBot and lo <= zTop
+
+export priceBreakZone(bool isHigh, float c, float zTop, float zBot) =>
+    isHigh ? c > zTop : c < zBot
+
+export updateThrowDist(StructureLevel lv, float hi, float lo) =>
+    float dist = lv.isHigh ? trex.toPips(hi - lv.pivotPrice) : trex.toPips(lv.pivotPrice - lo)
+    math.max(lv.throwDistPips, trex.roundPips(dist))
+
+export rtpZoneFromBar(bool isHigh, float o, float h, float l, float c) =>
+    float rTop = isHigh ? math.max(o, c) : math.max(h, math.max(o, c))
+    float rBot = isHigh ? math.min(l, math.min(o, c)) : math.min(o, c)
+    [rTop, rBot]
+
 export metricsLocal(int atrLen, float thBoost, MseSettings s) =>
     float trVal = trex.smaTr(atrLen)
     float trP = trex.scalePips(trex.toPips(trVal), s.atr)
     float thP = trex.scalePips(trex.toPips(trVal * thBoost), s.atr)
     [trP, thP]
 
-// ── پیوت محلی (داخل request.security — بدون nested security) ─────────────────
+export buildStructureFromPivot(PivotLevel p, float ftcTop, float ftcBot, float ftcMid, bool ftcCred, MseSettings s) =>
+    int sc = levelBirthScore(p.tf, ftcCred, p.candleClass, p.trPips, s)
+    StructureLevel.new(p.barTime, p.price, p.zoneTop, p.zoneBot, p.zoneInTop, p.zoneInBot, ftcTop, ftcBot, ftcMid, ftcCred, na, na, false, false, 0, false, 0.0, sc, p.tf, p.isHigh)
+
+// ── پیوت محلی ─────────────────────────────────────────────────────────────────
 export detectBearPivotLocal(MseSettings s, int atrLen, float thBoost, string tf) =>
     [trP, thP] = metricsLocal(atrLen, thBoost, s)
     if trP <= 0
@@ -189,16 +282,32 @@ export detectBullPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         else
             na
 
-// بسته امن برای request.security — [signal, zTop, zBot, price, barTime, isHigh, inTop, inBot]
-export bearPivotPack(MseSettings s, int atrLen, float thBoost, string tf) =>
+// Pack: sig, zoneTop, zoneBot, price, time, isHigh, inTop, inBot, ftcTop, ftcBot, ftcCred, score
+export bearLevelPack(MseSettings s, int atrLen, float thBoost, string tf) =>
     PivotLevel p = detectBearPivotLocal(s, atrLen, thBoost, tf)
-    [na(p) ? 0 : 1, na(p) ? 0.0 : p.zoneTop, na(p) ? 0.0 : p.zoneBot, na(p) ? 0.0 : p.price, na(p) ? 0 : p.barTime, 1, na(p) ? 0.0 : p.zoneInTop, na(p) ? 0.0 : p.zoneInBot]
+    if na(p)
+        [0, 0.0, 0.0, 0.0, 0, 1, 0.0, 0.0, 0.0, 0.0, 0, 0]
+    else
+        [ft, fb, fm, fc] = calcFtcBear(p.price, open, high, low, close, open[1], high[1], low[1], close[1], p.trPips, s)
+        int sc = levelBirthScore(tf, fc, p.candleClass, p.trPips, s)
+        [1, p.zoneTop, p.zoneBot, p.price, p.barTime, 1, p.zoneInTop, p.zoneInBot, ft, fb, fc ? 1 : 0, sc]
+
+export bullLevelPack(MseSettings s, int atrLen, float thBoost, string tf) =>
+    PivotLevel p = detectBullPivotLocal(s, atrLen, thBoost, tf)
+    if na(p)
+        [0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0]
+    else
+        [ft, fb, fm, fc] = calcFtcBull(p.price, open, high, low, close, open[1], high[1], low[1], close[1], p.trPips, s)
+        int sc = levelBirthScore(tf, fc, p.candleClass, p.trPips, s)
+        [1, p.zoneTop, p.zoneBot, p.price, p.barTime, 0, p.zoneInTop, p.zoneInBot, ft, fb, fc ? 1 : 0, sc]
+
+// سازگاری فاز ۱
+export bearPivotPack(MseSettings s, int atrLen, float thBoost, string tf) =>
+    bearLevelPack(s, atrLen, thBoost, tf)
 
 export bullPivotPack(MseSettings s, int atrLen, float thBoost, string tf) =>
-    PivotLevel p = detectBullPivotLocal(s, atrLen, thBoost, tf)
-    [na(p) ? 0 : 1, na(p) ? 0.0 : p.zoneTop, na(p) ? 0.0 : p.zoneBot, na(p) ? 0.0 : p.price, na(p) ? 0 : p.barTime, 0, na(p) ? 0.0 : p.zoneInTop, na(p) ? 0.0 : p.zoneInBot]
+    bullLevelPack(s, atrLen, thBoost, tf)
 
-// API قدیمی
 export detectBearPivot(MseSettings s, string tf) =>
     int len = trex.lenForTf(tf, s.atr)
     float boost = trex.thBoostForLen(len, s.atr)
@@ -211,3 +320,6 @@ export detectBullPivot(MseSettings s, string tf) =>
 
 export importanceName(int imp) =>
     imp >= 5 ? "Mn" : imp == 4 ? "W1" : imp == 3 ? "D1" : imp == 2 ? "H4" : "H1"
+
+export scoreLabel(int sc, bool ftcCred, int touches) =>
+    "S" + str.tostring(sc) + (ftcCred ? " ✓" : "") + (touches > 0 ? " T" + str.tostring(touches) : "")
