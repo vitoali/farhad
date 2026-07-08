@@ -39,6 +39,7 @@
 | ATR (دقیق) | **Trex [MrD3v]** — از جامعه TV |
 | کندل | `CandleRecognitionLib` |
 | پیوت | `MarketStructureEngine` (در حال توسعه) |
+| کالیبراسیون | `trex_atr_panel.pine` + [`khakster-atr-calibration.md`](khakster-atr-calibration.md) |
 
 هر سه را روی یک چارت می‌توانید داشته باشید.
 

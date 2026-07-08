@@ -3,7 +3,7 @@
 > **ATR display:** [Trex [MrD3v]](https://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/) on chart  
 > Guide: [`trex-atr-tradingview-fa.md`](trex-atr-tradingview-fa.md)
 
-`khakster_trex_atr_lib.pine` provides helpers only; `fetchMetrics()` is approximate.
+`khakster_trex_atr_lib.pine` — calibrated vs MT5/MrD3v on AUDDKK (see [`khakster-atr-calibration.md`](khakster-atr-calibration.md)).
 
 ## Files
 
@@ -34,16 +34,16 @@ TH  = round_pips( TR × boost_tf )     // توان حرکتی / APR
 Live = round_pips( high - low )       // حرکت کندل جاری
 ```
 
-### TH boost (calibrated vs AUDDKK sample)
+### TH boost (calibrated vs MT5 AUDDKK — 2026-07-08)
 
 | TF | boost |
 |----|-------|
-| M1, W1, Mn | 1.00 |
-| M5 | 1.07 |
-| M15 | 1.30 |
-| H1 | 1.20 |
-| H4 | 1.49 |
-| D1 | 1.57 |
+| M1, W1, Mn | 1.000 |
+| M5 | 1.071 |
+| M15 | 1.250 |
+| H1 | 1.154 |
+| H4 | 1.494 |
+| D1 | 1.573 |
 
 ## Panel rows (MT5 TRex)
 

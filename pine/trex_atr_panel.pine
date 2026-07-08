@@ -1,11 +1,67 @@
-// برای ATR دقیق خاکستر این اندیکاتور را مستقیم Add کنید:
-//   Trex [MrD3v] — https://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/
-// راهنما: docs/trex-atr-tradingview-fa.md
+// پنل ATR تیرکس — مقایسه با MT5 / MrD3v
+// Depends on: KhaksterTrexAtrLib (publish as library first)
+//
+// import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 //
 //@version=5
-indicator("TRex — use MrD3v community indicator", overlay=true)
+indicator("TRex ATR Panel [Khakster]", overlay=true, max_labels_count=1)
 
-showHint = input.bool(true, "Show setup hint")
+import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 
-if showHint and barstate.islast
-    label.new(bar_index, high, "ATR: Add 'Trex [MrD3v]' from Indicators\nhttps://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/", style=label.style_label_down, color=color.new(color.purple, 15), textcolor=color.white, size=size.normal)
+grpPanel = "Panel"
+posInput = input.string("Bottom Right", "Position", options=["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group=grpPanel)
+txtSize  = input.string("Small", "Font", options=["Tiny", "Small", "Normal"], group=grpPanel)
+showRef  = input.string("MT5", "Calibration ref", options=["Off", "MT5", "MrD3v"], group=grpPanel, tooltip="اعداد مرجع از اسکرین‌شات AUDDKK — فقط برای مقایسه")
+
+grpTune = "Tuning"
+pipScale = input.float(1.0, "Pip scale", minval=0.5, maxval=2.0, step=0.01, group=grpTune, tooltip="اگر TR با MT5 فرق دارد، این را تنظیم کنید")
+
+trexS = trex.defaultSettings()
+trexS.pipScale := pipScale
+
+tablePos(pos) =>
+    pos == "Top Left" ? position.top_left :
+     pos == "Top Right" ? position.top_right :
+     pos == "Bottom Left" ? position.bottom_left : position.bottom_right
+
+fontSz(sz) =>
+    sz == "Tiny" ? size.tiny : sz == "Small" ? size.small : size.normal
+
+var table panel = table.new(tablePos(posInput), 5, 11, bgcolor=color.new(color.black, 10), border_width=1)
+
+if barstate.islast
+    string stf = trex.structureTf()
+    trex.TrexMetrics sm = trex.fetchMetrics(stf, trexS)
+
+    table.cell(panel, 0, 0, "TF", text_color=color.white, bgcolor=color.new(color.purple, 30), text_size=fontSz(txtSize))
+    table.cell(panel, 1, 0, "TH", text_color=color.white, bgcolor=color.new(color.purple, 30), text_size=fontSz(txtSize))
+    table.cell(panel, 2, 0, "TR", text_color=color.white, bgcolor=color.new(color.purple, 30), text_size=fontSz(txtSize))
+    table.cell(panel, 3, 0, "Live", text_color=color.white, bgcolor=color.new(color.purple, 30), text_size=fontSz(txtSize))
+    table.cell(panel, 4, 0, showRef == "Off" ? "—" : showRef, text_color=color.white, bgcolor=color.new(color.purple, 30), text_size=fontSz(txtSize))
+
+    array<string> tfs = trex.allTfCodes()
+    for i = 0 to array.size(tfs) - 1
+        string tf = array.get(tfs, i)
+        trex.TrexMetrics m = trex.fetchMetrics(tf, trexS)
+        trex.TrexCalibRef ref = showRef == "MT5" ? trex.mt5CalibRef(tf) : showRef == "MrD3v" ? trex.mrd3vCalibRef(tf) : na
+        int row = i + 1
+        bool isStruct = tf == stf
+        color bg = isStruct ? color.new(color.orange, 70) : color.new(color.black, 20)
+        string refTxt = na(ref) ? "—" : str.tostring(ref.th) + "/" + str.tostring(ref.tr)
+        table.cell(panel, 0, row, trex.tfLabel(tf), text_color=color.white, bgcolor=bg, text_size=fontSz(txtSize))
+        table.cell(panel, 1, row, str.tostring(m.th), text_color=color.yellow, bgcolor=bg, text_size=fontSz(txtSize))
+        table.cell(panel, 2, row, str.tostring(m.tr), text_color=color.aqua, bgcolor=bg, text_size=fontSz(txtSize))
+        table.cell(panel, 3, row, str.tostring(m.live), text_color=color.lime, bgcolor=bg, text_size=fontSz(txtSize))
+        table.cell(panel, 4, row, refTxt, text_color=color.gray, bgcolor=bg, text_size=fontSz(txtSize))
+
+    table.cell(panel, 0, 9, "Struct", text_color=color.white, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 1, 9, trex.tfLabel(stf), text_color=color.orange, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 2, 9, "Eng", text_color=color.white, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 3, 9, str.tostring(sm.engSl), text_color=color.red, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 4, 9, str.tostring(sm.pivotSl), text_color=color.red, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+
+    table.cell(panel, 0, 10, "TP(TR)", text_color=color.white, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 1, 10, trex.tpRowTr(sm), text_color=color.aqua, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 2, 10, "TP(Th)", text_color=color.white, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 3, 10, trex.tpRowTh(sm), text_color=color.yellow, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
+    table.cell(panel, 4, 10, "×3/7/15", text_color=color.gray, bgcolor=color.new(color.purple, 50), text_size=fontSz(txtSize))
