@@ -1,6 +1,6 @@
 # Khakster TRex ATR — Formulas
 
-> **ATR display:** use TradingView community indicator **ATR TRex [ipooya]**  
+> **ATR display:** [Trex [MrD3v]](https://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/) on chart  
 > Guide: [`trex-atr-tradingview-fa.md`](trex-atr-tradingview-fa.md)
 
 `khakster_trex_atr_lib.pine` provides helpers only; `fetchMetrics()` is approximate.

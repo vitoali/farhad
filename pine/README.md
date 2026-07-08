@@ -22,10 +22,9 @@ if cr.isPatternActive(37, s)  // Morning Star
 
 ## Khakster TRex ATR
 
-**ATR دقیق (پیشنهادی):** اندیکاتور جامعه TradingView
+**ATR دقیق (پیشنهادی):** [Trex [MrD3v]](https://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/) — مستقیم روی چارت Add کنید
 
-- [ATR TRex [ipooya]](https://www.tradingview.com/script/MeOUBz32-ATR-TRex-ipooya/) — مستقیم روی چارت Add کنید
-- راهنما: [`docs/trex-atr-tradingview-fa.md`](../docs/trex-atr-tradingview-fa.md)
+راهنما: [`docs/trex-atr-tradingview-fa.md`](../docs/trex-atr-tradingview-fa.md)
 
 **`khakster_trex_atr_lib.pine`** → `KhaksterTrexAtrLib` — فقط helpers (پیپ، کلاس کندل، TF)
 

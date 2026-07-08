@@ -1,15 +1,11 @@
-// ⚠️ این فایل دیگر ATR محاسبه نمی‌کند.
-// برای اعداد دقیق خاکستر، اندیکاتور جامعه TradingView را مستقیم اضافه کنید:
-//
-//   Indicators → جستجو: "ATR TRex ipooya"
-//   https://www.tradingview.com/script/MeOUBz32-ATR-TRex-ipooya/
-//
-// راهنمای کامل: docs/trex-atr-tradingview-fa.md
+// برای ATR دقیق خاکستر این اندیکاتور را مستقیم Add کنید:
+//   Trex [MrD3v] — https://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/
+// راهنما: docs/trex-atr-tradingview-fa.md
 //
 //@version=5
-indicator("TRex ATR — Use Community Indicator", overlay=true)
+indicator("TRex — use MrD3v community indicator", overlay=true)
 
-showHint = input.bool(true, "Show setup hint on chart")
+showHint = input.bool(true, "Show setup hint")
 
 if showHint and barstate.islast
-    label.new(bar_index, high, "ATR: Add 'ATR TRex [ipooya]' from Indicators\n(docs/trex-atr-tradingview-fa.md)", style=label.style_label_down, color=color.new(color.purple, 20), textcolor=color.white, size=size.normal)
+    label.new(bar_index, high, "ATR: Add 'Trex [MrD3v]' from Indicators\nhttps://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/", style=label.style_label_down, color=color.new(color.purple, 15), textcolor=color.white, size=size.normal)

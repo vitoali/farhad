@@ -1,7 +1,7 @@
 // کتابخانه کمکی تیرکس — سبک سعید خاکستر
 //
-// ⚠️ ATR دقیق: از اندیکاتور جامعه TradingView استفاده کنید:
-//    "ATR TRex [ipooya]" — https://www.tradingview.com/script/MeOUBz32-ATR-TRex-ipooya/
+// ⚠️ ATR دقیق — اندیکاتور جامعه (سورس بسته، فقط Add to chart):
+//    Trex [MrD3v] — https://www.tradingview.com/script/wv9EwdkR-Trex-MrD3v/
 //    راهنما: docs/trex-atr-tradingview-fa.md
 //
 // این فایل فقط ابزار کمکی است (پیپ، کلاس کندل، TF فرکتالی).
