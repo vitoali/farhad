@@ -325,35 +325,97 @@ def summarize(trades: list[Trade]) -> dict:
     }
 
 
+def session_name(hour: int) -> str:
+    if 0 <= hour < 7:
+        return "Asia"
+    if 7 <= hour < 13:
+        return "London"
+    if 13 <= hour < 21:
+        return "NY"
+    return "After"
+
+
+def session_filter_label(symbol: str) -> str | bool:
+    if is_index_or_future(symbol):
+        return "NY"
+    if uses_fx_session(symbol):
+        return "L/NY"
+    return False
+
+
+def by_session_breakdown(trades: list[Trade]) -> dict:
+    buckets: dict[str, list[float]] = {}
+    for t in trades:
+        if t.pnl_pips is None:
+            continue
+        buckets.setdefault(session_name(t.entry_time.hour), []).append(t.pnl_pips)
+    return {
+        k: {
+            "trades": len(v),
+            "wins": sum(1 for x in v if x > 0),
+            "total_pips": round(sum(v), 1),
+        }
+        for k, v in sorted(buckets.items())
+    }
+
+
+def run_mode(
+    m5: pd.DataFrame,
+    h1: pd.DataFrame,
+    symbol: str,
+    fs: FinalSettings,
+    es: EntrySettings,
+    ms: MseSettings,
+    filtered: bool,
+) -> tuple[dict, list[Trade], list[StructureLevel]]:
+    fs.use_session_filter = filtered
+    trades, pivots = run_final_backtest(m5, h1, symbol, fs, es, ms)
+    stats = summarize(trades)
+    stats["pivots"] = len(pivots)
+    stats["sm_min"] = fs.min_sm
+    stats["min_score"] = effective_min_score(symbol, fs)
+    stats["session_filter"] = session_filter_label(symbol) if filtered else "all"
+    stats["by_session"] = by_session_breakdown(trades)
+    return stats, trades, pivots
+
+
 def main():
-    print("=== Khakster Final Strategy — 1 Week Backtest ===\n")
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Khakster Final Strategy offline backtest")
+    parser.add_argument("--days", type=int, default=30, help="Lookback days (5m data, max ~60)")
+    args = parser.parse_args()
+
+    print(f"=== Khakster Final Strategy — {args.days}d Backtest (all sessions vs filtered) ===\n")
     fs, es, ms = FinalSettings(), EntrySettings(), MseSettings()
-    results = {}
+    results: dict = {}
 
     for sym, label in SYMBOLS:
         print(f"--- {label} (H1 structure + M5 trigger) ---")
-        h1, m5 = fetch(sym, days=7)
+        h1, m5 = fetch(sym, days=args.days)
         print(f"  M5 bars: {len(m5)}  range: {m5.index[0].date()} → {m5.index[-1].date()}")
-        trades, pivots = run_final_backtest(m5, h1, sym, fs, es, ms)
-        stats = summarize(trades)
-        stats["pivots"] = len(pivots)
-        stats["sm_min"] = fs.min_sm
-        stats["min_score"] = effective_min_score(sym, fs)
-        if is_index_or_future(sym):
-            stats["session_filter"] = "NY"
-        elif uses_fx_session(sym):
-            stats["session_filter"] = "L/NY"
-        else:
-            stats["session_filter"] = False
-        results[label] = stats
-        print(json.dumps(stats, indent=2))
-        if trades:
-            for t in trades:
+
+        all_stats, all_trades, _ = run_mode(m5, h1, sym, fs, es, ms, filtered=False)
+        filt_stats, _, _ = run_mode(m5, h1, sym, fs, es, ms, filtered=True)
+
+        results[label] = {"all_sessions": all_stats, "session_filtered": filt_stats}
+
+        print(f"  ALL sessions     : {all_stats['trades']} trades, win {all_stats.get('win_rate', 0):.0f}%, total {all_stats['total_pips']:+.0f}")
+        if all_stats["by_session"]:
+            for sn, sb in all_stats["by_session"].items():
+                print(f"    {sn:7} → {sb['trades']} trades, total {sb['total_pips']:+.0f}")
+        print(f"  FILTERED         : {filt_stats['trades']} trades, win {filt_stats.get('win_rate', 0):.0f}%, total {filt_stats['total_pips']:+.0f}")
+        delta = filt_stats["total_pips"] - all_stats["total_pips"]
+        if delta:
+            print(f"  filter delta     : {delta:+.0f} trex-pips")
+        if all_trades:
+            print("  trades (all sessions):")
+            for t in all_trades:
                 pts = (t.exit_price - t.entry) if t.side == "long" else (t.entry - t.exit_price)
-                print(f"  {t.entry_time} {t.side} {t.kind} pts={pts:+.1f} trex_pips={t.pnl_pips:+.0f}")
+                print(f"    {t.entry_time} [{session_name(t.entry_time.hour):7}] {t.side} {t.kind} pts={pts:+.1f} pips={t.pnl_pips:+.0f}")
         print()
 
-    out = ROOT / "tests" / "backtest_final_1w_results.json"
+    out = ROOT / "tests" / "backtest_final_results.json"
     out.write_text(json.dumps(results, indent=2))
     print(f"Saved: {out}")
     return 0

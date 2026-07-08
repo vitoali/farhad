@@ -57,13 +57,18 @@ Publish به ترتیب:
 | **سشن نزدک** | فقط NY (۱۳–۲۱ UTC) وقتی فیلتر سشن روشن است |
 | **حداقل امتیاز BTC** | `max(minScore, 50)` برای کریپتو |
 
-## بک‌تست آفلاین (۱ هفته)
+## بک‌تست آفلاین
 
 ```bash
-python3 tests/backtest_final_strategy.py
+python3 tests/backtest_final_strategy.py          # ۳۰ روز، همه سشن + فیلتر
+python3 tests/backtest_final_strategy.py --days 7
 ```
 
-خروجی: `tests/backtest_final_1w_results.json`
+خروجی: `tests/backtest_final_results.json` — هر نماد دو حالت:
+- `all_sessions` — بدون فیلتر (برای ارزیابی کامل)
+- `session_filtered` — L/NY برای FX، NY برای نزدک
+
+تفکیک `by_session`: Asia / London / NY / After
 
 ## جدول گوشه چارت
 
