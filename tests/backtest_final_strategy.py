@@ -28,6 +28,8 @@ from mse_engine_py import (
     rtp_from_bar,
     rtp_touch,
     run_backtest,
+    sma_tr_series,
+    to_pips as mse_to_pips,
 )
 
 try:
@@ -80,8 +82,12 @@ class FinalSettings:
     min_score: int = 30
     use_ftc: bool = True
     use_candle: bool = True
+    use_mtf_pat: bool = True
     structure_minutes: int = 60
     trigger_minutes: int = 5
+
+
+MTF_RULES = (("H4", "4h"), ("H1", "1h"), ("M15", "15min"), ("M5", None))
 
 
 def to_pips(dist: float, unit: float) -> float:
@@ -167,6 +173,85 @@ def simple_engulfing(df: pd.DataFrame, i: int, bullish: bool) -> bool:
     return p["close"] > p["open"] and c["close"] < c["open"] and c["close"] < p["open"] and c["open"] > p["close"]
 
 
+def hammer_bull(df: pd.DataFrame, i: int) -> bool:
+    c = df.iloc[i]
+    o, h, l, cl = c["open"], c["high"], c["low"], c["close"]
+    body = abs(cl - o)
+    rng = h - l
+    if rng <= 0:
+        return False
+    lower = min(o, cl) - l
+    upper = h - max(o, cl)
+    return lower >= body * 1.5 and upper <= body * 0.6 and body / rng <= 0.45
+
+
+def shooting_star(df: pd.DataFrame, i: int) -> bool:
+    c = df.iloc[i]
+    o, h, l, cl = c["open"], c["high"], c["low"], c["close"]
+    body = abs(cl - o)
+    rng = h - l
+    if rng <= 0:
+        return False
+    upper = h - max(o, cl)
+    lower = min(o, cl) - l
+    return upper >= body * 1.5 and lower <= body * 0.6 and body / rng <= 0.45
+
+
+def any_bullish_pattern(df: pd.DataFrame, i: int) -> bool:
+    return simple_engulfing(df, i, True) or hammer_bull(df, i)
+
+
+def any_bearish_pattern(df: pd.DataFrame, i: int) -> bool:
+    return simple_engulfing(df, i, False) or shooting_star(df, i)
+
+
+def th_pips_series(df: pd.DataFrame, ms: MseSettings) -> pd.Series:
+    tr_s = sma_tr_series(df, ms.len_h1)
+    return (tr_s * ms.th_boost_h1).apply(lambda v: float(mse_to_pips(v)) if pd.notna(v) and v > 0 else 60.0)
+
+
+@dataclass
+class MtfSignal:
+    time: pd.Timestamp
+    side: str
+    tf: str
+    entry: float
+    sl: float
+    tp: float
+    sm_cnt: int
+
+
+def build_mtf_signals(m5: pd.DataFrame, fs: FinalSettings, es: EntrySettings, ms: MseSettings) -> dict[pd.Timestamp, list[MtfSignal]]:
+    out: dict[pd.Timestamp, list[MtfSignal]] = {}
+    if not fs.use_mtf_pat:
+        return out
+    for tf_name, rule in MTF_RULES:
+        df = m5 if rule is None else resample_ohlc(m5, rule)
+        if len(df) < ms.len_h1 + 2:
+            continue
+        th_s = th_pips_series(df, ms)
+        for i in range(1, len(df)):
+            row = df.iloc[i]
+            hi, lo, c = row["high"], row["low"], row["close"]
+            bull = any_bullish_pattern(df, i)
+            bear = any_bearish_pattern(df, i)
+            sm_bull, cnt_b = sm_confirms(hi, lo, False, df, i, fs.min_sm)
+            sm_bear, cnt_s = sm_confirms(hi, lo, True, df, i, fs.min_sm)
+            th = float(th_s.iloc[i])
+            t = df.index[i]
+            m5_idx = m5.index.searchsorted(t, side="left")
+            if m5_idx >= len(m5):
+                continue
+            m5_t = m5.index[m5_idx]
+            if bull and sm_bull:
+                sl, tp = entry_sl_tp(False, hi, lo, c, th, es)
+                out.setdefault(m5_t, []).append(MtfSignal(m5_t, "long", tf_name, c, sl, tp, cnt_b))
+            elif bear and sm_bear:
+                sl, tp = entry_sl_tp(True, hi, lo, c, th, es)
+                out.setdefault(m5_t, []).append(MtfSignal(m5_t, "short", tf_name, c, sl, tp, cnt_s))
+    return out
+
+
 def detect_pivots_on_df(h1: pd.DataFrame, s: MseSettings) -> list[StructureLevel]:
     return detect_pivots_h1(h1, s)
 
@@ -196,6 +281,7 @@ def run_final_backtest(
     min_sc = effective_min_score(symbol, fs)
     es.min_structure_score = min_sc
     levels_raw = detect_pivots_on_df(h1, ms)
+    mtf_map = build_mtf_signals(m5, fs, es, ms)
     active: list[StructureLevel] = []
     trades: list[Trade] = []
     open_trade: Optional[Trade] = None
@@ -230,6 +316,7 @@ def run_final_backtest(
 
         if open_trade is None:
             i = m5.index.get_loc(t)
+            entered = False
             for lv in active:
                 if lv.broken or lv.traded_ftc or lv.traded_rtp:
                     continue
@@ -247,6 +334,11 @@ def run_final_backtest(
                     sl, tp = entry_sl_tp(lv.is_high, lv.zone_top, lv.zone_bot, lv.pivot_price, lv.th_pips, es)
                     open_trade = Trade(t, None, "short" if lv.is_high else "long", c, sl, tp, kind="FTC" if ent == ENTRY_FTC else "RTP" if ent == ENTRY_RTP else "PAT")
                     lv.traded_ftc = True
+                    entered = True
+                    break
+            if not entered and t in mtf_map:
+                for sig in mtf_map[t]:
+                    open_trade = Trade(t, None, sig.side, sig.entry, sig.sl, sig.tp, kind=f"MTF_{sig.tf}")
                     break
 
         for lv in active:
@@ -326,6 +418,16 @@ def by_session_breakdown(trades: list[Trade]) -> dict:
     }
 
 
+def by_kind_breakdown(trades: list[Trade]) -> dict:
+    buckets: dict[str, list[float]] = {}
+    for t in trades:
+        if t.pnl_pips is None:
+            continue
+        k = "MTF" if t.kind.startswith("MTF_") else t.kind
+        buckets.setdefault(k, []).append(t.pnl_pips)
+    return {k: {"trades": len(v), "total_pips": round(sum(v), 1)} for k, v in sorted(buckets.items())}
+
+
 def main():
     import argparse
 
@@ -333,7 +435,7 @@ def main():
     parser.add_argument("--days", type=int, default=30, help="Lookback days (5m data, max ~60)")
     args = parser.parse_args()
 
-    print(f"=== Khakster Final Strategy — {args.days}d (relaxed: SM 1/3, score 30, all sessions, all pivot kinds) ===\n")
+    print(f"=== Khakster Final — {args.days}d (structure + MTF pat+SM on H4/H1/M15/M5) ===\n")
     fs, es, ms = FinalSettings(), EntrySettings(), MseSettings()
     results: dict = {}
 
@@ -347,8 +449,12 @@ def main():
         stats["sm_min"] = fs.min_sm
         stats["min_score"] = fs.min_score
         stats["by_session"] = by_session_breakdown(trades)
+        stats["by_kind"] = by_kind_breakdown(trades)
         results[label] = stats
         print(json.dumps(stats, indent=2))
+        mtf_n = sum(1 for t in trades if t.kind.startswith("MTF_"))
+        struct_n = len(trades) - mtf_n
+        print(f"  → structure: {struct_n}  |  MTF pat+SM: {mtf_n}")
         if trades:
             for t in trades:
                 pts = (t.exit_price - t.entry) if t.side == "long" else (t.entry - t.exit_price)

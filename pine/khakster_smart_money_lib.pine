@@ -230,5 +230,9 @@ export confluencePackAtZone(float zTop, float zBot, bool isHigh, SmartMoneySetti
     st := tickSmartMoney(st, s)
     confluencePack(st, zTop, zBot, isHigh, s)
 
+// SM روی zone کندل جاری (برای سیگنال MTF الگو + SM)
+export confluencePackAtBar(bool isHigh, SmartMoneySettings s) =>
+    confluencePackAtZone(high, low, isHigh, s)
+
 export confluenceLabel(int cnt, bool liq, bool ob, bool vol) =>
     "SM " + str.tostring(cnt) + "/3" + (liq ? " L" : "") + (ob ? " OB" : "") + (vol ? " V" : "")

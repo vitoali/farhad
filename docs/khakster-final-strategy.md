@@ -47,6 +47,14 @@ Publish به ترتیب:
 5. CandleRecognitionLib
 6. `khakster_final_strategy.pine`
 
+## سیگنال‌ها
+
+### ۱. ساختاری (قبلی)
+سطح HTF + SM + FTC/RTP/الگو در zone
+
+### ۲. MTF Pattern + SM (جدید)
+روی **H4 / H1 / M15 / M5**: هر ۶۴ الگوی کندل + حداقل ۱/۳ SM روی zone همان کندل
+
 ## تنظیمات فعلی (relaxed)
 
 | پارامتر | مقدار |

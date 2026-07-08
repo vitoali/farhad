@@ -35,10 +35,17 @@ minSm = input.int(1, "Min SM confirmations", minval=1, maxval=3, group=grpSm)
 grpEntry = "Entry"
 minScore = input.int(30, "Min structure score", group=grpEntry)
 useFtcRtp = input.bool(true, "FTC / RTP trigger", group=grpEntry)
-useCandle = input.bool(true, "Candle pattern trigger (all 64)", group=grpEntry)
+useCandle = input.bool(true, "Candle pattern at level (64)", group=grpEntry)
 patFa = input.bool(true, "Pattern label Persian", group=grpEntry)
 slMult = input.float(0.5, "SL = TH ×", minval=0.1, step=0.1, group=grpEntry)
 tpMult = input.float(3.0, "TP = TH ×", minval=1.0, step=0.5, group=grpEntry)
+
+grpMtfPat = "MTF Pattern + SM"
+useMtfPat = input.bool(true, "MTF candle + SM signals", group=grpMtfPat)
+useMtfH4 = input.bool(true, "H4", group=grpMtfPat, inline="mtf")
+useMtfH1 = input.bool(true, "H1", group=grpMtfPat, inline="mtf")
+useMtfM15 = input.bool(true, "M15", group=grpMtfPat, inline="mtf2")
+useMtfM5 = input.bool(true, "M5", group=grpMtfPat, inline="mtf2")
 
 grpUi = "UI"
 showTable = input.bool(true, "Info table", group=grpUi)
@@ -126,6 +133,18 @@ patternLabel(bool bullish) =>
     int pid = bullish ? cr.firstBullishPattern(crS) : cr.firstBearishPattern(crS)
     pid >= 0 ? cr.patternDisplayName(pid, patFa) : "PAT"
 
+patternLabelId(int pid) =>
+    pid >= 0 ? cr.patternDisplayName(pid, patFa) : "PAT"
+
+mtfEnabled(string tf) =>
+    tf == "240" ? useMtfH4 : tf == "60" ? useMtfH1 : tf == "15" ? useMtfM15 : tf == "5" ? useMtfM5 : false
+
+pollMtfPat(string tf) =>
+    if mtfEnabled(tf)
+        request.security(syminfo.tickerid, tf, entry.mtfCandleSmPack(crS, smS, mseS, tf), barmerge.gaps_off, barmerge.lookahead_off)
+    else
+        [0, 0, 0, 0, -1, -1, 0.0, 0.0, 0.0, 0.0]
+
 inStructZone(WatchedLevel lv) =>
     entry.priceInZone(high, low, lv.zoneTop, lv.zoneBot) or entry.priceInZone(high, low, lv.ftcTop, lv.ftcBot) or (lv.rtpSet and entry.priceInZone(high, low, lv.rtpTop, lv.rtpBot))
 
@@ -133,6 +152,13 @@ bool signalLong = false
 bool signalShort = false
 string sigNote = ""
 int sigIdx = -1
+bool mtfSig = false
+float mtfSl = na
+float mtfTp = na
+float mtfZTop = na
+float mtfZBot = na
+float mtfPivot = na
+float mtfTh = na
 
 if barstate.isconfirmed and array.size(watchLv) > 0
     for i = 0 to array.size(watchLv) - 1
@@ -172,18 +198,55 @@ if barstate.isconfirmed and array.size(watchLv) > 0
             lv.broken := true
         array.set(watchLv, i, lv)
 
-if barstate.isconfirmed and sigIdx >= 0
-    WatchedLevel lv = array.get(watchLv, sigIdx)
+// MTF الگو + SM (H4/H1/M15/M5) — علاوه بر سیگنال ساختاری
+array<string> mtfTfs = array.from("240", "60", "15", "5")
+if barstate.isconfirmed and useMtfPat and sigIdx < 0
+    for j = 0 to array.size(mtfTfs) - 1
+        string mtf = array.get(mtfTfs, j)
+        if mtfEnabled(mtf)
+            [lSig, sSig, bCnt, sCnt, bPid, sPid, mH, mL, mC, mTh] = pollMtfPat(mtf)
+            bool newLong = lSig == 1 and lSig[1] != 1
+            bool newShort = sSig == 1 and sSig[1] != 1
+            if newLong
+                signalLong := true
+                mtfSig := true
+                sigNote := "MTF " + patternLabelId(bPid) + " SM" + str.tostring(bCnt) + "/3 " + trex.tfLabel(mtf)
+                mtfZTop := mH
+                mtfZBot := mL
+                mtfPivot := mC
+                mtfTh := mTh
+                break
+            if newShort
+                signalShort := true
+                mtfSig := true
+                sigNote := "MTF " + patternLabelId(sPid) + " SM" + str.tostring(sCnt) + "/3 " + trex.tfLabel(mtf)
+                mtfZTop := mH
+                mtfZBot := mL
+                mtfPivot := mC
+                mtfTh := mTh
+                break
+
+if barstate.isconfirmed and (sigIdx >= 0 or mtfSig)
     if signalLong and strategy.position_size == 0
-        [sl, tp] = entry.entrySlTp(false, lv.zoneTop, lv.zoneBot, lv.pivotPrice, lv.thPips, eS)
-        strategy.entry("L", strategy.long, comment=sigNote + " " + trex.tfLabel(lv.srcTf))
+        float zT = mtfSig ? mtfZTop : array.get(watchLv, sigIdx).zoneTop
+        float zB = mtfSig ? mtfZBot : array.get(watchLv, sigIdx).zoneBot
+        float piv = mtfSig ? mtfPivot : array.get(watchLv, sigIdx).pivotPrice
+        float th = mtfSig ? mtfTh : array.get(watchLv, sigIdx).thPips
+        string cmt = mtfSig ? sigNote : sigNote + " " + trex.tfLabel(array.get(watchLv, sigIdx).srcTf)
+        [sl, tp] = entry.entrySlTp(false, zT, zB, piv, th, eS)
+        strategy.entry("L", strategy.long, comment=cmt)
         strategy.exit("XL", "L", stop=sl, limit=tp)
-        label.new(bar_index, low, "BUY\n" + sigNote, style=label.style_label_up, color=color.green, textcolor=color.white, size=size.small)
+        label.new(bar_index, low, "BUY\n" + cmt, style=label.style_label_up, color=color.green, textcolor=color.white, size=size.small)
     if signalShort and strategy.position_size == 0
-        [sl, tp] = entry.entrySlTp(true, lv.zoneTop, lv.zoneBot, lv.pivotPrice, lv.thPips, eS)
-        strategy.entry("S", strategy.short, comment=sigNote + " " + trex.tfLabel(lv.srcTf))
+        float zT2 = mtfSig ? mtfZTop : array.get(watchLv, sigIdx).zoneTop
+        float zB2 = mtfSig ? mtfZBot : array.get(watchLv, sigIdx).zoneBot
+        float piv2 = mtfSig ? mtfPivot : array.get(watchLv, sigIdx).pivotPrice
+        float th2 = mtfSig ? mtfTh : array.get(watchLv, sigIdx).thPips
+        string cmt2 = mtfSig ? sigNote : sigNote + " " + trex.tfLabel(array.get(watchLv, sigIdx).srcTf)
+        [sl, tp] = entry.entrySlTp(true, zT2, zB2, piv2, th2, eS)
+        strategy.entry("S", strategy.short, comment=cmt2)
         strategy.exit("XS", "S", stop=sl, limit=tp)
-        label.new(bar_index, high, "SELL\n" + sigNote, style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small)
+        label.new(bar_index, high, "SELL\n" + cmt2, style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small)
 
 while array.size(watchLv) > 40
     array.shift(watchLv)
@@ -195,7 +258,7 @@ if showZones and barstate.islast
             box.new(lv.birthTime, lv.ftcTop, time, lv.ftcBot, xloc=xloc.bar_time, bgcolor=color.new(mse.ftcColor(), 92), border_color=color.new(mse.ftcColor(), 50))
 
 // جدول اطلاعات (پیشنهاد جمینای)
-var table info = table.new(position.top_right, 2, 7, bgcolor=color.new(color.black, 80), border_width=1)
+var table info = table.new(position.top_right, 2, 8, bgcolor=color.new(color.black, 80), border_width=1)
 if showTable and barstate.islast
     table.cell(info, 0, 0, "Pair", text_color=color.gray, text_size=size.small)
     table.cell(info, 1, 0, pairMode, text_color=color.white, text_size=size.small)
@@ -215,5 +278,7 @@ if showTable and barstate.islast
                 inLvl := true
     table.cell(info, 0, 5, "In level", text_color=color.gray, text_size=size.small)
     table.cell(info, 1, 5, inLvl ? "YES" : "no", text_color=inLvl ? color.lime : color.gray, text_size=size.small)
-    table.cell(info, 0, 6, "Active Lv", text_color=color.gray, text_size=size.small)
-    table.cell(info, 1, 6, str.tostring(array.size(watchLv)), text_color=color.white, text_size=size.small)
+    table.cell(info, 0, 6, "MTF pat", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 6, useMtfPat ? "H4/H1/M15/M5" : "off", text_color=useMtfPat ? color.lime : color.gray, text_size=size.small)
+    table.cell(info, 0, 7, "Active Lv", text_color=color.gray, text_size=size.small)
+    table.cell(info, 1, 7, str.tostring(array.size(watchLv)), text_color=color.white, text_size=size.small)

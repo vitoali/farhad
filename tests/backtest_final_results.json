@@ -1,75 +1,130 @@
 {
   "EURUSD": {
-    "trades": 4,
-    "wins": 3,
-    "losses": 1,
-    "win_rate": 75.0,
-    "total_pips": 50,
-    "avg_pips": 12.5,
+    "trades": 129,
+    "wins": 33,
+    "losses": 96,
+    "win_rate": 25.6,
+    "total_pips": 53,
+    "avg_pips": 0.4,
     "pivots": 139,
     "sm_min": 1,
     "min_score": 30,
     "by_session": {
-      "London": {
-        "trades": 2,
+      "After": {
+        "trades": 9,
         "wins": 1,
-        "total_pips": 10
+        "total_pips": -57
+      },
+      "Asia": {
+        "trades": 28,
+        "wins": 9,
+        "total_pips": -4
+      },
+      "London": {
+        "trades": 43,
+        "wins": 10,
+        "total_pips": 21
       },
       "NY": {
-        "trades": 2,
-        "wins": 2,
-        "total_pips": 40
+        "trades": 49,
+        "wins": 13,
+        "total_pips": 93
+      }
+    },
+    "by_kind": {
+      "MTF": {
+        "trades": 129,
+        "total_pips": 53
       }
     }
   },
   "BTCUSD": {
-    "trades": 5,
-    "wins": 4,
-    "losses": 1,
-    "win_rate": 80.0,
-    "total_pips": 354,
-    "avg_pips": 70.8,
+    "trades": 143,
+    "wins": 43,
+    "losses": 100,
+    "win_rate": 30.1,
+    "total_pips": -241,
+    "avg_pips": -1.7,
     "pivots": 126,
     "sm_min": 1,
     "min_score": 30,
     "by_session": {
+      "After": {
+        "trades": 13,
+        "wins": 3,
+        "total_pips": -22
+      },
       "Asia": {
-        "trades": 3,
-        "wins": 2,
-        "total_pips": 6
+        "trades": 53,
+        "wins": 13,
+        "total_pips": -106
       },
       "London": {
-        "trades": 1,
-        "wins": 1,
-        "total_pips": 177
+        "trades": 42,
+        "wins": 17,
+        "total_pips": -5
       },
       "NY": {
+        "trades": 35,
+        "wins": 10,
+        "total_pips": -108
+      }
+    },
+    "by_kind": {
+      "FTC": {
         "trades": 1,
-        "wins": 1,
-        "total_pips": 171
+        "total_pips": 107
+      },
+      "MTF": {
+        "trades": 141,
+        "total_pips": -533
+      },
+      "PAT": {
+        "trades": 1,
+        "total_pips": 185
       }
     }
   },
   "NASDAQ": {
-    "trades": 13,
-    "wins": 6,
-    "losses": 7,
-    "win_rate": 46.2,
-    "total_pips": 87,
-    "avg_pips": 6.7,
+    "trades": 124,
+    "wins": 31,
+    "losses": 93,
+    "win_rate": 25.0,
+    "total_pips": -294,
+    "avg_pips": -2.4,
     "pivots": 136,
     "sm_min": 1,
     "min_score": 30,
     "by_session": {
       "After": {
-        "trades": 1,
-        "wins": 0,
-        "total_pips": -64
+        "trades": 11,
+        "wins": 4,
+        "total_pips": 110
+      },
+      "Asia": {
+        "trades": 33,
+        "wins": 5,
+        "total_pips": -326
+      },
+      "London": {
+        "trades": 38,
+        "wins": 6,
+        "total_pips": -246
       },
       "NY": {
-        "trades": 12,
-        "wins": 6,
-        "total_pips": 151
+        "trades": 42,
+        "wins": 16,
+        "total_pips": 168
+      }
+    },
+    "by_kind": {
+      "FTC": {
+        "trades": 4,
+        "total_pips": 129
+      },
+      "MTF": {
+        "trades": 120,
+        "total_pips": -423
       }
     }
   }

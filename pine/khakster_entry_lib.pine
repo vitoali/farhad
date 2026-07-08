@@ -6,6 +6,8 @@ library("KhaksterEntryLib", overlay=true)
 
 import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 import YOUR_USER/MarketStructureEngine/1 as mse
+import YOUR_USER/KhaksterSmartMoneyLib/1 as sm
+import YOUR_USER/CandleRecognitionLib/1 as cr
 
 export const int ENTRY_NONE = 0
 export const int ENTRY_FTC = 1
@@ -82,6 +84,22 @@ export entrySlTp(bool isHigh, float zoneTop, float zoneBot, float pivotPrice, fl
     float sl = isHigh ? zoneTop + pad : zoneBot - pad
     float tp = isHigh ? pivotPrice - tpDist : pivotPrice + tpDist
     [sl, tp]
+
+// MTF: الگوی کندل + SM روی همان TF (برای request.security)
+// خروجی: longSig, shortSig, smCntL, smCntS, bullPid, bearPid, h, l, c, thPips
+export mtfCandleSmPack(cr.Settings crS, sm.SmartMoneySettings smS, mse.MseSettings mseS, string tf) =>
+    bool bull = cr.anyBullishPattern(crS)
+    bool bear = cr.anyBearishPattern(crS)
+    [bOk, bCnt, _, _, _] = sm.confluencePackAtBar(false, smS)
+    [sOk, sCnt, _, _, _] = sm.confluencePackAtBar(true, smS)
+    int len = trex.lenForTf(tf, mseS.atr)
+    float boost = trex.thBoostForLen(len, mseS.atr)
+    [_, thP] = mse.metricsLocal(len, boost, mseS)
+    int bPid = cr.firstBullishPattern(crS)
+    int sPid = cr.firstBearishPattern(crS)
+    int lSig = bull and bOk == 1 ? 1 : 0
+    int sSig = bear and sOk == 1 ? 1 : 0
+    [lSig, sSig, bCnt, sCnt, bPid, sPid, high, low, close, thP]
 
 // Pack سطح از MSE → برای استراتژی
 export unpackBearLevel(int sig, float zTop, float zBot, float price, int bTime, int ftcT, float ftcB, int fc, int sc, int kind, float th) =>
