@@ -1,0 +1,711 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0
+// © Farhad Trading - Candlestick Pattern Detection
+// Version: 1.0
+// Based on: Japanese Candlestick Charting Techniques (Steve Nison) &
+//            Encyclopedia of Candlestick Charts (Thomas Bulkowski)
+
+//@version=5
+indicator("Candlestick Patterns - All", overlay=true, max_labels_count=500)
+
+// ══════════════════════════════════════════════════════════════
+//  INPUTS / SETTINGS
+// ══════════════════════════════════════════════════════════════
+grp_single  = "Single Candle Patterns"
+grp_double  = "Double Candle Patterns"
+grp_triple  = "Triple Candle Patterns"
+grp_display = "Display Settings"
+
+// --- Single ---
+show_doji           = input.bool(true, "Doji",                   group=grp_single)
+show_longleg_doji   = input.bool(true, "Long-Legged Doji",       group=grp_single)
+show_gravestone     = input.bool(true, "Gravestone Doji",        group=grp_single)
+show_dragonfly      = input.bool(true, "Dragonfly Doji",         group=grp_single)
+show_hammer         = input.bool(true, "Hammer",                 group=grp_single)
+show_inv_hammer     = input.bool(true, "Inverted Hammer",        group=grp_single)
+show_hanging_man    = input.bool(true, "Hanging Man",            group=grp_single)
+show_shooting_star  = input.bool(true, "Shooting Star",          group=grp_single)
+show_spinning_top   = input.bool(true, "Spinning Top",           group=grp_single)
+show_marubozu_bull  = input.bool(true, "Bullish Marubozu",       group=grp_single)
+show_marubozu_bear  = input.bool(true, "Bearish Marubozu",       group=grp_single)
+show_belt_bull      = input.bool(true, "Bullish Belt Hold",      group=grp_single)
+show_belt_bear      = input.bool(true, "Bearish Belt Hold",      group=grp_single)
+
+// --- Double ---
+show_bull_eng       = input.bool(true, "Bullish Engulfing",      group=grp_double)
+show_bear_eng       = input.bool(true, "Bearish Engulfing",      group=grp_double)
+show_bull_harami    = input.bool(true, "Bullish Harami",         group=grp_double)
+show_bear_harami    = input.bool(true, "Bearish Harami",         group=grp_double)
+show_bull_haramix   = input.bool(true, "Bullish Harami Cross",   group=grp_double)
+show_bear_haramix   = input.bool(true, "Bearish Harami Cross",   group=grp_double)
+show_piercing       = input.bool(true, "Piercing Line",          group=grp_double)
+show_dark_cloud     = input.bool(true, "Dark Cloud Cover",       group=grp_double)
+show_tweezer_top    = input.bool(true, "Tweezer Top",            group=grp_double)
+show_tweezer_bot    = input.bool(true, "Tweezer Bottom",         group=grp_double)
+show_kicking_bull   = input.bool(true, "Bullish Kicking",        group=grp_double)
+show_kicking_bear   = input.bool(true, "Bearish Kicking",        group=grp_double)
+show_meeting_bull   = input.bool(true, "Bullish Meeting Lines",  group=grp_double)
+show_meeting_bear   = input.bool(true, "Bearish Meeting Lines",  group=grp_double)
+show_on_neck        = input.bool(true, "On Neck Line",           group=grp_double)
+show_in_neck        = input.bool(true, "In Neck Line",           group=grp_double)
+show_thrusting      = input.bool(true, "Thrusting Line",         group=grp_double)
+
+// --- Triple ---
+show_morning_star   = input.bool(true, "Morning Star",           group=grp_triple)
+show_evening_star   = input.bool(true, "Evening Star",           group=grp_triple)
+show_morning_doji   = input.bool(true, "Morning Doji Star",      group=grp_triple)
+show_evening_doji   = input.bool(true, "Evening Doji Star",      group=grp_triple)
+show_3white         = input.bool(true, "Three White Soldiers",   group=grp_triple)
+show_3black         = input.bool(true, "Three Black Crows",      group=grp_triple)
+show_3inside_up     = input.bool(true, "Three Inside Up",        group=grp_triple)
+show_3inside_dn     = input.bool(true, "Three Inside Down",      group=grp_triple)
+show_3outside_up    = input.bool(true, "Three Outside Up",       group=grp_triple)
+show_3outside_dn    = input.bool(true, "Three Outside Down",     group=grp_triple)
+show_aban_bull      = input.bool(true, "Abandoned Baby (Bull)",  group=grp_triple)
+show_aban_bear      = input.bool(true, "Abandoned Baby (Bear)",  group=grp_triple)
+show_tri_star_bull  = input.bool(true, "Tri-Star (Bull)",        group=grp_triple)
+show_tri_star_bear  = input.bool(true, "Tri-Star (Bear)",        group=grp_triple)
+show_adv_block      = input.bool(true, "Advance Block",          group=grp_triple)
+show_3stars_s       = input.bool(true, "Three Stars in South",   group=grp_triple)
+show_stick_sand     = input.bool(true, "Stick Sandwich",         group=grp_triple)
+show_2crows         = input.bool(true, "Two Crows",              group=grp_triple)
+show_upside_gap2    = input.bool(true, "Upside Gap Two Crows",   group=grp_triple)
+
+// --- Display ---
+label_offset        = input.int(2, "Label Offset (bars above/below)", minval=1, maxval=10, group=grp_display)
+bull_color          = input.color(color.new(color.teal,  0),  "Bullish Label Color", group=grp_display)
+bear_color          = input.color(color.new(color.red,   0),  "Bearish Label Color", group=grp_display)
+neut_color          = input.color(color.new(color.gray,  0),  "Neutral Label Color", group=grp_display)
+label_size          = input.string("small", "Label Size", options=["tiny","small","normal","large"], group=grp_display)
+
+// ══════════════════════════════════════════════════════════════
+//  HELPER VARIABLES
+// ══════════════════════════════════════════════════════════════
+o  = open,  h  = high,  l  = low,  c  = close
+o1 = open[1], h1 = high[1], l1 = low[1], c1 = close[1]
+o2 = open[2], h2 = high[2], l2 = low[2], c2 = close[2]
+
+body     = math.abs(c - o)
+body1    = math.abs(c1 - o1)
+body2    = math.abs(c2 - o2)
+
+upper_wick  = h - math.max(o, c)
+lower_wick  = math.min(o, c) - l
+upper_wick1 = h1 - math.max(o1, c1)
+lower_wick1 = math.min(o1, c1) - l1
+upper_wick2 = h2 - math.max(o2, c2)
+lower_wick2 = math.min(o2, c2) - l2
+
+candle_range  = h - l
+candle_range1 = h1 - l1
+candle_range2 = h2 - l2
+
+is_bull  = c > o
+is_bear  = c < o
+is_bull1 = c1 > o1
+is_bear1 = c1 < o1
+is_bull2 = c2 > o2
+is_bear2 = c2 < o2
+
+avg_body = ta.sma(body, 14)
+
+// Tolerance for equality comparisons (0.1% of price)
+tol = close * 0.001
+
+// Uptrend / Downtrend (simple 5-bar check)
+uptrend   = ta.sma(close, 5) > ta.sma(close, 20)
+downtrend = ta.sma(close, 5) < ta.sma(close, 20)
+
+// ══════════════════════════════════════════════════════════════
+//  LABEL SIZE MAPPING
+// ══════════════════════════════════════════════════════════════
+lbl_size = label_size == "tiny"   ? size.tiny   :
+           label_size == "small"  ? size.small  :
+           label_size == "large"  ? size.large  : size.normal
+
+// ══════════════════════════════════════════════════════════════
+//  HELPER FUNCTION: DRAW LABEL
+// ══════════════════════════════════════════════════════════════
+label_above(txt, clr) =>
+    label.new(bar_index, h + ta.atr(14) * label_offset * 0.5,
+              text=txt, style=label.style_label_down,
+              color=clr, textcolor=color.white, size=lbl_size)
+
+label_below(txt, clr) =>
+    label.new(bar_index, l - ta.atr(14) * label_offset * 0.5,
+              text=txt, style=label.style_label_up,
+              color=clr, textcolor=color.white, size=lbl_size)
+
+// ══════════════════════════════════════════════════════════════
+//  ██████  SINGLE CANDLE PATTERNS
+// ══════════════════════════════════════════════════════════════
+
+// ── Doji ──────────────────────────────────────────────────────
+// Body is very small relative to range
+doji_body_ratio = 0.05
+is_doji = body <= candle_range * doji_body_ratio and candle_range > 0
+
+if show_doji and is_doji and not (upper_wick > candle_range * 0.6 or lower_wick > candle_range * 0.6)
+    label_above("Doji", neut_color)
+
+// ── Long-Legged Doji ─────────────────────────────────────────
+is_longleg_doji = is_doji and upper_wick >= candle_range * 0.35 and lower_wick >= candle_range * 0.35
+
+if show_longleg_doji and is_longleg_doji
+    label_above("LL-Doji", neut_color)
+
+// ── Gravestone Doji ───────────────────────────────────────────
+is_gravestone = is_doji and upper_wick >= candle_range * 0.6 and lower_wick <= candle_range * 0.1
+
+if show_gravestone and is_gravestone
+    label_above("Gravestone\nDoji", bear_color)
+
+// ── Dragonfly Doji ────────────────────────────────────────────
+is_dragonfly = is_doji and lower_wick >= candle_range * 0.6 and upper_wick <= candle_range * 0.1
+
+if show_dragonfly and is_dragonfly
+    label_below("Dragonfly\nDoji", bull_color)
+
+// ── Hammer ────────────────────────────────────────────────────
+// Small body at top, lower wick 2x+ body, small/no upper wick, downtrend
+is_hammer = downtrend and
+             body >= candle_range * 0.1 and
+             lower_wick >= body * 2 and
+             upper_wick <= body * 0.3 and
+             (math.min(o, c) - l) >= (h - math.max(o, c)) * 2
+
+if show_hammer and is_hammer
+    label_below("Hammer", bull_color)
+
+// ── Inverted Hammer ───────────────────────────────────────────
+// Small body at bottom, upper wick 2x+ body, small/no lower wick, downtrend
+is_inv_hammer = downtrend and
+                body >= candle_range * 0.1 and
+                upper_wick >= body * 2 and
+                lower_wick <= body * 0.3
+
+if show_inv_hammer and is_inv_hammer
+    label_below("Inv. Hammer", bull_color)
+
+// ── Hanging Man ───────────────────────────────────────────────
+// Same shape as Hammer but in uptrend
+is_hanging_man = uptrend and
+                  body >= candle_range * 0.1 and
+                  lower_wick >= body * 2 and
+                  upper_wick <= body * 0.3
+
+if show_hanging_man and is_hanging_man
+    label_above("Hanging Man", bear_color)
+
+// ── Shooting Star ─────────────────────────────────────────────
+// Same shape as Inverted Hammer but in uptrend
+is_shooting_star = uptrend and
+                   body >= candle_range * 0.1 and
+                   upper_wick >= body * 2 and
+                   lower_wick <= body * 0.3
+
+if show_shooting_star and is_shooting_star
+    label_above("Shooting\nStar", bear_color)
+
+// ── Spinning Top ──────────────────────────────────────────────
+// Small body with significant wicks on both sides
+is_spinning_top = body <= avg_body * 0.5 and
+                  upper_wick >= body * 0.5 and
+                  lower_wick >= body * 0.5 and
+                  not is_doji
+
+if show_spinning_top and is_spinning_top
+    label_above("Spinning\nTop", neut_color)
+
+// ── Bullish Marubozu ──────────────────────────────────────────
+// Long green candle, no (or tiny) wicks
+is_marubozu_bull = is_bull and
+                   body >= avg_body * 1.5 and
+                   upper_wick <= body * 0.02 and
+                   lower_wick <= body * 0.02
+
+if show_marubozu_bull and is_marubozu_bull
+    label_below("Marubozu\n(Bull)", bull_color)
+
+// ── Bearish Marubozu ──────────────────────────────────────────
+is_marubozu_bear = is_bear and
+                   body >= avg_body * 1.5 and
+                   upper_wick <= body * 0.02 and
+                   lower_wick <= body * 0.02
+
+if show_marubozu_bear and is_marubozu_bear
+    label_above("Marubozu\n(Bear)", bear_color)
+
+// ── Bullish Belt Hold ─────────────────────────────────────────
+// Long green candle, opens at low (no lower wick), downtrend
+is_belt_bull = downtrend and
+               is_bull and
+               lower_wick <= body * 0.02 and
+               body >= avg_body * 1.0
+
+if show_belt_bull and is_belt_bull
+    label_below("Belt Hold\n(Bull)", bull_color)
+
+// ── Bearish Belt Hold ─────────────────────────────────────────
+// Long red candle, opens at high (no upper wick), uptrend
+is_belt_bear = uptrend and
+               is_bear and
+               upper_wick <= body * 0.02 and
+               body >= avg_body * 1.0
+
+if show_belt_bear and is_belt_bear
+    label_above("Belt Hold\n(Bear)", bear_color)
+
+// ══════════════════════════════════════════════════════════════
+//  ██████  DOUBLE CANDLE PATTERNS
+// ══════════════════════════════════════════════════════════════
+
+// ── Bullish Engulfing ─────────────────────────────────────────
+is_bull_engulfing = downtrend and
+                    is_bear1 and is_bull and
+                    o <= c1 and c >= o1 and
+                    body > body1
+
+if show_bull_eng and is_bull_engulfing
+    label_below("Bullish\nEngulfing", bull_color)
+
+// ── Bearish Engulfing ─────────────────────────────────────────
+is_bear_engulfing = uptrend and
+                    is_bull1 and is_bear and
+                    o >= c1 and c <= o1 and
+                    body > body1
+
+if show_bear_eng and is_bear_engulfing
+    label_above("Bearish\nEngulfing", bear_color)
+
+// ── Bullish Harami ────────────────────────────────────────────
+is_bull_harami = downtrend and
+                 is_bear1 and is_bull and
+                 o > c1 and c < o1 and
+                 body < body1 * 0.6
+
+if show_bull_harami and is_bull_harami
+    label_below("Bullish\nHarami", bull_color)
+
+// ── Bearish Harami ────────────────────────────────────────────
+is_bear_harami = uptrend and
+                 is_bull1 and is_bear and
+                 o < c1 and c > o1 and
+                 body < body1 * 0.6
+
+if show_bear_harami and is_bear_harami
+    label_above("Bearish\nHarami", bear_color)
+
+// ── Bullish Harami Cross ──────────────────────────────────────
+is_bull_haramix = downtrend and
+                  is_bear1 and is_doji and
+                  math.max(o, c) < o1 and math.min(o, c) > c1
+
+if show_bull_haramix and is_bull_haramix
+    label_below("Harami Cross\n(Bull)", bull_color)
+
+// ── Bearish Harami Cross ──────────────────────────────────────
+is_bear_haramix = uptrend and
+                  is_bull1 and is_doji and
+                  math.max(o, c) < c1 and math.min(o, c) > o1
+
+if show_bear_haramix and is_bear_haramix
+    label_above("Harami Cross\n(Bear)", bear_color)
+
+// ── Piercing Line ─────────────────────────────────────────────
+// Red candle followed by green that opens below prior low and closes above midpoint of prior body
+is_piercing = downtrend and
+              is_bear1 and is_bull and
+              o < l1 and
+              c > (o1 + c1) / 2 and c < o1
+
+if show_piercing and is_piercing
+    label_below("Piercing\nLine", bull_color)
+
+// ── Dark Cloud Cover ──────────────────────────────────────────
+// Green candle followed by red that opens above prior high and closes below midpoint
+is_dark_cloud = uptrend and
+                is_bull1 and is_bear and
+                o > h1 and
+                c < (o1 + c1) / 2 and c > o1
+
+if show_dark_cloud and is_dark_cloud
+    label_above("Dark Cloud\nCover", bear_color)
+
+// ── Tweezer Top ───────────────────────────────────────────────
+is_tweezer_top = uptrend and
+                 math.abs(h - h1) <= tol and
+                 is_bull1 and is_bear
+
+if show_tweezer_top and is_tweezer_top
+    label_above("Tweezer\nTop", bear_color)
+
+// ── Tweezer Bottom ────────────────────────────────────────────
+is_tweezer_bot = downtrend and
+                 math.abs(l - l1) <= tol and
+                 is_bear1 and is_bull
+
+if show_tweezer_bot and is_tweezer_bot
+    label_below("Tweezer\nBottom", bull_color)
+
+// ── Bullish Kicking ───────────────────────────────────────────
+// Bearish marubozu followed by bullish marubozu with gap up
+is_kick_bull = is_bear1 and upper_wick1 <= body1 * 0.02 and lower_wick1 <= body1 * 0.02 and
+               is_bull  and upper_wick  <= body  * 0.02 and lower_wick  <= body  * 0.02 and
+               o > o1
+
+if show_kicking_bull and is_kick_bull
+    label_below("Kicking\n(Bull)", bull_color)
+
+// ── Bearish Kicking ───────────────────────────────────────────
+is_kick_bear = is_bull1 and upper_wick1 <= body1 * 0.02 and lower_wick1 <= body1 * 0.02 and
+               is_bear  and upper_wick  <= body  * 0.02 and lower_wick  <= body  * 0.02 and
+               o < o1
+
+if show_kicking_bear and is_kick_bear
+    label_above("Kicking\n(Bear)", bear_color)
+
+// ── Bullish Meeting Lines ─────────────────────────────────────
+// Downtrend: bear then bull, both close at same level
+is_meeting_bull = downtrend and
+                  is_bear1 and is_bull and
+                  math.abs(c - c1) <= tol and
+                  body1 >= avg_body and body >= avg_body
+
+if show_meeting_bull and is_meeting_bull
+    label_below("Meeting\nLines (Bull)", bull_color)
+
+// ── Bearish Meeting Lines ─────────────────────────────────────
+is_meeting_bear = uptrend and
+                  is_bull1 and is_bear and
+                  math.abs(c - c1) <= tol and
+                  body1 >= avg_body and body >= avg_body
+
+if show_meeting_bear and is_meeting_bear
+    label_above("Meeting\nLines (Bear)", bear_color)
+
+// ── On Neck Line ──────────────────────────────────────────────
+// Downtrend: bear candle, then small bull closing near prior close
+is_on_neck = downtrend and
+             is_bear1 and body1 >= avg_body and
+             is_bull and o < l1 and
+             math.abs(c - l1) <= tol
+
+if show_on_neck and is_on_neck
+    label_below("On Neck\nLine", bear_color)
+
+// ── In Neck Line ──────────────────────────────────────────────
+// Similar to On Neck but closes slightly into prior body
+is_in_neck = downtrend and
+             is_bear1 and body1 >= avg_body and
+             is_bull and o < l1 and
+             c > l1 and c <= c1 + body1 * 0.2
+
+if show_in_neck and is_in_neck
+    label_below("In Neck\nLine", bear_color)
+
+// ── Thrusting Line ────────────────────────────────────────────
+// Closes further into prior body (below midpoint)
+is_thrusting = downtrend and
+               is_bear1 and body1 >= avg_body and
+               is_bull and o < l1 and
+               c > c1 + body1 * 0.2 and c < (o1 + c1) / 2
+
+if show_thrusting and is_thrusting
+    label_below("Thrusting\nLine", bear_color)
+
+// ══════════════════════════════════════════════════════════════
+//  ██████  TRIPLE CANDLE PATTERNS
+// ══════════════════════════════════════════════════════════════
+
+// ── Morning Star ──────────────────────────────────────────────
+is_morning_star = downtrend and
+                  is_bear2 and body2 >= avg_body and
+                  body1 <= avg_body * 0.5 and math.max(o1,c1) < c2 and
+                  is_bull  and body >= avg_body and
+                  c > (o2 + c2) / 2
+
+if show_morning_star and is_morning_star
+    label_below("Morning\nStar", bull_color)
+
+// ── Evening Star ──────────────────────────────────────────────
+is_evening_star = uptrend and
+                  is_bull2 and body2 >= avg_body and
+                  body1 <= avg_body * 0.5 and math.min(o1,c1) > c2 and
+                  is_bear  and body >= avg_body and
+                  c < (o2 + c2) / 2
+
+if show_evening_star and is_evening_star
+    label_above("Evening\nStar", bear_color)
+
+// ── Morning Doji Star ─────────────────────────────────────────
+is_doji1 = math.abs(c1 - o1) <= candle_range1 * doji_body_ratio and candle_range1 > 0
+
+is_morning_doji = downtrend and
+                  is_bear2 and body2 >= avg_body and
+                  is_doji1 and math.max(o1,c1) < c2 and
+                  is_bull  and body >= avg_body and
+                  c > (o2 + c2) / 2
+
+if show_morning_doji and is_morning_doji
+    label_below("Morning\nDoji Star", bull_color)
+
+// ── Evening Doji Star ─────────────────────────────────────────
+is_evening_doji = uptrend and
+                  is_bull2 and body2 >= avg_body and
+                  is_doji1 and math.min(o1,c1) > c2 and
+                  is_bear  and body >= avg_body and
+                  c < (o2 + c2) / 2
+
+if show_evening_doji and is_evening_doji
+    label_above("Evening\nDoji Star", bear_color)
+
+// ── Three White Soldiers ──────────────────────────────────────
+is_3white = downtrend and
+            is_bull2 and body2 >= avg_body * 0.7 and
+            is_bull1 and body1 >= avg_body * 0.7 and o1 >= c2 * 0.999 and o1 <= c2 and
+            is_bull  and body  >= avg_body * 0.7 and o  >= c1 * 0.999 and o  <= c1 and
+            upper_wick2 <= body2 * 0.3 and
+            upper_wick1 <= body1 * 0.3 and
+            upper_wick  <= body  * 0.3
+
+if show_3white and is_3white
+    label_below("Three White\nSoldiers", bull_color)
+
+// ── Three Black Crows ─────────────────────────────────────────
+is_3black = uptrend and
+            is_bear2 and body2 >= avg_body * 0.7 and
+            is_bear1 and body1 >= avg_body * 0.7 and o1 <= c2 * 1.001 and o1 >= c2 and
+            is_bear  and body  >= avg_body * 0.7 and o  <= c1 * 1.001 and o  >= c1 and
+            lower_wick2 <= body2 * 0.3 and
+            lower_wick1 <= body1 * 0.3 and
+            lower_wick  <= body  * 0.3
+
+if show_3black and is_3black
+    label_above("Three Black\nCrows", bear_color)
+
+// ── Three Inside Up ───────────────────────────────────────────
+// Bullish Harami + confirmation
+is_3inside_up = downtrend and
+                is_bear2 and body2 >= avg_body and
+                is_bull1 and o1 > c2 and c1 < o2 and
+                is_bull  and c > c1
+
+if show_3inside_up and is_3inside_up
+    label_below("Three\nInside Up", bull_color)
+
+// ── Three Inside Down ─────────────────────────────────────────
+is_3inside_dn = uptrend and
+                is_bull2 and body2 >= avg_body and
+                is_bear1 and o1 < c2 and c1 > o2 and
+                is_bear  and c < c1
+
+if show_3inside_dn and is_3inside_dn
+    label_above("Three\nInside Down", bear_color)
+
+// ── Three Outside Up ──────────────────────────────────────────
+// Bullish Engulfing + confirmation
+is_3outside_up = downtrend and
+                 is_bear2 and
+                 is_bull1 and o1 <= c2 and c1 >= o2 and body1 > body2 and
+                 is_bull  and c > c1
+
+if show_3outside_up and is_3outside_up
+    label_below("Three\nOutside Up", bull_color)
+
+// ── Three Outside Down ────────────────────────────────────────
+is_3outside_dn = uptrend and
+                 is_bull2 and
+                 is_bear1 and o1 >= c2 and c1 <= o2 and body1 > body2 and
+                 is_bear  and c < c1
+
+if show_3outside_dn and is_3outside_dn
+    label_above("Three\nOutside Down", bear_color)
+
+// ── Abandoned Baby (Bullish) ──────────────────────────────────
+is_aban_bull = downtrend and
+               is_bear2 and
+               is_doji1 and l1 > l2 and h1 < l2 and
+               is_bull  and l > h1
+
+if show_aban_bull and is_aban_bull
+    label_below("Abandoned\nBaby (Bull)", bull_color)
+
+// ── Abandoned Baby (Bearish) ──────────────────────────────────
+is_aban_bear = uptrend and
+               is_bull2 and
+               is_doji1 and h1 < h2 and l1 > h2 and
+               is_bear  and h < l1
+
+if show_aban_bear and is_aban_bear
+    label_above("Abandoned\nBaby (Bear)", bear_color)
+
+// ── Tri-Star (Bullish) ────────────────────────────────────────
+is_doji2 = math.abs(c2 - o2) <= candle_range2 * doji_body_ratio and candle_range2 > 0
+
+is_tri_star_bull = downtrend and
+                   is_doji2 and is_doji1 and is_doji and
+                   math.min(o1, c1) < math.min(o2, c2) and
+                   math.min(o1, c1) < math.min(o, c)
+
+if show_tri_star_bull and is_tri_star_bull
+    label_below("Tri-Star\n(Bull)", bull_color)
+
+// ── Tri-Star (Bearish) ────────────────────────────────────────
+is_tri_star_bear = uptrend and
+                   is_doji2 and is_doji1 and is_doji and
+                   math.max(o1, c1) > math.max(o2, c2) and
+                   math.max(o1, c1) > math.max(o, c)
+
+if show_tri_star_bear and is_tri_star_bear
+    label_above("Tri-Star\n(Bear)", bear_color)
+
+// ── Advance Block ─────────────────────────────────────────────
+// Three bull candles in uptrend but each with progressively smaller bodies / larger upper wicks
+is_adv_block = uptrend and
+               is_bull2 and is_bull1 and is_bull and
+               body1 < body2 and body < body1 and
+               upper_wick1 > upper_wick2 and upper_wick > upper_wick1
+
+if show_adv_block and is_adv_block
+    label_above("Advance\nBlock", bear_color)
+
+// ── Three Stars in South ──────────────────────────────────────
+// Downtrend: 3 bear candles, each smaller with lower shadow shortening
+is_3stars_s = downtrend and
+              is_bear2 and lower_wick2 > 0 and body2 >= avg_body and
+              is_bear1 and l1 > l2 and body1 < body2 and lower_wick1 >= 0 and
+              is_bear  and l > l1 and body < body1 and
+              math.abs(o - h) <= body * 0.05 and math.abs(c - l) <= body * 0.05
+
+if show_3stars_s and is_3stars_s
+    label_below("Three Stars\nin South", bull_color)
+
+// ── Stick Sandwich ────────────────────────────────────────────
+// Bear, Bull, Bear — outer two bear candles have same close
+is_stick_sand = downtrend and
+                is_bear2 and
+                is_bull1 and c1 > o2 and
+                is_bear  and math.abs(c - c2) <= tol
+
+if show_stick_sand and is_stick_sand
+    label_below("Stick\nSandwich", bull_color)
+
+// ── Two Crows ─────────────────────────────────────────────────
+// Uptrend: large bull, gap-up small bear, larger bear closing into first candle's body
+is_2crows = uptrend and
+            is_bull2 and body2 >= avg_body and
+            is_bear1 and o1 > c2 and c1 > c2 and
+            is_bear  and o <= o1 and c < c1 and c > o2
+
+if show_2crows and is_2crows
+    label_above("Two Crows", bear_color)
+
+// ── Upside Gap Two Crows ──────────────────────────────────────
+is_upside_gap2 = uptrend and
+                 is_bull2 and body2 >= avg_body and
+                 is_bear1 and o1 > h2 and c1 > h2 and
+                 is_bear  and o >= o1 and c < c1 and c > c2
+
+if show_upside_gap2 and is_upside_gap2
+    label_above("Upside Gap\nTwo Crows", bear_color)
+
+// ══════════════════════════════════════════════════════════════
+//  EXPORT: Boolean Variables (for use in strategies / alerts)
+// ══════════════════════════════════════════════════════════════
+// All pattern variables below can be referenced by external
+// strategies that import this script as a library.
+
+// ─── Single ──────────────────────────────────────────────────
+export_doji             = is_doji
+export_longleg_doji     = is_longleg_doji
+export_gravestone       = is_gravestone
+export_dragonfly        = is_dragonfly
+export_hammer           = is_hammer
+export_inv_hammer       = is_inv_hammer
+export_hanging_man      = is_hanging_man
+export_shooting_star    = is_shooting_star
+export_spinning_top     = is_spinning_top
+export_marubozu_bull    = is_marubozu_bull
+export_marubozu_bear    = is_marubozu_bear
+export_belt_bull        = is_belt_bull
+export_belt_bear        = is_belt_bear
+
+// ─── Double ──────────────────────────────────────────────────
+export_bull_engulfing   = is_bull_engulfing
+export_bear_engulfing   = is_bear_engulfing
+export_bull_harami      = is_bull_harami
+export_bear_harami      = is_bear_harami
+export_bull_haramix     = is_bull_haramix
+export_bear_haramix     = is_bear_haramix
+export_piercing         = is_piercing
+export_dark_cloud       = is_dark_cloud
+export_tweezer_top      = is_tweezer_top
+export_tweezer_bot      = is_tweezer_bot
+export_kick_bull        = is_kick_bull
+export_kick_bear        = is_kick_bear
+export_meeting_bull     = is_meeting_bull
+export_meeting_bear     = is_meeting_bear
+export_on_neck          = is_on_neck
+export_in_neck          = is_in_neck
+export_thrusting        = is_thrusting
+
+// ─── Triple ──────────────────────────────────────────────────
+export_morning_star     = is_morning_star
+export_evening_star     = is_evening_star
+export_morning_doji     = is_morning_doji
+export_evening_doji     = is_evening_doji
+export_3white           = is_3white
+export_3black           = is_3black
+export_3inside_up       = is_3inside_up
+export_3inside_dn       = is_3inside_dn
+export_3outside_up      = is_3outside_up
+export_3outside_dn      = is_3outside_dn
+export_aban_bull        = is_aban_bull
+export_aban_bear        = is_aban_bear
+export_tri_star_bull    = is_tri_star_bull
+export_tri_star_bear    = is_tri_star_bear
+export_adv_block        = is_adv_block
+export_3stars_s         = is_3stars_s
+export_stick_sand       = is_stick_sand
+export_2crows           = is_2crows
+export_upside_gap2      = is_upside_gap2
+
+// ── Composite signals (shortcut for strategy use) ────────────
+bullish_pattern = is_hammer or is_inv_hammer or is_dragonfly or
+                  is_bull_engulfing or is_bull_harami or is_bull_haramix or
+                  is_piercing or is_tweezer_bot or is_kick_bull or
+                  is_morning_star or is_morning_doji or is_3white or
+                  is_3inside_up or is_3outside_up or is_aban_bull or
+                  is_tri_star_bull or is_3stars_s or is_stick_sand or
+                  is_meeting_bull or is_marubozu_bull or is_belt_bull
+
+bearish_pattern = is_hanging_man or is_shooting_star or is_gravestone or
+                  is_bear_engulfing or is_bear_harami or is_bear_haramix or
+                  is_dark_cloud or is_tweezer_top or is_kick_bear or
+                  is_evening_star or is_evening_doji or is_3black or
+                  is_3inside_dn or is_3outside_dn or is_aban_bear or
+                  is_tri_star_bear or is_adv_block or is_2crows or
+                  is_upside_gap2 or is_meeting_bear or is_marubozu_bear or
+                  is_belt_bear
+
+// ══════════════════════════════════════════════════════════════
+//  BACKGROUND HIGHLIGHT
+// ══════════════════════════════════════════════════════════════
+bgcolor(bullish_pattern ? color.new(color.teal, 90) : na, title="Bullish Pattern BG")
+bgcolor(bearish_pattern ? color.new(color.red,  90) : na, title="Bearish Pattern BG")
+
+// ══════════════════════════════════════════════════════════════
+//  ALERTS
+// ══════════════════════════════════════════════════════════════
+alertcondition(bullish_pattern, title="Bullish Candlestick Pattern",
+     message="⬆ Bullish candlestick pattern detected on {{ticker}} {{interval}}")
+alertcondition(bearish_pattern, title="Bearish Candlestick Pattern",
+     message="⬇ Bearish candlestick pattern detected on {{ticker}} {{interval}}")
+alertcondition(is_hammer,           title="Hammer",            message="Hammer on {{ticker}}")
+alertcondition(is_shooting_star,    title="Shooting Star",     message="Shooting Star on {{ticker}}")
+alertcondition(is_bull_engulfing,   title="Bullish Engulfing", message="Bullish Engulfing on {{ticker}}")
+alertcondition(is_bear_engulfing,   title="Bearish Engulfing", message="Bearish Engulfing on {{ticker}}")
+alertcondition(is_morning_star,     title="Morning Star",      message="Morning Star on {{ticker}}")
+alertcondition(is_evening_star,     title="Evening Star",      message="Evening Star on {{ticker}}")
+alertcondition(is_3white,           title="3 White Soldiers",  message="Three White Soldiers on {{ticker}}")
+alertcondition(is_3black,           title="3 Black Crows",     message="Three Black Crows on {{ticker}}")
