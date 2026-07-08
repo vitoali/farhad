@@ -2,3 +2,7 @@
 *.pdf
 nison-farsi*.txt
 nison-english*.txt
+
+# اندیکاتور کامپایل‌شده خاکستر (کپی‌رایت)
+khakster-atr/*.ex5
+khakster-atr/*.ex4

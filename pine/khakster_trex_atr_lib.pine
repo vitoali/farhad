@@ -1,0 +1,158 @@
+// کتابخانه ATR تیرکس — سبک سعید خاکستر (Trigger Price Action / TRex)
+// TR = میانگین حرکت کندل | TH = توان حرکتی (APR) | Live = حرکت کندل جاری
+// دوره‌های فرکتالی بر اساس آموزش خاکستر + جامعه TradingView
+//
+// Strategy:
+//   import YOUR_USER/KhaksterTrexAtrLib/1 as atr
+//   h1 = atr.metrics("60", atr.defaultSettings())
+//
+//@version=5
+library("KhaksterTrexAtrLib", overlay=true)
+
+export type TrexSettings
+    int lenM1
+    int lenM5
+    int lenM15
+    int lenH1
+    int lenH4
+    int lenD1
+    int lenW1
+    int lenMN
+    float thBoostM5
+    float thBoostM15
+    float thBoostH1
+    float thBoostH4
+    float thBoostD1
+    float tpThMult
+    float pipsAtrRatio
+    float engSlPct
+    float spinPct
+    float stdPct
+    float longPct
+
+export type TrexMetrics
+    float tr
+    float th
+    float live
+    float pipsSpin
+    float pipsStd
+    float pipsLong
+    float tpTh
+    float engSl
+    float pivotSl
+
+export defaultSettings() =>
+    TrexSettings.new(3, 12, 16, 24, 42, 30, 52, 55, 1.07, 1.30, 1.20, 1.49, 1.57, 3.0, 5.0 / 6.0, 0.25, 0.80, 1.20, 2.40)
+
+// ── Market unit (forex pips + crypto points) ───────────────────────────────────
+export isForex() =>
+    syminfo.type == "forex"
+
+export isCrypto() =>
+    syminfo.type == "crypto"
+
+export pipUnit() =>
+    float u = syminfo.mintick
+    if isForex()
+        bool jpy = str.contains(syminfo.ticker, "JPY")
+        u := jpy ? 0.01 : 0.0001
+    else if isCrypto()
+        u := syminfo.mintick
+    u
+
+export toPips(float priceDist) =>
+    float u = pipUnit()
+    u > 0 ? priceDist / u : priceDist
+
+export roundPips(float v) =>
+    math.round(v)
+
+// ── Khakster range (TR uses true range; live often HL on forming bar) ───────────
+export barTr() =>
+    ta.tr(true)
+
+export barHl() =>
+    high - low
+
+export smaTr(int len) =>
+    ta.sma(barTr(), len)
+
+export thBoostForLen(int len, TrexSettings s) =>
+    len == s.lenM1 ? 1.0 :
+     len == s.lenM5 ? s.thBoostM5 :
+     len == s.lenM15 ? s.thBoostM15 :
+     len == s.lenH1 ? s.thBoostH1 :
+     len == s.lenH4 ? s.thBoostH4 :
+     len == s.lenD1 ? s.thBoostD1 : 1.0
+
+export lenForTf(string tf, TrexSettings s) =>
+    tf == "1" ? s.lenM1 :
+     tf == "5" ? s.lenM5 :
+     tf == "15" ? s.lenM15 :
+     tf == "60" ? s.lenH1 :
+     tf == "240" ? s.lenH4 :
+     tf == "D" ? s.lenD1 :
+     tf == "W" ? s.lenW1 :
+     tf == "M" ? s.lenMN : s.lenH1
+
+export tfLabel(string tf) =>
+    tf == "1" ? "M1" :
+     tf == "5" ? "M5" :
+     tf == "15" ? "M15" :
+     tf == "60" ? "H1" :
+     tf == "240" ? "H4" :
+     tf == "D" ? "D1" :
+     tf == "W" ? "W1" :
+     tf == "M" ? "Mn" : tf
+
+// Core metrics on one timeframe (call inside request.security).
+export calcTr(float trSeries) =>
+    roundPips(toPips(trSeries))
+
+export calcLive(float hl) =>
+    roundPips(toPips(hl))
+
+export calcTh(float trSeries, float boost) =>
+    roundPips(toPips(trSeries * boost))
+
+export calcMetricsRaw(float trVal, float hlVal, float boost, TrexSettings s) =>
+    float trP = roundPips(toPips(trVal))
+    float thP = roundPips(toPips(trVal * boost))
+    float liveP = roundPips(toPips(hlVal))
+    float tp = math.round(thP * s.tpThMult)
+    float pSpin = math.round(tp * s.pipsAtrRatio)
+    float pStd = math.round(tp * s.pipsAtrRatio * (s.stdPct / s.spinPct))
+    float pLong = math.round(tp * s.pipsAtrRatio * (s.longPct / s.spinPct))
+    TrexMetrics.new(trP, thP, liveP, pSpin, pStd, pLong, tp, math.round(trP * s.engSlPct), trP + math.round(trP * s.engSlPct))
+
+export fetchMetrics(string tf, TrexSettings s) =>
+    int len = lenForTf(tf, s)
+    float boost = thBoostForLen(len, s)
+    float trVal = request.security(syminfo.tickerid, tf, smaTr(len), barmerge.gaps_off, barmerge.lookahead_off)
+    float hlVal = request.security(syminfo.tickerid, tf, barHl(), barmerge.gaps_off, barmerge.lookahead_off)
+    calcMetricsRaw(trVal, hlVal, boost, s)
+
+// Candle class vs TR (Khakster Trex)
+export candleClass(float rangePips, float trPips, TrexSettings s) =>
+    trPips <= 0 ? 0 :
+     rangePips < trPips * s.spinPct ? 1 :
+     rangePips < trPips * s.stdPct ? 2 :
+     rangePips < trPips * s.longPct ? 3 : 4
+
+export candleClassName(int c) =>
+    c == 1 ? "Spinning" : c == 2 ? "Standard" : c == 3 ? "LongBar" : c == 4 ? "Spike" : "Unknown"
+
+// Structure / pattern / trigger map (Trex fractal stack)
+export structureTf() =>
+    timeframe.isweekly ? "W" :
+     timeframe.isdaily ? "D" :
+     timeframe.isintraday and timeframe.multiplier == 240 ? "240" :
+     timeframe.isintraday and timeframe.multiplier == 60 ? "60" :
+     timeframe.isintraday and timeframe.multiplier == 15 ? "15" :
+     timeframe.isintraday and timeframe.multiplier == 5 ? "5" : "60"
+
+export patternTf(string st) =>
+    st == "W" ? "D" : st == "D" ? "240" : st == "240" ? "60" : st == "60" ? "15" : st == "15" ? "5" : "1"
+
+export triggerTf(string st) =>
+    st == "W" ? "240" : st == "D" ? "60" : st == "240" ? "15" : st == "60" ? "5" : st == "15" ? "1" : "1"
