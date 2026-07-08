@@ -1,8 +1,8 @@
-// Khakster Market Structure — فاز ۲ (FTC / RTP / اعتبار / خط داینامیک)
+// Khakster Market Structure — فاز ۳ (نوع پیوت + همپوشانی TF)
 // Publish: KhaksterTrexAtrLib + MarketStructureEngine
 //
 //@version=5
-indicator("Khakster Structure Lv2", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=120)
+indicator("Khakster Structure Lv3", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=120)
 
 import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 import YOUR_USER/MarketStructureEngine/1 as mse
@@ -13,6 +13,12 @@ showH4 = input.bool(true, "H4", group=grpTf, inline="tf")
 showD1 = input.bool(true, "D1", group=grpTf, inline="tf")
 showW1 = input.bool(true, "W1", group=grpTf, inline="wf")
 showMn = input.bool(true, "Mn", group=grpTf, inline="wf")
+
+grpPivot = "Pivot filter"
+reverseOnly = input.bool(true, "Only Reverse (tradable)", group=grpPivot)
+showPullback = input.bool(false, "Show Pullback", group=grpPivot)
+showSettlement = input.bool(false, "Show Settlement", group=grpPivot)
+filterOverlap = input.bool(true, "Suppress lower-TF overlap", group=grpPivot)
 
 grpDisp = "Display"
 showInternal = input.bool(true, "Internal zone", group=grpDisp)
@@ -30,6 +36,9 @@ tfEnabled(string tf) =>
 
 tfIdx(string tf) =>
     tf == "60" ? 0 : tf == "240" ? 1 : tf == "D" ? 2 : tf == "W" ? 3 : 4
+
+kindVisible(int k) =>
+    k == mse.PIVOT_REVERSE ? true : reverseOnly ? false : k == mse.PIVOT_PULLBACK ? showPullback : showSettlement
 
 zoneColor(string tf) =>
     color.new(mse.tfColor(tf), zoneTransp)
@@ -84,38 +93,40 @@ drawDynLine(string tf, bool isHigh) =>
         else
             array.set(dynLowLn, idx, ln)
 
-spawnLevel(string tf, int sig, float zTop, float zBot, float price, int bTime, int isHigh, float inTop, float inBot, float ftcTop, float ftcBot, int ftcCred, int sc) =>
-    if sig == 1 and sc >= minScore and bTime != 0
+spawnLevel(string tf, int sig, float zTop, float zBot, float price, int bTime, int isHigh, float inTop, float inBot, float ftcTop, float ftcBot, int ftcCred, int sc, int pivotKind) =>
+    if sig == 1 and sc >= minScore and bTime != 0 and kindVisible(pivotKind)
         bool hi = isHigh == 1
         bool cred = ftcCred == 1
-        float ftcMid = (ftcTop + ftcBot) * 0.5
-        mse.StructureLevel lv = mse.StructureLevel.new(bTime, price, zTop, zBot, inTop, inBot, ftcTop, ftcBot, ftcMid, cred, na, na, false, false, 0, false, 0.0, sc, tf, hi)
-        array.push(activeLv, lv)
-        box.new(bTime, zTop, bTime, zBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
-        if showInternal and inTop > inBot
-            box.new(bTime, inTop, bTime, inBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
-        if showFtc and ftcTop > ftcBot
-            box.new(bTime, ftcTop, bTime, ftcBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(mse.ftcColor(), 20), bgcolor=color.new(mse.ftcColor(), zoneTransp), border_width=1, border_style=line.style_dotted)
-        if showLabels
-            string side = hi ? " R" : " S"
-            label.new(bTime, price, trex.tfLabel(tf) + side + "\n" + mse.scoreLabel(sc, cred, 0), xloc=xloc.bar_time, style=hi ? label.style_label_down : label.style_label_up, color=borderColor(tf), textcolor=color.white, size=size.tiny)
-        int idx = tfIdx(tf)
-        pushPivotMem(idx, hi, bTime, price)
-        if showDynTL
-            drawDynLine(tf, hi)
+        bool overlap = filterOverlap and mse.suppressedByHigherTf(tf, zTop, zBot, hi, activeLv)
+        if not overlap
+            float ftcMid = (ftcTop + ftcBot) * 0.5
+            mse.StructureLevel lv = mse.StructureLevel.new(bTime, price, zTop, zBot, inTop, inBot, ftcTop, ftcBot, ftcMid, cred, na, na, false, false, 0, false, 0.0, sc, tf, hi, pivotKind)
+            array.push(activeLv, lv)
+            box.new(bTime, zTop, bTime, zBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
+            if showInternal and inTop > inBot
+                box.new(bTime, inTop, bTime, inBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
+            if showFtc and ftcTop > ftcBot
+                box.new(bTime, ftcTop, bTime, ftcBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(mse.ftcColor(), 20), bgcolor=color.new(mse.ftcColor(), zoneTransp), border_width=1, border_style=line.style_dotted)
+            if showLabels
+                string side = hi ? " R" : " S"
+                label.new(bTime, price, trex.tfLabel(tf) + side + "\n" + mse.scoreLabel(sc, cred, 0, pivotKind), xloc=xloc.bar_time, style=hi ? label.style_label_down : label.style_label_up, color=borderColor(tf), textcolor=color.white, size=size.tiny)
+            int idx = tfIdx(tf)
+            pushPivotMem(idx, hi, bTime, price)
+            if showDynTL
+                drawDynLine(tf, hi)
 
 pollLevel(string tf) =>
     if tfEnabled(tf)
         int len = trex.lenForTf(tf, mseS.atr)
         float boost = trex.thBoostForLen(len, mseS.atr)
-        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc] = request.security(syminfo.tickerid, tf, mse.bearLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
-        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc] = request.security(syminfo.tickerid, tf, mse.bullLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc, bKind, bTh] = request.security(syminfo.tickerid, tf, mse.bearLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc, uKind, uTh] = request.security(syminfo.tickerid, tf, mse.bullLevelPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
         bool newBear = bSig == 1 and bSig[1] != 1
         bool newBull = uSig == 1 and uSig[1] != 1
         if newBear
-            spawnLevel(tf, bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc)
+            spawnLevel(tf, bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc, bKind)
         if newBull
-            spawnLevel(tf, uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc)
+            spawnLevel(tf, uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc, uKind)
 
 // به‌روزرسانی تاچ / RTP / شکست
 if array.size(activeLv) > 0
@@ -143,7 +154,8 @@ if array.size(activeLv) > 0
     if array.size(activeLv) > 48
         array.shift(activeLv)
 
-array<string> tfs = mse.structureTfCodes()
+// TF بالاتر اول — فیلتر همپوشانی درست کار کند
+array<string> tfs = mse.structureTfCodesDesc()
 for i = 0 to array.size(tfs) - 1
     pollLevel(array.get(tfs, i))
 

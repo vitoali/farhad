@@ -1,0 +1,85 @@
+// Khakster Structure Strategy — ورود FTC روی پیوت Reverse
+// Publish: KhaksterTrexAtrLib + MarketStructureEngine
+//
+//@version=5
+strategy("Khakster FTC Strategy", overlay=true, pyramiding=0, default_qty_type=strategy.percent_of_equity, default_qty_value=10, initial_capital=10000, commission_type=strategy.commission.percent, commission_value=0.02)
+
+import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+import YOUR_USER/MarketStructureEngine/1 as mse
+
+grpTf = "Structure TF"
+tradeTf = input.string("240", "Pivot timeframe", options=["60", "240", "D", "W", "M"], group=grpTf)
+minScore = input.int(40, "Min level score", minval=0, maxval=100, group=grpTf)
+
+grpRisk = "Risk"
+tpThMult = input.float(3.0, "TP = TH ×", minval=1.0, maxval=6.0, step=0.5, group=grpRisk)
+slThMult = input.float(0.5, "SL pad = TH ×", minval=0.1, maxval=2.0, step=0.1, group=grpRisk)
+
+mseS = mse.defaultMseSettings()
+
+type TradeLevel
+    int birthTime
+    float pivotPrice
+    float zoneTop
+    float zoneBot
+    float ftcTop
+    float ftcBot
+    bool ftcCredible
+    bool isHigh
+    int pivotKind
+    float thPips
+    bool ftcSpent
+    bool broken
+    bool traded
+
+var array<TradeLevel> watchLv = array.new<TradeLevel>()
+var int lastBearTime = 0
+var int lastBullTime = 0
+
+int len = trex.lenForTf(tradeTf, mseS.atr)
+float boost = trex.thBoostForLen(len, mseS.atr)
+
+[bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot, bFtcT, bFtcB, bFc, bSc, bKind, bTh] = request.security(syminfo.tickerid, tradeTf, mse.bearLevelPack(mseS, len, boost, tradeTf), barmerge.gaps_off, barmerge.lookahead_off)
+[uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot, uFtcT, uFtcB, uFc, uSc, uKind, uTh] = request.security(syminfo.tickerid, tradeTf, mse.bullLevelPack(mseS, len, boost, tradeTf), barmerge.gaps_off, barmerge.lookahead_off)
+
+if bSig == 1 and bSig[1] != 1 and bTime != lastBearTime and bSc >= minScore and bKind == mse.PIVOT_REVERSE
+    lastBearTime := bTime
+    array.push(watchLv, TradeLevel.new(bTime, bPrice, bTop, bBot, bFtcT, bFtcB, bFc == 1, true, bKind, bTh, false, false, false))
+
+if uSig == 1 and uSig[1] != 1 and uTime != lastBullTime and uSc >= minScore and uKind == mse.PIVOT_REVERSE
+    lastBullTime := uTime
+    array.push(watchLv, TradeLevel.new(uTime, uPrice, uTop, uBot, uFtcT, uFtcB, uFc == 1, false, uKind, uTh, false, false, false))
+
+if array.size(watchLv) > 0
+    for i = 0 to array.size(watchLv) - 1
+        TradeLevel lv = array.get(watchLv, i)
+        if not lv.broken and not lv.traded
+            bool inFtc = mse.priceInZone(high, low, lv.ftcTop, lv.ftcBot)
+            bool wasOutFtc = not mse.priceInZone(high[1], low[1], lv.ftcTop, lv.ftcBot)
+            if inFtc and wasOutFtc
+                lv.ftcSpent := true
+            if mse.priceBreakZone(lv.isHigh, close, lv.zoneTop, lv.zoneBot)
+                lv.broken := true
+            bool touch = mse.ftcTouchSignal(lv.isHigh, high, low, high[1], low[1], lv.ftcTop, lv.ftcBot, lv.ftcCredible, lv.pivotKind, lv.broken, lv.ftcSpent)
+            if touch and strategy.position_size == 0
+                float pad = mse.trToPrice(lv.thPips * slThMult)
+                float tpDist = mse.trToPrice(lv.thPips * tpThMult)
+                float sl = lv.isHigh ? lv.zoneTop + pad : lv.zoneBot - pad
+                float tp = lv.isHigh ? lv.pivotPrice - tpDist : lv.pivotPrice + tpDist
+                if lv.isHigh
+                    strategy.entry("Short", strategy.short, comment="FTC " + trex.tfLabel(tradeTf))
+                    strategy.exit("XS", "Short", stop=sl, limit=tp)
+                else
+                    strategy.entry("Long", strategy.long, comment="FTC " + trex.tfLabel(tradeTf))
+                    strategy.exit("XL", "Long", stop=sl, limit=tp)
+                lv.traded := true
+            array.set(watchLv, i, lv)
+    if array.size(watchLv) > 32
+        array.shift(watchLv)
+
+// نمایش FTC فعال
+if barstate.islast and array.size(watchLv) > 0
+    for i = 0 to array.size(watchLv) - 1
+        TradeLevel lv = array.get(watchLv, i)
+        if not lv.broken and not lv.traded and lv.ftcCredible
+            box.new(lv.birthTime, lv.ftcTop, time, lv.ftcBot, xloc=xloc.bar_time, border_color=color.new(mse.ftcColor(), 40), bgcolor=color.new(mse.ftcColor(), 92), border_width=1)
