@@ -20,7 +20,7 @@ export type SmartMoneySettings
     int maxObKeep
 
 export defaultSmartMoneySettings() =>
-    SmartMoneySettings.new(5, 150, 24, 70.0, 5, 1, 300, 8)
+    SmartMoneySettings.new(5, 150, 24, 70.0, 5, 2, 300, 8)
 
 export zonesOverlap(float t1, float b1, float t2, float b2) =>
     not (b1 > t2 or t1 < b2)

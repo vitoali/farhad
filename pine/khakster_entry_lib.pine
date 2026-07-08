@@ -25,7 +25,7 @@ export type EntrySettings
     int maxWatched
 
 export defaultEntrySettings() =>
-    EntrySettings.new("60", "15", "5", 30, 0.5, 3.0, true, true, 32)
+    EntrySettings.new("60", "15", "5", 40, 0.5, 3.0, true, true, 32)
 
 // H1 ساختار → M15 پترن → M5 تریگر (فصل ۲ خاکستر)
 export fractalStack(string structureTf) =>
@@ -41,7 +41,7 @@ export chartIsTriggerTf(EntrySettings e) =>
     timeframe.isintraday and str.tostring(timeframe.multiplier) == e.triggerTf
 
 export levelEligible(int sig, int sc, int kind, int ftcCred, EntrySettings e) =>
-    sig == 1 and sc >= e.minStructureScore and ftcCred == 1
+    sig == 1 and sc >= e.minStructureScore and kind == mse.PIVOT_REVERSE and ftcCred == 1
 
 export priceInZone(float hi, float lo, float zTop, float zBot) =>
     mse.priceInZone(hi, lo, zTop, zBot)
