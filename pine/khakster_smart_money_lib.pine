@@ -224,5 +224,11 @@ export confluencePack(SmartMoneyState st, float zTop, float zBot, bool isHigh, S
     [ok, cnt, liq, ob, vol] = zoneConfluence(st, zTop, zBot, isHigh, s)
     [ok ? 1 : 0, cnt, liq ? 1 : 0, ob ? 1 : 0, vol ? 1 : 0]
 
+// برای request.security روی HTF: SM همان تایم‌فریم سطح (نه چارت تریگر)
+export confluencePackAtZone(float zTop, float zBot, bool isHigh, SmartMoneySettings s) =>
+    var SmartMoneyState st = newSmartMoneyState()
+    st := tickSmartMoney(st, s)
+    confluencePack(st, zTop, zBot, isHigh, s)
+
 export confluenceLabel(int cnt, bool liq, bool ob, bool vol) =>
     "SM " + str.tostring(cnt) + "/3" + (liq ? " L" : "") + (ob ? " OB" : "") + (vol ? " V" : "")

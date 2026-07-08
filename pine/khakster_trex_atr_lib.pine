@@ -106,6 +106,14 @@ export roundPips(float v) =>
 export scalePips(float v, TrexSettings s) =>
     roundPips(v * s.pipScale)
 
+// کالیبره pipScale برای کریپتو: یک «پیپ» تیرکس ≈ ۰.۰۱٪ قیمت
+export settingsForSymbol(TrexSettings s) =>
+    if isCrypto()
+        float u = pipUnit()
+        float ref = close * 0.0001
+        s.pipScale := u > 0 and ref > 0 ? u / ref : s.pipScale
+    s
+
 // ── Khakster range (TR = SMA true range; Live = HL کندل جاری) ─────────────────
 export barTr() =>
     ta.tr(true)

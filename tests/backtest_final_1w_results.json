@@ -4,10 +4,12 @@
     "wins": 1,
     "losses": 0,
     "win_rate": 100.0,
-    "total_pips": 23,
-    "avg_pips": 23.0,
+    "total_pips": 27,
+    "avg_pips": 27.0,
     "pivots": 33,
-    "sm_min": 2
+    "sm_min": 2,
+    "min_score": 40,
+    "session_filter": true
   },
   "BTCUSD": {
     "trades": 0,
@@ -15,6 +17,8 @@
     "total_pips": 0.0,
     "avg_pips": 0.0,
     "pivots": 20,
-    "sm_min": 2
+    "sm_min": 2,
+    "min_score": 50,
+    "session_filter": false
   }
 }

@@ -51,14 +51,38 @@ PIP_FX = 0.0001
 class FinalSettings:
     min_sm: int = 2
     min_score: int = 40
+    min_score_crypto: int = 50
     use_ftc: bool = True
     use_candle: bool = True
+    use_session_filter: bool = True
+    london_start: int = 7
+    london_end: int = 16
+    ny_start: int = 13
+    ny_end: int = 21
     structure_minutes: int = 60
     trigger_minutes: int = 5
 
 
 def pip_unit(price: float, symbol: str) -> float:
-    return 1.0 if "BTC" in symbol.upper() else PIP_FX
+    if "BTC" in symbol.upper():
+        # کالیبره مشابه trex.settingsForSymbol: ۱ پیپ ≈ ۰.۰۱٪ قیمت
+        return max(price * 0.0001, 0.01)
+    return PIP_FX
+
+
+def effective_min_score(symbol: str, fs: FinalSettings) -> int:
+    if "BTC" in symbol.upper():
+        return max(fs.min_score, fs.min_score_crypto)
+    return fs.min_score
+
+
+def in_trading_session(ts: pd.Timestamp, symbol: str, fs: FinalSettings) -> bool:
+    if not fs.use_session_filter or "BTC" in symbol.upper():
+        return True
+    h = ts.hour
+    in_lon = fs.london_start <= h < fs.london_end
+    in_ny = fs.ny_start <= h < fs.ny_end
+    return in_lon or in_ny
 
 
 def to_pips(dist: float, unit: float) -> float:
@@ -170,6 +194,7 @@ def run_final_backtest(
     ms: MseSettings,
 ) -> tuple[list[Trade], list[StructureLevel]]:
     unit = pip_unit(m5["close"].iloc[-1], symbol)
+    min_sc = effective_min_score(symbol, fs)
     levels_raw = detect_pivots_on_df(h1, ms)
     active: list[StructureLevel] = []
     trades: list[Trade] = []
@@ -182,7 +207,7 @@ def run_final_backtest(
             lv = levels_raw[level_idx]
             idx = m5.index.get_indexer([t], method="pad")[0]
             sm_ok, _ = sm_confirms(lv.zone_top, lv.zone_bot, lv.is_high, m5, max(idx, 0))
-            if lv.score >= fs.min_score and lv.ftc_cred and sm_ok:
+            if lv.score >= min_sc and lv.ftc_cred and sm_ok and in_trading_session(t, symbol, fs):
                 active.append(lv)
             level_idx += 1
 
@@ -203,7 +228,7 @@ def run_final_backtest(
                 trades.append(ot)
                 open_trade = None
 
-        if open_trade is None:
+        if open_trade is None and in_trading_session(t, symbol, fs):
             i = m5.index.get_loc(t)
             for lv in active:
                 if lv.broken or lv.traded_ftc or lv.traded_rtp:
@@ -289,6 +314,8 @@ def main():
         stats = summarize(trades)
         stats["pivots"] = len(pivots)
         stats["sm_min"] = fs.min_sm
+        stats["min_score"] = effective_min_score(sym, fs)
+        stats["session_filter"] = fs.use_session_filter and "EUR" in sym
         results[label] = stats
         print(json.dumps(stats, indent=2))
         if trades:

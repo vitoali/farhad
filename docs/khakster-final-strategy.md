@@ -47,6 +47,15 @@ Publish به ترتیب:
 5. CandleRecognitionLib
 6. `khakster_final_strategy.pine`
 
+## بهبودهای اعمال‌شده
+
+| ویژگی | توضیح |
+|--------|--------|
+| **فیلتر سشن (FX)** | لندن ۰۷–۱۶ UTC / نیویورک ۱۳–۲۱ UTC — فقط روی فارکس |
+| **SM روی HTF** | `request.security` + `confluencePackAtZone` — نه چارت تریگر |
+| **pipScale BTC** | `trex.settingsForSymbol()` — ۱ پیپ ≈ ۰.۰۱٪ قیمت |
+| **حداقل امتیاز BTC** | `max(minScore, 50)` برای کریپتو |
+
 ## بک‌تست آفلاین (۱ هفته)
 
 ```bash
@@ -55,16 +64,6 @@ python3 tests/backtest_final_strategy.py
 
 خروجی: `tests/backtest_final_1w_results.json`
 
-## پیشنهادهای اضافه (برای اجرای بهتر)
-
-| پیشنهاد | چرا |
-|---------|-----|
-| **Alert** جدا برای BUY/SELL | اتصال به بات |
-| **فیلتر سشن** (لندن/نیویورک) | کیفیت SMC روی FX |
-| **حداکثر ۱ پوزیشن per سطح** | الان هست |
-| **SM روی HTF با security** | دقت بیشتر؛ فعلاً SM روی چارت تریگر |
-| **کالیبره pipScale برای BTC** | در TrexSettings |
-
 ## جدول گوشه چارت
 
-نمایش: جفت TF فعال، SM min، آیا قیمت در سطح است، تعداد سطوح فعال.
+نمایش: جفت TF فعال، SM روی HTF، حداقل امتیاز، سشن (FX)، آیا قیمت در سطح است، تعداد سطوح فعال.
