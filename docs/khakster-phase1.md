@@ -50,6 +50,10 @@
 
 - FTC / RTP / امتیاز اعتبار / خط داینامیک — [`khakster-phase2.md`](khakster-phase2.md)
 
-## فاز ۳ (فعلی)
+## فاز ۳
 
 - نوع پیوت / همپوشانی TF / استراتژی FTC — [`khakster-phase3.md`](khakster-phase3.md)
+
+## فاز ۴ (فعلی)
+
+- EntryLib + H1/M5 strategy + بک‌تست آفلاین — [`khakster-phase4.md`](khakster-phase4.md)

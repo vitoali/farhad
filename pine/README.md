@@ -30,6 +30,10 @@ if cr.isPatternActive(37, s)  // Morning Star
 
 **`market_structure_engine.pine`** → `MarketStructureEngine` — پیوت (ATR دقیق بعد از import ipooya)
 
+**`khakster_entry_lib.pine`** → `KhaksterEntryLib` — تریگر FTC/RTP (H1 ساختار + M5 ورود)
+
+**`khakster_h1_m5_strategy.pine`** — استراتژی روی چارت M5
+
 **`trex_atr_panel.pine`** — فقط یادآوری؛ از ipooya استفاده کنید
 
 Formulas: [`docs/khakster-atr-formulas.md`](../docs/khakster-atr-formulas.md)

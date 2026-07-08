@@ -1,0 +1,16 @@
+{
+  "symbol": "EURUSD",
+  "structure_tf": "H1",
+  "trigger_tf": "M5",
+  "bars_m5": 16628,
+  "bars_h1": 1394,
+  "pivots": 292,
+  "trades": 38,
+  "wins": 20,
+  "losses": 18,
+  "win_rate": 52.6,
+  "total_pips": 137,
+  "avg_pips": 3.6,
+  "ftc_trades": 28,
+  "rtp_trades": 10
+}

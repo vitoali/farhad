@@ -76,5 +76,10 @@ pivotKind, thPips
 
 1. Publish `KhaksterTrexAtrLib`
 2. Publish `MarketStructureEngine` (فاز ۳)
-3. اندیکاتور `market_structure_chart.pine` یا استراتژی `khakster_structure_strategy.pine`
-4. `YOUR_USER` را با نام کاربری TradingView عوض کنید
+3. Publish `KhaksterEntryLib` (فاز ۴)
+4. اندیکاتور `market_structure_chart.pine` یا استراتژی `khakster_h1_m5_strategy.pine` (چارت M5)
+5. `YOUR_USER` را با نام کاربری TradingView عوض کنید
+
+## فاز بعدی
+
+- کتابخانه استراتژی نهایی (بعد از EntryLib)

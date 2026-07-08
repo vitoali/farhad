@@ -198,10 +198,12 @@ class TestPineStatic(unittest.TestCase):
         self.assertIn("p.pivotKind)", mse)
 
     def test_version_and_library_decl(self):
-        for path in (MSE, CHART, STRAT):
+        paths = list((ROOT / "pine").glob("*.pine"))
+        for path in paths:
             text = path.read_text()
             self.assertRegex(text, r"//@version=5")
-        self.assertIn('library("MarketStructureEngine"', MSE.read_text())
+        self.assertIn('library("MarketStructureEngine"', (ROOT / "pine/market_structure_engine.pine").read_text())
+        self.assertIn('library("KhaksterEntryLib"', (ROOT / "pine/khakster_entry_lib.pine").read_text())
 
     def test_tf_desc_poll_order(self):
         chart = CHART.read_text()
