@@ -13,11 +13,14 @@ import dorkadehali/CandleRecognitionLib/1 as cr
 grpPair = "TF Pair"
 pairMode = input.string("H1 + M5", "Structure + Trigger", options=["H4 + M15", "H1 + M5", "D + H1", "W + H4"], group=grpPair)
 
-[stTf, trTf, patTf] = switch pairMode
-    "H4 + M15" => ["240", "15", "60"]
-    "D + H1"   => ["D", "60", "240"]
-    "W + H4"   => ["W", "240", "D"]
-    => ["60", "5", "15"]
+tfTriplet(string mode) =>
+    switch mode
+        "H4 + M15" => ["240", "15", "60"]
+        "D + H1"   => ["D", "60", "240"]
+        "W + H4"   => ["W", "240", "D"]
+        => ["60", "5", "15"]
+
+[stTf, trTf, patTf] = tfTriplet(pairMode)
 
 grpHtf = "HTF scan (ساختار خاکستر)"
 useMn = input.bool(false, "Mn", group=grpHtf, inline="htf")
