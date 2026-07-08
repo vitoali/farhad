@@ -152,11 +152,15 @@ export patBearishEngulfing(Settings s) =>
     classic or exception
 
 // Dark Cloud — Ch.4: open above prior high; close below midpoint of white body.
-export patDarkCloudCover(Settings _s) =>
-    isBull(open[1], close[1]) and isBear(open, close) and open > high[1] and close < (close[1] + open[1]) / 2 and close > open[1]
+export patDarkCloudCover(Settings s) =>
+    float priorBody = body(open[1], close[1])
+    float pierceLevel = close[1] - priorBody * s.piercePct
+    isBull(open[1], close[1]) and isBear(open, close) and open > high[1] and close < pierceLevel and close > open[1]
 
-export patPiercingPattern(Settings _s) =>
-    isBear(open[1], close[1]) and isBull(open, close) and open < low[1] and close > (close[1] + open[1]) / 2 and close < open[1]
+export patPiercingPattern(Settings s) =>
+    float priorBody = body(open[1], close[1])
+    float pierceLevel = close[1] + priorBody * s.piercePct
+    isBear(open[1], close[1]) and isBull(open, close) and open < low[1] and close > pierceLevel and close < open[1]
 
 export patBullishHarami(Settings s) =>
     isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and body(open, close) <= body(open[1], close[1]) * s.haramiMaxBodyRatio and high < open[1] and low > close[1]
@@ -198,16 +202,16 @@ export patBullishSeparatingLines(Settings s) =>
 export patBearishSeparatingLines(Settings s) =>
     isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBear(open, close) and nearEqual(open, open[1], s.tweezerPct) and close < close[1]
 
-export patUpsideWindow(Settings _s) =>
+export patUpsideWindow() =>
     gapUp(high[1], low)
 
-export patDownsideWindow(Settings _s) =>
+export patDownsideWindow() =>
     gapDown(low[1], high)
 
-export patUpwardGappingTasuki(Settings _s) =>
+export patUpwardGappingTasuki() =>
     isBull(open[1], close[1]) and isBear(open, close) and gapUp(high[1], low) and open >= open[1] and open <= close[1] and close < open[1]
 
-export patDownwardGappingTasuki(Settings _s) =>
+export patDownwardGappingTasuki() =>
     isBear(open[1], close[1]) and isBull(open, close) and gapDown(low[1], high) and open <= open[1] and open >= close[1] and close > open[1]
 
 export patUpgapSideBySideWhite(Settings s) =>
@@ -235,16 +239,16 @@ export patAbandonedBabyTop(Settings s) =>
 export patAbandonedBabyBottom(Settings s) =>
     isBear(open[2], close[2]) and isDoji(open[1], high[1], low[1], close[1], s) and isBull(open, close) and gapDown(low[2], high[1]) and gapUp(high[1], low)
 
-export patThreeBlackCrows(Settings _s) =>
+export patThreeBlackCrows() =>
     isBear(open[2], close[2]) and isBear(open[1], close[1]) and isBear(open, close) and open[1] <= open[2] and open[1] >= close[2] and open <= open[1] and open >= close[1] and close < close[1] and close < close[2] and close <= low[1] and close <= low
 
-export patUpsideGapTwoCrows(Settings _s) =>
+export patUpsideGapTwoCrows() =>
     isBull(open[2], close[2]) and isBear(open[1], close[1]) and isBear(open, close) and gapUp(high[2], low[1]) and open[1] > open[2] and open <= open[1] and open >= close[1] and close < close[1] and close > open[2]
 
-export patThreeWhiteSoldiers(Settings _s) =>
+export patThreeWhiteSoldiers() =>
     isBull(open[2], close[2]) and isBull(open[1], close[1]) and isBull(open, close) and close > close[1] and close[1] > close[2] and open[1] >= open[2] and open[1] <= close[2] and open >= open[1] and open <= close[1]
 
-export patAdvanceBlock(Settings _s) =>
+export patAdvanceBlock() =>
     isBull(open[2], close[2]) and isBull(open[1], close[1]) and isBull(open, close) and close > close[1] and close[1] > close[2] and body(open, close) < body(open[1], close[1]) and body(open[1], close[1]) < body(open[2], close[2])
 
 export patStalledPattern(Settings s) =>
@@ -284,11 +288,11 @@ export patThreeRiverBottom(Settings s) =>
     float loLt = ta.lowest(low, s.longTermBars)
     loLt == low[10] and nearEqual(low, low[5], s.tweezerPct * 3) and nearEqual(low[5], low[10], s.tweezerPct * 3)
 
-export patThreeBuddhaTop(Settings _s) =>
-    high[10] < high[5] and nearEqual(high, high[10], _s.tweezerPct * 3) and high[5] > high and high[5] > high[10]
+export patThreeBuddhaTop(Settings s) =>
+    high[10] < high[5] and nearEqual(high, high[10], s.tweezerPct * 3) and high[5] > high and high[5] > high[10]
 
-export patInvertedThreeBuddhaBottom(Settings _s) =>
-    low[10] > low[5] and nearEqual(low, low[10], _s.tweezerPct * 3) and low[5] < low and low[5] < low[10]
+export patInvertedThreeBuddhaBottom(Settings s) =>
+    low[10] > low[5] and nearEqual(low, low[10], s.tweezerPct * 3) and low[5] < low and low[5] < low[10]
 
 export patTowerTop(Settings s) =>
     float hi6 = ta.highest(high, 6)
@@ -526,10 +530,10 @@ export patternFlags(Settings s) =>
     array.set(f, 28, patThrusting(s))
     array.set(f, 29, patBullishSeparatingLines(s))
     array.set(f, 30, patBearishSeparatingLines(s))
-    array.set(f, 31, patUpsideWindow(s))
-    array.set(f, 32, patDownsideWindow(s))
-    array.set(f, 33, patUpwardGappingTasuki(s))
-    array.set(f, 34, patDownwardGappingTasuki(s))
+    array.set(f, 31, patUpsideWindow())
+    array.set(f, 32, patDownsideWindow())
+    array.set(f, 33, patUpwardGappingTasuki())
+    array.set(f, 34, patDownwardGappingTasuki())
     array.set(f, 35, patUpgapSideBySideWhite(s))
     array.set(f, 36, patDowngapSideBySideWhite(s))
     array.set(f, 37, patMorningStar(s))
@@ -538,10 +542,10 @@ export patternFlags(Settings s) =>
     array.set(f, 40, patEveningDojiStar(s))
     array.set(f, 41, patAbandonedBabyTop(s))
     array.set(f, 42, patAbandonedBabyBottom(s))
-    array.set(f, 43, patThreeBlackCrows(s))
-    array.set(f, 44, patUpsideGapTwoCrows(s))
-    array.set(f, 45, patThreeWhiteSoldiers(s))
-    array.set(f, 46, patAdvanceBlock(s))
+    array.set(f, 43, patThreeBlackCrows())
+    array.set(f, 44, patUpsideGapTwoCrows())
+    array.set(f, 45, patThreeWhiteSoldiers())
+    array.set(f, 46, patAdvanceBlock())
     array.set(f, 47, patStalledPattern(s))
     array.set(f, 48, patTriStarTop(s))
     array.set(f, 49, patTriStarBottom(s))
