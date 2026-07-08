@@ -22,18 +22,16 @@ if cr.isPatternActive(37, s)  // Morning Star
 
 ## Khakster TRex ATR
 
-**`khakster_trex_atr_lib.pine`** → publish as `KhaksterTrexAtrLib`
+**ATR دقیق (پیشنهادی):** اندیکاتور جامعه TradingView
 
-- TR / TH / Live per fractal TF (M1→Mn)
-- Forex pips + crypto mintick
-- Candle class (Spinning / Standard / LongBar / Spike)
+- [ATR TRex [ipooya]](https://www.tradingview.com/script/MeOUBz32-ATR-TRex-ipooya/) — مستقیم روی چارت Add کنید
+- راهنما: [`docs/trex-atr-tradingview-fa.md`](../docs/trex-atr-tradingview-fa.md)
 
-**`trex_atr_panel.pine`** — panel like MT5 TRex indicator
+**`khakster_trex_atr_lib.pine`** → `KhaksterTrexAtrLib` — فقط helpers (پیپ، کلاس کندل، TF)
 
-**`market_structure_engine.pine`** → publish as `MarketStructureEngine`
+**`market_structure_engine.pine`** → `MarketStructureEngine` — پیوت (ATR دقیق بعد از import ipooya)
 
-- Pivot detection using Khakster ATR rules
-- Import `KhaksterTrexAtrLib`
+**`trex_atr_panel.pine`** — فقط یادآوری؛ از ipooya استفاده کنید
 
 Formulas: [`docs/khakster-atr-formulas.md`](../docs/khakster-atr-formulas.md)
 

@@ -1,6 +1,9 @@
 # Khakster TRex ATR — Formulas
 
-Based on Saeed Khakster Trigger Price Action (Trex), community Pine ports, and calibration vs MT5 `TRex.ex5`.
+> **ATR display:** use TradingView community indicator **ATR TRex [ipooya]**  
+> Guide: [`trex-atr-tradingview-fa.md`](trex-atr-tradingview-fa.md)
+
+`khakster_trex_atr_lib.pine` provides helpers only; `fetchMetrics()` is approximate.
 
 ## Files
 

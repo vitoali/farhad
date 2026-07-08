@@ -1,74 +1,15 @@
-// پنل TRex ATR — نمایش اعداد مشابه اندیکاتور سعید خاکستر (MT5)
-// Forex + Crypto | تایم‌های فرکتالی M1→Mn
+// ⚠️ این فایل دیگر ATR محاسبه نمی‌کند.
+// برای اعداد دقیق خاکستر، اندیکاتور جامعه TradingView را مستقیم اضافه کنید:
 //
-// Publish library first: KhaksterTrexAtrLib
-// import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+//   Indicators → جستجو: "ATR TRex ipooya"
+//   https://www.tradingview.com/script/MeOUBz32-ATR-TRex-ipooya/
+//
+// راهنمای کامل: docs/trex-atr-tradingview-fa.md
 //
 //@version=5
-indicator("TRex ATR Panel [Khakster]", overlay=true, max_labels_count=500)
+indicator("TRex ATR — Use Community Indicator", overlay=true)
 
-import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+showHint = input.bool(true, "Show setup hint on chart")
 
-s = trex.defaultSettings()
-
-showPanel = input.bool(true, "Show TRex panel")
-showSteps = input.bool(false, "Show movement steps (LS/SS)")
-posY = input.string("top", "Panel position", options=["top", "bottom"])
-
-// ── MTF metrics ────────────────────────────────────────────────────────────────
-m1 = trex.fetchMetrics("1", s)
-m5 = trex.fetchMetrics("5", s)
-m15 = trex.fetchMetrics("15", s)
-h1 = trex.fetchMetrics("60", s)
-h4 = trex.fetchMetrics("240", s)
-d1 = trex.fetchMetrics("D", s)
-w1 = trex.fetchMetrics("W", s)
-mn = trex.fetchMetrics("M", s)
-
-stTf = trex.structureTf()
-ptTf = trex.patternTf(stTf)
-trTf = trex.triggerTf(stTf)
-ms = trex.fetchMetrics(stTf, s)
-mp = trex.fetchMetrics(ptTf, s)
-mt = trex.fetchMetrics(trTf, s)
-
-// Pips(ATR) & TP(Th) — سه سطح ساختار/الگو/تریگر (مطابق تمپلیت TRex)
-pipsAtr1 = math.round(ms.tpTh * s.pipsAtrRatio)
-pipsAtr2 = math.round(mp.tpTh * s.pipsAtrRatio)
-pipsAtr3 = math.round(mt.tpTh * s.pipsAtrRatio)
-tpTh1 = ms.tpTh
-tpTh2 = mp.tpTh
-tpTh3 = mt.tpTh
-
-engSl = math.round(ms.tr * s.engSlPct)
-pivotSl = ms.pivotSl
-
-fmtPair(float trV, float liveV) =>
-    str.tostring(int(trV)) + " ==> " + str.tostring(int(liveV))
-
-fmtTh(float v) =>
-    str.tostring(int(v))
-
-var table panel = na
-if showPanel and barstate.islast
-    if not na(panel)
-        table.delete(panel)
-    panel := table.new(posY == "top" ? position.top_center : position.bottom_center, 1, 12, bgcolor=color.new(color.black, 15), border_width=1)
-
-    string trRow = "[True Range]  M1:" + fmtPair(m1.tr, m1.live) + "  M5:" + fmtPair(m5.tr, m5.live) + "  M15:" + fmtPair(m15.tr, m15.live) + "  H1:" + fmtPair(h1.tr, h1.live) + "  H4:" + fmtPair(h4.tr, h4.live) + "  D1:" + fmtPair(d1.tr, d1.live) + "  W1:" + fmtPair(w1.tr, w1.live) + "  Mn:" + fmtPair(mn.tr, mn.live)
-    string slRow = "Pivot SL: " + str.tostring(pivotSl) + "   Eng SL: " + str.tostring(engSl) + "   Pips(ATR): [ " + str.tostring(pipsAtr1) + " -- " + str.tostring(pipsAtr2) + " -- " + str.tostring(pipsAtr3) + " ]   TP(Th): [ " + str.tostring(tpTh1) + " -- " + str.tostring(tpTh2) + " -- " + str.tostring(tpTh3) + " ]"
-    string thRow = "[توان حرکتی Th]  M1:" + fmtTh(m1.th) + "  M5:" + fmtTh(m5.th) + "  M15:" + fmtTh(m15.th) + "  H1:" + fmtTh(h1.th) + "  H4:" + fmtTh(h4.th) + "  D1:" + fmtTh(d1.th) + "  W1:" + fmtTh(w1.th) + "  Mn:" + fmtTh(mn.th)
-
-    table.cell(panel, 0, 0, trRow, text_color=color.fuchsia, text_size=size.small)
-    table.cell(panel, 0, 1, slRow, text_color=color.fuchsia, text_size=size.small)
-    table.cell(panel, 0, 2, thRow, text_color=color.white, text_size=size.small)
-    table.cell(panel, 0, 3, "Chart TF TR: " + str.tostring(int(ms.tr)) + " | Th: " + str.tostring(int(ms.th)) + " | Live: " + str.tostring(int(ms.live)) + " | Class: " + trex.candleClassName(trex.candleClass(ms.live, ms.tr, s)), text_color=color.silver, text_size=size.tiny)
-
-    if showSteps
-        table.cell(panel, 0, 4, "LS (long step): " + str.tostring(int(ms.th * 2)) + "  SS (short step): " + str.tostring(int(ms.th)), text_color=color.gray, text_size=size.tiny)
-
-// ── Optional: رنگ کندل بر اساس کلاس (مثل TRex) ───────────────────────────────
-colorCandles = input.bool(false, "Color bars by TRex candle class")
-cls = trex.candleClass(trex.roundPips(trex.toPips(trex.barHl())), ms.tr, s)
-barCol = cls == 1 ? color.gray : cls == 2 ? color.blue : cls == 3 ? color.orange : cls == 4 ? color.red : na
-barcolor(colorCandles ? barCol : na)
+if showHint and barstate.islast
+    label.new(bar_index, high, "ATR: Add 'ATR TRex [ipooya]' from Indicators\n(docs/trex-atr-tradingview-fa.md)", style=label.style_label_down, color=color.new(color.purple, 20), textcolor=color.white, size=size.normal)

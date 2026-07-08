@@ -1,10 +1,14 @@
-// کتابخانه ATR تیرکس — سبک سعید خاکستر (Trigger Price Action / TRex)
-// TR = میانگین حرکت کندل | TH = توان حرکتی (APR) | Live = حرکت کندل جاری
-// دوره‌های فرکتالی بر اساس آموزش خاکستر + جامعه TradingView
+// کتابخانه کمکی تیرکس — سبک سعید خاکستر
 //
-// Strategy:
-//   import YOUR_USER/KhaksterTrexAtrLib/1 as atr
-//   h1 = atr.metrics("60", atr.defaultSettings())
+// ⚠️ ATR دقیق: از اندیکاتور جامعه TradingView استفاده کنید:
+//    "ATR TRex [ipooya]" — https://www.tradingview.com/script/MeOUBz32-ATR-TRex-ipooya/
+//    راهنما: docs/trex-atr-tradingview-fa.md
+//
+// این فایل فقط ابزار کمکی است (پیپ، کلاس کندل، TF فرکتالی).
+// fetchMetrics() تقریبی است — برای اعداد دقیق سورس ipooya را به Library تبدیل کنید.
+//
+// Strategy (helpers):
+//   import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 //
 //@version=5
 library("KhaksterTrexAtrLib", overlay=true)
