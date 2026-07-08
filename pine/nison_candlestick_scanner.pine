@@ -1,0 +1,91 @@
+// TradingView indicator — scans all Nison candlestick patterns on chart.
+// STEP 1: Publish pine/nison_candlestick_patterns.pine as a library on TradingView.
+// STEP 2: Replace the import line below with your published library path.
+//@version=5
+indicator("Nison Candlestick Pattern Scanner", overlay=true, max_labels_count=500)
+
+import farhad/NisonCandlestickPatterns/1 as nison
+
+// ── Settings ───────────────────────────────────────────────────────────────────
+grpGeneral = "تنظیمات عمومی"
+dojiPct     = input.float(0.10, "آستانه دوجی (% از رنج)", minval=0.01, maxval=0.30, step=0.01, group=grpGeneral)
+smallBody   = input.float(0.30, "بدنه کوچک (% از رنج)", minval=0.10, maxval=0.50, step=0.01, group=grpGeneral)
+longBody    = input.float(0.60, "بدنه بلند (% از رنج)", minval=0.40, maxval=0.90, step=0.01, group=grpGeneral)
+shadowRatio = input.float(2.0, "نسبت سایه به بدنه (چکش/ستاره)", minval=1.0, maxval=4.0, step=0.1, group=grpGeneral)
+trendBars   = input.int(5, "دوره تشخیص روند", minval=2, maxval=20, group=grpGeneral)
+longTerm    = input.int(20, "دوره الگوهای بلندمدت", minval=10, maxval=60, group=grpGeneral)
+
+grpDisplay = "نمایش"
+showLabels  = input.bool(true, "نمایش برچسب روی چارت", group=grpDisplay)
+showTable   = input.bool(true, "نمایش جدول الگوهای فعال", group=grpDisplay)
+bullColor   = input.color(color.new(color.teal, 0), "رنگ صعودی", group=grpDisplay)
+bearColor   = input.color(color.new(color.red, 0), "رنگ نزولی", group=grpDisplay)
+neutColor   = input.color(color.new(color.orange, 0), "رنگ خنثی", group=grpDisplay)
+labelSize   = input.string(size.tiny, "اندازه برچسب", options=[size.tiny, size.small, size.normal], group=grpDisplay)
+
+grpFilter = "فیلتر دسته‌بندی"
+showSingle   = input.bool(true, "تک‌کندلی", group=grpFilter)
+showDouble   = input.bool(true, "دو‌کندلی", group=grpFilter)
+showTriple   = input.bool(true, "سه‌کندلی", group=grpFilter)
+showMulti    = input.bool(true, "چندکندلی / بلندمدت", group=grpFilter)
+
+s = nison.Settings.new(dojiPct, smallBody, longBody, shadowRatio, 0.50, smallBody, 0.001, trendBars, longTerm)
+
+inCategory(int id) =>
+    single = id <= 13
+    double = id >= 14 and id <= 36
+    triple = id >= 37 and id <= 55
+    multi  = id >= 56
+    (single and showSingle) or (double and showDouble) or (triple and showTriple) or (multi and showMulti)
+
+patternColor(int id) =>
+    nison.patternBullish(id) ? bullColor : nison.patternBearish(id) ? bearColor : neutColor
+
+// ── Scan all patterns ──────────────────────────────────────────────────────────
+var label[] activeLabels = array.new<label>()
+
+if barstate.islast and showLabels
+    for lb in activeLabels
+        label.delete(lb)
+    array.clear(activeLabels)
+
+string activeList = ""
+int activeCount = 0
+
+for i = 0 to nison.patternCount(s)
+    if nison.isPatternActive(i, s) and inCategory(i)
+        activeCount += 1
+        name = nison.patternName(i)
+        activeList += (activeList == "" ? "" : "\n") + name
+        if showLabels and array.size(activeLabels) < 40
+            y = nison.patternBullish(i) ? low : nison.patternBearish(i) ? high : close
+            style = nison.patternBullish(i) ? label.style_label_up : nison.patternBearish(i) ? label.style_label_down : label.style_label_left
+            lb = label.new(bar_index, y, name, color=patternColor(i), textcolor=color.white, style=style, size=labelSize)
+            array.push(activeLabels, lb)
+
+// ── Info table ───────────────────────────────────────────────────────────────────
+var table infoTable = table.new(position.top_right, 2, 12, bgcolor=color.new(color.black, 80), border_width=1)
+
+if barstate.islast and showTable
+    table.cell(infoTable, 0, 0, "الگوی کندلی (نیسون)", text_color=color.white, text_size=size.small)
+    table.cell(infoTable, 1, 0, str.tostring(activeCount) + " فعال", text_color=color.yellow, text_size=size.small)
+    int row = 1
+    for i = 0 to nison.patternCount(s)
+        if nison.isPatternActive(i, s) and inCategory(i) and row < 12
+            c = patternColor(i)
+            table.cell(infoTable, 0, row, nison.patternName(i), text_color=c, text_size=size.tiny)
+            dir = nison.patternBullish(i) ? "صعودی" : nison.patternBearish(i) ? "نزولی" : "خنثی"
+            table.cell(infoTable, 1, row, dir, text_color=c, text_size=size.tiny)
+            row += 1
+
+// ── Strategy-ready exports (for use in strategies importing this logic) ──────────
+plot(nison.firstActivePattern(s), "First Pattern ID", display=display.none)
+plot(nison.activePatternTotal(s), "Active Pattern Count", display=display.none)
+
+// Alert conditions for key bullish/bearish patterns
+alertcondition(nison.isPatternActive(14, s), "Bullish Engulfing", "Bullish Engulfing detected")
+alertcondition(nison.isPatternActive(15, s), "Bearish Engulfing", "Bearish Engulfing detected")
+alertcondition(nison.isPatternActive(37, s), "Morning Star", "Morning Star detected")
+alertcondition(nison.isPatternActive(38, s), "Evening Star", "Evening Star detected")
+alertcondition(nison.isPatternActive(6, s), "Hammer", "Hammer detected")
+alertcondition(nison.isPatternActive(7, s), "Hanging Man", "Hanging Man detected")
