@@ -1,14 +1,14 @@
-// This Pine Script™ library detects candlestick patterns from
-// Steve Nison — Japanese Candlestick Charting Techniques.
+// کتابخانه کندل‌شناس (Candle Recognition Library)
+// Steve Nison — Japanese Candlestick Charting Techniques
+// 64 patterns | formulas: body/range ratios, wick/body, midpoint pierce, trend context
 //
-// Reference priority:
-//   1. English original (pattern rules & thresholds) — Ch. 3–8
-//   2. Persian KohanFx full PDF — display names (patternNameFa)
-//   3. Bilingual abridged PDF — supplementary notes / Persian gloss
+// Strategy usage:
+//   import YOUR_USER/CandleRecognitionLib/1 as cr
+//   s = cr.defaultSettings()
+//   if cr.isPatternActive(37, s) and cr.patternKind(37) == 0 ...
 //
-// Publish as Library on TradingView, then import in strategies/indicators.
 //@version=5
-library("NisonCandlestickPatterns", overlay=true)
+library("CandleRecognitionLib", overlay=true)
 
 // ── Tunable thresholds (Nison allows subjectivity; these are sensible defaults) ──
 export type Settings
@@ -19,11 +19,14 @@ export type Settings
     float piercePct
     float starBodyPct
     float tweezerPct
+    float haramiMaxBodyRatio
+    float maxOppWickRatio
+    float bodyEdgePct
     int trendBars
     int longTermBars
 
 export defaultSettings() =>
-    Settings.new(0.10, 0.30, 0.60, 2.0, 0.50, 0.30, 0.001, 5, 20)
+    Settings.new(0.10, 0.30, 0.60, 2.0, 0.50, 0.30, 0.001, 0.60, 1.0, 0.25, 5, 20)
 
 // ── Candle anatomy ─────────────────────────────────────────────────────────────
 export body(float o, float c) =>
@@ -75,6 +78,22 @@ export bodyEngulfs(float o0, float c0, float o1, float c1) =>
 export tinyRealBody(float o, float h, float l, float c, Settings s) =>
     isSmallBody(o, h, l, c, s) or isDoji(o, h, l, c, s)
 
+// Body sits in upper/lower portion of range (Nison / Bulkowski hammer criteria).
+export bodyNearTop(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and upperShadow(o, h, c) <= rng(h, l) * s.bodyEdgePct
+
+export bodyNearBottom(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and lowerShadow(o, l, c) <= rng(h, l) * s.bodyEdgePct
+
+export bodyRatio(float o, float h, float l, float c) =>
+    rng(h, l) > 0 ? body(o, c) / rng(h, l) : 0.0
+
+export lowerWickRatio(float o, float h, float l, float c) =>
+    body(o, c) > 0 ? lowerShadow(o, l, c) / body(o, c) : 0.0
+
+export upperWickRatio(float o, float h, float l, float c) =>
+    body(o, c) > 0 ? upperShadow(o, h, c) / body(o, c) : 0.0
+
 // ── Single-candle patterns (Chapter 3–4, 8) ────────────────────────────────────
 export patDoji(float o, float h, float l, float c, Settings s) =>
     isDoji(o, h, l, c, s)
@@ -83,10 +102,10 @@ export patLongLeggedDoji(float o, float h, float l, float c, Settings s) =>
     isDoji(o, h, l, c, s) and upperShadow(o, h, c) > body(o, c) and lowerShadow(o, l, c) > body(o, c)
 
 export patGravestoneDoji(float o, float h, float l, float c, Settings s) =>
-    isDoji(o, h, l, c, s) and upperShadow(o, h, c) > rng(h, l) * 0.6 and lowerShadow(o, l, c) <= rng(h, l) * 0.1
+    isDoji(o, h, l, c, s) and upperShadow(o, h, c) > rng(h, l) * 0.60 and lowerShadow(o, l, c) <= rng(h, l) * 0.10
 
 export patDragonflyDoji(float o, float h, float l, float c, Settings s) =>
-    isDoji(o, h, l, c, s) and lowerShadow(o, l, c) > rng(h, l) * 0.6 and upperShadow(o, h, c) <= rng(h, l) * 0.1
+    isDoji(o, h, l, c, s) and lowerShadow(o, l, c) > rng(h, l) * 0.60 and upperShadow(o, h, c) <= rng(h, l) * 0.10
 
 export patRickshawMan(float o, float h, float l, float c, Settings s) =>
     patLongLeggedDoji(o, h, l, c, s)
@@ -95,13 +114,13 @@ export patSpinningTop(float o, float h, float l, float c, Settings s) =>
     rng(h, l) > 0 and isSmallBody(o, h, l, c, s) and upperShadow(o, h, c) > body(o, c) and lowerShadow(o, l, c) > body(o, c)
 
 export patHammer(float o, float h, float l, float c, Settings s) =>
-    rng(h, l) > 0 and lowerShadow(o, l, c) >= body(o, c) * s.shadowRatio and upperShadow(o, h, c) <= body(o, c) * 0.5 and isSmallBody(o, h, l, c, s)
+    rng(h, l) > 0 and isSmallBody(o, h, l, c, s) and lowerShadow(o, l, c) >= body(o, c) * s.shadowRatio and upperShadow(o, h, c) <= body(o, c) * s.maxOppWickRatio and bodyNearTop(o, h, l, c, s)
 
 export patHangingMan(float o, float h, float l, float c, Settings s) =>
     patHammer(o, h, l, c, s)
 
 export patShootingStar(float o, float h, float l, float c, Settings s) =>
-    rng(h, l) > 0 and upperShadow(o, h, c) >= body(o, c) * s.shadowRatio and lowerShadow(o, l, c) <= body(o, c) * 0.5 and isSmallBody(o, h, l, c, s)
+    rng(h, l) > 0 and isSmallBody(o, h, l, c, s) and upperShadow(o, h, c) >= body(o, c) * s.shadowRatio and lowerShadow(o, l, c) <= body(o, c) * s.maxOppWickRatio and bodyNearBottom(o, h, l, c, s)
 
 export patInvertedHammer(float o, float h, float l, float c, Settings s) =>
     patShootingStar(o, h, l, c, s)
@@ -140,10 +159,10 @@ export patPiercingPattern(Settings s) =>
     isBear(open[1], close[1]) and isBull(open, close) and open < low[1] and close > (close[1] + open[1]) / 2 and close < open[1]
 
 export patBullishHarami(Settings s) =>
-    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and high < open[1] and low > close[1]
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and body(open, close) <= body(open[1], close[1]) * s.haramiMaxBodyRatio and high < open[1] and low > close[1]
 
 export patBearishHarami(Settings s) =>
-    isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and high < close[1] and low > open[1]
+    isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and body(open, close) <= body(open[1], close[1]) * s.haramiMaxBodyRatio and high < close[1] and low > open[1]
 
 export patBullishHaramiCross(Settings s) =>
     isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isDoji(open, high, low, close, s) and high < open[1] and low > close[1]

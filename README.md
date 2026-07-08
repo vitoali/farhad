@@ -6,8 +6,10 @@
 
 | فایل | کاربرد |
 |------|--------|
-| `pine/nison_candlestick_patterns.pine` | **کتابخانه اصلی شناسایی** — برای استفاده در استراتژی و اندیکاتور |
-| `pine/nison_candlestick_scanner.pine` | اندیکاتور نمایش الگوها روی چارت |
+| `pine/candle_recognition_lib.pine` | **کتابخانه کندل‌شناس** — برای استراتژی (Publish as `CandleRecognitionLib`) |
+| `pine/nison_candlestick_scanner.pine` | اندیکاتور نمایش (خط + تگ Reversal/Continuation/Context) |
+
+فرمول‌ها: [`docs/candle-recognition-formulas.md`](docs/candle-recognition-formulas.md)
 
 ## نصب سریع در TradingView
 

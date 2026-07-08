@@ -1,9 +1,8 @@
-// Nison candlestick scanner — marks patterns with lines + kind tags (no pattern names).
-// Publish pine/nison_candlestick_patterns.pine as a library first, then fix import below.
+// Nison pattern scanner — uses Candle Recognition Library (کتابخانه کندل‌شناس)
 //@version=5
-indicator("Nison Pattern Scanner", overlay=true, max_labels_count=500, max_lines_count=500)
+indicator("Candle Recognition Scanner", overlay=true, max_labels_count=500, max_lines_count=500)
 
-import farhad/NisonCandlestickPatterns/2 as nison
+import farhad/CandleRecognitionLib/1 as cr
 
 // ── Settings ───────────────────────────────────────────────────────────────────
 grpGeneral = "General"
@@ -13,6 +12,9 @@ longBody    = input.float(0.60, "Long body (% range)", minval=0.40, maxval=0.90,
 shadowRatio = input.float(2.0, "Shadow ratio (hammer/star)", minval=1.0, maxval=4.0, step=0.1, group=grpGeneral)
 trendBars   = input.int(5, "Trend lookback", minval=2, maxval=20, group=grpGeneral)
 longTerm    = input.int(20, "Long-term pattern lookback", minval=10, maxval=60, group=grpGeneral)
+haramiMax   = input.float(0.60, "Harami 2nd body max (% of 1st)", minval=0.3, maxval=0.9, step=0.05, group=grpGeneral)
+oppWickMax  = input.float(1.0, "Hammer/Star opposite wick max (× body)", minval=0.1, maxval=2.0, step=0.1, group=grpGeneral)
+bodyEdgePct = input.float(0.25, "Body near edge (% of range)", minval=0.1, maxval=0.4, step=0.05, group=grpGeneral)
 
 grpDisplay = "Display"
 showMarks   = input.bool(true, "Show lines and tags", group=grpDisplay)
@@ -32,7 +34,7 @@ showDouble = input.bool(true, "Two-candle", group=grpFilter)
 showTriple = input.bool(true, "Three-candle", group=grpFilter)
 showMulti  = input.bool(true, "Multi / long-term", group=grpFilter)
 
-s = nison.Settings.new(dojiPct, smallBody, longBody, shadowRatio, 0.50, smallBody, 0.001, trendBars, longTerm)
+s = cr.Settings.new(dojiPct, smallBody, longBody, shadowRatio, 0.50, smallBody, 0.001, haramiMax, oppWickMax, bodyEdgePct, trendBars, longTerm)
 atr = ta.atr(14)
 
 inCategory(int id) =>
@@ -43,12 +45,12 @@ inCategory(int id) =>
     (single and showSingle) or (double and showDouble) or (triple and showTriple) or (multi and showMulti)
 
 kindColor(int id) =>
-    k = nison.patternKind(id)
+    k = cr.patternKind(id)
     k == 1 ? continuationColor : k == 2 ? contextColor : reversalColor
 
 // Bullish → below; bearish → above; context → above in uptrend, below in downtrend
 markAbove(int id) =>
-    nison.patternBearish(id) ? true : nison.patternBullish(id) ? false : nison.inUptrend(s)
+    cr.patternBearish(id) ? true : cr.patternBullish(id) ? false : cr.inUptrend(s)
 
 markY(int id, int stack) =>
     pad = atr * atrMult * (stack + 1)
@@ -57,11 +59,11 @@ markY(int id, int stack) =>
 // ── Draw markers on each bar ───────────────────────────────────────────────────
 if showMarks
     int stack = 0
-    for i = 0 to nison.patternCount(s)
-        if nison.isPatternActive(i, s) and inCategory(i) and stack < 8
+    for i = 0 to cr.patternCount(s)
+        if cr.isPatternActive(i, s) and inCategory(i) and stack < 8
             col = kindColor(i)
             y = markY(i, stack)
-            tag = nison.patternKindName(i)
+            tag = cr.patternKindName(i)
             x2 = bar_index + lineLen
             line.new(bar_index, y, x2, y, xloc.bar_index, extend.none, col, line.style_solid, 2)
             lblStyle = markAbove(i) ? label.style_label_down : label.style_label_up
@@ -75,9 +77,9 @@ if barstate.islast and showTable
     int nRev = 0
     int nCont = 0
     int nCtx = 0
-    for i = 0 to nison.patternCount(s)
-        if nison.isPatternActive(i, s) and inCategory(i)
-            k = nison.patternKind(i)
+    for i = 0 to cr.patternCount(s)
+        if cr.isPatternActive(i, s) and inCategory(i)
+            k = cr.patternKind(i)
             nRev += k == 0 ? 1 : 0
             nCont += k == 1 ? 1 : 0
             nCtx += k == 2 ? 1 : 0
@@ -91,11 +93,11 @@ if barstate.islast and showTable
     table.cell(info, 1, 3, str.tostring(nCtx), text_color=contextColor, text_size=size.tiny)
 
 // ── Strategy exports ───────────────────────────────────────────────────────────
-plot(nison.firstActivePattern(s), "First Pattern ID", display=display.none)
-plot(nison.activePatternTotal(s), "Active Count", display=display.none)
+plot(cr.firstActivePattern(s), "First Pattern ID", display=display.none)
+plot(cr.activePatternTotal(s), "Active Count", display=display.none)
 
-alertcondition(nison.isPatternActive(14, s), "Reversal bullish", "Bullish reversal pattern")
-alertcondition(nison.isPatternActive(15, s), "Reversal bearish", "Bearish reversal pattern")
-alertcondition(nison.isPatternActive(51, s), "Continuation bullish", "Bullish continuation pattern")
-alertcondition(nison.isPatternActive(52, s), "Continuation bearish", "Bearish continuation pattern")
-alertcondition(nison.isPatternActive(0, s), "Context doji", "Context-dependent pattern")
+alertcondition(cr.isPatternActive(14, s), "Reversal bullish", "Bullish reversal pattern")
+alertcondition(cr.isPatternActive(15, s), "Reversal bearish", "Bearish reversal pattern")
+alertcondition(cr.isPatternActive(51, s), "Continuation bullish", "Bullish continuation pattern")
+alertcondition(cr.isPatternActive(52, s), "Continuation bearish", "Bearish continuation pattern")
+alertcondition(cr.isPatternActive(0, s), "Context doji", "Context-dependent pattern")
