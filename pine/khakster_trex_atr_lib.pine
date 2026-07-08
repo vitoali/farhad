@@ -185,8 +185,14 @@ export fetchMetrics(string tf, TrexSettings s) =>
 
 export fetchAllMetrics(TrexSettings s) =>
     array<TrexMetrics> out = array.new<TrexMetrics>()
-    for tf in allTfCodes()
-        array.push(out, fetchMetrics(tf, s))
+    array.push(out, fetchMetrics("1", s))
+    array.push(out, fetchMetrics("5", s))
+    array.push(out, fetchMetrics("15", s))
+    array.push(out, fetchMetrics("60", s))
+    array.push(out, fetchMetrics("240", s))
+    array.push(out, fetchMetrics("D", s))
+    array.push(out, fetchMetrics("W", s))
+    array.push(out, fetchMetrics("M", s))
     out
 
 export calibDelta(TrexMetrics m, TrexCalibRef r) =>
