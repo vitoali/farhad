@@ -1,0 +1,331 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════
+//  All Candlestick Patterns — شناسایی همه الگوهای کندلی
+//  شناسایی کامل الگوهای کلاسیک کندل‌استیک (تک‌کندلی، دوکندلی، سه‌کندلی و پنج‌کندلی)
+//  خروجی‌های مخفی (تعداد الگوهای صعودی/نزولی) برای استفاده به‌عنوان شرط در استراتژی
+// ═══════════════════════════════════════════════════════════════════════════
+indicator("All Candlestick Patterns — همه الگوهای کندلی", shorttitle = "Candle Patterns", overlay = true, max_labels_count = 500)
+
+// ─────────────────────────── تنظیمات عمومی ───────────────────────────
+GRP0 = "تنظیمات عمومی / General"
+TR_NONE = "بدون فیلتر / None"
+trendRule    = input.string("SMA50", "فیلتر روند / Trend filter", options = ["SMA50", "SMA50 + SMA200", "بدون فیلتر / None"], group = GRP0, tooltip = "الگوهای برگشتی فقط وقتی معتبرند که در جهت مخالف روند ظاهر شوند. SMA50: قیمت نسبت به میانگین ۵۰. بدون فیلتر: همه الگوها بدون توجه به روند نمایش داده می‌شوند.")
+patternType  = input.string("همه / All", "نوع الگوها / Pattern type", options = ["همه / All", "صعودی / Bullish", "نزولی / Bearish"], group = GRP0)
+requireGaps  = input.bool(false, "الزام گپ واقعی در الگوهای ستاره‌ای", group = GRP0, tooltip = "در بازارهای ۲۴ ساعته (کریپتو/فارکس) معمولاً گپ قیمتی وجود ندارد؛ این گزینه را خاموش نگه دارید تا الگوهای ستاره (صبحگاهی/شامگاهی و ...) بدون نیاز به گپ کامل هم شناسایی شوند.")
+enableAlerts = input.bool(true, "هشدار داینامیک با نام الگوها (alert)", group = GRP0)
+showTrendMA  = input.bool(false, "نمایش میانگین متحرک روند", group = GRP0)
+
+GRP1 = "پارامترهای تشخیص / Detection"
+bodyAvgLen  = input.int(14, "دوره میانگین بدنه کندل", minval = 2, group = GRP1, tooltip = "بدنه بزرگ‌تر از این میانگین = کندل بلند؛ کوچک‌تر = کندل کوتاه")
+dojiPct     = input.float(5.0, "حداکثر بدنه دوجی (٪ از رنج کندل)", minval = 0.1, maxval = 25, step = 0.5, group = GRP1) / 100
+shadowRatio = input.float(2.0, "حداقل نسبت سایه به بدنه (چکش، ستاره و ...)", minval = 1, step = 0.25, group = GRP1)
+eqAtrPct    = input.float(10.0, "تلورانس برابری سطوح (٪ از ATR)", minval = 0, maxval = 100, step = 5, group = GRP1, tooltip = "برای الگوهایی مثل انبرک، کف همسان و خطوط برخورد که به سطوح «برابر» نیاز دارند") / 100
+
+GRP2 = "ظاهر / Style"
+bullColor  = input.color(color.new(#089981, 0), "رنگ الگوی صعودی", group = GRP2)
+bearColor  = input.color(color.new(#f23645, 0), "رنگ الگوی نزولی", group = GRP2)
+neutColor  = input.color(color.new(#787b86, 0), "رنگ الگوی خنثی", group = GRP2)
+lblSizeOpt = input.string("کوچک / Small", "اندازه برچسب", options = ["ریز / Tiny", "کوچک / Small", "متوسط / Normal"], group = GRP2)
+lblSize    = lblSizeOpt == "ریز / Tiny" ? size.tiny : lblSizeOpt == "کوچک / Small" ? size.small : size.normal
+
+// ─────────────────────────── انتخاب الگوها ───────────────────────────
+GRP_S = "الگوهای تک‌کندلی / Single-candle"
+showDoji         = input.bool(true, "Doji — دوجی", group = GRP_S)
+showDragonfly    = input.bool(true, "Dragonfly Doji — دوجی سنجاقک", group = GRP_S)
+showGravestone   = input.bool(true, "Gravestone Doji — دوجی سنگ قبر", group = GRP_S)
+showLongLeg      = input.bool(true, "Long-Legged Doji — دوجی پابلند", group = GRP_S)
+showHammer       = input.bool(true, "Hammer — چکش", group = GRP_S)
+showHangingMan   = input.bool(true, "Hanging Man — مرد دارآویز", group = GRP_S)
+showInvHammer    = input.bool(true, "Inverted Hammer — چکش وارونه", group = GRP_S)
+showShootingStar = input.bool(true, "Shooting Star — ستاره دنباله‌دار", group = GRP_S)
+showMarubozu     = input.bool(true, "Marubozu — ماروبوزو", group = GRP_S)
+showSpinningTop  = input.bool(true, "Spinning Top — فرفره", group = GRP_S)
+showHighWave     = input.bool(true, "High Wave — موج بلند", group = GRP_S)
+showBeltHold     = input.bool(true, "Belt Hold — کمربند", group = GRP_S)
+
+GRP_D = "الگوهای دوکندلی / Two-candle"
+showEngulfing   = input.bool(true, "Engulfing — پوشا", group = GRP_D)
+showHarami      = input.bool(true, "Harami — هارامی", group = GRP_D)
+showHaramiCross = input.bool(true, "Harami Cross — صلیب هارامی", group = GRP_D)
+showPiercing    = input.bool(true, "Piercing Line — خط نافذ", group = GRP_D)
+showDarkCloud   = input.bool(true, "Dark Cloud Cover — پوشش ابر سیاه", group = GRP_D)
+showTweezers    = input.bool(true, "Tweezer Top/Bottom — انبرک سقف/کف", group = GRP_D)
+showKicking     = input.bool(true, "Kicking — لگدی", group = GRP_D)
+showOnNeck      = input.bool(true, "On Neck — روی گردن", group = GRP_D)
+showInNeck      = input.bool(true, "In Neck — در گردن", group = GRP_D)
+showThrusting   = input.bool(true, "Thrusting — رخنه", group = GRP_D)
+showCounter     = input.bool(true, "Counterattack / Meeting Lines — خطوط برخورد", group = GRP_D)
+showMatchingLow = input.bool(true, "Matching Low — کف همسان", group = GRP_D)
+showHomingPigeon = input.bool(true, "Homing Pigeon — کبوتر خانگی", group = GRP_D)
+showDojiStar    = input.bool(true, "Doji Star — ستاره دوجی", group = GRP_D)
+showSepLines    = input.bool(true, "Separating Lines — خطوط جداکننده", group = GRP_D)
+showWindows     = input.bool(true, "Rising/Falling Window — پنجره (گپ)", group = GRP_D)
+
+GRP_T = "الگوهای سه‌کندلی / Three-candle"
+showMorningStar     = input.bool(true, "Morning Star — ستاره صبحگاهی", group = GRP_T)
+showEveningStar     = input.bool(true, "Evening Star — ستاره شامگاهی", group = GRP_T)
+showMorningDojiStar = input.bool(true, "Morning Doji Star — ستاره صبحگاهی دوجی", group = GRP_T)
+showEveningDojiStar = input.bool(true, "Evening Doji Star — ستاره شامگاهی دوجی", group = GRP_T)
+showAbandonedBaby   = input.bool(true, "Abandoned Baby — کودک رهاشده", group = GRP_T)
+showSoldiers        = input.bool(true, "Three White Soldiers — سه سرباز سفید", group = GRP_T)
+showCrows           = input.bool(true, "Three Black Crows — سه کلاغ سیاه", group = GRP_T)
+showThreeInside     = input.bool(true, "Three Inside Up/Down — سه‌تایی درونی", group = GRP_T)
+showThreeOutside    = input.bool(true, "Three Outside Up/Down — سه‌تایی بیرونی", group = GRP_T)
+showTriStar         = input.bool(true, "Tri-Star — سه‌ستاره", group = GRP_T)
+showTasuki          = input.bool(true, "Tasuki Gap — گپ تاسوکی", group = GRP_T)
+showGap3Methods     = input.bool(true, "Gap Three Methods — سه‌روش گپ", group = GRP_T)
+showStickSandwich   = input.bool(true, "Stick Sandwich — ساندویچ", group = GRP_T)
+showAdvanceBlock    = input.bool(true, "Advance Block — سد پیشروی", group = GRP_T)
+showDeliberation    = input.bool(true, "Deliberation — تأمل", group = GRP_T)
+
+GRP_F = "الگوهای پنج‌کندلی / Five-candle"
+showRising3      = input.bool(true, "Rising Three Methods — سه‌روش صعودی", group = GRP_F)
+showFalling3     = input.bool(true, "Falling Three Methods — سه‌روش نزولی", group = GRP_F)
+showMatHold      = input.bool(true, "Mat Hold — مت هولد", group = GRP_F)
+showLadderBottom = input.bool(true, "Ladder Bottom — کف نردبانی", group = GRP_F)
+
+// ─────────────────────────── آناتومی کندل ───────────────────────────
+body        = math.abs(close - open)
+candleRange = high - low
+bodyHi      = math.max(open, close)
+bodyLo      = math.min(open, close)
+upShadow    = high - bodyHi
+dnShadow    = bodyLo - low
+bodyMid     = (open + close) / 2
+whiteBody   = close > open
+blackBody   = open > close
+bodyAvg     = ta.ema(body, bodyAvgLen)
+rangeAvg    = ta.ema(candleRange, bodyAvgLen)
+longBody    = body > bodyAvg
+smallBody   = body < bodyAvg
+isDoji      = candleRange > 0 and body <= candleRange * dojiPct
+smallUpSh   = upShadow <= candleRange * 0.1
+smallDnSh   = dnShadow <= candleRange * 0.1
+eqTol       = ta.atr(14) * eqAtrPct
+
+approxEq(a, b) => math.abs(a - b) <= eqTol
+// گپ بدنه‌ای؛ اگر «الزام گپ» خاموش باشد، مماس بودن بدنه‌ها هم کافی است
+gapBodyBelow(hiNow, loPrev) => requireGaps ? hiNow < loPrev : hiNow <= loPrev
+gapBodyAbove(loNow, hiPrev) => requireGaps ? loNow > hiPrev : loNow >= hiPrev
+
+// ─────────────────────────── تشخیص روند ───────────────────────────
+sma50  = ta.sma(close, 50)
+sma200 = ta.sma(close, 200)
+upTrend = trendRule == TR_NONE ? true : trendRule == "SMA50" ? close > sma50 : close > sma50 and sma50 > sma200
+dnTrend = trendRule == TR_NONE ? true : trendRule == "SMA50" ? close < sma50 : close < sma50 and sma50 < sma200
+
+// ═══════════════════════════ الگوهای تک‌کندلی ═══════════════════════════
+dragonflyDoji  = isDoji and upShadow <= candleRange * 0.1 and dnShadow >= candleRange * 0.6
+gravestoneDoji = isDoji and dnShadow <= candleRange * 0.1 and upShadow >= candleRange * 0.6
+longLegDoji    = isDoji and not dragonflyDoji and not gravestoneDoji and upShadow >= candleRange * 0.35 and dnShadow >= candleRange * 0.35
+plainDoji      = isDoji and not dragonflyDoji and not gravestoneDoji and not longLegDoji
+
+hammerShape = not isDoji and smallBody and body > 0 and dnShadow >= body * shadowRatio and smallUpSh
+starShape   = not isDoji and smallBody and body > 0 and upShadow >= body * shadowRatio and smallDnSh
+
+hammer       = dnTrend and hammerShape
+hangingMan   = upTrend and hammerShape
+invHammer    = dnTrend and starShape
+shootingStar = upTrend and starShape
+
+marubozuWhite = whiteBody and longBody and upShadow <= body * 0.05 and dnShadow <= body * 0.05
+marubozuBlack = blackBody and longBody and upShadow <= body * 0.05 and dnShadow <= body * 0.05
+
+highWave    = smallBody and not isDoji and upShadow >= body * 2 and dnShadow >= body * 2 and candleRange >= rangeAvg * 1.25
+spinningTop = smallBody and not isDoji and not highWave and upShadow >= candleRange * 0.3 and dnShadow >= candleRange * 0.3
+
+beltHoldBull = dnTrend and whiteBody and longBody and smallDnSh and upShadow <= candleRange * 0.25 and low < low[1]
+beltHoldBear = upTrend and blackBody and longBody and smallUpSh and dnShadow <= candleRange * 0.25 and high > high[1]
+
+// ═══════════════════════════ الگوهای دوکندلی ═══════════════════════════
+engulfBull = dnTrend[1] and blackBody[1] and whiteBody and body > body[1] and bodyHi >= bodyHi[1] and bodyLo <= bodyLo[1]
+engulfBear = upTrend[1] and whiteBody[1] and blackBody and body > body[1] and bodyHi >= bodyHi[1] and bodyLo <= bodyLo[1]
+
+haramiBull  = dnTrend[1] and blackBody[1] and longBody[1] and whiteBody and smallBody and not isDoji and bodyHi <= bodyHi[1] and bodyLo >= bodyLo[1]
+haramiBear  = upTrend[1] and whiteBody[1] and longBody[1] and blackBody and smallBody and not isDoji and bodyHi <= bodyHi[1] and bodyLo >= bodyLo[1]
+haramiXBull = dnTrend[1] and blackBody[1] and longBody[1] and isDoji and high <= bodyHi[1] and low >= bodyLo[1]
+haramiXBear = upTrend[1] and whiteBody[1] and longBody[1] and isDoji and high <= bodyHi[1] and low >= bodyLo[1]
+
+piercing  = dnTrend[1] and blackBody[1] and longBody[1] and whiteBody and open < close[1] and close > bodyMid[1] and close < open[1]
+darkCloud = upTrend[1] and whiteBody[1] and longBody[1] and blackBody and open > close[1] and close < bodyMid[1] and close > open[1]
+
+tweezerBottom = dnTrend[1] and blackBody[1] and whiteBody and approxEq(low, low[1]) and not engulfBull
+tweezerTop    = upTrend[1] and whiteBody[1] and blackBody and approxEq(high, high[1]) and not engulfBear
+
+kickingBull = marubozuBlack[1] and marubozuWhite and low > high[1]
+kickingBear = marubozuWhite[1] and marubozuBlack and high < low[1]
+
+onNeck    = dnTrend[1] and blackBody[1] and longBody[1] and whiteBody and open < close[1] and approxEq(close, low[1])
+inNeck    = dnTrend[1] and blackBody[1] and longBody[1] and whiteBody and open < close[1] and close > close[1] and close <= close[1] + body[1] * 0.15
+thrusting = dnTrend[1] and blackBody[1] and longBody[1] and whiteBody and open < close[1] and close > close[1] + body[1] * 0.15 and close < bodyMid[1]
+
+counterBull = dnTrend[1] and blackBody[1] and longBody[1] and whiteBody and longBody and open < close[1] and approxEq(close, close[1])
+counterBear = upTrend[1] and whiteBody[1] and longBody[1] and blackBody and longBody and open > close[1] and approxEq(close, close[1])
+
+matchingLow  = dnTrend[1] and blackBody[1] and longBody[1] and blackBody and approxEq(close, close[1])
+homingPigeon = dnTrend[1] and blackBody[1] and longBody[1] and blackBody and smallBody and bodyHi <= bodyHi[1] and bodyLo >= bodyLo[1]
+
+dojiStarBull = dnTrend[1] and blackBody[1] and longBody[1] and isDoji and gapBodyBelow(bodyHi, bodyLo[1])
+dojiStarBear = upTrend[1] and whiteBody[1] and longBody[1] and isDoji and gapBodyAbove(bodyLo, bodyHi[1])
+
+sepLinesBull = upTrend[1] and blackBody[1] and whiteBody and longBody and approxEq(open, open[1]) and smallDnSh
+sepLinesBear = dnTrend[1] and whiteBody[1] and blackBody and longBody and approxEq(open, open[1]) and smallUpSh
+
+risingWindow  = low > high[1]
+fallingWindow = high < low[1]
+
+// ═══════════════════════════ الگوهای سه‌کندلی ═══════════════════════════
+morningStar     = dnTrend[2] and blackBody[2] and longBody[2] and smallBody[1] and not isDoji[1] and gapBodyBelow(bodyHi[1], bodyLo[2]) and whiteBody and longBody and close > bodyMid[2]
+eveningStar     = upTrend[2] and whiteBody[2] and longBody[2] and smallBody[1] and not isDoji[1] and gapBodyAbove(bodyLo[1], bodyHi[2]) and blackBody and longBody and close < bodyMid[2]
+morningDojiStar = dnTrend[2] and blackBody[2] and longBody[2] and isDoji[1] and gapBodyBelow(bodyHi[1], bodyLo[2]) and whiteBody and longBody and close > bodyMid[2]
+eveningDojiStar = upTrend[2] and whiteBody[2] and longBody[2] and isDoji[1] and gapBodyAbove(bodyLo[1], bodyHi[2]) and blackBody and longBody and close < bodyMid[2]
+
+abandonedBull = dnTrend[2] and blackBody[2] and isDoji[1] and high[1] < low[2] and low > high[1] and whiteBody
+abandonedBear = upTrend[2] and whiteBody[2] and isDoji[1] and low[1] > high[2] and high < low[1] and blackBody
+
+threeWhiteSoldiers = whiteBody and whiteBody[1] and whiteBody[2] and longBody and longBody[1] and longBody[2] and close > close[1] and close[1] > close[2] and open >= open[1] and open <= close[1] and open[1] >= open[2] and open[1] <= close[2] and upShadow <= body * 0.3 and upShadow[1] <= body[1] * 0.3 and upShadow[2] <= body[2] * 0.3
+threeBlackCrows    = blackBody and blackBody[1] and blackBody[2] and longBody and longBody[1] and longBody[2] and close < close[1] and close[1] < close[2] and open <= open[1] and open >= close[1] and open[1] <= open[2] and open[1] >= close[2] and dnShadow <= body * 0.3 and dnShadow[1] <= body[1] * 0.3 and dnShadow[2] <= body[2] * 0.3
+
+threeInsideUp    = haramiBull[1] and whiteBody and close > bodyHi[2]
+threeInsideDown  = haramiBear[1] and blackBody and close < bodyLo[2]
+threeOutsideUp   = engulfBull[1] and whiteBody and close > close[1]
+threeOutsideDown = engulfBear[1] and blackBody and close < close[1]
+
+triStarBull = dnTrend[2] and isDoji and isDoji[1] and isDoji[2] and gapBodyBelow(bodyHi[1], bodyLo[2]) and gapBodyBelow(bodyHi[1], bodyLo)
+triStarBear = upTrend[2] and isDoji and isDoji[1] and isDoji[2] and gapBodyAbove(bodyLo[1], bodyHi[2]) and gapBodyAbove(bodyLo[1], bodyHi)
+
+tasukiUp   = upTrend[2] and whiteBody[2] and whiteBody[1] and low[1] > high[2] and blackBody and open <= close[1] and open >= open[1] and close < low[1] and close > high[2]
+tasukiDown = dnTrend[2] and blackBody[2] and blackBody[1] and high[1] < low[2] and whiteBody and open >= close[1] and open <= open[1] and close > high[1] and close < low[2]
+
+gap3Up   = upTrend[2] and whiteBody[2] and whiteBody[1] and low[1] > high[2] and blackBody and open <= close[1] and open >= open[1] and close <= close[2] and close >= open[2]
+gap3Down = dnTrend[2] and blackBody[2] and blackBody[1] and high[1] < low[2] and whiteBody and open >= close[1] and open <= open[1] and close >= close[2] and close <= open[2]
+
+stickSandwich = dnTrend[2] and blackBody[2] and whiteBody[1] and blackBody and approxEq(close, close[2]) and close[1] > close[2]
+
+advanceBlock = upTrend[2] and whiteBody and whiteBody[1] and whiteBody[2] and close > close[1] and close[1] > close[2] and body < body[1] and body[1] < body[2] and (upShadow >= upShadow[1] or upShadow >= body)
+deliberation = upTrend[2] and whiteBody[2] and longBody[2] and whiteBody[1] and longBody[1] and whiteBody and smallBody and close > close[1] and close[1] > close[2] and open >= close[1] - eqTol
+
+// ═══════════════════════════ الگوهای پنج‌کندلی ═══════════════════════════
+hold1 = high[1] <= high[4] and low[1] >= low[4]
+hold2 = high[2] <= high[4] and low[2] >= low[4]
+hold3 = high[3] <= high[4] and low[3] >= low[4]
+
+rising3  = upTrend[4] and whiteBody[4] and longBody[4] and smallBody[3] and smallBody[2] and smallBody[1] and hold1 and hold2 and hold3 and whiteBody and longBody and close > close[4]
+falling3 = dnTrend[4] and blackBody[4] and longBody[4] and smallBody[3] and smallBody[2] and smallBody[1] and hold1 and hold2 and hold3 and blackBody and longBody and close < close[4]
+
+matHold = upTrend[4] and whiteBody[4] and longBody[4] and smallBody[3] and smallBody[2] and smallBody[1] and open[3] > close[4] and low[3] > low[4] and low[2] > low[4] and low[1] > low[4] and whiteBody and close > math.max(high[1], high[2], high[3]) and not rising3
+
+ladderBottom = dnTrend[4] and blackBody[4] and blackBody[3] and blackBody[2] and close[4] > close[3] and close[3] > close[2] and open[4] > open[3] and open[3] > open[2] and blackBody[1] and upShadow[1] >= body[1] * 0.5 and whiteBody and open > open[1] and close > high[1]
+
+// ─────────────────────────── جمع‌بندی و برچسب‌ها ───────────────────────────
+allowBull = patternType != "نزولی / Bearish"
+allowBear = patternType != "صعودی / Bullish"
+allowNeut = patternType == "همه / All"
+
+NL = "\n"
+addIf(string t, bool c, string n) => c ? (t == "" ? n : t + NL + n) : t
+
+// ── صعودی ──
+string bullTxt = ""
+bullTxt := addIf(bullTxt, allowBull and showHammer and hammer, "Hammer")
+bullTxt := addIf(bullTxt, allowBull and showInvHammer and invHammer, "Inv Hammer")
+bullTxt := addIf(bullTxt, allowBull and showMarubozu and marubozuWhite, "Marubozu")
+bullTxt := addIf(bullTxt, allowBull and showBeltHold and beltHoldBull, "Belt Hold")
+bullTxt := addIf(bullTxt, allowBull and showEngulfing and engulfBull, "Engulfing")
+bullTxt := addIf(bullTxt, allowBull and showHarami and haramiBull, "Harami")
+bullTxt := addIf(bullTxt, allowBull and showHaramiCross and haramiXBull, "Harami Cross")
+bullTxt := addIf(bullTxt, allowBull and showPiercing and piercing, "Piercing")
+bullTxt := addIf(bullTxt, allowBull and showTweezers and tweezerBottom, "Tweezer Bottom")
+bullTxt := addIf(bullTxt, allowBull and showKicking and kickingBull, "Kicking")
+bullTxt := addIf(bullTxt, allowBull and showCounter and counterBull, "Counterattack")
+bullTxt := addIf(bullTxt, allowBull and showMatchingLow and matchingLow, "Matching Low")
+bullTxt := addIf(bullTxt, allowBull and showHomingPigeon and homingPigeon, "Homing Pigeon")
+bullTxt := addIf(bullTxt, allowBull and showDojiStar and dojiStarBull, "Doji Star")
+bullTxt := addIf(bullTxt, allowBull and showSepLines and sepLinesBull, "Separating Lines")
+bullTxt := addIf(bullTxt, allowBull and showWindows and risingWindow, "Rising Window")
+bullTxt := addIf(bullTxt, allowBull and showMorningStar and morningStar, "Morning Star")
+bullTxt := addIf(bullTxt, allowBull and showMorningDojiStar and morningDojiStar, "Morning Doji Star")
+bullTxt := addIf(bullTxt, allowBull and showAbandonedBaby and abandonedBull, "Abandoned Baby")
+bullTxt := addIf(bullTxt, allowBull and showSoldiers and threeWhiteSoldiers, "3 White Soldiers")
+bullTxt := addIf(bullTxt, allowBull and showThreeInside and threeInsideUp, "3 Inside Up")
+bullTxt := addIf(bullTxt, allowBull and showThreeOutside and threeOutsideUp, "3 Outside Up")
+bullTxt := addIf(bullTxt, allowBull and showTriStar and triStarBull, "Tri-Star")
+bullTxt := addIf(bullTxt, allowBull and showTasuki and tasukiUp, "Tasuki Gap")
+bullTxt := addIf(bullTxt, allowBull and showGap3Methods and gap3Up, "Gap 3 Methods")
+bullTxt := addIf(bullTxt, allowBull and showStickSandwich and stickSandwich, "Stick Sandwich")
+bullTxt := addIf(bullTxt, allowBull and showRising3 and rising3, "Rising 3 Methods")
+bullTxt := addIf(bullTxt, allowBull and showMatHold and matHold, "Mat Hold")
+bullTxt := addIf(bullTxt, allowBull and showLadderBottom and ladderBottom, "Ladder Bottom")
+
+// ── نزولی ──
+string bearTxt = ""
+bearTxt := addIf(bearTxt, allowBear and showHangingMan and hangingMan, "Hanging Man")
+bearTxt := addIf(bearTxt, allowBear and showShootingStar and shootingStar, "Shooting Star")
+bearTxt := addIf(bearTxt, allowBear and showMarubozu and marubozuBlack, "Marubozu")
+bearTxt := addIf(bearTxt, allowBear and showBeltHold and beltHoldBear, "Belt Hold")
+bearTxt := addIf(bearTxt, allowBear and showEngulfing and engulfBear, "Engulfing")
+bearTxt := addIf(bearTxt, allowBear and showHarami and haramiBear, "Harami")
+bearTxt := addIf(bearTxt, allowBear and showHaramiCross and haramiXBear, "Harami Cross")
+bearTxt := addIf(bearTxt, allowBear and showDarkCloud and darkCloud, "Dark Cloud")
+bearTxt := addIf(bearTxt, allowBear and showTweezers and tweezerTop, "Tweezer Top")
+bearTxt := addIf(bearTxt, allowBear and showKicking and kickingBear, "Kicking")
+bearTxt := addIf(bearTxt, allowBear and showOnNeck and onNeck, "On Neck")
+bearTxt := addIf(bearTxt, allowBear and showInNeck and inNeck, "In Neck")
+bearTxt := addIf(bearTxt, allowBear and showThrusting and thrusting, "Thrusting")
+bearTxt := addIf(bearTxt, allowBear and showCounter and counterBear, "Counterattack")
+bearTxt := addIf(bearTxt, allowBear and showDojiStar and dojiStarBear, "Doji Star")
+bearTxt := addIf(bearTxt, allowBear and showSepLines and sepLinesBear, "Separating Lines")
+bearTxt := addIf(bearTxt, allowBear and showWindows and fallingWindow, "Falling Window")
+bearTxt := addIf(bearTxt, allowBear and showEveningStar and eveningStar, "Evening Star")
+bearTxt := addIf(bearTxt, allowBear and showEveningDojiStar and eveningDojiStar, "Evening Doji Star")
+bearTxt := addIf(bearTxt, allowBear and showAbandonedBaby and abandonedBear, "Abandoned Baby")
+bearTxt := addIf(bearTxt, allowBear and showCrows and threeBlackCrows, "3 Black Crows")
+bearTxt := addIf(bearTxt, allowBear and showThreeInside and threeInsideDown, "3 Inside Down")
+bearTxt := addIf(bearTxt, allowBear and showThreeOutside and threeOutsideDown, "3 Outside Down")
+bearTxt := addIf(bearTxt, allowBear and showTriStar and triStarBear, "Tri-Star")
+bearTxt := addIf(bearTxt, allowBear and showTasuki and tasukiDown, "Tasuki Gap")
+bearTxt := addIf(bearTxt, allowBear and showGap3Methods and gap3Down, "Gap 3 Methods")
+bearTxt := addIf(bearTxt, allowBear and showAdvanceBlock and advanceBlock, "Advance Block")
+bearTxt := addIf(bearTxt, allowBear and showDeliberation and deliberation, "Deliberation")
+bearTxt := addIf(bearTxt, allowBear and showFalling3 and falling3, "Falling 3 Methods")
+
+// ── خنثی ──
+string neutTxt = ""
+neutTxt := addIf(neutTxt, allowNeut and showDoji and plainDoji, "Doji")
+neutTxt := addIf(neutTxt, allowNeut and showDragonfly and dragonflyDoji, "Dragonfly Doji")
+neutTxt := addIf(neutTxt, allowNeut and showGravestone and gravestoneDoji, "Gravestone Doji")
+neutTxt := addIf(neutTxt, allowNeut and showLongLeg and longLegDoji, "Long-Legged Doji")
+neutTxt := addIf(neutTxt, allowNeut and showSpinningTop and spinningTop, "Spinning Top")
+neutTxt := addIf(neutTxt, allowNeut and showHighWave and highWave, "High Wave")
+
+int bullCnt = bullTxt == "" ? 0 : array.size(str.split(bullTxt, NL))
+int bearCnt = bearTxt == "" ? 0 : array.size(str.split(bearTxt, NL))
+int neutCnt = neutTxt == "" ? 0 : array.size(str.split(neutTxt, NL))
+
+if bullTxt != ""
+    label.new(bar_index, low, bullTxt, yloc = yloc.belowbar, style = label.style_label_up, color = bullColor, textcolor = color.white, size = lblSize)
+
+string aboveTxt = bearTxt != "" and neutTxt != "" ? bearTxt + NL + neutTxt : bearTxt != "" ? bearTxt : neutTxt
+if aboveTxt != ""
+    label.new(bar_index, high, aboveTxt, yloc = yloc.abovebar, style = label.style_label_down, color = bearTxt != "" ? bearColor : neutColor, textcolor = color.white, size = lblSize)
+
+// ─────────────────────────── هشدارها ───────────────────────────
+if enableAlerts and bullTxt != ""
+    alert("الگوی صعودی: " + str.replace_all(bullTxt, NL, "، ") + " | " + syminfo.ticker + " " + timeframe.period, alert.freq_once_per_bar_close)
+if enableAlerts and bearTxt != ""
+    alert("الگوی نزولی: " + str.replace_all(bearTxt, NL, "، ") + " | " + syminfo.ticker + " " + timeframe.period, alert.freq_once_per_bar_close)
+
+alertcondition(bullCnt > 0, "Any Bullish Pattern — هر الگوی صعودی", "الگوی کندلی صعودی شناسایی شد")
+alertcondition(bearCnt > 0, "Any Bearish Pattern — هر الگوی نزولی", "الگوی کندلی نزولی شناسایی شد")
+alertcondition(neutCnt > 0, "Any Neutral Pattern — هر الگوی خنثی", "الگوی کندلی خنثی شناسایی شد")
+alertcondition(bullCnt > 0 or bearCnt > 0, "Any Pattern — هر الگو", "الگوی کندلی شناسایی شد")
+
+// ─────────────────────────── خروجی برای استراتژی ───────────────────────────
+// این پلات‌ها روی چارت دیده نمی‌شوند ولی در استراتژی (یا اندیکاتور دیگر)
+// از طریق input.source به عنوان شرط ورود/خروج قابل استفاده‌اند.
+plot(bullCnt, "تعداد الگوهای صعودی / Bullish Count", display = display.none)
+plot(bearCnt, "تعداد الگوهای نزولی / Bearish Count", display = display.none)
+plot(bullCnt - bearCnt, "سیگنال خالص / Net Signal", display = display.none)
+
+plot(showTrendMA ? sma50 : na, "SMA 50", color = color.new(color.orange, 0))
+plot(showTrendMA and trendRule == "SMA50 + SMA200" ? sma200 : na, "SMA 200", color = color.new(color.blue, 0))
