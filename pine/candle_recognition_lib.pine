@@ -3,9 +3,9 @@
 // 64 patterns | formulas: body/range ratios, wick/body, midpoint pierce, trend context
 //
 // Strategy usage:
-//   import YOUR_USER/CandleRecognitionLib/1 as cr
 //   s = cr.defaultSettings()
-//   if cr.isPatternActive(37, s) and cr.patternKind(37) == 0 ...
+//   flags = cr.patternFlags(s)
+//   cr.anyBullishPattern(s)
 //
 //@version=6
 library("CandleRecognitionLib", overlay=true)
