@@ -1,7 +1,4 @@
-// Monster Trex Vol — ساختار HTF + SM + FTC/RTP + الگو در zone (۲۴/۷ بدون سشن)
-// چارت: روی تایم تریگر (مثلاً M5) | Publish همه کتابخانه‌ها
-//
-//@version=5
+//@version=6
 strategy("Monster Trex Vol", overlay=true, pyramiding=0, max_labels_count=500, max_boxes_count=200,
      default_qty_type=strategy.percent_of_equity, default_qty_value=10, initial_capital=10000,
      commission_type=strategy.commission.percent, commission_value=0.02)
@@ -56,6 +53,8 @@ eS.patternTf := patTf
 eS.triggerTf := trTf
 eS.slThMult := slMult
 eS.tpThMult := tpMult
+eS.useFtc := useFtcRtp
+eS.useRtp := useFtcRtp
 
 var sm.SmartMoneySettings smS = sm.defaultSmartMoneySettings()
 smS.minConfirmations := minSm
@@ -118,13 +117,13 @@ for i = 0 to array.size(htfs) - 1
         spawnIfNew(tf, uSig, uSig[1], uTop, uBot, uPrice, uTime, false, uFtcT, uFtcB, uFc, uSc, uKind, uTh)
 
 bullPattern() =>
-    cr.anyBullishPattern(crS)
+    cr.anyBullishPattern(crFlags)
 
 bearPattern() =>
-    cr.anyBearishPattern(crS)
+    cr.anyBearishPattern(crFlags)
 
 patternLabel(bool bullish) =>
-    int pid = bullish ? cr.firstBullishPattern(crS) : cr.firstBearishPattern(crS)
+    int pid = bullish ? cr.firstBullishPattern(crFlags) : cr.firstBearishPattern(crFlags)
     pid >= 0 ? cr.patternDisplayName(pid, patFa) : "PAT"
 
 inStructZone(WatchedLevel lv) =>
