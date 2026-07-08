@@ -216,7 +216,7 @@ export closeInFinalThird(bool bearPivot, float h, float l, float c, float pct) =
         float pos = (c - l) / rng
         bearPivot ? pos <= pct : pos >= (1.0 - pct)
 
-export engulfMaster(bool bearPivot, float o0, float h0, float l0, float c0, float o1, float c1) =>
+export engulfMaster(bool bearPivot, float o0, float h0, float l0, float c0, float c1) =>
     bearPivot ? c1 > math.max(o0, c0) and c1 > h0 : c1 < math.min(o0, c0) and c1 < l0
 
 export closeBelowImgLine(float c, float tipHigh, float trPips) =>
@@ -327,8 +327,8 @@ export detectBearPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         bool moveUp = masters or moveOk or spike
         bool master = isMasterCandle(open[1], high[1], low[1], close[1], trP, s)
         bool revert = trex.roundPips(trex.toPips(high[1] - close)) >= trP * s.revertMult
-        bool engulf = spikeClose ? closeBelowImgLine(close, high[1], trP) : engulfMaster(true, open[1], high[1], low[1], close[1], open, high, low, close)
-        bool closeOk = spikeClose ? true : closeInFinalThird(true, open, high, low, close, s.closeThirdPct)
+        bool engulf = spikeClose ? closeBelowImgLine(close, high[1], trP) : engulfMaster(true, open[1], high[1], low[1], close[1], open, close)
+        bool closeOk = spikeClose ? true : closeInFinalThird(true, high, low, close, s.closeThirdPct)
         bool ok = moveUp and revert and engulf and closeOk and (master or spike or revert)
         if ok
             [zTop, zBot, inTop, inBot] = pivotZones(true, open[1], high[1], low[1], close[1], trP, s)
@@ -350,8 +350,8 @@ export detectBullPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         bool moveDn = masters or moveOk or spike
         bool master = isMasterCandle(open[1], high[1], low[1], close[1], trP, s)
         bool revert = trex.roundPips(trex.toPips(close - low[1])) >= trP * s.revertMult
-        bool engulf = spikeClose ? closeAboveImgLine(close, low[1], trP) : engulfMaster(false, open[1], high[1], low[1], close[1], open, high, low, close)
-        bool closeOk = spikeClose ? true : closeInFinalThird(false, open, high, low, close, s.closeThirdPct)
+        bool engulf = spikeClose ? closeAboveImgLine(close, low[1], trP) : engulfMaster(false, open[1], high[1], low[1], close[1], open, close)
+        bool closeOk = spikeClose ? true : closeInFinalThird(false, high, low, close, s.closeThirdPct)
         bool ok = moveDn and revert and engulf and closeOk and (master or spike or revert)
         if ok
             [zTop, zBot, inTop, inBot] = pivotZones(false, open[1], high[1], low[1], close[1], trP, s)
