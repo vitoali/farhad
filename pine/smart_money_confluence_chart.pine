@@ -1,0 +1,39 @@
+// Khakster Smart Money Confluence — نمایش تأیید L / OB / V روی سطح
+// Publish: KhaksterSmartMoneyLib (+ اختیاری: MarketStructureEngine برای سطوح)
+//
+//@version=5
+indicator("Khakster SM Confluence", overlay=true, max_labels_count=200)
+
+import YOUR_USER/KhaksterSmartMoneyLib/1 as sm
+
+grp = "Smart Money"
+minConf = input.int(2, "Min confirmations (2 or 3)", minval=2, maxval=3, group=grp)
+showZones = input.bool(true, "Show POC / VA", group=grp)
+
+smS = sm.defaultSmartMoneySettings()
+smS.minConfirmations := minConf
+
+var sm.SmartMoneyState st = sm.newSmartMoneyState()
+st := sm.tickSmartMoney(st, smS)
+
+[poc, vaT, vaB] = sm.calcVolumeNodes(smS.volBars, smS.volRows, smS.vaPercent)
+
+if showZones and barstate.islast
+    if not na(poc)
+        line.new(bar_index - smS.volBars, poc, bar_index, poc, color=color.red, width=2, style=line.style_dashed)
+        label.new(bar_index, poc, "POC", style=label.style_label_left, color=color.new(color.red, 70), textcolor=color.white, size=size.tiny)
+    if not na(vaT) and not na(vaB)
+        box.new(bar_index - smS.volBars, vaT, bar_index, vaB, bgcolor=color.new(color.blue, 90), border_width=0)
+
+// نمونه: بررسی همگرایی روی محدوده آخرین N کندل (برای تست بصری)
+grpZ = "Test zone (manual)"
+useTest = input.bool(false, "Draw test zone", group=grpZ)
+testTop = input.float(0.0, "Zone top", group=grpZ)
+testBot = input.float(0.0, "Zone bottom", group=grpZ)
+testRes = input.bool(true, "Resistance (high pivot)", group=grpZ)
+
+if useTest and testTop > testBot
+    [ok, cnt, liq, ob, vol] = sm.zoneConfluence(st, testTop, testBot, testRes, smS)
+    box.new(bar_index - 50, testTop, bar_index, testBot, border_color=ok ? color.green : color.gray, bgcolor=color.new(ok ? color.green : color.gray, 88))
+    if barstate.islast
+        label.new(bar_index, testTop, sm.confluenceLabel(cnt, liq, ob, vol) + (ok ? " ✓" : ""), style=label.style_label_down, color=ok ? color.green : color.gray, textcolor=color.white)

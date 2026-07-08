@@ -34,6 +34,10 @@ if cr.isPatternActive(37, s)  // Morning Star
 
 **`khakster_h1_m5_strategy.pine`** — استراتژی روی چارت M5
 
+**`khakster_smart_money_lib.pine`** → `KhaksterSmartMoneyLib` — همگرایی L/OB/V برای تأیید پول در سطح
+
+**`smart_money_confluence_chart.pine`** — تست بصری SM
+
 **`trex_atr_panel.pine`** — فقط یادآوری؛ از ipooya استفاده کنید
 
 Formulas: [`docs/khakster-atr-formulas.md`](../docs/khakster-atr-formulas.md)
