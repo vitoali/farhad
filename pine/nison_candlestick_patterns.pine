@@ -443,6 +443,16 @@ export patternNameFa(int id) =>
 export patternDisplayName(int id, bool persian) =>
     persian ? patternNameFa(id) : patternName(id)
 
+// 0 = Reversal (Ch.4–6), 1 = Continuation (Ch.7), 2 = Context-dependent (Ch.8 + warnings)
+export patternKind(int id) =>
+    id == 10 or id == 11 or id == 29 or id == 30 or id == 31 or id == 32 or id == 33 or id == 34 or id == 35 or id == 36 or id == 45 or id == 51 or id == 52 or id == 53 or id == 54 or id == 55 ? 1 : id == 0 or id == 1 or id == 2 or id == 3 or id == 4 or id == 5 or id == 46 or id == 47 ? 2 : 0
+
+export patternKindName(int id) =>
+    switch patternKind(id)
+        1 => "Continuation"
+        2 => "Context"
+        => "Reversal"
+
 export patternBullish(int id) =>
     id == 6 or id == 9 or id == 10 or id == 12 or id == 14 or id == 17 or id == 18 or id == 20 or id == 23 or id == 24 or id == 29 or id == 31 or id == 33 or id == 35 or id == 37 or id == 39 or id == 42 or id == 45 or id == 49 or id == 50 or id == 51 or id == 53 or id == 54 or id == 57 or id == 59 or id == 61 or id == 63
 
