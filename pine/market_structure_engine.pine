@@ -1,4 +1,4 @@
-// Market Structure Engine — سبک سعید خاکستر (پیوت + سطح + FTC)
+// Market Structure Engine — سبک سعید خاکستر (فاز ۱: پیوت + Zone + TF)
 // Depends on: KhaksterTrexAtrLib
 //
 // import YOUR_USER/MarketStructureEngine/1 as mse
@@ -10,32 +10,94 @@ library("MarketStructureEngine", overlay=true)
 import YOUR_USER/KhaksterTrexAtrLib/1 as trex
 
 export type PivotLevel
-    int barIndex
+    int barTime
     float price
     float zoneTop
     float zoneBot
+    float zoneInTop
+    float zoneInBot
     string tf
     bool isHigh
+    int candleClass
     float trPips
     float thPips
     int importance
+    string pivotKind
 
 export type MseSettings
     trex.TrexSettings atr
-    float moveMult
+    float moveMultMin
+    float moveMultMax
     float revertMult
-    float masterBodyPct
+    float masterMinPct
+    float masterMaxPct
+    float shapePct
     float closeThirdPct
     float zoneHalfAtrPct
     int maxTouches
 
 export defaultMseSettings() =>
-    MseSettings.new(trex.defaultSettings(), 2.4, 1.0, 0.80, 0.333, 0.50, 3)
+    MseSettings.new(trex.defaultSettings(), 2.4, 3.6, 1.0, 0.80, 1.20, 0.80, 0.333, 0.50, 3)
 
-export masterCandle(float o, float h, float l, float c, float trPrice) =>
-    float body = math.abs(c - o)
+// سطوح ساختار: H1, H4, D1, W1, Mn
+export structureTfCodes() =>
+    array.from("60", "240", "D", "W", "M")
+
+export tfImportance(string tf) =>
+    tf == "M" ? 5 : tf == "W" ? 4 : tf == "D" ? 3 : tf == "240" ? 2 : 1
+
+export tfColor(string tf) =>
+    tf == "60" ? color.new(#2196F3, 0) :
+     tf == "240" ? color.new(#FF9800, 0) :
+     tf == "D" ? color.new(#9C27B0, 0) :
+     tf == "W" ? color.new(#F44336, 0) :
+     tf == "M" ? color.new(#FFEB3B, 0) : color.gray
+
+export trToPrice(float trPips) =>
+    trex.pipUnit() * trPips
+
+// ── دسته‌بندی کندل خاکستر (Spin / Std / Long / Spike) ───────────────────────
+export khaksterCandleClass(float o, float h, float l, float c, float trPips, MseSettings s) =>
+    float rngP = trex.roundPips(trex.toPips(h - l))
+    trex.candleClass(rngP, trPips, s.atr)
+
+export khaksterCandleClassName(int cls) =>
+    trex.candleClassName(cls)
+
+export isMasterCandle(float o, float h, float l, float c, float trPips, MseSettings s) =>
     float rng = h - l
-    rng >= trPrice * 0.80 and (math.max(math.abs(h - c), math.abs(c - l)) / rng >= 0.80 or body / rng >= 0.80)
+    if rng <= 0 or trPips <= 0
+        false
+    else
+        float trU = trToPrice(trPips)
+        bool sizeOk = rng >= trU * s.masterMinPct and rng <= trU * s.masterMaxPct
+        float body = math.abs(c - o)
+        float upper = h - math.max(o, c)
+        float lower = math.min(o, c) - l
+        bool shapeOk = body / rng >= s.shapePct or upper / rng >= s.shapePct or lower / rng >= s.shapePct
+        sizeOk and shapeOk
+
+export isSpikeCandle(float o, float h, float l, float c, float trPips, MseSettings s) =>
+    khaksterCandleClass(o, h, l, c, trPips, s) >= 3
+
+export threeBullMasters(int off, float trPips, MseSettings s) =>
+    isMasterCandle(open[off], high[off], low[off], close[off], trPips, s) and close[off] > open[off] and
+     isMasterCandle(open[off + 1], high[off + 1], low[off + 1], close[off + 1], trPips, s) and close[off + 1] > open[off + 1] and
+     isMasterCandle(open[off + 2], high[off + 2], low[off + 2], close[off + 2], trPips, s) and close[off + 2] > open[off + 2]
+
+export threeBearMasters(int off, float trPips, MseSettings s) =>
+    isMasterCandle(open[off], high[off], low[off], close[off], trPips, s) and close[off] < open[off] and
+     isMasterCandle(open[off + 1], high[off + 1], low[off + 1], close[off + 1], trPips, s) and close[off + 1] < open[off + 1] and
+     isMasterCandle(open[off + 2], high[off + 2], low[off + 2], close[off + 2], trPips, s) and close[off + 2] < open[off + 2]
+
+export legMovePips(int bars, float trPips, MseSettings s) =>
+    float sum = 0.0
+    for i = 1 to bars
+        sum += trex.toPips(ta.tr(true)[i])
+    trex.roundPips(sum)
+
+export legMoveOk(float moveP, float trPips, MseSettings s) =>
+    moveP >= trPips * s.moveMultMin and moveP <= trPips * s.moveMultMax
 
 export closeInFinalThird(bool bearPivot, float o, float h, float l, float c, float pct) =>
     float rng = h - l
@@ -45,52 +107,107 @@ export closeInFinalThird(bool bearPivot, float o, float h, float l, float c, flo
         float pos = (c - l) / rng
         bearPivot ? pos <= pct : pos >= (1.0 - pct)
 
-export moveSizePips(int leftBars, float trPips, float mult) =>
-    float sum = 0.0
-    for i = 1 to leftBars
-        sum += trex.toPips(ta.tr(true)[i])
-    sum >= trPips * mult
-
 export engulfMaster(bool bearPivot, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1) =>
     bearPivot ? c1 > math.max(o0, c0) and c1 > h0 : c1 < math.min(o0, c0) and c1 < l0
 
-// Bear pivot (swing high) — simplified Khakster rules
-export detectBearPivot(MseSettings s, string tf) =>
-    trex.TrexMetrics m = trex.fetchMetrics(tf, s.atr)
-    float trP = m.tr
-    bool master = masterCandle(open[1], high[1], low[1], close[1], trP * s.atr.stdPct / s.atr.spinPct)
-    bool moveUp = moveSizePips(3, trP, s.moveMult)
-    bool revert = trex.roundPips(trex.toPips(high[1] - close)) >= trP * s.revertMult
-    bool engulf = engulfMaster(true, open[1], high[1], low[1], close[1], open, high, low, close)
-    bool closeOk = closeInFinalThird(true, open, high, low, close, s.closeThirdPct)
-    bool ok = moveUp and revert and engulf and closeOk and (master or revert)
-    if ok
-        float zTop = high[1]
-        float zBot = math.min(open[1], close[1])
-        int imp = tf == "W" ? 4 : tf == "D" ? 3 : tf == "240" ? 2 : 1
-        PivotLevel.new(bar_index, high[1], zTop, zBot, tf, true, trP, m.th, imp)
-    else
+export imaginaryLineBear(float tipHigh, float trPips) =>
+    tipHigh - trToPrice(trPips)
+
+export imaginaryLineBull(float tipLow, float trPips) =>
+    tipLow + trToPrice(trPips)
+
+export closeBelowImgLine(float c, float tipHigh, float trPips) =>
+    c < imaginaryLineBear(tipHigh, trPips)
+
+export closeAboveImgLine(float c, float tipLow, float trPips) =>
+    c > imaginaryLineBull(tipLow, trPips)
+
+export pivotZones(bool isHigh, float o1, float h1, float l1, float c1, float trPips, MseSettings s) =>
+    float trU = trToPrice(trPips)
+    float half = trU * s.zoneHalfAtrPct
+    float extTop = isHigh ? h1 : math.max(o1, c1)
+    float extBot = isHigh ? math.min(o1, c1) : l1
+    float inTop = math.max(o1, c1)
+    float inBot = math.min(o1, c1)
+    float w = extTop - extBot
+    if w < half
+        float mid = (extTop + extBot) * 0.5
+        extTop := mid + half * 0.5
+        extBot := mid - half * 0.5
+    [extTop, extBot, inTop, inBot]
+
+export metricsLocal(int atrLen, float thBoost, MseSettings s) =>
+    float trVal = trex.smaTr(atrLen)
+    float trP = trex.scalePips(trex.toPips(trVal), s.atr)
+    float thP = trex.scalePips(trex.toPips(trVal * thBoost), s.atr)
+    [trP, thP]
+
+// ── پیوت محلی (داخل request.security — بدون nested security) ─────────────────
+export detectBearPivotLocal(MseSettings s, int atrLen, float thBoost, string tf) =>
+    [trP, thP] = metricsLocal(atrLen, thBoost, s)
+    if trP <= 0
         na
+    else
+        float moveP = legMovePips(3, trP, s)
+        bool masters = threeBullMasters(1, trP, s)
+        bool moveOk = legMoveOk(moveP, trP, s)
+        bool spike = isSpikeCandle(open[1], high[1], low[1], close[1], trP, s) and moveP >= trP * s.moveMultMin
+        bool spikeClose = spike and closeBelowImgLine(close, high[1], trP)
+        bool moveUp = masters or moveOk or spike
+        bool master = isMasterCandle(open[1], high[1], low[1], close[1], trP, s)
+        bool revert = trex.roundPips(trex.toPips(high[1] - close)) >= trP * s.revertMult
+        bool engulf = spikeClose ? closeBelowImgLine(close, high[1], trP) : engulfMaster(true, open[1], high[1], low[1], close[1], open, high, low, close)
+        bool closeOk = spikeClose ? true : closeInFinalThird(true, open, high, low, close, s.closeThirdPct)
+        bool ok = moveUp and revert and engulf and closeOk and (master or spike or revert)
+        if ok
+            [zTop, zBot, inTop, inBot] = pivotZones(true, open[1], high[1], low[1], close[1], trP, s)
+            int cls = khaksterCandleClass(open[1], high[1], low[1], close[1], trP, s)
+            PivotLevel.new(time[1], high[1], zTop, zBot, inTop, inBot, tf, true, cls, trP, thP, tfImportance(tf), "Reverse")
+        else
+            na
+
+export detectBullPivotLocal(MseSettings s, int atrLen, float thBoost, string tf) =>
+    [trP, thP] = metricsLocal(atrLen, thBoost, s)
+    if trP <= 0
+        na
+    else
+        float moveP = legMovePips(3, trP, s)
+        bool masters = threeBearMasters(1, trP, s)
+        bool moveOk = legMoveOk(moveP, trP, s)
+        bool spike = isSpikeCandle(open[1], high[1], low[1], close[1], trP, s) and moveP >= trP * s.moveMultMin
+        bool spikeClose = spike and closeAboveImgLine(close, low[1], trP)
+        bool moveDn = masters or moveOk or spike
+        bool master = isMasterCandle(open[1], high[1], low[1], close[1], trP, s)
+        bool revert = trex.roundPips(trex.toPips(close - low[1])) >= trP * s.revertMult
+        bool engulf = spikeClose ? closeAboveImgLine(close, low[1], trP) : engulfMaster(false, open[1], high[1], low[1], close[1], open, high, low, close)
+        bool closeOk = spikeClose ? true : closeInFinalThird(false, open, high, low, close, s.closeThirdPct)
+        bool ok = moveDn and revert and engulf and closeOk and (master or spike or revert)
+        if ok
+            [zTop, zBot, inTop, inBot] = pivotZones(false, open[1], high[1], low[1], close[1], trP, s)
+            int cls = khaksterCandleClass(open[1], high[1], low[1], close[1], trP, s)
+            PivotLevel.new(time[1], low[1], zTop, zBot, inTop, inBot, tf, false, cls, trP, thP, tfImportance(tf), "Reverse")
+        else
+            na
+
+// بسته امن برای request.security — [signal, zTop, zBot, price, barTime, isHigh, inTop, inBot]
+export bearPivotPack(MseSettings s, int atrLen, float thBoost, string tf) =>
+    PivotLevel p = detectBearPivotLocal(s, atrLen, thBoost, tf)
+    [na(p) ? 0 : 1, na(p) ? 0.0 : p.zoneTop, na(p) ? 0.0 : p.zoneBot, na(p) ? 0.0 : p.price, na(p) ? 0 : p.barTime, 1, na(p) ? 0.0 : p.zoneInTop, na(p) ? 0.0 : p.zoneInBot]
+
+export bullPivotPack(MseSettings s, int atrLen, float thBoost, string tf) =>
+    PivotLevel p = detectBullPivotLocal(s, atrLen, thBoost, tf)
+    [na(p) ? 0 : 1, na(p) ? 0.0 : p.zoneTop, na(p) ? 0.0 : p.zoneBot, na(p) ? 0.0 : p.price, na(p) ? 0 : p.barTime, 0, na(p) ? 0.0 : p.zoneInTop, na(p) ? 0.0 : p.zoneInBot]
+
+// API قدیمی
+export detectBearPivot(MseSettings s, string tf) =>
+    int len = trex.lenForTf(tf, s.atr)
+    float boost = trex.thBoostForLen(len, s.atr)
+    detectBearPivotLocal(s, len, boost, tf)
 
 export detectBullPivot(MseSettings s, string tf) =>
-    trex.TrexMetrics m = trex.fetchMetrics(tf, s.atr)
-    float trP = m.tr
-    bool master = masterCandle(open[1], high[1], low[1], close[1], trP * s.atr.stdPct / s.atr.spinPct)
-    bool moveDn = moveSizePips(3, trP, s.moveMult)
-    bool revert = trex.roundPips(trex.toPips(close - low[1])) >= trP * s.revertMult
-    bool engulf = engulfMaster(false, open[1], high[1], low[1], close[1], open, high, low, close)
-    bool closeOk = closeInFinalThird(false, open, high, low, close, s.closeThirdPct)
-    bool ok = moveDn and revert and engulf and closeOk and (master or revert)
-    if ok
-        float zBot = low[1]
-        float zTop = math.max(open[1], close[1])
-        int imp = tf == "W" ? 4 : tf == "D" ? 3 : tf == "240" ? 2 : 1
-        PivotLevel.new(bar_index, low[1], zTop, zBot, tf, false, trP, m.th, imp)
-    else
-        na
-
-export pivotTf(string tf) =>
-    tf
+    int len = trex.lenForTf(tf, s.atr)
+    float boost = trex.thBoostForLen(len, s.atr)
+    detectBullPivotLocal(s, len, boost, tf)
 
 export importanceName(int imp) =>
-    imp >= 4 ? "Major-W" : imp == 3 ? "Major-D" : imp == 2 ? "Major-H4" : "Minor"
+    imp >= 5 ? "Mn" : imp == 4 ? "W1" : imp == 3 ? "D1" : imp == 2 ? "H4" : "H1"

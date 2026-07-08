@@ -12,6 +12,7 @@
 | `pine/khakster_trex_atr_lib.pine` | Core TR / TH / Live / pip conversion |
 | `pine/trex_atr_panel.pine` | On-chart panel like MT5 |
 | `pine/market_structure_engine.pine` | Pivot detection (uses ATR lib) |
+| `pine/market_structure_chart.pine` | H1/H4/D1/W1/Mn level boxes on chart |
 
 ## Fractal SMA periods (per timeframe)
 

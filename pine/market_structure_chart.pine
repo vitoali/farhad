@@ -1,0 +1,62 @@
+// Khakster Market Structure — سطوح معتبر H1 / H4 / D1 / W1 / Mn
+// Publish libraries first: KhaksterTrexAtrLib + MarketStructureEngine
+//
+// import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+// import YOUR_USER/MarketStructureEngine/1 as mse
+//
+//@version=5
+indicator("Khakster Structure Levels", overlay=true, max_boxes_count=500, max_labels_count=500)
+
+import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+import YOUR_USER/MarketStructureEngine/1 as mse
+
+grpTf = "Timeframes"
+showH1 = input.bool(true, "H1", group=grpTf, inline="tf")
+showH4 = input.bool(true, "H4", group=grpTf, inline="tf")
+showD1 = input.bool(true, "D1", group=grpTf, inline="tf")
+showW1 = input.bool(true, "W1", group=grpTf, inline="tf")
+showMn = input.bool(true, "Mn", group=grpTf, inline="tf")
+
+grpDisp = "Display"
+showInternal = input.bool(true, "Internal zone", group=grpDisp)
+showLabels = input.bool(true, "TF labels", group=grpDisp)
+zoneTransp = input.int(85, "Zone transparency", minval=50, maxval=95, group=grpDisp)
+
+mseS = mse.defaultMseSettings()
+
+tfEnabled(string tf) =>
+    tf == "60" ? showH1 : tf == "240" ? showH4 : tf == "D" ? showD1 : tf == "W" ? showW1 : showMn
+
+zoneColor(string tf) =>
+    color.new(mse.tfColor(tf), zoneTransp)
+
+borderColor(string tf) =>
+    mse.tfColor(tf)
+
+internalColor(string tf) =>
+    color.new(mse.tfColor(tf), math.min(zoneTransp + 8, 94))
+
+drawPivot(string tf) =>
+    if tfEnabled(tf)
+        int len = trex.lenForTf(tf, mseS.atr)
+        float boost = trex.thBoostForLen(len, mseS.atr)
+        [bSig, bTop, bBot, bPrice, bTime, bHi, bInTop, bInBot] = request.security(syminfo.tickerid, tf, mse.bearPivotPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        [uSig, uTop, uBot, uPrice, uTime, uHi, uInTop, uInBot] = request.security(syminfo.tickerid, tf, mse.bullPivotPack(mseS, len, boost, tf), barmerge.gaps_off, barmerge.lookahead_off)
+        bool newBear = bSig == 1 and bSig[1] != 1 and bTime != 0
+        bool newBull = uSig == 1 and uSig[1] != 1 and uTime != 0
+        if newBear
+            box.new(bTime, bTop, bTime, bBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
+            if showInternal and bInTop > bInBot
+                box.new(bTime, bInTop, bTime, bInBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
+            if showLabels
+                label.new(bTime, bPrice, trex.tfLabel(tf) + " R", xloc=xloc.bar_time, style=label.style_label_down, color=borderColor(tf), textcolor=color.white, size=size.tiny)
+        if newBull
+            box.new(uTime, uTop, uTime, uBot, xloc=xloc.bar_time, extend=extend.right, border_color=borderColor(tf), bgcolor=zoneColor(tf), border_width=1)
+            if showInternal and uInTop > uInBot
+                box.new(uTime, uInTop, uTime, uInBot, xloc=xloc.bar_time, extend=extend.right, border_color=color.new(borderColor(tf), 40), bgcolor=internalColor(tf), border_width=1)
+            if showLabels
+                label.new(uTime, uPrice, trex.tfLabel(tf) + " S", xloc=xloc.bar_time, style=label.style_label_up, color=borderColor(tf), textcolor=color.black, size=size.tiny)
+
+array<string> tfs = mse.structureTfCodes()
+for i = 0 to array.size(tfs) - 1
+    drawPivot(array.get(tfs, i))
