@@ -6,11 +6,11 @@ strategy("Monster Trex Vol", overlay=true, pyramiding=0, max_labels_count=500, m
      default_qty_type=strategy.percent_of_equity, default_qty_value=10, initial_capital=10000,
      commission_type=strategy.commission.percent, commission_value=0.02)
 
-import YOUR_USER/KhaksterTrexAtrLib/1 as trex
-import YOUR_USER/MarketStructureEngine/1 as mse
-import YOUR_USER/KhaksterEntryLib/1 as entry
-import YOUR_USER/KhaksterSmartMoneyLib/1 as sm
-import YOUR_USER/CandleRecognitionLib/1 as cr
+import dorkadehali/KhaksterTrexAtrLib/1 as trex
+import dorkadehali/MarketStructureEngine/1 as mse
+import dorkadehali/KhaksterEntryLib/1 as entry
+import dorkadehali/KhaksterSmartMoneyLib/1 as sm
+import dorkadehali/CandleRecognitionLib/1 as cr
 
 // ── جفت تایم‌فریم ───────────────────────────────────────────────────────────
 grpPair = "TF Pair"
