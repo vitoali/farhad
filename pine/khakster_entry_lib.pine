@@ -88,15 +88,16 @@ export entrySlTp(bool isHigh, float zoneTop, float zoneBot, float pivotPrice, fl
 // MTF: الگوی کندل + SM روی همان TF (برای request.security)
 // خروجی: longSig, shortSig, smCntL, smCntS, bullPid, bearPid, h, l, c, thPips
 export mtfCandleSmPack(cr.Settings crS, sm.SmartMoneySettings smS, mse.MseSettings mseS, string tf) =>
-    bool bull = cr.anyBullishPattern(crS)
-    bool bear = cr.anyBearishPattern(crS)
+    bool[] crFlags = cr.patternFlags(crS)
+    bool bull = cr.anyBullishPattern(crFlags)
+    bool bear = cr.anyBearishPattern(crFlags)
     [bOk, bCnt, _, _, _] = sm.confluencePackAtBar(false, smS)
     [sOk, sCnt, _, _, _] = sm.confluencePackAtBar(true, smS)
     int len = trex.lenForTf(tf, mseS.atr)
     float boost = trex.thBoostForLen(len, mseS.atr)
     [_, thP] = mse.metricsLocal(len, boost, mseS)
-    int bPid = cr.firstBullishPattern(crS)
-    int sPid = cr.firstBearishPattern(crS)
+    int bPid = cr.firstBullishPattern(crFlags)
+    int sPid = cr.firstBearishPattern(crFlags)
     int lSig = bull and bOk == 1 ? 1 : 0
     int sSig = bear and sOk == 1 ? 1 : 0
     [lSig, sSig, bCnt, sCnt, bPid, sPid, high, low, close, thP]

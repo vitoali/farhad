@@ -93,11 +93,12 @@ if barstate.islast and showTable
     table.cell(info, 1, 3, str.tostring(nCtx), text_color=contextColor, text_size=size.tiny)
 
 // ── Strategy exports ───────────────────────────────────────────────────────────
-plot(cr.firstActivePattern(s), "First Pattern ID", display=display.none)
-plot(cr.activePatternTotal(s), "Active Count", display=display.none)
+bool[] _flags = cr.patternFlags(s)
+plot(cr.firstActivePattern(_flags), "First Pattern ID", display=display.none)
+plot(cr.activePatternTotal(_flags), "Active Count", display=display.none)
 
-alertcondition(cr.isPatternActive(14, s), "Reversal bullish", "Bullish reversal pattern")
-alertcondition(cr.isPatternActive(15, s), "Reversal bearish", "Bearish reversal pattern")
-alertcondition(cr.isPatternActive(51, s), "Continuation bullish", "Bullish continuation pattern")
-alertcondition(cr.isPatternActive(52, s), "Continuation bearish", "Bearish continuation pattern")
-alertcondition(cr.isPatternActive(0, s), "Context doji", "Context-dependent pattern")
+alertcondition(cr.patternFlagAt(_flags, 14), "Reversal bullish", "Bullish reversal pattern")
+alertcondition(cr.patternFlagAt(_flags, 15), "Reversal bearish", "Bearish reversal pattern")
+alertcondition(cr.patternFlagAt(_flags, 51), "Continuation bullish", "Bullish continuation pattern")
+alertcondition(cr.patternFlagAt(_flags, 52), "Continuation bearish", "Bearish continuation pattern")
+alertcondition(cr.patternFlagAt(_flags, 0), "Context doji", "Context-dependent pattern")

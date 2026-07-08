@@ -61,6 +61,7 @@ var sm.SmartMoneySettings smS = sm.defaultSmartMoneySettings()
 smS.minConfirmations := minSm
 
 crS = cr.defaultSettings()
+crFlags = cr.patternFlags(crS)
 
 type WatchedLevel
     int birthTime
