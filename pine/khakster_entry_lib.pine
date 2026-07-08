@@ -1,9 +1,9 @@
-// Khakster Entry Library — فاز ۴: تایم فرکتالی + تریگر FTC/RTP
-// Depends: KhaksterTrexAtrLib, MarketStructureEngine
-//
-//@version=5
+//@version=6
 library("KhaksterEntryLib", overlay=true)
 
+// Khakster Entry Library — فاز ۵: تایم فرکتالی + تریگر FTC/RTP
+// Depends: KhaksterTrexAtrLib, MarketStructureEngine, KhaksterSmartMoneyLib, CandleRecognitionLib
+//
 import dorkadehali/KhaksterTrexAtrLib/1 as trex
 import dorkadehali/MarketStructureEngine/1 as mse
 import dorkadehali/KhaksterSmartMoneyLib/1 as sm
@@ -50,7 +50,7 @@ export priceBreakZone(bool isHigh, float c, float zTop, float zBot) =>
     mse.priceBreakZone(isHigh, c, zTop, zBot)
 
 // ── به‌روزرسانی وضعیت سطح روی تایم تریگر ───────────────────────────────────
-export markFtcSpent(bool isHigh, float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, bool ftcSpent) =>
+export markFtcSpent(float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, bool ftcSpent) =>
     bool spent = ftcSpent
     if not spent and priceInZone(hi, lo, ftcTop, ftcBot) and not priceInZone(prevHi, prevLo, ftcTop, ftcBot)
         spent := true
@@ -63,7 +63,7 @@ export rtpFromBar(bool isHigh, float o, float h, float l, float c) =>
 export ftcEntrySignal(bool isHigh, float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, bool ftcCred, int pivotKind, bool broken, bool ftcSpent, bool traded, EntrySettings e) =>
     e.useFtc and not traded and mse.ftcTouchSignal(isHigh, hi, lo, prevHi, prevLo, ftcTop, ftcBot, ftcCred, pivotKind, broken, ftcSpent)
 
-export rtpEntrySignal(bool isHigh, float hi, float lo, float prevHi, float prevLo, float rtpTop, float rtpBot, bool ftcCred, int pivotKind, bool broken, bool ftcSpent, bool rtpSet, bool tradedRtp, EntrySettings e) =>
+export rtpEntrySignal(float hi, float lo, float prevHi, float prevLo, float rtpTop, float rtpBot, bool ftcCred, bool broken, bool ftcSpent, bool rtpSet, bool tradedRtp, EntrySettings e) =>
     bool ok = e.useRtp and not tradedRtp and ftcCred and ftcSpent and rtpSet and not broken
     ok and priceInZone(hi, lo, rtpTop, rtpBot) and not priceInZone(prevHi, prevLo, rtpTop, rtpBot)
 
@@ -71,7 +71,7 @@ export scanEntry(bool isHigh, float hi, float lo, float prevHi, float prevLo, fl
     int sig = ENTRY_NONE
     if ftcEntrySignal(isHigh, hi, lo, prevHi, prevLo, ftcTop, ftcBot, ftcCred, pivotKind, broken, ftcSpent, tradedFtc, e)
         sig := ENTRY_FTC
-    else if rtpEntrySignal(isHigh, hi, lo, prevHi, prevLo, rtpTop, rtpBot, ftcCred, pivotKind, broken, ftcSpent, rtpSet, tradedRtp, e)
+    else if rtpEntrySignal(hi, lo, prevHi, prevLo, rtpTop, rtpBot, ftcCred, broken, ftcSpent, rtpSet, tradedRtp, e)
         sig := ENTRY_RTP
     sig
 
