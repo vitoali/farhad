@@ -494,7 +494,7 @@ export patternBearish(int id) =>
 export patternFlags(Settings s) =>
     bool up = inUptrend(s)
     bool dn = inDowntrend(s)
-    bool[] f = array.new_bool(64)
+    bool[] f = array.new_bool(64, false)
     array.set(f, 0, patDoji(open, high, low, close, s))
     array.set(f, 1, patLongLeggedDoji(open, high, low, close, s))
     array.set(f, 2, patGravestoneDoji(open, high, low, close, s))
@@ -561,9 +561,8 @@ export patternFlags(Settings s) =>
     array.set(f, 63, patFryPanBottom(s))
     f
 
-export isPatternActive(int id, Settings s) =>
-    bool[] f = patternFlags(s)
-    id >= 0 and id <= 63 ? array.get(f, id) : false
+export patternFlagAt(bool[] flags, int id) =>
+    id >= 0 and id <= 63 and array.get(flags, id)
 
 // Returns the first active pattern id on the current bar, or -1 if none.
 export firstActivePattern(Settings s) =>
@@ -571,8 +570,9 @@ export firstActivePattern(Settings s) =>
     int result = -1
     for i = 0 to patternCount()
         bool active = array.get(f, i)
-        if result == -1 and active
-            result := i
+        if result == -1
+            if active
+                result := i
     result
 
 // Returns how many patterns are active on the current bar.
@@ -580,7 +580,8 @@ export activePatternTotal(Settings s) =>
     bool[] f = patternFlags(s)
     int total = 0
     for i = 0 to patternCount()
-        if array.get(f, i)
+        bool active = array.get(f, i)
+        if active
             total += 1
     total
 
@@ -590,8 +591,11 @@ export firstBullishPattern(Settings s) =>
     int result = -1
     for i = 0 to patternCount()
         bool active = array.get(f, i)
-        if result == -1 and active and patternBullish(i)
-            result := i
+        bool bull = patternBullish(i)
+        if result == -1
+            if active
+                if bull
+                    result := i
     result
 
 export firstBearishPattern(Settings s) =>
@@ -599,38 +603,55 @@ export firstBearishPattern(Settings s) =>
     int result = -1
     for i = 0 to patternCount()
         bool active = array.get(f, i)
-        if result == -1 and active and patternBearish(i)
-            result := i
+        bool bear = patternBearish(i)
+        if result == -1
+            if active
+                if bear
+                    result := i
     result
 
 export anyBullishPattern(Settings s) =>
     bool[] f = patternFlags(s)
     bool any = false
     for i = 0 to patternCount()
-        if array.get(f, i) and patternBullish(i)
-            any := true
+        bool active = array.get(f, i)
+        bool bull = patternBullish(i)
+        if not any
+            if active
+                if bull
+                    any := true
     any
 
 export anyBearishPattern(Settings s) =>
     bool[] f = patternFlags(s)
     bool any = false
     for i = 0 to patternCount()
-        if array.get(f, i) and patternBearish(i)
-            any := true
+        bool active = array.get(f, i)
+        bool bear = patternBearish(i)
+        if not any
+            if active
+                if bear
+                    any := true
     any
 
 export bullishPatternCount(Settings s) =>
     bool[] f = patternFlags(s)
     int n = 0
     for i = 0 to patternCount()
-        if array.get(f, i) and patternBullish(i)
-            n += 1
+        bool active = array.get(f, i)
+        bool bull = patternBullish(i)
+        if active
+            if bull
+                n += 1
     n
 
 export bearishPatternCount(Settings s) =>
     bool[] f = patternFlags(s)
     int n = 0
     for i = 0 to patternCount()
-        if array.get(f, i) and patternBearish(i)
-            n += 1
+        bool active = array.get(f, i)
+        bool bear = patternBearish(i)
+        if active
+            if bear
+                n += 1
     n
