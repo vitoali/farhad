@@ -118,7 +118,7 @@ export pivotKindShort(int k) =>
     k == PIVOT_PULLBACK ? "PB" : k == PIVOT_SETTLEMENT ? "Set" : "Rev"
 
 export zonesOverlap(float t1, float b1, float t2, float b2) =>
-    not (b1 > t2 or b2 < t1)
+    not (b1 > t2 or t1 < b2)
 
 export suppressedByHigherTf(string tf, float zTop, float zBot, bool isHigh, array<StructureLevel> existing) =>
     bool sup = false
