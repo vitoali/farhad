@@ -27,7 +27,7 @@ useH4 = input.bool(true, "H4", group=grpHtf, inline="htf2")
 useH1 = input.bool(true, "H1", group=grpHtf, inline="htf2")
 
 grpSm = "Smart Money"
-minSm = input.int(2, "Min SM confirmations", minval=1, maxval=3, group=grpSm)
+minSm = input.int(1, "Min SM confirmations", minval=1, maxval=3, group=grpSm)
 
 grpEntry = "Entry"
 minScore = input.int(40, "Min structure score", group=grpEntry)
