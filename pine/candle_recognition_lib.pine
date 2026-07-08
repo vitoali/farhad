@@ -490,121 +490,147 @@ export patternBullish(int id) =>
 export patternBearish(int id) =>
     id == 7 or id == 8 or id == 11 or id == 13 or id == 15 or id == 16 or id == 19 or id == 21 or id == 22 or id == 25 or id == 26 or id == 27 or id == 28 or id == 30 or id == 32 or id == 34 or id == 36 or id == 38 or id == 40 or id == 41 or id == 43 or id == 44 or id == 46 or id == 47 or id == 48 or id == 52 or id == 55 or id == 56 or id == 58 or id == 60 or id == 62
 
+// ── همه ۶۴ الگو هر بار یکجا (Pine v6 consistency) ─────────────────────────────
+export patternFlags(Settings s) =>
+    bool up = inUptrend(s)
+    bool dn = inDowntrend(s)
+    bool[] f = array.new_bool(64)
+    array.set(f, 0, patDoji(open, high, low, close, s))
+    array.set(f, 1, patLongLeggedDoji(open, high, low, close, s))
+    array.set(f, 2, patGravestoneDoji(open, high, low, close, s))
+    array.set(f, 3, patDragonflyDoji(open, high, low, close, s))
+    array.set(f, 4, patRickshawMan(open, high, low, close, s))
+    array.set(f, 5, patSpinningTop(open, high, low, close, s))
+    array.set(f, 6, patHammer(open, high, low, close, s) and dn)
+    array.set(f, 7, patHangingMan(open, high, low, close, s) and up)
+    array.set(f, 8, patShootingStar(open, high, low, close, s) and up)
+    array.set(f, 9, patInvertedHammer(open, high, low, close, s) and dn)
+    array.set(f, 10, patBullishMarubozu(open, high, low, close, s))
+    array.set(f, 11, patBearishMarubozu(open, high, low, close, s))
+    array.set(f, 12, patBullishBeltHold(open, high, low, close, s))
+    array.set(f, 13, patBearishBeltHold(open, high, low, close, s))
+    array.set(f, 14, patBullishEngulfing(s))
+    array.set(f, 15, patBearishEngulfing(s))
+    array.set(f, 16, patDarkCloudCover(s))
+    array.set(f, 17, patPiercingPattern(s))
+    array.set(f, 18, patBullishHarami(s))
+    array.set(f, 19, patBearishHarami(s))
+    array.set(f, 20, patBullishHaramiCross(s))
+    array.set(f, 21, patBearishHaramiCross(s))
+    array.set(f, 22, patTweezersTop(s))
+    array.set(f, 23, patTweezersBottom(s))
+    array.set(f, 24, patBullishCounterattack(s))
+    array.set(f, 25, patBearishCounterattack(s))
+    array.set(f, 26, patOnNeck(s))
+    array.set(f, 27, patInNeck(s))
+    array.set(f, 28, patThrusting(s))
+    array.set(f, 29, patBullishSeparatingLines(s))
+    array.set(f, 30, patBearishSeparatingLines(s))
+    array.set(f, 31, patUpsideWindow(s))
+    array.set(f, 32, patDownsideWindow(s))
+    array.set(f, 33, patUpwardGappingTasuki(s))
+    array.set(f, 34, patDownwardGappingTasuki(s))
+    array.set(f, 35, patUpgapSideBySideWhite(s))
+    array.set(f, 36, patDowngapSideBySideWhite(s))
+    array.set(f, 37, patMorningStar(s))
+    array.set(f, 38, patEveningStar(s))
+    array.set(f, 39, patMorningDojiStar(s))
+    array.set(f, 40, patEveningDojiStar(s))
+    array.set(f, 41, patAbandonedBabyTop(s))
+    array.set(f, 42, patAbandonedBabyBottom(s))
+    array.set(f, 43, patThreeBlackCrows(s))
+    array.set(f, 44, patUpsideGapTwoCrows(s))
+    array.set(f, 45, patThreeWhiteSoldiers(s))
+    array.set(f, 46, patAdvanceBlock(s))
+    array.set(f, 47, patStalledPattern(s))
+    array.set(f, 48, patTriStarTop(s))
+    array.set(f, 49, patTriStarBottom(s))
+    array.set(f, 50, patUniqueThreeRiverBottom(s))
+    array.set(f, 51, patRisingThreeMethods(s))
+    array.set(f, 52, patFallingThreeMethods(s))
+    array.set(f, 53, patMatHold(s))
+    array.set(f, 54, patHighPriceGappingPlay(s))
+    array.set(f, 55, patLowPriceGappingPlay(s))
+    array.set(f, 56, patThreeMountainTop(s))
+    array.set(f, 57, patThreeRiverBottom(s))
+    array.set(f, 58, patThreeBuddhaTop(s))
+    array.set(f, 59, patInvertedThreeBuddhaBottom(s))
+    array.set(f, 60, patTowerTop(s))
+    array.set(f, 61, patTowerBottom(s))
+    array.set(f, 62, patDumplingTop(s))
+    array.set(f, 63, patFryPanBottom(s))
+    f
+
 export isPatternActive(int id, Settings s) =>
-    switch id
-        0  => patDoji(open, high, low, close, s)
-        1  => patLongLeggedDoji(open, high, low, close, s)
-        2  => patGravestoneDoji(open, high, low, close, s)
-        3  => patDragonflyDoji(open, high, low, close, s)
-        4  => patRickshawMan(open, high, low, close, s)
-        5  => patSpinningTop(open, high, low, close, s)
-        6  => patHammerSignal(s)
-        7  => patHangingManSignal(s)
-        8  => patShootingStarSignal(s)
-        9  => patInvertedHammerSignal(s)
-        10 => patBullishMarubozu(open, high, low, close, s)
-        11 => patBearishMarubozu(open, high, low, close, s)
-        12 => patBullishBeltHold(open, high, low, close, s)
-        13 => patBearishBeltHold(open, high, low, close, s)
-        14 => patBullishEngulfing(s)
-        15 => patBearishEngulfing(s)
-        16 => patDarkCloudCover(s)
-        17 => patPiercingPattern(s)
-        18 => patBullishHarami(s)
-        19 => patBearishHarami(s)
-        20 => patBullishHaramiCross(s)
-        21 => patBearishHaramiCross(s)
-        22 => patTweezersTop(s)
-        23 => patTweezersBottom(s)
-        24 => patBullishCounterattack(s)
-        25 => patBearishCounterattack(s)
-        26 => patOnNeck(s)
-        27 => patInNeck(s)
-        28 => patThrusting(s)
-        29 => patBullishSeparatingLines(s)
-        30 => patBearishSeparatingLines(s)
-        31 => patUpsideWindow(s)
-        32 => patDownsideWindow(s)
-        33 => patUpwardGappingTasuki(s)
-        34 => patDownwardGappingTasuki(s)
-        35 => patUpgapSideBySideWhite(s)
-        36 => patDowngapSideBySideWhite(s)
-        37 => patMorningStar(s)
-        38 => patEveningStar(s)
-        39 => patMorningDojiStar(s)
-        40 => patEveningDojiStar(s)
-        41 => patAbandonedBabyTop(s)
-        42 => patAbandonedBabyBottom(s)
-        43 => patThreeBlackCrows(s)
-        44 => patUpsideGapTwoCrows(s)
-        45 => patThreeWhiteSoldiers(s)
-        46 => patAdvanceBlock(s)
-        47 => patStalledPattern(s)
-        48 => patTriStarTop(s)
-        49 => patTriStarBottom(s)
-        50 => patUniqueThreeRiverBottom(s)
-        51 => patRisingThreeMethods(s)
-        52 => patFallingThreeMethods(s)
-        53 => patMatHold(s)
-        54 => patHighPriceGappingPlay(s)
-        55 => patLowPriceGappingPlay(s)
-        56 => patThreeMountainTop(s)
-        57 => patThreeRiverBottom(s)
-        58 => patThreeBuddhaTop(s)
-        59 => patInvertedThreeBuddhaBottom(s)
-        60 => patTowerTop(s)
-        61 => patTowerBottom(s)
-        62 => patDumplingTop(s)
-        63 => patFryPanBottom(s)
-        => false
+    bool[] f = patternFlags(s)
+    id >= 0 and id <= 63 ? array.get(f, id) : false
 
 // Returns the first active pattern id on the current bar, or -1 if none.
 export firstActivePattern(Settings s) =>
+    bool[] f = patternFlags(s)
     int result = -1
     for i = 0 to patternCount()
-        if result == -1 and isPatternActive(i, s)
+        bool active = array.get(f, i)
+        if result == -1 and active
             result := i
     result
 
 // Returns how many patterns are active on the current bar.
 export activePatternTotal(Settings s) =>
+    bool[] f = patternFlags(s)
     int total = 0
     for i = 0 to patternCount()
-        if isPatternActive(i, s)
+        if array.get(f, i)
             total += 1
     total
 
 // ── اسکن همه ۶۴ الگو (۰–۶۳) برای استراتژی ───────────────────────────────────
 export firstBullishPattern(Settings s) =>
+    bool[] f = patternFlags(s)
     int result = -1
     for i = 0 to patternCount()
-        if result == -1 and isPatternActive(i, s) and patternBullish(i)
+        bool active = array.get(f, i)
+        if result == -1 and active and patternBullish(i)
             result := i
     result
 
 export firstBearishPattern(Settings s) =>
+    bool[] f = patternFlags(s)
     int result = -1
     for i = 0 to patternCount()
-        if result == -1 and isPatternActive(i, s) and patternBearish(i)
+        bool active = array.get(f, i)
+        if result == -1 and active and patternBearish(i)
             result := i
     result
 
 export anyBullishPattern(Settings s) =>
-    firstBullishPattern(s) != -1
+    bool[] f = patternFlags(s)
+    bool any = false
+    for i = 0 to patternCount()
+        if array.get(f, i) and patternBullish(i)
+            any := true
+    any
 
 export anyBearishPattern(Settings s) =>
-    firstBearishPattern(s) != -1
+    bool[] f = patternFlags(s)
+    bool any = false
+    for i = 0 to patternCount()
+        if array.get(f, i) and patternBearish(i)
+            any := true
+    any
 
 export bullishPatternCount(Settings s) =>
+    bool[] f = patternFlags(s)
     int n = 0
     for i = 0 to patternCount()
-        if isPatternActive(i, s) and patternBullish(i)
+        if array.get(f, i) and patternBullish(i)
             n += 1
     n
 
 export bearishPatternCount(Settings s) =>
+    bool[] f = patternFlags(s)
     int n = 0
     for i = 0 to patternCount()
-        if isPatternActive(i, s) and patternBearish(i)
+        if array.get(f, i) and patternBearish(i)
             n += 1
     n
