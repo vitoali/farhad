@@ -1,0 +1,259 @@
+//@version=5
+indicator("Candlestick Pattern Detector", overlay=true, max_labels_count=500)
+
+// This indicator groups common Japanese candlestick patterns into bullish,
+// bearish, and neutral/continuation signals. Thresholds are configurable so the
+// definitions can be matched to a specific book or trading strategy later.
+
+bodyLength = input.int(20, "Average body length", minval=5)
+trendLength = input.int(10, "Trend filter length", minval=3)
+useTrendFilter = input.bool(true, "Use trend filter")
+showLabels = input.bool(true, "Show pattern labels")
+showMarkers = input.bool(true, "Show compact markers")
+highlightBars = input.bool(false, "Color detected bars")
+
+dojiPercent = input.float(0.10, "Doji body <= range", minval=0.01, maxval=0.50, step=0.01)
+smallBodyFactor = input.float(0.60, "Small body factor", minval=0.10, maxval=1.50, step=0.05)
+longBodyFactor = input.float(1.20, "Long body factor", minval=0.50, maxval=3.00, step=0.05)
+shadowFactor = input.float(2.00, "Long shadow/body factor", minval=1.00, maxval=5.00, step=0.10)
+equalToleranceAtr = input.float(0.08, "Equal price tolerance (ATR)", minval=0.00, maxval=1.00, step=0.01)
+
+body = math.abs(close - open)
+barRange = math.max(high - low, syminfo.mintick)
+avgBody = ta.sma(body, bodyLength)
+atr = ta.atr(bodyLength)
+trendMa = ta.sma(close, trendLength)
+
+trendUpRaw = close > trendMa and trendMa > trendMa[1]
+trendDownRaw = close < trendMa and trendMa < trendMa[1]
+trendUp = not useTrendFilter or trendUpRaw
+trendDown = not useTrendFilter or trendDownRaw
+
+f_body(int i) =>
+    math.abs(close[i] - open[i])
+
+f_range(int i) =>
+    math.max(high[i] - low[i], syminfo.mintick)
+
+f_upper(int i) =>
+    high[i] - math.max(open[i], close[i])
+
+f_lower(int i) =>
+    math.min(open[i], close[i]) - low[i]
+
+f_mid(int i) =>
+    (open[i] + close[i]) / 2.0
+
+f_bull(int i) =>
+    close[i] > open[i]
+
+f_bear(int i) =>
+    close[i] < open[i]
+
+f_doji(int i) =>
+    f_body(i) <= f_range(i) * dojiPercent
+
+f_small(int i) =>
+    f_body(i) <= nz(avgBody[i], f_body(i)) * smallBodyFactor or f_doji(i)
+
+f_long(int i) =>
+    f_body(i) >= nz(avgBody[i], f_body(i)) * longBodyFactor
+
+f_equal(float a, float b) =>
+    math.abs(a - b) <= math.max(atr * equalToleranceAtr, syminfo.mintick)
+
+f_body_top(int i) =>
+    math.max(open[i], close[i])
+
+f_body_bottom(int i) =>
+    math.min(open[i], close[i])
+
+f_body_inside(int inner, int outer) =>
+    f_body_top(inner) <= f_body_top(outer) and f_body_bottom(inner) >= f_body_bottom(outer)
+
+f_body_gap_up(int left, int right) =>
+    f_body_bottom(left) > f_body_top(right)
+
+f_body_gap_down(int left, int right) =>
+    f_body_top(left) < f_body_bottom(right)
+
+f_near_high(int i) =>
+    high[i] - f_body_top(i) <= f_range(i) * 0.15
+
+f_near_low(int i) =>
+    f_body_bottom(i) - low[i] <= f_range(i) * 0.15
+
+f_hammer_shape(int i) =>
+    f_body(i) > 0 and f_lower(i) >= f_body(i) * shadowFactor and f_upper(i) <= f_body(i) * 0.60 and f_body_top(i) >= low[i] + f_range(i) * 0.60
+
+f_inverted_hammer_shape(int i) =>
+    f_body(i) > 0 and f_upper(i) >= f_body(i) * shadowFactor and f_lower(i) <= f_body(i) * 0.60 and f_body_bottom(i) <= low[i] + f_range(i) * 0.40
+
+f_marubozu_bull(int i) =>
+    f_bull(i) and f_long(i) and f_upper(i) <= f_range(i) * 0.05 and f_lower(i) <= f_range(i) * 0.05
+
+f_marubozu_bear(int i) =>
+    f_bear(i) and f_long(i) and f_upper(i) <= f_range(i) * 0.05 and f_lower(i) <= f_range(i) * 0.05
+
+// Single-candle patterns.
+doji = f_doji(0)
+longLeggedDoji = doji and f_upper(0) >= f_range(0) * 0.25 and f_lower(0) >= f_range(0) * 0.25
+dragonflyDoji = doji and f_lower(0) >= f_range(0) * 0.60 and f_upper(0) <= f_range(0) * 0.10
+gravestoneDoji = doji and f_upper(0) >= f_range(0) * 0.60 and f_lower(0) <= f_range(0) * 0.10
+spinningTop = not doji and f_small(0) and f_upper(0) >= f_body(0) * 0.50 and f_lower(0) >= f_body(0) * 0.50
+bullishMarubozu = f_marubozu_bull(0)
+bearishMarubozu = f_marubozu_bear(0)
+hammer = trendDown and f_hammer_shape(0)
+hangingMan = trendUp and f_hammer_shape(0)
+invertedHammer = trendDown and f_inverted_hammer_shape(0)
+shootingStar = trendUp and f_inverted_hammer_shape(0)
+bullishBeltHold = trendDown and f_bull(0) and f_long(0) and f_near_low(0)
+bearishBeltHold = trendUp and f_bear(0) and f_long(0) and f_near_high(0)
+
+// Two-candle reversal and continuation patterns.
+bullishEngulfing = trendDown and f_bear(1) and f_bull(0) and open <= close[1] and close >= open[1]
+bearishEngulfing = trendUp and f_bull(1) and f_bear(0) and open >= close[1] and close <= open[1]
+bullishHarami = trendDown and f_bear(1) and (f_bull(0) or f_doji(0)) and f_body_inside(0, 1) and f_small(0)
+bearishHarami = trendUp and f_bull(1) and (f_bear(0) or f_doji(0)) and f_body_inside(0, 1) and f_small(0)
+bullishHaramiCross = bullishHarami and doji
+bearishHaramiCross = bearishHarami and doji
+piercingLine = trendDown and f_bear(1) and f_long(1) and f_bull(0) and open < close[1] and close > f_mid(1) and close < open[1]
+darkCloudCover = trendUp and f_bull(1) and f_long(1) and f_bear(0) and open > close[1] and close < f_mid(1) and close > open[1]
+tweezerBottom = trendDown and f_bear(1) and f_bull(0) and f_equal(low, low[1])
+tweezerTop = trendUp and f_bull(1) and f_bear(0) and f_equal(high, high[1])
+matchingLow = trendDown and f_bear(1) and f_bear(0) and f_equal(close, close[1])
+homingPigeon = trendDown and f_bear(1) and f_bear(0) and f_body_inside(0, 1)
+bullishCounterattack = trendDown and f_bear(1) and f_bull(0) and open < close[1] and f_equal(close, close[1])
+bearishCounterattack = trendUp and f_bull(1) and f_bear(0) and open > close[1] and f_equal(close, close[1])
+bullishKicking = f_marubozu_bear(1) and f_marubozu_bull(0) and f_body_gap_up(0, 1)
+bearishKicking = f_marubozu_bull(1) and f_marubozu_bear(0) and f_body_gap_down(0, 1)
+bullishSeparatingLines = trendUp and f_bear(1) and f_bull(0) and f_equal(open, open[1])
+bearishSeparatingLines = trendDown and f_bull(1) and f_bear(0) and f_equal(open, open[1])
+onNeckLine = trendDown and f_bear(1) and f_bull(0) and open < low[1] and f_equal(close, low[1])
+inNeckLine = trendDown and f_bear(1) and f_bull(0) and open < low[1] and close > close[1] and close < f_mid(1)
+thrustingLine = trendDown and f_bear(1) and f_bull(0) and open < low[1] and close > f_mid(1) and close < open[1]
+
+// Three-candle patterns.
+morningStar = trendDown and f_bear(2) and f_long(2) and f_small(1) and f_bull(0) and close > f_mid(2)
+eveningStar = trendUp and f_bull(2) and f_long(2) and f_small(1) and f_bear(0) and close < f_mid(2)
+morningDojiStar = morningStar and f_doji(1)
+eveningDojiStar = eveningStar and f_doji(1)
+abandonedBabyBullish = trendDown and f_bear(2) and f_doji(1) and f_bull(0) and high[1] < low[2] and low > high[1]
+abandonedBabyBearish = trendUp and f_bull(2) and f_doji(1) and f_bear(0) and low[1] > high[2] and high < low[1]
+threeWhiteSoldiers = trendDown and f_bull(2) and f_bull(1) and f_bull(0) and close[1] > close[2] and close > close[1] and open[1] > open[2] and open[1] < close[2] and open > open[1] and open < close[1] and f_upper(2) <= f_body(2) and f_upper(1) <= f_body(1) and f_upper(0) <= f_body(0)
+threeBlackCrows = trendUp and f_bear(2) and f_bear(1) and f_bear(0) and close[1] < close[2] and close < close[1] and open[1] < open[2] and open[1] > close[2] and open < open[1] and open > close[1] and f_lower(2) <= f_body(2) and f_lower(1) <= f_body(1) and f_lower(0) <= f_body(0)
+threeInsideUp = trendDown and f_bear(2) and f_body_inside(1, 2) and (f_bull(1) or f_doji(1)) and f_bull(0) and close > open[2]
+threeInsideDown = trendUp and f_bull(2) and f_body_inside(1, 2) and (f_bear(1) or f_doji(1)) and f_bear(0) and close < open[2]
+threeOutsideUp = trendDown and f_bear(2) and f_bull(1) and open[1] <= close[2] and close[1] >= open[2] and f_bull(0) and close > close[1]
+threeOutsideDown = trendUp and f_bull(2) and f_bear(1) and open[1] >= close[2] and close[1] <= open[2] and f_bear(0) and close < close[1]
+stickSandwich = trendDown and f_bear(2) and f_bull(1) and f_bear(0) and f_equal(close, close[2])
+upsideGapTwoCrows = trendUp and f_bull(2) and f_bear(1) and f_bear(0) and open[1] > close[2] and open > open[1] and close < close[1] and close > close[2]
+uniqueThreeRiverBottom = trendDown and f_bear(2) and f_hammer_shape(1) and low[1] < low[2] and f_bull(0) and close < close[1]
+advanceBlock = trendUp and f_bull(2) and f_bull(1) and f_bull(0) and close[1] > close[2] and close > close[1] and f_body(1) < f_body(2) and f_body(0) < f_body(1) and f_upper(0) > f_body(0)
+stalledPattern = trendUp and f_bull(2) and f_bull(1) and f_bull(0) and f_long(2) and f_long(1) and f_small(0) and close > close[1]
+deliberation = trendUp and f_bull(2) and f_bull(1) and f_bull(0) and close[1] > close[2] and close > close[1] and f_body(0) < f_body(1) and f_body(1) < f_body(2)
+
+// Four and five-candle patterns.
+risingThreeMethods = f_bull(4) and f_long(4) and f_small(3) and f_small(2) and f_small(1) and high[3] < high[4] and low[3] > low[4] and high[2] < high[4] and low[2] > low[4] and high[1] < high[4] and low[1] > low[4] and f_bull(0) and f_long(0) and close > close[4]
+fallingThreeMethods = f_bear(4) and f_long(4) and f_small(3) and f_small(2) and f_small(1) and high[3] < high[4] and low[3] > low[4] and high[2] < high[4] and low[2] > low[4] and high[1] < high[4] and low[1] > low[4] and f_bear(0) and f_long(0) and close < close[4]
+matHold = trendUp and f_bull(4) and f_long(4) and f_body_gap_up(3, 4) and f_small(3) and f_small(2) and f_small(1) and low[3] > close[4] and f_bull(0) and close > close[3]
+ladderBottom = trendDown and f_bear(4) and f_bear(3) and f_bear(2) and f_bear(1) and close[3] < close[4] and close[2] < close[3] and close[1] < close[2] and f_upper(1) > f_body(1) and f_bull(0) and close > open[1]
+concealingBabySwallow = trendDown and f_marubozu_bear(3) and f_marubozu_bear(2) and f_bear(1) and high[1] > close[2] and f_bear(0) and open > close[1] and close < close[1]
+
+// Gap/side-by-side continuation patterns.
+upsideTasukiGap = trendUp and f_bull(2) and f_bull(1) and f_body_gap_up(1, 2) and f_bear(0) and open > close[1] and close > open[1] and close < close[1]
+downsideTasukiGap = trendDown and f_bear(2) and f_bear(1) and f_body_gap_down(1, 2) and f_bull(0) and open < close[1] and close < open[1] and close > close[1]
+upsideGapSideBySideWhite = trendUp and f_bull(2) and f_bull(1) and f_bull(0) and f_body_gap_up(1, 2) and f_equal(open, open[1]) and f_equal(close, close[1])
+downsideGapSideBySideWhite = trendDown and f_bear(2) and f_bull(1) and f_bull(0) and f_body_gap_down(1, 2) and f_equal(open, open[1]) and f_equal(close, close[1])
+
+anyBullish = hammer or invertedHammer or bullishBeltHold or bullishMarubozu or dragonflyDoji or bullishEngulfing or bullishHarami or bullishHaramiCross or piercingLine or tweezerBottom or matchingLow or homingPigeon or bullishCounterattack or bullishKicking or morningStar or morningDojiStar or abandonedBabyBullish or threeWhiteSoldiers or threeInsideUp or threeOutsideUp or stickSandwich or uniqueThreeRiverBottom or ladderBottom
+anyBearish = hangingMan or shootingStar or bearishBeltHold or bearishMarubozu or gravestoneDoji or bearishEngulfing or bearishHarami or bearishHaramiCross or darkCloudCover or tweezerTop or bearishCounterattack or bearishKicking or eveningStar or eveningDojiStar or abandonedBabyBearish or threeBlackCrows or threeInsideDown or threeOutsideDown or upsideGapTwoCrows or advanceBlock or stalledPattern or deliberation or concealingBabySwallow
+anyNeutral = doji or longLeggedDoji or spinningTop or bullishSeparatingLines or bearishSeparatingLines or onNeckLine or inNeckLine or thrustingLine or risingThreeMethods or fallingThreeMethods or matHold or upsideTasukiGap or downsideTasukiGap or upsideGapSideBySideWhite or downsideGapSideBySideWhite
+anyPattern = anyBullish or anyBearish or anyNeutral
+
+string bullText = ""
+bullText := bullText + (hammer ? "Hammer\n" : "")
+bullText := bullText + (invertedHammer ? "Inverted Hammer\n" : "")
+bullText := bullText + (bullishBeltHold ? "Bullish Belt Hold\n" : "")
+bullText := bullText + (bullishMarubozu ? "Bullish Marubozu\n" : "")
+bullText := bullText + (dragonflyDoji ? "Dragonfly Doji\n" : "")
+bullText := bullText + (bullishEngulfing ? "Bullish Engulfing\n" : "")
+bullText := bullText + (bullishHarami ? "Bullish Harami\n" : "")
+bullText := bullText + (bullishHaramiCross ? "Bullish Harami Cross\n" : "")
+bullText := bullText + (piercingLine ? "Piercing Line\n" : "")
+bullText := bullText + (tweezerBottom ? "Tweezer Bottom\n" : "")
+bullText := bullText + (matchingLow ? "Matching Low\n" : "")
+bullText := bullText + (homingPigeon ? "Homing Pigeon\n" : "")
+bullText := bullText + (bullishCounterattack ? "Bullish Counterattack\n" : "")
+bullText := bullText + (bullishKicking ? "Bullish Kicking\n" : "")
+bullText := bullText + (morningStar ? "Morning Star\n" : "")
+bullText := bullText + (morningDojiStar ? "Morning Doji Star\n" : "")
+bullText := bullText + (abandonedBabyBullish ? "Abandoned Baby Bullish\n" : "")
+bullText := bullText + (threeWhiteSoldiers ? "Three White Soldiers\n" : "")
+bullText := bullText + (threeInsideUp ? "Three Inside Up\n" : "")
+bullText := bullText + (threeOutsideUp ? "Three Outside Up\n" : "")
+bullText := bullText + (stickSandwich ? "Stick Sandwich\n" : "")
+bullText := bullText + (uniqueThreeRiverBottom ? "Unique Three River Bottom\n" : "")
+bullText := bullText + (ladderBottom ? "Ladder Bottom\n" : "")
+
+string bearText = ""
+bearText := bearText + (hangingMan ? "Hanging Man\n" : "")
+bearText := bearText + (shootingStar ? "Shooting Star\n" : "")
+bearText := bearText + (bearishBeltHold ? "Bearish Belt Hold\n" : "")
+bearText := bearText + (bearishMarubozu ? "Bearish Marubozu\n" : "")
+bearText := bearText + (gravestoneDoji ? "Gravestone Doji\n" : "")
+bearText := bearText + (bearishEngulfing ? "Bearish Engulfing\n" : "")
+bearText := bearText + (bearishHarami ? "Bearish Harami\n" : "")
+bearText := bearText + (bearishHaramiCross ? "Bearish Harami Cross\n" : "")
+bearText := bearText + (darkCloudCover ? "Dark Cloud Cover\n" : "")
+bearText := bearText + (tweezerTop ? "Tweezer Top\n" : "")
+bearText := bearText + (bearishCounterattack ? "Bearish Counterattack\n" : "")
+bearText := bearText + (bearishKicking ? "Bearish Kicking\n" : "")
+bearText := bearText + (eveningStar ? "Evening Star\n" : "")
+bearText := bearText + (eveningDojiStar ? "Evening Doji Star\n" : "")
+bearText := bearText + (abandonedBabyBearish ? "Abandoned Baby Bearish\n" : "")
+bearText := bearText + (threeBlackCrows ? "Three Black Crows\n" : "")
+bearText := bearText + (threeInsideDown ? "Three Inside Down\n" : "")
+bearText := bearText + (threeOutsideDown ? "Three Outside Down\n" : "")
+bearText := bearText + (upsideGapTwoCrows ? "Upside Gap Two Crows\n" : "")
+bearText := bearText + (advanceBlock ? "Advance Block\n" : "")
+bearText := bearText + (stalledPattern ? "Stalled Pattern\n" : "")
+bearText := bearText + (deliberation ? "Deliberation\n" : "")
+bearText := bearText + (concealingBabySwallow ? "Concealing Baby Swallow\n" : "")
+
+string neutralText = ""
+neutralText := neutralText + (doji ? "Doji\n" : "")
+neutralText := neutralText + (longLeggedDoji ? "Long-Legged Doji\n" : "")
+neutralText := neutralText + (spinningTop ? "Spinning Top\n" : "")
+neutralText := neutralText + (bullishSeparatingLines ? "Bullish Separating Lines\n" : "")
+neutralText := neutralText + (bearishSeparatingLines ? "Bearish Separating Lines\n" : "")
+neutralText := neutralText + (onNeckLine ? "On-Neck Line\n" : "")
+neutralText := neutralText + (inNeckLine ? "In-Neck Line\n" : "")
+neutralText := neutralText + (thrustingLine ? "Thrusting Line\n" : "")
+neutralText := neutralText + (risingThreeMethods ? "Rising Three Methods\n" : "")
+neutralText := neutralText + (fallingThreeMethods ? "Falling Three Methods\n" : "")
+neutralText := neutralText + (matHold ? "Mat Hold\n" : "")
+neutralText := neutralText + (upsideTasukiGap ? "Upside Tasuki Gap\n" : "")
+neutralText := neutralText + (downsideTasukiGap ? "Downside Tasuki Gap\n" : "")
+neutralText := neutralText + (upsideGapSideBySideWhite ? "Upside Gap Side-by-Side White Lines\n" : "")
+neutralText := neutralText + (downsideGapSideBySideWhite ? "Downside Gap Side-by-Side White Lines\n" : "")
+
+plotshape(showMarkers and anyBullish, title="Bullish candlestick pattern", style=shape.triangleup, location=location.belowbar, color=color.new(color.lime, 0), size=size.tiny, text="Bull")
+plotshape(showMarkers and anyBearish, title="Bearish candlestick pattern", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.tiny, text="Bear")
+plotshape(showMarkers and anyNeutral and not anyBullish and not anyBearish, title="Neutral candlestick pattern", style=shape.circle, location=location.top, color=color.new(color.gray, 0), size=size.tiny, text="N")
+
+if showLabels and bullText != ""
+    label.new(bar_index, low - atr * 0.25, bullText, style=label.style_label_up, color=color.new(color.lime, 0), textcolor=color.black, size=size.tiny)
+
+if showLabels and bearText != ""
+    label.new(bar_index, high + atr * 0.25, bearText, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.tiny)
+
+if showLabels and neutralText != "" and bullText == "" and bearText == ""
+    label.new(bar_index, high + atr * 0.10, neutralText, style=label.style_label_left, color=color.new(color.gray, 20), textcolor=color.white, size=size.tiny)
+
+barcolor(highlightBars and anyBullish ? color.new(color.lime, 70) : highlightBars and anyBearish ? color.new(color.red, 70) : highlightBars and anyNeutral ? color.new(color.gray, 80) : na)
+
+alertcondition(anyBullish, title="Bullish candlestick pattern", message="Bullish candlestick pattern detected on {{ticker}} {{interval}}.")
+alertcondition(anyBearish, title="Bearish candlestick pattern", message="Bearish candlestick pattern detected on {{ticker}} {{interval}}.")
+alertcondition(anyNeutral, title="Neutral or continuation candlestick pattern", message="Neutral or continuation candlestick pattern detected on {{ticker}} {{interval}}.")
+alertcondition(anyPattern, title="Any candlestick pattern", message="Candlestick pattern detected on {{ticker}} {{interval}}.")
