@@ -15,13 +15,13 @@
 
 ### روش ۱ — فقط اندیکاتور (پیشنهادی)
 
-1. فایل `pine/nison_candlestick_patterns.pine` را در Pine Editor باز کنید.
-2. آن را به‌عنوان **Library** منتشر (Publish) کنید.
+1. فایل `pine/candle_recognition_lib.pine` را در Pine Editor باز کنید.
+2. آن را به‌عنوان **Library** با نام `CandleRecognitionLib` منتشر (Publish) کنید.
 3. فایل `pine/nison_candlestick_scanner.pine` را باز کنید.
 4. خط import را با مسیر کتابخانه خودتان عوض کنید:
 
 ```pine
-import YOUR_USERNAME/NisonCandlestickPatterns/1 as nison
+import YOUR_USERNAME/CandleRecognitionLib/1 as cr
 ```
 
 5. اندیکاتور را Add to Chart کنید.
@@ -31,16 +31,15 @@ import YOUR_USERNAME/NisonCandlestickPatterns/1 as nison
 در استراتژی خودتان کتابخانه را import کنید و از توابع زیر استفاده کنید:
 
 ```pine
-import YOUR_USERNAME/NisonCandlestickPatterns/1 as nison
+import YOUR_USERNAME/CandleRecognitionLib/1 as cr
 
-s = nison.defaultSettings()
+s = cr.defaultSettings()
 
 // مثال: آیا الگوی Morning Star تشکیل شده؟
-morningStar = nison.isPatternActive(37, s)
+morningStar = cr.isPatternActive(37, s)
 
-// مثال: اولین الگوی فعال در این کندل
-firstId = nison.firstActivePattern(s)
-name = nison.patternName(firstId)
+// نوع: Reversal=0, Continuation=1, Context=2
+kind = cr.patternKind(37)
 ```
 
 ## لیست الگوها (۶۴ الگو)
