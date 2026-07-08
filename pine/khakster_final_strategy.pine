@@ -61,11 +61,25 @@ inHourRange(int h, int start, int end) =>
     start < end ? (h >= start and h < end) : (h >= start or h < end)
 
 inTradingSession() =>
-    if not useSessionFilter or not trex.isForex()
+    if not useSessionFilter
         true
-    else
+    else if trex.isForex()
         int h = hour(time, "UTC")
         inHourRange(h, londonStart, londonEnd) or inHourRange(h, nyStart, nyEnd)
+    else if trex.isIndexOrFuture()
+        inHourRange(hour(time, "UTC"), nyStart, nyEnd)
+    else
+        true
+
+sessionLabel() =>
+    if not useSessionFilter
+        "off"
+    else if trex.isForex()
+        inTradingSession() ? "L/NY" : "off"
+    else if trex.isIndexOrFuture()
+        inTradingSession() ? "NY" : "off"
+    else
+        "n/a"
 
 var entry.EntrySettings eS = entry.defaultEntrySettings()
 eS.structureTf := stTf
@@ -226,9 +240,8 @@ if showTable and barstate.islast
     table.cell(info, 1, 3, str.tostring(minSm) + "/3 HTF", text_color=color.white, text_size=size.small)
     table.cell(info, 0, 4, "Min score", text_color=color.gray, text_size=size.small)
     table.cell(info, 1, 4, str.tostring(effectiveMinScore()), text_color=color.white, text_size=size.small)
-    bool sess = inTradingSession()
     table.cell(info, 0, 5, "Session", text_color=color.gray, text_size=size.small)
-    table.cell(info, 1, 5, trex.isForex() ? (sess ? "L/NY" : "off") : "n/a", text_color=sess ? color.lime : color.gray, text_size=size.small)
+    table.cell(info, 1, 5, sessionLabel(), text_color=inTradingSession() ? color.lime : color.gray, text_size=size.small)
     bool inLvl = false
     if array.size(watchLv) > 0
         for i = 0 to array.size(watchLv) - 1

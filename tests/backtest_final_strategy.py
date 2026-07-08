@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline backtest — Khakster Final Strategy (1 week, BTC + EURUSD)."""
+"""Offline backtest — Khakster Final Strategy (1 week, FX + Crypto + Nasdaq)."""
 from __future__ import annotations
 
 import json
@@ -46,6 +46,53 @@ except ImportError:
 
 PIP_FX = 0.0001
 
+SYMBOLS = (
+    ("EURUSD=X", "EURUSD"),
+    ("BTC-USD", "BTCUSD"),
+    ("NQ=F", "NASDAQ"),
+)
+
+
+def is_crypto(symbol: str) -> bool:
+    return "BTC" in symbol.upper()
+
+
+def is_index_or_future(symbol: str) -> bool:
+    s = symbol.upper()
+    return any(x in s for x in ("NQ", "NDX", "QQQ", "NAS")) or "=F" in s or s.startswith("^")
+
+
+def pip_unit(price: float, symbol: str) -> float:
+    if is_crypto(symbol):
+        return max(price * 0.0001, 0.01)
+    if is_index_or_future(symbol) or price > 50:
+        return max(price * 0.0001, 0.25)
+    return PIP_FX
+
+
+def effective_min_score(symbol: str, fs: FinalSettings) -> int:
+    if is_crypto(symbol):
+        return max(fs.min_score, fs.min_score_crypto)
+    return fs.min_score
+
+
+def uses_fx_session(symbol: str) -> bool:
+    return not is_crypto(symbol) and not is_index_or_future(symbol)
+
+
+def in_trading_session(ts: pd.Timestamp, symbol: str, fs: FinalSettings) -> bool:
+    if not fs.use_session_filter:
+        return True
+    if is_crypto(symbol):
+        return True
+    if is_index_or_future(symbol):
+        h = ts.hour
+        return fs.ny_start <= h < fs.ny_end
+    h = ts.hour
+    in_lon = fs.london_start <= h < fs.london_end
+    in_ny = fs.ny_start <= h < fs.ny_end
+    return in_lon or in_ny
+
 
 @dataclass
 class FinalSettings:
@@ -61,28 +108,6 @@ class FinalSettings:
     ny_end: int = 21
     structure_minutes: int = 60
     trigger_minutes: int = 5
-
-
-def pip_unit(price: float, symbol: str) -> float:
-    if "BTC" in symbol.upper():
-        # کالیبره مشابه trex.settingsForSymbol: ۱ پیپ ≈ ۰.۰۱٪ قیمت
-        return max(price * 0.0001, 0.01)
-    return PIP_FX
-
-
-def effective_min_score(symbol: str, fs: FinalSettings) -> int:
-    if "BTC" in symbol.upper():
-        return max(fs.min_score, fs.min_score_crypto)
-    return fs.min_score
-
-
-def in_trading_session(ts: pd.Timestamp, symbol: str, fs: FinalSettings) -> bool:
-    if not fs.use_session_filter or "BTC" in symbol.upper():
-        return True
-    h = ts.hour
-    in_lon = fs.london_start <= h < fs.london_end
-    in_ny = fs.ny_start <= h < fs.ny_end
-    return in_lon or in_ny
 
 
 def to_pips(dist: float, unit: float) -> float:
@@ -305,8 +330,7 @@ def main():
     fs, es, ms = FinalSettings(), EntrySettings(), MseSettings()
     results = {}
 
-    for sym in ("EURUSD=X", "BTC-USD"):
-        label = "EURUSD" if "EUR" in sym else "BTCUSD"
+    for sym, label in SYMBOLS:
         print(f"--- {label} (H1 structure + M5 trigger) ---")
         h1, m5 = fetch(sym, days=7)
         print(f"  M5 bars: {len(m5)}  range: {m5.index[0].date()} → {m5.index[-1].date()}")
@@ -315,11 +339,18 @@ def main():
         stats["pivots"] = len(pivots)
         stats["sm_min"] = fs.min_sm
         stats["min_score"] = effective_min_score(sym, fs)
-        stats["session_filter"] = fs.use_session_filter and "EUR" in sym
+        if is_index_or_future(sym):
+            stats["session_filter"] = "NY"
+        elif uses_fx_session(sym):
+            stats["session_filter"] = "L/NY"
+        else:
+            stats["session_filter"] = False
         results[label] = stats
         print(json.dumps(stats, indent=2))
         if trades:
-            print("  Last trade:", trades[-1].side, trades[-1].kind, f"pnl={trades[-1].pnl_pips:+.0f}")
+            for t in trades:
+                pts = (t.exit_price - t.entry) if t.side == "long" else (t.entry - t.exit_price)
+                print(f"  {t.entry_time} {t.side} {t.kind} pts={pts:+.1f} trex_pips={t.pnl_pips:+.0f}")
         print()
 
     out = ROOT / "tests" / "backtest_final_1w_results.json"

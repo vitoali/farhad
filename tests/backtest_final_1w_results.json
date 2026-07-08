@@ -4,12 +4,12 @@
     "wins": 1,
     "losses": 0,
     "win_rate": 100.0,
-    "total_pips": 27,
-    "avg_pips": 27.0,
+    "total_pips": 26,
+    "avg_pips": 26.0,
     "pivots": 33,
     "sm_min": 2,
     "min_score": 40,
-    "session_filter": true
+    "session_filter": "L/NY"
   },
   "BTCUSD": {
     "trades": 0,
@@ -20,5 +20,17 @@
     "sm_min": 2,
     "min_score": 50,
     "session_filter": false
+  },
+  "NASDAQ": {
+    "trades": 2,
+    "wins": 1,
+    "losses": 1,
+    "win_rate": 50.0,
+    "total_pips": 69,
+    "avg_pips": 34.5,
+    "pivots": 34,
+    "sm_min": 2,
+    "min_score": 40,
+    "session_filter": "NY"
   }
 }
