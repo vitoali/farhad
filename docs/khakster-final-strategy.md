@@ -47,28 +47,24 @@ Publish به ترتیب:
 5. CandleRecognitionLib
 6. `khakster_final_strategy.pine`
 
-## بهبودهای اعمال‌شده
+## تنظیمات فعلی (relaxed)
 
-| ویژگی | توضیح |
-|--------|--------|
-| **فیلتر سشن (FX)** | لندن ۰۷–۱۶ UTC / نیویورک ۱۳–۲۱ UTC — فقط روی فارکس |
-| **SM روی HTF** | `request.security` + `confluencePackAtZone` — نه چارت تریگر |
-| **pipScale شاخص/فیوچرز** | همان کالیبره ۰.۰۱٪ قیمت (نزدک/NQ) |
-| **سشن نزدک** | فقط NY (۱۳–۲۱ UTC) وقتی فیلتر سشن روشن است |
-| **حداقل امتیاز BTC** | `max(minScore, 50)` برای کریپتو |
+| پارامتر | مقدار |
+|---------|--------|
+| SM min | **1/3** |
+| Min score | **30** |
+| سشن | **حذف شده** |
+| نوع پیوت | Reverse + Pullback + Settlement |
+| FTC credible | همچنان لازم |
 
 ## بک‌تست آفلاین
 
 ```bash
-python3 tests/backtest_final_strategy.py          # ۳۰ روز، همه سشن + فیلتر
+python3 tests/backtest_final_strategy.py          # ۳۰ روز
 python3 tests/backtest_final_strategy.py --days 7
 ```
 
-خروجی: `tests/backtest_final_results.json` — هر نماد دو حالت:
-- `all_sessions` — بدون فیلتر (برای ارزیابی کامل)
-- `session_filtered` — L/NY برای FX، NY برای نزدک
-
-تفکیک `by_session`: Asia / London / NY / After
+خروجی: `tests/backtest_final_results.json`
 
 ## جدول گوشه چارت
 

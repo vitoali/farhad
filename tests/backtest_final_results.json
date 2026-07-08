@@ -1,136 +1,75 @@
 {
   "EURUSD": {
-    "all_sessions": {
-      "trades": 2,
-      "wins": 2,
-      "losses": 0,
-      "win_rate": 100.0,
-      "total_pips": 48,
-      "avg_pips": 24.0,
-      "pivots": 139,
-      "sm_min": 2,
-      "min_score": 40,
-      "session_filter": "all",
-      "by_session": {
-        "London": {
-          "trades": 1,
-          "wins": 1,
-          "total_pips": 22
-        },
-        "NY": {
-          "trades": 1,
-          "wins": 1,
-          "total_pips": 26
-        }
-      }
-    },
-    "session_filtered": {
-      "trades": 2,
-      "wins": 2,
-      "losses": 0,
-      "win_rate": 100.0,
-      "total_pips": 48,
-      "avg_pips": 24.0,
-      "pivots": 139,
-      "sm_min": 2,
-      "min_score": 40,
-      "session_filter": "L/NY",
-      "by_session": {
-        "London": {
-          "trades": 1,
-          "wins": 1,
-          "total_pips": 22
-        },
-        "NY": {
-          "trades": 1,
-          "wins": 1,
-          "total_pips": 26
-        }
+    "trades": 4,
+    "wins": 3,
+    "losses": 1,
+    "win_rate": 75.0,
+    "total_pips": 50,
+    "avg_pips": 12.5,
+    "pivots": 139,
+    "sm_min": 1,
+    "min_score": 30,
+    "by_session": {
+      "London": {
+        "trades": 2,
+        "wins": 1,
+        "total_pips": 10
+      },
+      "NY": {
+        "trades": 2,
+        "wins": 2,
+        "total_pips": 40
       }
     }
   },
   "BTCUSD": {
-    "all_sessions": {
-      "trades": 2,
-      "wins": 1,
-      "losses": 1,
-      "win_rate": 50.0,
-      "total_pips": -101,
-      "avg_pips": -50.5,
-      "pivots": 126,
-      "sm_min": 2,
-      "min_score": 50,
-      "session_filter": "all",
-      "by_session": {
-        "Asia": {
-          "trades": 2,
-          "wins": 1,
-          "total_pips": -101
-        }
-      }
-    },
-    "session_filtered": {
-      "trades": 2,
-      "wins": 1,
-      "losses": 1,
-      "win_rate": 50.0,
-      "total_pips": -101,
-      "avg_pips": -50.5,
-      "pivots": 126,
-      "sm_min": 2,
-      "min_score": 50,
-      "session_filter": false,
-      "by_session": {
-        "Asia": {
-          "trades": 2,
-          "wins": 1,
-          "total_pips": -101
-        }
+    "trades": 5,
+    "wins": 4,
+    "losses": 1,
+    "win_rate": 80.0,
+    "total_pips": 354,
+    "avg_pips": 70.8,
+    "pivots": 126,
+    "sm_min": 1,
+    "min_score": 30,
+    "by_session": {
+      "Asia": {
+        "trades": 3,
+        "wins": 2,
+        "total_pips": 6
+      },
+      "London": {
+        "trades": 1,
+        "wins": 1,
+        "total_pips": 177
+      },
+      "NY": {
+        "trades": 1,
+        "wins": 1,
+        "total_pips": 171
       }
     }
   },
   "NASDAQ": {
-    "all_sessions": {
-      "trades": 5,
-      "wins": 3,
-      "losses": 2,
-      "win_rate": 60.0,
-      "total_pips": 120,
-      "avg_pips": 24.0,
-      "pivots": 136,
-      "sm_min": 2,
-      "min_score": 40,
-      "session_filter": "all",
-      "by_session": {
-        "After": {
-          "trades": 1,
-          "wins": 0,
-          "total_pips": -64
-        },
-        "NY": {
-          "trades": 4,
-          "wins": 3,
-          "total_pips": 184
-        }
-      }
-    },
-    "session_filtered": {
-      "trades": 4,
-      "wins": 3,
-      "losses": 1,
-      "win_rate": 75.0,
-      "total_pips": 184,
-      "avg_pips": 46.0,
-      "pivots": 136,
-      "sm_min": 2,
-      "min_score": 40,
-      "session_filter": "NY",
-      "by_session": {
-        "NY": {
-          "trades": 4,
-          "wins": 3,
-          "total_pips": 184
-        }
+    "trades": 13,
+    "wins": 6,
+    "losses": 7,
+    "win_rate": 46.2,
+    "total_pips": 87,
+    "avg_pips": 6.7,
+    "pivots": 136,
+    "sm_min": 1,
+    "min_score": 30,
+    "by_session": {
+      "After": {
+        "trades": 1,
+        "wins": 0,
+        "total_pips": -64
+      },
+      "NY": {
+        "trades": 12,
+        "wins": 6,
+        "total_pips": 151
       }
     }
   }

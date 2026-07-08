@@ -408,10 +408,10 @@ export scoreLabel(int sc, bool ftcCred, int touches, int pivotKind) =>
 
 // ── استراتژی (فاز ۳) ─────────────────────────────────────────────────────────
 export isTradableLevel(StructureLevel lv) =>
-    lv.pivotKind == PIVOT_REVERSE and lv.ftcCredible and not lv.broken
+    lv.ftcCredible and not lv.broken
 
 export ftcTouchSignal(bool isHigh, float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, bool ftcCred, int pivotKind, bool broken, bool ftcSpent) =>
-    pivotKind == PIVOT_REVERSE and ftcCred and not broken and not ftcSpent and priceInZone(hi, lo, ftcTop, ftcBot) and not priceInZone(prevHi, prevLo, ftcTop, ftcBot)
+    ftcCred and not broken and not ftcSpent and priceInZone(hi, lo, ftcTop, ftcBot) and not priceInZone(prevHi, prevLo, ftcTop, ftcBot)
 
 export slTpFromLevel(StructureLevel lv, float thPips) =>
     float pad = trToPrice(thPips * 0.5)

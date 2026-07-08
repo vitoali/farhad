@@ -71,41 +71,15 @@ def pip_unit(price: float, symbol: str) -> float:
 
 
 def effective_min_score(symbol: str, fs: FinalSettings) -> int:
-    if is_crypto(symbol):
-        return max(fs.min_score, fs.min_score_crypto)
     return fs.min_score
-
-
-def uses_fx_session(symbol: str) -> bool:
-    return not is_crypto(symbol) and not is_index_or_future(symbol)
-
-
-def in_trading_session(ts: pd.Timestamp, symbol: str, fs: FinalSettings) -> bool:
-    if not fs.use_session_filter:
-        return True
-    if is_crypto(symbol):
-        return True
-    if is_index_or_future(symbol):
-        h = ts.hour
-        return fs.ny_start <= h < fs.ny_end
-    h = ts.hour
-    in_lon = fs.london_start <= h < fs.london_end
-    in_ny = fs.ny_start <= h < fs.ny_end
-    return in_lon or in_ny
 
 
 @dataclass
 class FinalSettings:
-    min_sm: int = 2
-    min_score: int = 40
-    min_score_crypto: int = 50
+    min_sm: int = 1
+    min_score: int = 30
     use_ftc: bool = True
     use_candle: bool = True
-    use_session_filter: bool = True
-    london_start: int = 7
-    london_end: int = 16
-    ny_start: int = 13
-    ny_end: int = 21
     structure_minutes: int = 60
     trigger_minutes: int = 5
 
@@ -159,7 +133,7 @@ def calc_poc_va(df: pd.DataFrame, lookback: int = 150, rows: int = 24, pct: floa
     return poc_lvl, bot + step * (up + 1), bot + step * dn
 
 
-def sm_confirms(z_top: float, z_bot: float, is_high: bool, df: pd.DataFrame, i: int) -> tuple[bool, int]:
+def sm_confirms(z_top: float, z_bot: float, is_high: bool, df: pd.DataFrame, i: int, min_sm: int = 1) -> tuple[bool, int]:
     """Simplified SM: volume POC/VA + liquidity wick proxy."""
     win = df.iloc[max(0, i - 150) : i + 1]
     poc, va_t, va_b = calc_poc_va(win)
@@ -181,7 +155,7 @@ def sm_confirms(z_top: float, z_bot: float, is_high: bool, df: pd.DataFrame, i: 
         bt, bb = max(r["open"], r["close"]), min(r["open"], r["close"])
         ob_ok = zones_overlap(bt, bb, z_top, z_bot)
     cnt = sum([liq_ok, ob_ok, vol_ok])
-    return cnt >= 2, cnt
+    return cnt >= min_sm, cnt
 
 
 def simple_engulfing(df: pd.DataFrame, i: int, bullish: bool) -> bool:
@@ -220,6 +194,7 @@ def run_final_backtest(
 ) -> tuple[list[Trade], list[StructureLevel]]:
     unit = pip_unit(m5["close"].iloc[-1], symbol)
     min_sc = effective_min_score(symbol, fs)
+    es.min_structure_score = min_sc
     levels_raw = detect_pivots_on_df(h1, ms)
     active: list[StructureLevel] = []
     trades: list[Trade] = []
@@ -231,8 +206,8 @@ def run_final_backtest(
         while level_idx < len(levels_raw) and levels_raw[level_idx].birth_time <= t:
             lv = levels_raw[level_idx]
             idx = m5.index.get_indexer([t], method="pad")[0]
-            sm_ok, _ = sm_confirms(lv.zone_top, lv.zone_bot, lv.is_high, m5, max(idx, 0))
-            if lv.score >= min_sc and lv.ftc_cred and sm_ok and in_trading_session(t, symbol, fs):
+            sm_ok, _ = sm_confirms(lv.zone_top, lv.zone_bot, lv.is_high, m5, max(idx, 0), fs.min_sm)
+            if lv.score >= min_sc and lv.ftc_cred and sm_ok:
                 active.append(lv)
             level_idx += 1
 
@@ -253,7 +228,7 @@ def run_final_backtest(
                 trades.append(ot)
                 open_trade = None
 
-        if open_trade is None and in_trading_session(t, symbol, fs):
+        if open_trade is None:
             i = m5.index.get_loc(t)
             for lv in active:
                 if lv.broken or lv.traded_ftc or lv.traded_rtp:
@@ -335,14 +310,6 @@ def session_name(hour: int) -> str:
     return "After"
 
 
-def session_filter_label(symbol: str) -> str | bool:
-    if is_index_or_future(symbol):
-        return "NY"
-    if uses_fx_session(symbol):
-        return "L/NY"
-    return False
-
-
 def by_session_breakdown(trades: list[Trade]) -> dict:
     buckets: dict[str, list[float]] = {}
     for t in trades:
@@ -359,26 +326,6 @@ def by_session_breakdown(trades: list[Trade]) -> dict:
     }
 
 
-def run_mode(
-    m5: pd.DataFrame,
-    h1: pd.DataFrame,
-    symbol: str,
-    fs: FinalSettings,
-    es: EntrySettings,
-    ms: MseSettings,
-    filtered: bool,
-) -> tuple[dict, list[Trade], list[StructureLevel]]:
-    fs.use_session_filter = filtered
-    trades, pivots = run_final_backtest(m5, h1, symbol, fs, es, ms)
-    stats = summarize(trades)
-    stats["pivots"] = len(pivots)
-    stats["sm_min"] = fs.min_sm
-    stats["min_score"] = effective_min_score(symbol, fs)
-    stats["session_filter"] = session_filter_label(symbol) if filtered else "all"
-    stats["by_session"] = by_session_breakdown(trades)
-    return stats, trades, pivots
-
-
 def main():
     import argparse
 
@@ -386,7 +333,7 @@ def main():
     parser.add_argument("--days", type=int, default=30, help="Lookback days (5m data, max ~60)")
     args = parser.parse_args()
 
-    print(f"=== Khakster Final Strategy — {args.days}d Backtest (all sessions vs filtered) ===\n")
+    print(f"=== Khakster Final Strategy — {args.days}d (relaxed: SM 1/3, score 30, all sessions, all pivot kinds) ===\n")
     fs, es, ms = FinalSettings(), EntrySettings(), MseSettings()
     results: dict = {}
 
@@ -394,25 +341,18 @@ def main():
         print(f"--- {label} (H1 structure + M5 trigger) ---")
         h1, m5 = fetch(sym, days=args.days)
         print(f"  M5 bars: {len(m5)}  range: {m5.index[0].date()} → {m5.index[-1].date()}")
-
-        all_stats, all_trades, _ = run_mode(m5, h1, sym, fs, es, ms, filtered=False)
-        filt_stats, _, _ = run_mode(m5, h1, sym, fs, es, ms, filtered=True)
-
-        results[label] = {"all_sessions": all_stats, "session_filtered": filt_stats}
-
-        print(f"  ALL sessions     : {all_stats['trades']} trades, win {all_stats.get('win_rate', 0):.0f}%, total {all_stats['total_pips']:+.0f}")
-        if all_stats["by_session"]:
-            for sn, sb in all_stats["by_session"].items():
-                print(f"    {sn:7} → {sb['trades']} trades, total {sb['total_pips']:+.0f}")
-        print(f"  FILTERED         : {filt_stats['trades']} trades, win {filt_stats.get('win_rate', 0):.0f}%, total {filt_stats['total_pips']:+.0f}")
-        delta = filt_stats["total_pips"] - all_stats["total_pips"]
-        if delta:
-            print(f"  filter delta     : {delta:+.0f} trex-pips")
-        if all_trades:
-            print("  trades (all sessions):")
-            for t in all_trades:
+        trades, pivots = run_final_backtest(m5, h1, sym, fs, es, ms)
+        stats = summarize(trades)
+        stats["pivots"] = len(pivots)
+        stats["sm_min"] = fs.min_sm
+        stats["min_score"] = fs.min_score
+        stats["by_session"] = by_session_breakdown(trades)
+        results[label] = stats
+        print(json.dumps(stats, indent=2))
+        if trades:
+            for t in trades:
                 pts = (t.exit_price - t.entry) if t.side == "long" else (t.entry - t.exit_price)
-                print(f"    {t.entry_time} [{session_name(t.entry_time.hour):7}] {t.side} {t.kind} pts={pts:+.1f} pips={t.pnl_pips:+.0f}")
+                print(f"  {t.entry_time} [{session_name(t.entry_time.hour):7}] {t.side} {t.kind} pts={pts:+.1f} pips={t.pnl_pips:+.0f}")
         print()
 
     out = ROOT / "tests" / "backtest_final_results.json"

@@ -39,7 +39,7 @@ class MseSettings:
 
 @dataclass
 class EntrySettings:
-    min_structure_score: int = 40
+    min_structure_score: int = 30
     sl_th_mult: float = 0.5
     tp_th_mult: float = 3.0
     use_ftc: bool = True
@@ -178,6 +178,45 @@ def kind_score_bonus(k: int) -> int:
     return 15 if k == PIVOT_REVERSE else -18 if k == PIVOT_PULLBACK else -28
 
 
+def is_settlement_pivot(revert_pips: float, tr_pips: float, candle_cls: int) -> bool:
+    return revert_pips <= tr_pips * 1.15 and candle_cls <= 1
+
+
+def is_pullback_bear(h: np.ndarray, c: np.ndarray, tip_high: float, tr_pips: float, i: int, lookback: int) -> bool:
+    tol = tr_to_price(tr_pips) * 0.6
+    near = False
+    broke = False
+    for j in range(2, lookback + 1):
+        if abs(h[i - j] - tip_high) <= tol:
+            near = True
+        if i - j - 1 >= 0 and h[i - j] > tip_high and c[i - j - 1] <= tip_high:
+            broke = True
+    return near and broke
+
+
+def is_pullback_bull(l: np.ndarray, c: np.ndarray, tip_low: float, tr_pips: float, i: int, lookback: int) -> bool:
+    tol = tr_to_price(tr_pips) * 0.6
+    near = False
+    broke = False
+    for j in range(2, lookback + 1):
+        if abs(l[i - j] - tip_low) <= tol:
+            near = True
+        if i - j - 1 >= 0 and l[i - j] < tip_low and c[i - j - 1] >= tip_low:
+            broke = True
+    return near and broke
+
+
+def classify_pivot(is_high: bool, revert_pips: float, tr_pips: float, candle_cls: int, tip: float, h, l, c, i: int, s: MseSettings) -> int:
+    lb = s.pivot_lookback
+    pb = is_pullback_bear(h, c, tip, tr_pips, i, lb) if is_high else is_pullback_bull(l, c, tip, tr_pips, i, lb)
+    st = is_settlement_pivot(revert_pips, tr_pips, candle_cls)
+    if pb:
+        return PIVOT_PULLBACK
+    if st:
+        return PIVOT_SETTLEMENT
+    return PIVOT_REVERSE
+
+
 def level_birth_score(ftc_cred: bool, candle_cls: int, pivot_kind: int) -> int:
     sc = 20  # H1 importance = 1 * 20
     sc += 25 if ftc_cred else 5
@@ -240,10 +279,12 @@ def detect_pivots_h1(df: pd.DataFrame, s: MseSettings) -> list[StructureLevel]:
         if move_up and revert and engulf and close_ok and (master or spike or revert):
             zt, zb, _, _ = pivot_zones(True, o[i - 1], h[i - 1], l[i - 1], c[i - 1], tr_p, s)
             cls = candle_class(to_pips(h[i - 1] - l[i - 1]), tr_p, s)
+            rev_p = to_pips(h[i - 1] - c[i])
+            kind = classify_pivot(True, rev_p, tr_p, cls, h[i - 1], h, l, c, i, s)
             ft, fb, fc = calc_ftc_bear(h[i - 1], o[i], h[i], l[i], c[i], o[i - 1], h[i - 1], l[i - 1], c[i - 1], opens, closes, tr_p, s)
-            sc = level_birth_score(fc, cls, PIVOT_REVERSE)
+            sc = level_birth_score(fc, cls, kind)
             levels.append(
-                StructureLevel(idx[i - 1], h[i - 1], zt, zb, ft, fb, fc, True, th_p, sc)
+                StructureLevel(idx[i - 1], h[i - 1], zt, zb, ft, fb, fc, True, th_p, sc, kind)
             )
 
         masters_b = all(
@@ -261,10 +302,12 @@ def detect_pivots_h1(df: pd.DataFrame, s: MseSettings) -> list[StructureLevel]:
         if move_dn and revert_b and engulf_b and close_ok_b and (master or spike_b or revert_b):
             zt, zb, _, _ = pivot_zones(False, o[i - 1], h[i - 1], l[i - 1], c[i - 1], tr_p, s)
             cls = candle_class(to_pips(h[i - 1] - l[i - 1]), tr_p, s)
+            rev_p = to_pips(c[i] - l[i - 1])
+            kind = classify_pivot(False, rev_p, tr_p, cls, l[i - 1], h, l, c, i, s)
             ft, fb, fc = calc_ftc_bull(l[i - 1], o[i], h[i], l[i], c[i], o[i - 1], h[i - 1], l[i - 1], c[i - 1], opens, closes, tr_p, s)
-            sc = level_birth_score(fc, cls, PIVOT_REVERSE)
+            sc = level_birth_score(fc, cls, kind)
             levels.append(
-                StructureLevel(idx[i - 1], l[i - 1], zt, zb, ft, fb, fc, False, th_p, sc)
+                StructureLevel(idx[i - 1], l[i - 1], zt, zb, ft, fb, fc, False, th_p, sc, kind)
             )
     return levels
 
