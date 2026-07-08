@@ -68,4 +68,6 @@ Three Mountain Top، Three River Bottom، Three Buddha Top، Inverted Three Budd
 
 ## منبع
 
-Steve Nison — *Japanese Candlestick Charting Techniques* (فصل‌های ۳ تا ۸)
+Steve Nison — *Japanese Candlestick Charting Techniques* (فارسی: **الگوهای شمعی ژاپنی** — KohanFx)
+
+واژه‌نامه فارسی الگوها: [`docs/pattern-names-fa.md`](docs/pattern-names-fa.md)
