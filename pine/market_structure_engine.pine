@@ -166,7 +166,7 @@ export kindScoreBonus(int k) =>
     k == PIVOT_REVERSE ? 15 : k == PIVOT_PULLBACK ? -18 : -28
 
 // ── کندل خاکستر ───────────────────────────────────────────────────────────────
-export khaksterCandleClass(float o, float h, float l, float c, float trPips, MseSettings s) =>
+export khaksterCandleClass(float h, float l, float trPips, MseSettings s) =>
     float rngP = trex.roundPips(trex.toPips(h - l))
     trex.candleClass(rngP, trPips, s.atr)
 
@@ -186,8 +186,8 @@ export isMasterCandle(float o, float h, float l, float c, float trPips, MseSetti
         bool shapeOk = body / rng >= s.shapePct or upper / rng >= s.shapePct or lower / rng >= s.shapePct
         sizeOk and shapeOk
 
-export isSpikeCandle(float o, float h, float l, float c, float trPips, MseSettings s) =>
-    khaksterCandleClass(o, h, l, c, trPips, s) >= 3
+export isSpikeCandle(float h, float l, float trPips, MseSettings s) =>
+    khaksterCandleClass(h, l, trPips, s) >= 3
 
 export threeBullMasters(int off, float trPips, MseSettings s) =>
     isMasterCandle(open[off], high[off], low[off], close[off], trPips, s) and close[off] > open[off] and
@@ -241,7 +241,7 @@ export pivotZones(bool isHigh, float o1, float h1, float l1, float c1, float trP
 
 // ── FTC (Failure To Continuation) ─────────────────────────────────────────────
 // باکس قله→کندل پوشاننده، میانه = FTC؛ باند 33% باکس
-export calcFtcBear(float tipHigh, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1, float trPips, MseSettings s) =>
+export calcFtcBear(float tipHigh, float h0, float l0, float c0, float o1, float c1, float trPips, MseSettings s) =>
     float patTr = patTrEstimate(trPips, s)
     float patU = trToPrice(patTr)
     float boxTop = tipHigh
@@ -322,7 +322,7 @@ export detectBearPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         float moveP = legMovePips(3)
         bool masters = threeBullMasters(1, trP, s)
         bool moveOk = legMoveOk(moveP, trP, s)
-        bool spike = isSpikeCandle(open[1], high[1], low[1], close[1], trP, s) and moveP >= trP * s.moveMultMin
+        bool spike = isSpikeCandle(high[1], low[1], trP, s) and moveP >= trP * s.moveMultMin
         bool spikeClose = spike and closeBelowImgLine(close, high[1], trP)
         bool moveUp = masters or moveOk or spike
         bool master = isMasterCandle(open[1], high[1], low[1], close[1], trP, s)
@@ -332,7 +332,7 @@ export detectBearPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         bool ok = moveUp and revert and engulf and closeOk and (master or spike or revert)
         if ok
             [zTop, zBot, inTop, inBot] = pivotZones(true, open[1], high[1], low[1], close[1], trP, s)
-            int cls = khaksterCandleClass(open[1], high[1], low[1], close[1], trP, s)
+            int cls = khaksterCandleClass(high[1], low[1], trP, s)
             float revP = trex.roundPips(trex.toPips(high[1] - close))
             int kind = classifyPivot(true, revP, trP, cls, high[1], s)
             p := PivotLevel.new(time[1], high[1], zTop, zBot, inTop, inBot, tf, true, cls, trP, thP, tfImportance(tf), kind)
@@ -345,7 +345,7 @@ export detectBullPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         float moveP = legMovePips(3)
         bool masters = threeBearMasters(1, trP, s)
         bool moveOk = legMoveOk(moveP, trP, s)
-        bool spike = isSpikeCandle(open[1], high[1], low[1], close[1], trP, s) and moveP >= trP * s.moveMultMin
+        bool spike = isSpikeCandle(high[1], low[1], trP, s) and moveP >= trP * s.moveMultMin
         bool spikeClose = spike and closeAboveImgLine(close, low[1], trP)
         bool moveDn = masters or moveOk or spike
         bool master = isMasterCandle(open[1], high[1], low[1], close[1], trP, s)
@@ -355,7 +355,7 @@ export detectBullPivotLocal(MseSettings s, int atrLen, float thBoost, string tf)
         bool ok = moveDn and revert and engulf and closeOk and (master or spike or revert)
         if ok
             [zTop, zBot, inTop, inBot] = pivotZones(false, open[1], high[1], low[1], close[1], trP, s)
-            int cls = khaksterCandleClass(open[1], high[1], low[1], close[1], trP, s)
+            int cls = khaksterCandleClass(high[1], low[1], trP, s)
             float revP = trex.roundPips(trex.toPips(close - low[1]))
             int kind = classifyPivot(false, revP, trP, cls, low[1], s)
             p := PivotLevel.new(time[1], low[1], zTop, zBot, inTop, inBot, tf, false, cls, trP, thP, tfImportance(tf), kind)
