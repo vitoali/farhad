@@ -21,7 +21,7 @@
 ۲. Smart Money: حداقل ۲/۳ (L + OB + V) روی zone سطح
 ۳. تریگر روی TF پایین (جفت انتخابی):
    - FTC/RTP touch
-   - یا الگوی کندل (Engulf / Hammer / Star / Piercing)
+   - یا هر یک از **۶۴ الگوی** CandleRecognitionLib (صعودی برای خرید / نزولی برای فروش)
 ۴. سیگنال فقط barstate.isconfirmed (بدون repainting)
 ۵. request.security با lookahead_off
 ```

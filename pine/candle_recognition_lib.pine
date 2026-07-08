@@ -561,3 +561,38 @@ export activePatternTotal(Settings s) =>
         if isPatternActive(i, s)
             total += 1
     total
+
+// ── اسکن همه ۶۴ الگو (۰–۶۳) برای استراتژی ───────────────────────────────────
+export firstBullishPattern(Settings s) =>
+    int result = -1
+    for i = 0 to patternCount(s)
+        if result == -1 and isPatternActive(i, s) and patternBullish(i)
+            result := i
+    result
+
+export firstBearishPattern(Settings s) =>
+    int result = -1
+    for i = 0 to patternCount(s)
+        if result == -1 and isPatternActive(i, s) and patternBearish(i)
+            result := i
+    result
+
+export anyBullishPattern(Settings s) =>
+    firstBullishPattern(s) != -1
+
+export anyBearishPattern(Settings s) =>
+    firstBearishPattern(s) != -1
+
+export bullishPatternCount(Settings s) =>
+    int n = 0
+    for i = 0 to patternCount(s)
+        if isPatternActive(i, s) and patternBullish(i)
+            n += 1
+    n
+
+export bearishPatternCount(Settings s) =>
+    int n = 0
+    for i = 0 to patternCount(s)
+        if isPatternActive(i, s) and patternBearish(i)
+            n += 1
+    n

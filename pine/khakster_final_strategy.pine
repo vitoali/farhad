@@ -35,7 +35,8 @@ minSm = input.int(2, "Min SM confirmations", minval=2, maxval=3, group=grpSm)
 grpEntry = "Entry"
 minScore = input.int(40, "Min structure score", group=grpEntry)
 useFtcRtp = input.bool(true, "FTC / RTP trigger", group=grpEntry)
-useCandle = input.bool(true, "Candle pattern trigger", group=grpEntry)
+useCandle = input.bool(true, "Candle pattern trigger (all 64)", group=grpEntry)
+patFa = input.bool(true, "Pattern label Persian", group=grpEntry)
 slMult = input.float(0.5, "SL = TH ×", minval=0.1, step=0.1, group=grpEntry)
 tpMult = input.float(3.0, "TP = TH ×", minval=1.0, step=0.5, group=grpEntry)
 
@@ -113,12 +114,16 @@ for i = 0 to array.size(htfs) - 1
         spawnIfNew(tf, bSig, bSig[1], bTop, bBot, bPrice, bTime, true, bFtcT, bFtcB, bFc, bSc, bKind, bTh)
         spawnIfNew(tf, uSig, uSig[1], uTop, uBot, uPrice, uTime, false, uFtcT, uFtcB, uFc, uSc, uKind, uTh)
 
-// الگوی ورود کندل (انگالف / پین / ستاره)
+// الگوی ورود: هر ۶۴ الگوی CandleRecognitionLib (صعودی/نزولی)
 bullPattern() =>
-    cr.isPatternActive(14, crS) or cr.isPatternActive(6, crS) or cr.isPatternActive(37, crS) or cr.isPatternActive(17, crS)
+    cr.anyBullishPattern(crS)
 
 bearPattern() =>
-    cr.isPatternActive(15, crS) or cr.isPatternActive(8, crS) or cr.isPatternActive(38, crS) or cr.isPatternActive(16, crS)
+    cr.anyBearishPattern(crS)
+
+patternLabel(bool bullish) =>
+    int pid = bullish ? cr.firstBullishPattern(crS) : cr.firstBearishPattern(crS)
+    pid >= 0 ? cr.patternDisplayName(pid, patFa) : "PAT"
 
 inStructZone(WatchedLevel lv) =>
     entry.priceInZone(high, low, lv.zoneTop, lv.zoneBot) or entry.priceInZone(high, low, lv.ftcTop, lv.ftcBot) or (lv.rtpSet and entry.priceInZone(high, low, lv.rtpTop, lv.rtpBot))
@@ -140,7 +145,7 @@ if barstate.isconfirmed and array.size(watchLv) > 0
         bool patShort = useCandle and lv.isHigh and bearPattern() and inStructZone(lv)
         if ftcRtpOk or patLong
             signalLong := true
-            sigNote := ftcRtpOk ? entry.entryKindName(ent) : "PAT"
+            sigNote := ftcRtpOk ? entry.entryKindName(ent) : patternLabel(true)
             sigIdx := i
             lv.tradedFtc := ent == entry.ENTRY_FTC ? true : lv.tradedFtc
             lv.tradedRtp := ent == entry.ENTRY_RTP ? true : lv.tradedRtp
@@ -148,7 +153,7 @@ if barstate.isconfirmed and array.size(watchLv) > 0
                 lv.tradedFtc := true
         if ftcRtpShort or patShort
             signalShort := true
-            sigNote := ftcRtpShort ? entry.entryKindName(ent) : "PAT"
+            sigNote := ftcRtpShort ? entry.entryKindName(ent) : patternLabel(false)
             sigIdx := i
             lv.tradedFtc := ent == entry.ENTRY_FTC ? true : lv.tradedFtc
             lv.tradedRtp := ent == entry.ENTRY_RTP ? true : lv.tradedRtp
