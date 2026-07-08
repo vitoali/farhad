@@ -208,7 +208,7 @@ export legMovePips(int bars) =>
 export legMoveOk(float moveP, float trPips, MseSettings s) =>
     moveP >= trPips * s.moveMultMin and moveP <= trPips * s.moveMultMax
 
-export closeInFinalThird(bool bearPivot, float o, float h, float l, float c, float pct) =>
+export closeInFinalThird(bool bearPivot, float h, float l, float c, float pct) =>
     float rng = h - l
     if rng <= 0
         false
@@ -216,7 +216,7 @@ export closeInFinalThird(bool bearPivot, float o, float h, float l, float c, flo
         float pos = (c - l) / rng
         bearPivot ? pos <= pct : pos >= (1.0 - pct)
 
-export engulfMaster(bool bearPivot, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1) =>
+export engulfMaster(bool bearPivot, float o0, float h0, float l0, float c0, float o1, float c1) =>
     bearPivot ? c1 > math.max(o0, c0) and c1 > h0 : c1 < math.min(o0, c0) and c1 < l0
 
 export closeBelowImgLine(float c, float tipHigh, float trPips) =>
@@ -256,7 +256,7 @@ export calcFtcBear(float tipHigh, float h0, float l0, float c0, float o1, float 
     bool cred = h0 > nodeTop and c0 < math.min(o1, c1)
     [mid + half, mid - half, mid, cred]
 
-export calcFtcBull(float tipLow, float o0, float h0, float l0, float c0, float o1, float h1, float l1, float c1, float trPips, MseSettings s) =>
+export calcFtcBull(float tipLow, float h0, float l0, float c0, float o1, float c1, float trPips, MseSettings s) =>
     float patTr = patTrEstimate(trPips, s)
     float patU = trToPrice(patTr)
     float boxBot = tipLow
@@ -310,7 +310,7 @@ export metricsLocal(int atrLen, float thBoost, MseSettings s) =>
     float thP = trex.scalePips(trex.toPips(trVal * thBoost), s.atr)
     [trP, thP]
 
-export buildStructureFromPivot(PivotLevel p, float ftcTop, float ftcBot, float ftcMid, bool ftcCred, MseSettings s) =>
+export buildStructureFromPivot(PivotLevel p, float ftcTop, float ftcBot, float ftcMid, bool ftcCred) =>
     int sc = levelBirthScore(p.tf, ftcCred, p.candleClass, p.pivotKind)
     StructureLevel.new(p.barTime, p.price, p.zoneTop, p.zoneBot, p.zoneInTop, p.zoneInBot, ftcTop, ftcBot, ftcMid, ftcCred, na, na, false, false, 0, false, 0.0, sc, p.tf, p.isHigh, p.pivotKind)
 
@@ -367,7 +367,7 @@ export bearLevelPack(MseSettings s, int atrLen, float thBoost, string tf) =>
     if na(p)
         [0, 0.0, 0.0, 0.0, 0, 1, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0.0]
     else
-        [ft, fb, fm, fc] = calcFtcBear(p.price, open, high, low, close, open[1], high[1], low[1], close[1], p.trPips, s)
+        [ft, fb, fm, fc] = calcFtcBear(p.price, high, low, close, open[1], close[1], p.trPips, s)
         int sc = levelBirthScore(tf, fc, p.candleClass, p.pivotKind)
         [1, p.zoneTop, p.zoneBot, p.price, p.barTime, 1, p.zoneInTop, p.zoneInBot, ft, fb, fc ? 1 : 0, sc, p.pivotKind, p.thPips]
 
@@ -376,7 +376,7 @@ export bullLevelPack(MseSettings s, int atrLen, float thBoost, string tf) =>
     if na(p)
         [0, 0.0, 0.0, 0.0, 0, 0, 0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0.0]
     else
-        [ft, fb, fm, fc] = calcFtcBull(p.price, open, high, low, close, open[1], high[1], low[1], close[1], p.trPips, s)
+        [ft, fb, fm, fc] = calcFtcBull(p.price, high, low, close, open[1], close[1], p.trPips, s)
         int sc = levelBirthScore(tf, fc, p.candleClass, p.pivotKind)
         [1, p.zoneTop, p.zoneBot, p.price, p.barTime, 0, p.zoneInTop, p.zoneInBot, ft, fb, fc ? 1 : 0, sc, p.pivotKind, p.thPips]
 
