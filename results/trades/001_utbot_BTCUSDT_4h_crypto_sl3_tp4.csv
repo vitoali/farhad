@@ -1,0 +1,8 @@
+time,direction,entry,outcome,pl_pct,r,bars_held,atr_pct,htf_trend_up,ema50_rising,rel_volume,with_htf_trend
+1781467200,short,63802.2,sl,-3.2,-1.067,1,1.0253,False,False,0.58,True
+1781481600,long,65742.1,sl,-3.2,-1.067,19,1.1413,False,True,3.0,False
+1781913600,long,63541.2,sl,-3.2,-1.067,27,1.2957,False,False,0.27,False
+1782345600,long,61077.9,sl,-3.2,-1.067,3,1.5937,False,False,1.26,False
+1782403200,short,59560.7,sl,-3.2,-1.067,40,1.9148,False,False,3.16,True
+1783339200,short,62490.1,sl,-3.2,-1.067,2,1.0877,False,True,1.04,True
+1783396800,short,63190.0,open,-1.8037,-0.601,25,1.305,False,True,1.02,True

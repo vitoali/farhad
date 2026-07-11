@@ -1,0 +1,17 @@
+time,direction,entry,outcome,pl_pct,r,bars_held,atr_pct,htf_trend_up,ema50_rising,rel_volume,with_htf_trend
+1781467200,short,63802.2,sl,-3.2,-1.067,1,1.0253,False,False,0.58,True
+1781481600,long,65742.1,tp,1.8,0.6,3,1.1413,False,True,3.0,False
+1781568000,short,66326.4,tp,1.8,0.6,8,1.148,False,True,0.82,True
+1781712000,long,65751.4,sl,-3.2,-1.067,3,1.2375,False,True,1.37,False
+1781913600,long,63541.2,tp,1.8,0.6,12,1.2957,False,False,0.27,False
+1782086400,short,63310.5,sl,-3.2,-1.067,3,1.0424,False,False,1.14,True
+1782172800,short,64022.5,tp,1.8,0.6,1,1.1398,False,False,0.87,True
+1782345600,long,61077.9,sl,-3.2,-1.067,3,1.5937,False,False,1.26,False
+1782403200,short,59560.7,tp,1.8,0.6,2,1.9148,False,False,3.16,True
+1782576000,long,60837.4,sl,-3.2,-1.067,7,1.6355,False,False,0.35,False
+1782676800,short,59483.6,tp,1.8,0.6,10,1.3863,False,False,0.78,True
+1782820800,short,59191.4,tp,1.8,0.6,3,1.3722,False,False,1.08,True
+1782878400,long,59196.5,tp,1.8,0.6,2,1.4099,False,False,1.37,False
+1783339200,short,62490.1,sl,-3.2,-1.067,2,1.0877,False,True,1.04,True
+1783396800,short,63190.0,tp,1.8,0.6,7,1.305,False,True,1.02,True
+1783584000,long,63003.7,tp,1.8,0.6,6,1.3547,False,True,1.0,False

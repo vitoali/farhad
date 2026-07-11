@@ -1,0 +1,4 @@
+time,direction,entry,outcome,pl_pct,r,bars_held,atr_pct,htf_trend_up,ema50_rising,rel_volume,with_htf_trend
+1781496000,long,4271.2001953125,tp,0.0129,1.1,1,2.306,False,False,0.2,False
+1782100800,short,4138.7998046875,tp,0.0133,1.1,1,2.3185,False,False,0.12,True
+1783310400,long,4175.39990234375,sl,-0.0228,-1.9,1,2.2659,False,False,0.2,False
