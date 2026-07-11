@@ -168,7 +168,13 @@ def detect_double_patterns(
     return signals
 
 
-def simulate_forge_signals(df: pd.DataFrame, signals: list[ForgeSignal], max_bars: int = 100) -> list[dict]:
+def simulate_forge_signals(
+    df: pd.DataFrame,
+    signals: list[ForgeSignal],
+    max_bars: int = 100,
+    use_fixed_sl_pct: float | None = None,
+    use_fixed_tp_pct: float | None = None,
+) -> list[dict]:
     """Track each pattern signal to TP/SL outcome."""
     results = []
     highs = df["high"].values
@@ -177,42 +183,52 @@ def simulate_forge_signals(df: pd.DataFrame, signals: list[ForgeSignal], max_bar
     n = len(df)
 
     for sig in signals:
+        entry = sig.entry
+        if use_fixed_sl_pct is not None:
+            stop = entry * (1 - use_fixed_sl_pct) if sig.bullish else entry * (1 + use_fixed_sl_pct)
+        else:
+            stop = sig.stop
+        if use_fixed_tp_pct is not None:
+            target = entry * (1 + use_fixed_tp_pct) if sig.bullish else entry * (1 - use_fixed_tp_pct)
+        else:
+            target = sig.target
+
         outcome = "open"
         exit_bar = sig.bar
-        exit_price = sig.entry
+        exit_price = entry
         max_fav, max_adv = 0.0, 0.0
-        risk = abs(sig.entry - sig.stop)
+        risk = abs(entry - stop)
 
         for j in range(sig.bar + 1, min(n, sig.bar + max_bars)):
             h, l = highs[j], lows[j]
             if sig.bullish:
-                fav = (h - sig.entry) / risk if risk else 0
-                adv = (sig.entry - l) / risk if risk else 0
+                fav = (h - entry) / risk if risk else 0
+                adv = (entry - l) / risk if risk else 0
                 max_fav = max(max_fav, fav)
                 max_adv = max(max_adv, adv)
-                if l <= sig.stop:
-                    outcome, exit_bar, exit_price = "loss", j, sig.stop
+                if l <= stop:
+                    outcome, exit_bar, exit_price = "loss", j, stop
                     break
-                if h >= sig.target:
-                    outcome, exit_bar, exit_price = "win", j, sig.target
+                if h >= target:
+                    outcome, exit_bar, exit_price = "win", j, target
                     break
             else:
-                fav = (sig.entry - l) / risk if risk else 0
-                adv = (h - sig.entry) / risk if risk else 0
+                fav = (entry - l) / risk if risk else 0
+                adv = (h - entry) / risk if risk else 0
                 max_fav = max(max_fav, fav)
                 max_adv = max(max_adv, adv)
-                if h >= sig.stop:
-                    outcome, exit_bar, exit_price = "loss", j, sig.stop
+                if h >= stop:
+                    outcome, exit_bar, exit_price = "loss", j, stop
                     break
-                if l <= sig.target:
-                    outcome, exit_bar, exit_price = "win", j, sig.target
+                if l <= target:
+                    outcome, exit_bar, exit_price = "win", j, target
                     break
         else:
             outcome = "timeout"
             exit_bar = min(n - 1, sig.bar + max_bars)
             exit_price = closes[exit_bar]
 
-        r_mult = ((exit_price - sig.entry) / risk if sig.bullish else (sig.entry - exit_price) / risk) if risk else 0
+        r_mult = ((exit_price - entry) / risk if sig.bullish else (entry - exit_price) / risk) if risk else 0
         results.append(
             {
                 "pattern": sig.pattern,

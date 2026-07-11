@@ -20,13 +20,16 @@ python run_backtest.py
 
 ## مدل ریسک
 
-- **کریپتو:** SL 1%، TP 2%، کارمزد+اسلیپیج ~0.1% round-trip
-- **فارکس:** SL 3 pip، TP RR 1:1، اسپرد ~1.5 pip
-- **Bj Bot:** خروج native (swing+ATR stop، R:R=1)
+- **کریپتو:** SL **5%**، TP **10%** (RR 2:1)، کارمزد+اسلیپیج ~0.1% round-trip
+- **فارکس:** SL 3 pip، TP RR 1:1، اسپرد ~1 pip
+- **Bj Bot (فارکس):** خروج native (swing+ATR stop، R:R=1)
+- **FORGE (کریپتو):** SL/TP ثابت 5%/10% | **FORGE (فارکس):** SL/TP الگو
 
-## نمادها
+## منبع داده
 
-BTCUSDT، HYPEUSDT، BEATUSDT، EURUSD، XAUUSD
+1. **بایننس** (اولویت اول)
+2. در صورت خطا: Bybit → OKX → KuCoin → Gate.io → Yahoo Finance
+3. فارکس/طلا: Yahoo Finance
 
 ## تایم‌فریم‌ها
 

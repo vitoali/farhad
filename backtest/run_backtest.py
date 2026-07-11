@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from config import CRYPTO_SL_PCT, CRYPTO_TP_PCT, FOREX_SL_PIPS, FOREX_TP_RR
 from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
-from fetch_data import SYMBOLS, fetch_all
+from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
 from indicators import alpha_trend_signals, bj_bot_signals, ut_bot_signals
 
@@ -31,24 +32,28 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
 
     if name == "ut_bot":
         sig = ut_bot_signals(df)
-        trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=0.01, tp_pct=0.02)
-        if market == "forex":
-            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=3, tp_rr=1.0)
+        if market == "crypto":
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=CRYPTO_SL_PCT, tp_pct=CRYPTO_TP_PCT)
+        else:
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=FOREX_SL_PIPS, tp_rr=FOREX_TP_RR)
         return aggregate(trades, name, symbol, tf, market)
 
     if name == "alpha_trend":
-        # crypto often has volume; forex use RSI mode
         novol = market == "forex" or symbol == "BEATUSDT"
         sig = alpha_trend_signals(df, novolumedata=novol)
         if market == "crypto":
-            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=0.01, tp_pct=0.02)
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=CRYPTO_SL_PCT, tp_pct=CRYPTO_TP_PCT)
         else:
-            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=3, tp_rr=1.0)
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=FOREX_SL_PIPS, tp_rr=FOREX_TP_RR)
         return aggregate(trades, name, symbol, tf, market)
 
     if name == "bj_bot":
         sig = bj_bot_signals(df)
-        trades = simulate_bj_native(sig)
+        if market == "crypto":
+            # crypto: fixed SL 5% per user (signals from Bj, exit with unified risk model)
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=CRYPTO_SL_PCT, tp_pct=CRYPTO_TP_PCT)
+        else:
+            trades = simulate_bj_native(sig)
         return aggregate(trades, name, symbol, tf, market)
 
     if name == "forge":
@@ -62,7 +67,8 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
             if s.bar - last >= 5:
                 filtered.append(s)
                 last = s.bar
-        outcomes = simulate_forge_signals(df, filtered)
+        outcomes = simulate_forge_signals(df, filtered, use_fixed_sl_pct=CRYPTO_SL_PCT if market == "crypto" else None,
+                                          use_fixed_tp_pct=CRYPTO_TP_PCT if market == "crypto" else None)
         trades = [
             Trade(
                 direction="long" if o["bullish"] else "short",
