@@ -467,3 +467,84 @@ def liquidity_pool_signals(df: pd.DataFrame, contact_num: int = 2, tp_rr: float 
                 signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
                 z["touches"] = 0
     return _zone_df(out, signals)
+
+
+def slingshot_signals(df: pd.DataFrame, fast: int = 38, slow: int = 62) -> pd.DataFrame:
+    out = df.copy()
+    ema_f = ema(out["close"], fast)
+    ema_s = ema(out["close"], slow)
+    buy = (ema_f > ema_s) & (out["close"].shift(1) < ema_f) & (out["close"] > ema_f)
+    sell = (ema_f < ema_s) & (out["close"].shift(1) > ema_f) & (out["close"] < ema_f)
+    return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)
+
+
+def ichimoku_ml_signals(df: pd.DataFrame, threshold: float = 0.55, disp: int = 26) -> pd.DataFrame:
+    out = df.copy()
+    hl2 = (out["high"] + out["low"]) / 2
+    tenkan = ema(hl2, 9)
+    kijun = ema(hl2, 26)
+    senkou_a = ema((tenkan + kijun) / 2, 26)
+    senkou_b = ema(hl2, 52)
+    cloud_top = pd.concat([senkou_a, senkou_b], axis=1).max(axis=1).shift(disp)
+    cloud_bot = pd.concat([senkou_a, senkou_b], axis=1).min(axis=1).shift(disp)
+    rsi_norm = (rsi(out["close"], 14) - 50) / 25
+    prob = 1 / (1 + np.exp(-rsi_norm.abs()))
+    cross_above = (out["close"] > cloud_top) & (out["close"].shift(1) <= cloud_top.shift(1))
+    cross_below = (out["close"] < cloud_bot) & (out["close"].shift(1) >= cloud_bot.shift(1))
+    buy = cross_above & (prob >= threshold)
+    sell = cross_below & (prob >= threshold)
+    return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)
+
+
+def liquidity_shift_signals(
+    df: pd.DataFrame, pivot_len: int = 5, disp_mult: float = 1.0, tp_rr: float = 2.0,
+) -> pd.DataFrame:
+    out = df.copy()
+    highs, lows, opens, closes = out["high"].values, out["low"].values, out["open"].values, out["close"].values
+    atr_v = atr_wilder(out, 14).values
+    ph = pivot_high(out["high"], pivot_len, pivot_len).values
+    pl = pivot_low(out["low"], pivot_len, pivot_len).values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    swing_hi = swing_lo = np.nan
+    bull_pending = bear_pending = False
+    bull_level = bear_level = 0.0
+    bull_bar = bear_bar = 0
+
+    for i in range(pivot_len * 2 + 1, n):
+        a = atr_v[i] if not np.isnan(atr_v[i]) and atr_v[i] > 0 else max(highs[i] - lows[i], 1e-8)
+        body = abs(closes[i] - opens[i])
+        if not np.isnan(ph[i]):
+            swing_hi = highs[i - pivot_len]
+        if not np.isnan(pl[i]):
+            swing_lo = lows[i - pivot_len]
+        if not np.isnan(swing_lo) and lows[i] < swing_lo and closes[i] > swing_lo:
+            bull_pending, bull_level, bull_bar = True, swing_lo, i
+        if not np.isnan(swing_hi) and highs[i] > swing_hi and closes[i] < swing_hi:
+            bear_pending, bear_level, bear_bar = True, swing_hi, i
+        if bull_pending and i - bull_bar > 100:
+            bull_pending = False
+        if bear_pending and i - bear_bar > 100:
+            bear_pending = False
+        bull_ok = bull_pending and ((not np.isnan(swing_hi) and closes[i] > swing_hi) or (closes[i] > opens[i] and body >= a * disp_mult))
+        bear_ok = bear_pending and ((not np.isnan(swing_lo) and closes[i] < swing_lo) or (closes[i] < opens[i] and body >= a * disp_mult))
+        if bull_ok:
+            entry = closes[i]
+            sl = bull_level - a * 0.15
+            risk = max(entry - sl, a * 0.3)
+            signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * tp_rr))
+            bull_pending = False
+        if bear_ok:
+            entry = closes[i]
+            sl = bear_level + a * 0.15
+            risk = max(sl - entry, a * 0.3)
+            signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
+            bear_pending = False
+    return _zone_df(out, signals)
+
+
+def cm_ma_mtf_signals(df: pd.DataFrame, fast: int = 20, slow: int = 50) -> pd.DataFrame:
+    out = df.copy()
+    buy = crossover(ema(out["close"], fast), ema(out["close"], slow))
+    sell = crossunder(ema(out["close"], fast), ema(out["close"], slow))
+    return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)

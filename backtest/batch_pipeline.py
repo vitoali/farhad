@@ -56,6 +56,11 @@ INDICATOR_REGISTRY: dict[str, tuple[str, int, str]] = {
     "LONG_SEL_285e.txt": ("strong_pullback", 19, "Strong Pullback"),
     "Support_and_Resistance_Levels_with_Breaks_9115.txt": ("sr_breaks", 31, "SR Breaks LuxAlgo"),
     "LIQUDITY_PPOOL_ce94.txt": ("liquidity_pool", 32, "Liquidity Pools LuxAlgo"),
+    "TREND_007c.txt": ("slingshot", 33, "CM SlingShot"),
+    "smart_ichimoko_d12e.txt": ("ichimoku_ml", 34, "Smart Ichimoku ML"),
+    "Liquidity_Shift_Detection_eaf8.txt": ("liquidity_shift", 35, "Liquidity Shift Zeiierman"),
+    "CM_Ultimate_MA_MTF_202b.txt": ("cm_ma_mtf", 36, "CM Ultimate MA MTF"),
+    "UP_TEND_949b.txt": ("cm_ma_mtf", 36, "CM Ultimate MA MTF"),
 }
 
 ZONE_NATIVE_KEYS = {

@@ -26,6 +26,10 @@ from extra_indicators import (
     stop_hunt_signals,
     sr_breaks_signals,
     liquidity_pool_signals,
+    slingshot_signals,
+    ichimoku_ml_signals,
+    liquidity_shift_signals,
+    cm_ma_mtf_signals,
 )
 from zone_engine import extract_zone_signals_from_df, simulate_zone_native
 from zone_indicators import (
@@ -67,6 +71,7 @@ ZONE_NATIVE = {
     "smart_money_structure", "smc_pro_alt", "matrix_fvg", "ranked_ob", "power_ob",
     "cardwell_rsi",
     "liquidity_pool",
+    "liquidity_shift",
 }
 
 
@@ -101,6 +106,8 @@ def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) ->
         sig = cardwell_rsi_signals(df)
     elif name == "liquidity_pool":
         sig = liquidity_pool_signals(df)
+    elif name == "liquidity_shift":
+        sig = liquidity_shift_signals(df)
     else:
         raise ValueError(name)
     zlist = extract_zone_signals_from_df(sig)
@@ -255,6 +262,18 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         sig = sr_breaks_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
 
+    if name == "slingshot":
+        sig = slingshot_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "ichimoku_ml":
+        sig = ichimoku_ml_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "cm_ma_mtf":
+        sig = cm_ma_mtf_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
     if name == "qqe":
         sig = qqe_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
@@ -324,7 +343,7 @@ def main():
         "supply_demand", "strong_pullback",
         "cardwell_rsi", "fvg_retest", "stop_hunt", "smart_money_structure",
         "smc_pro_alt", "matrix_fvg", "put_call_vp", "ranked_ob", "qqe", "macd_mtf", "power_ob",
-        "sr_breaks", "liquidity_pool",
+        "sr_breaks", "liquidity_pool", "slingshot", "ichimoku_ml", "liquidity_shift", "cm_ma_mtf",
     ]
     all_results: list[dict] = []
 
