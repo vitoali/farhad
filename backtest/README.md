@@ -16,7 +16,8 @@ python run_backtest.py
 |---|-----|-----------|
 | 1 | UT Bot v2 | `indicators.ut_bot_signals` |
 | 2 | AlphaTrend | `indicators.alpha_trend_signals` |
-| 3 | Bj Bot / 3Commas | `indicators.bj_bot_signals` |
+| 4 | AlphaX FORGE | `forge_patterns.py` |
+| 5 | FibFib / AutoFib | `indicators.fib_fib_signals` |
 
 ## مدل ریسک
 

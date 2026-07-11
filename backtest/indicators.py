@@ -188,3 +188,81 @@ def bj_bot_signals(
     out["long_target"] = out["close"] + rnr * out["long_risk"]
     out["short_target"] = out["close"] - rnr * out["short_risk"]
     return out
+
+
+# ---------------------------------------------------------------------------
+# #5 FibFib / AutoFib — rolling Fibonacci retracement zones
+# ---------------------------------------------------------------------------
+
+def fib_fib_levels(df: pd.DataFrame, fiblength: int = 265) -> pd.DataFrame:
+    out = df.copy()
+    maxr = out["close"].rolling(fiblength).max()
+    minr = out["close"].rolling(fiblength).min()
+    ranr = maxr - minr
+    out["fib_max"] = maxr
+    out["fib_min"] = minr
+    out["fib_range"] = ranr
+    out["fib_786"] = maxr - 0.236 * ranr  # 0.764 from bottom
+    out["fib_618"] = maxr - 0.382 * ranr  # golden ratio
+    out["fib_500"] = maxr - 0.50 * ranr
+    out["fib_382"] = minr + 0.382 * ranr
+    out["fib_236"] = minr + 0.236 * ranr
+    return out
+
+
+def fib_fib_signals(df: pd.DataFrame, fiblength: int = 265, touch_pct: float = 0.003, cooldown: int = 10) -> pd.DataFrame:
+    """
+    Zone touch + bounce/rejection at key Fib levels (no native signals in Pine).
+    Long: low touches support fib, close bounces above.
+    Short: high touches resistance fib, close rejects below.
+    """
+    out = fib_fib_levels(df, fiblength)
+    n = len(out)
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    touch_level = [""] * n
+
+    supports = ["fib_618", "fib_500", "fib_382"]
+    resists = ["fib_618", "fib_786", "fib_max"]
+
+    lows = out["low"].values
+    highs = out["high"].values
+    closes = out["close"].values
+    opens = out["open"].values
+    ranges = out["fib_range"].values
+
+    last_sig = -cooldown - 1
+    for i in range(fiblength, n):
+        if i - last_sig < cooldown:
+            continue
+        if np.isnan(ranges[i]) or ranges[i] <= 0:
+            continue
+        tol = max(ranges[i] * touch_pct, closes[i] * 0.001)
+
+        for lvl in supports:
+            level = out[lvl].iloc[i]
+            if np.isnan(level):
+                continue
+            if lows[i] <= level + tol and closes[i] > level and closes[i] > opens[i]:
+                buy[i] = True
+                touch_level[i] = lvl
+                last_sig = i
+                break
+
+        if buy[i]:
+            continue
+
+        for lvl in resists:
+            level = out[lvl].iloc[i]
+            if np.isnan(level):
+                continue
+            if highs[i] >= level - tol and closes[i] < level and closes[i] < opens[i]:
+                sell[i] = True
+                touch_level[i] = lvl
+                last_sig = i
+                break
+
+    out["buy"] = buy
+    out["sell"] = sell
+    out["touch_level"] = touch_level
+    return out

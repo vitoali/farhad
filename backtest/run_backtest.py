@@ -11,7 +11,7 @@ from config import CRYPTO_SL_PCT, CRYPTO_TP_PCT, FOREX_SL_PIPS, FOREX_TP_RR
 from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
 from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
-from indicators import alpha_trend_signals, bj_bot_signals, ut_bot_signals
+from indicators import alpha_trend_signals, bj_bot_signals, fib_fib_signals, ut_bot_signals
 
 RESULTS_DIR = Path(__file__).parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -88,6 +88,20 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         res.notes.append(f"patterns={len(filtered)} grades={[o['grade'] for o in outcomes[:5]]}")
         return res
 
+    if name == "fib_fib":
+        min_bars = 265
+        if len(df) < min_bars + 10:
+            return BacktestResult(name, symbol, tf, market, notes=[f"need {min_bars}+ bars"])
+        sig = fib_fib_signals(df)
+        if market == "crypto":
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=CRYPTO_SL_PCT, tp_pct=CRYPTO_TP_PCT)
+        else:
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=FOREX_SL_PIPS, tp_rr=FOREX_TP_RR)
+        res = aggregate(trades, name, symbol, tf, market)
+        touches = sig[sig["buy"] | sig["sell"]]["touch_level"].value_counts().to_dict()
+        res.notes.append(f"levels={touches}")
+        return res
+
     raise ValueError(name)
 
 
@@ -139,7 +153,7 @@ def main():
     print("=== Fetching data (~31 days) ===")
     data = fetch_all(days=31, timeframes=TIMEFRAMES, force=True)
 
-    indicators = ["ut_bot", "alpha_trend", "bj_bot", "forge"]
+    indicators = ["ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib"]
     all_results: list[dict] = []
 
     print("\n=== Running backtests ===")
