@@ -7,12 +7,12 @@
 | وضعیت | تعداد |
 |--------|-------|
 | تحلیل‌شده قبلی (چت) | 6 |
-| بک‌تست Python | 9 |
+| بک‌تست Python | 15 | ✅ (#1–#15) |
 | تحلیل استاتیک batch | ~75 |
 | ناقص (منتظر آپلود) | 12 |
 | **هدف نهایی** | ~60 |
 
-## بک‌تست شده (#1–#9)
+## بک‌تست شده (#1–#15)
 
 | # | اندیکاتور | فایل | وضعیت |
 |---|-----------|------|--------|
@@ -25,16 +25,21 @@
 | 7 | SuperTrend | `SUPER_TREND_ccf2.txt` | ✅ |
 | 8 | Chandelier Exit | `Chandelier_Exit_a3e4.txt` | ✅ |
 | 9 | Lorentzian ML | `Machine_Learning_Lorentzian_9f8e.txt` | ✅ (ساده‌شده) |
+| 10 | IFVG Engine | `IFVG_ENGINE_6b53.txt` | ✅ zone native |
+| 11 | Breaker Blocks | `Breaker_Blocks_with_Signals__LuxAlgo_103c.txt` | ✅ simplified |
+| 12 | SMC PRO v2 | `Money_Concepts_PRO_v2.tiktok0_9e67.txt` | ✅ confluence |
+| 13 | Zero Lag | `Zero_Lag_Trend_Signals_TIKTOK_8b12.txt` | ✅ |
+| 14 | Trendline Breakout | `Trendline_Breakouts_With__df18.txt` | ✅ (low sample) |
+| 15 | RSI Advanced | `rsi_advanced_868b.txt` | ✅ |
+| 16 | Monster Trex | `monster_e007.txt` | ⏳ blocked (ext libs) |
 
 ## اولویت بعدی برای پورت Python
 
-1. `IFVG_ENGINE_6b53.txt` — zone/FVG
-2. `Breaker_Blocks_with_Signals__LuxAlgo_103c.txt` — zone/OB
-3. `Money_Concepts_PRO_v2.tiktok0_9e67.txt` — SMC
-4. `monster_e007.txt` — strategy
-5. `rsi_advanced_868b.txt` — strategy
-6. `Zero_Lag_Trend_Signals_TIKTOK_8b12.txt` — trend
-7. `Trendline_Breakouts_With__df18.txt` — trend
+1. `Ranked_Order_Block_Zones__Zeiierman_9c77.txt`
+2. `suply_demand_zone_f0e7.txt`
+3. `LIQUDITY_PPOOL_ce94.txt`
+4. `Smart_Money_Structure__GainzAlgo_4e52.txt`
+5. `Cardwell_RSI_Trade_Navigator__MarkitTick_1c8f.txt`
 
 ## فایل‌های ناقص (منتظر آپلود شما)
 

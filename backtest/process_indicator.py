@@ -33,6 +33,12 @@ PORT_MAP: dict[str, str] = {
     "SUPER_TREND_ccf2.txt": "supertrend",
     "Chandelier_Exit_a3e4.txt": "chandelier_exit",
     "Machine_Learning_Lorentzian_9f8e.txt": "lorentzian",
+    "IFVG_ENGINE_6b53.txt": "ifvg",
+    "Breaker_Blocks_with_Signals__LuxAlgo_103c.txt": "breaker_blocks",
+    "Money_Concepts_PRO_v2.tiktok0_9e67.txt": "smc_pro",
+    "Zero_Lag_Trend_Signals_TIKTOK_8b12.txt": "zero_lag",
+    "Trendline_Breakouts_With__df18.txt": "trendline_breakout",
+    "rsi_advanced_868b.txt": "rsi_advanced",
 }
 
 KNOWN_DONE = {
@@ -45,6 +51,12 @@ KNOWN_DONE = {
     "supertrend": 7,
     "chandelier_exit": 8,
     "lorentzian": 9,
+    "ifvg": 10,
+    "breaker_blocks": 11,
+    "smc_pro": 12,
+    "zero_lag": 13,
+    "trendline_breakout": 14,
+    "rsi_advanced": 15,
 }
 
 

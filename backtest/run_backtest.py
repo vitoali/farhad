@@ -11,6 +11,15 @@ from config import CRYPTO_SL_PCT, CRYPTO_TP_PCT, FOREX_SL_PIPS, FOREX_TP_RR
 from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
 from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
+from zone_engine import extract_zone_signals_from_df, simulate_zone_native
+from zone_indicators import (
+    breaker_blocks_signals,
+    ifvg_signals,
+    rsi_advanced_signals,
+    smc_pro_signals,
+    trendline_breakout_signals,
+    zero_lag_signals,
+)
 from indicators import (
     alpha_trend_signals,
     bj_bot_signals,
@@ -33,6 +42,34 @@ SYMBOL_MARKET = {
     "XAUUSD": "forex",
 }
 TIMEFRAMES = ["15m", "1h", "4h", "1d"]
+
+ZONE_NATIVE = {"ifvg", "breaker_blocks", "smc_pro", "trendline_breakout"}
+
+
+def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) -> BacktestResult:
+    if name == "ifvg":
+        sig = ifvg_signals(df)
+    elif name == "breaker_blocks":
+        sig = breaker_blocks_signals(df)
+    elif name == "smc_pro":
+        sig = smc_pro_signals(df)
+    elif name == "trendline_breakout":
+        sig = trendline_breakout_signals(df)
+    else:
+        raise ValueError(name)
+    zlist = extract_zone_signals_from_df(sig)
+    trades = simulate_zone_native(df, zlist, market)
+    res = aggregate(trades, name, symbol, tf, market)
+    res.notes.append(f"signals={len(zlist)}")
+    return res
+
+
+def _run_fixed(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str, sig: pd.DataFrame) -> BacktestResult:
+    if market == "crypto":
+        trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=CRYPTO_SL_PCT, tp_pct=CRYPTO_TP_PCT)
+    else:
+        trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=FOREX_SL_PIPS, tp_rr=FOREX_TP_RR)
+    return aggregate(trades, name, symbol, tf, market)
 
 
 def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) -> BacktestResult:
@@ -147,6 +184,17 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
             trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=FOREX_SL_PIPS, tp_rr=FOREX_TP_RR)
         return aggregate(trades, name, symbol, tf, market)
 
+    if name in ZONE_NATIVE:
+        return _run_zone(name, df, symbol, tf, market)
+
+    if name == "zero_lag":
+        sig = zero_lag_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "rsi_advanced":
+        sig = rsi_advanced_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
     raise ValueError(name)
 
 
@@ -198,7 +246,11 @@ def main():
     print("=== Fetching data (~31 days) ===")
     data = fetch_all(days=31, timeframes=TIMEFRAMES, force=True)
 
-    indicators = ["ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib", "quadapt", "supertrend", "chandelier_exit", "lorentzian"]
+    indicators = [
+        "ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib", "quadapt",
+        "supertrend", "chandelier_exit", "lorentzian",
+        "ifvg", "breaker_blocks", "smc_pro", "zero_lag", "trendline_breakout", "rsi_advanced",
+    ]
     all_results: list[dict] = []
 
     print("\n=== Running backtests ===")

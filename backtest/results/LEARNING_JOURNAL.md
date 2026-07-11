@@ -278,10 +278,223 @@ SL = 25% فاصله entry→target (پیش‌فرض)
 
 ---
 
-## پیشرفت batch (فایل‌های کامل)
+## #10 IFVG Sniper Entry Engine
 
-- **تحلیل استاتیک:** ~45 فایل کامل در `results/analyses/`
-- **بک‌تست Python:** ۹ اندیکاتور (#1–#9)
-- **صف:** `results/ANALYSIS_QUEUE.md`
+**فایل:** `IFVG_ENGINE_6b53.txt` | **نوع:** zone/FVG inversion
+
+### منطق
+- FVG مخفی ذخیره می‌شود → وقتی قیمت FVG را invert کند (شکست با بافر ATR) → ورود
+- SL = ATR×1.5 | TP = 3R (پیش‌فرض Pine)
+- فیلتر Balanced: gap≥0.25 ATR، body≥50%، range≥0.6 ATR
+
+### نتایج (zone native SL/TP)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BTCUSDT | 1h | 8 | 50.0 | **2.60** |
+| BTCUSDT | 4h | 2 | 50.0 | **2.79** |
+| BEATUSDT | 15m | 30 | 30.0 | **0.97** |
+| BTCUSDT | 15m | 21 | 23.8 | 0.67 |
+
+### نقاط قوت
+- **PF>2.5 روی BTC 1h/4h** — inversion + فیلتر کیفیت کار می‌کند
+- SL/TP ساختاری داخل اندیکاتور (ATR-based)
+- سیگنال کم → overtrading ندارد
+
+### نقاط ضعف
+- WR پایین (~24-30%) روی 15m
+- BEAT 1h ضعیف — نمونه کم
+- وابسته به حافظه FVG و پارامتر filter mode
+
+### نگه داریم / حذف / بهبود
+- **نگه:** ورود zone-based برای استراتژی نهایی — **اولویت بالا**
+- **بهبود:** TF 1h+، ترکیب با HTF bias
+- **ترکیب:** تأیید با Bj Bot + SMC PRO zone
+
+---
+
+## #11 Breaker Blocks [LuxAlgo]
+
+**فایل:** `Breaker_Blocks_with_Signals__LuxAlgo_103c.txt` | **نوع:** zone/OB breaker
+
+### منطق (پورت ساده‌شده)
+- شکست ساختار (MSS) + آخرین کندل مخالف = zone breaker
+- ورود: تشکیل BB (+BB/-BB) + retest (signUP/signDN)
+- SL/TP: ATR×2 / R:R 2:1
+
+### نتایج
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 1h | 18 | 38.9 | **1.36** |
+| BEATUSDT | 15m | 87 | 40.2 | **1.13** |
+| BTCUSDT | 15m | 56 | 37.5 | 0.84 |
+| BTCUSDT | 1h | 24 | 29.2 | 0.57 |
+
+### نقاط قوت
+- **PF>1 روی BEAT** — breaker retest روی آلت‌کوین پرنوسان
+- منطق SMC شناخته‌شده — BOS + opposing candle
+- چند نوع سیگنال (formation + retest)
+
+### نقاط ضعف
+- پیچیدگی zigzag کامل Pine پورت نشده — ساده‌سازی
+- BTC 1h PF<1
+- سیگنال زیاد در 15m (87 trade)
+
+### نگه داریم / حذف / بهبود
+- **نگه:** لایه ساختار برای استراتژی نهایی
+- **بهبود:** پورت کامل zigzag/MSS، فیلتر PD array
+- **ترکیب:** فقط signUP/signDN + HTF هم‌جهت
+
+---
+
+## #12 Smart Money Concepts PRO v2
+
+**فایل:** `Money_Concepts_PRO_v2.tiktok0_9e67.txt` | **نوع:** zone/SMC confluence
+
+### منطق
+- BOS/CHoCH → OB جدید → retest OB در Discount (long) / Premium (short)
+- فیلتر HTF EMA21/50 + zone P/D
+
+### نتایج
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BTCUSDT | 1h | 1 | 100 | — |
+| BTCUSDT | 15m | 4 | 50.0 | 1.0 |
+| XAUUSD | 15m | 4 | 50.0 | 0.62 |
+| BEATUSDT | 15m | 4 | 25.0 | 0.36 |
+
+### نقاط قوت
+- **فیلتر confluence قوی** — کیفیت بالا، کمیت کم
+- منطق کامل: OB + P/D + HTF — نزدیک ایده استراتژی نهایی
+- barstate + non-repaint HTF در Pine
+
+### نقاط ضعف
+- **نمونه بسیار کم** (۱-۴ trade در ماه) — فیلترها سخت‌گیرانه
+- BEAT ضعیف در این دوره
+- HTF در پورت Python تقریبی (resample)
+
+### نگه داریم / حذف / بهبود
+- **نگه:** **بهترین فریمورک فیلتر confluence** برای ترکیب نهایی
+- **بهبود:** شل کردن فیلتر zone در crypto، HTF دقیق‌تر
+- **ترکیب:** لایه تأیید نهایی روی Bj Bot + IFVG
+
+---
+
+## #13 Zero Lag Trend Signals
+
+**فایل:** `Zero_Lag_Trend_Signals_TIKTOK_8b12.txt` | **نوع:** trend/ZLEMA
+
+### منطق
+- ZLEMA + volatility band → trend
+- ورود: pullback به ZLEMA در جهت trend
+
+### نتایج
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 1h | 14 | 50.0 | **0.92** |
+| BEATUSDT | 15m | 47 | 44.7 | **0.79** |
+| BTCUSDT | 1h | 9 | 33.3 | 0.97 |
+| BTCUSDT | 15m | 16 | 25.0 | 0.43 |
+
+### نقاط قوت
+- نزدیک breakeven روی BEAT/BTC 1h
+- سیگنال کمتر از UT Bot
+- MTF table در Pine (فیلتر اضافی)
+
+### نقاط ضعف
+- فارکس/طلا با SL 5% شکست (PF<0.2)
+- 4h تقریباً بدون سیگنال
+- request.security MTF در پورت نیست
+
+### نگه داریم / حذف / بهبود
+- **نگه:** فیلتر روند جایگزین UT Bot
+- **بهبود:** MTF consensus
+- **ترکیب:** تأیید pullback در استراتژی نهایی
+
+---
+
+## #14 Trendline Breakouts [ChartPrime]
+
+**فایل:** `Trendline_Breakouts_With__df18.txt` | **نوع:** trend/pattern
+
+### منطق
+- pivot high/low → خط روند → شکست + TP/SL بر اساس Zband
+
+### نتایج
+- **۱ سیگنال per نماد/TF در ۳۱ روز** — نمونه آماری صفر
+
+### نقاط قوت
+- SL/TP داخل اندیکاتور (Zband×20)
+- ایده شکست خط روند + هدف مشخص
+
+### نقاط ضعف
+- **تقریباً غیرقابل بک‌تست** در ۱ ماه — سیگنال خیلی نادر
+- منطق time-based پیچیده — پورت ناقص
+- PF غیرقابل اتکا (۱ trade)
+
+### نگه داریم / حذف / بهبود
+- **حذف از ورود مستقل** — نمونه کافی نیست
+- **بهبود:** دوره بک‌تست طولانی‌تر، پورت کامل trendline
+- **ترکیب:** فقط اگر نمونه >20 در ۳ ماه
+
+---
+
+## #15 EWO/RSI Advanced Strategy
+
+**فایل:** `rsi_advanced_868b.txt` | **نوع:** strategy/EWO+RSI
+
+### منطق
+- EWO + RSI crossover 40/60 + MFI + volume
+- فیلتر exhaustion: breakout بالای highest high یا oversold zone
+
+### نتایج
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| HYPEUSDT | 15m | 9 | 88.9 | **7.77** |
+| BTCUSDT | 4h | 3 | 66.7 | **8.27** |
+| BTCUSDT | 15m | 7 | 57.1 | **1.20** |
+| BEATUSDT | 1h | 5 | 60.0 | **1.39** |
+
+### نقاط قوت
+- **بهترین PF در گروه trend/strategy** روی HYPE/BTC 4h
+- فیلتر exhaustion از false bounce جلوگیری می‌کند
+- WR بالا روی HYPE 15m (89%)
+
+### نقاط ضعف
+- **نمونه خیلی کم** (۳-۹ trade) — اعتبار آماری محدود
+- BEAT 15m ضعیف (PF=0.36)
+- فارکس: صفر سیگنال در ۱ ماه
+
+### نگه داریم / حذف / بهبود
+- **نگه:** ایده exhaustion filter — ارزشمند برای ترکیب
+- **بهبود:** بک‌تست ۳-۶ ماهه
+- **ترکیب:** فیلتر مومنتوم روی Bj Bot entry
+
+---
+
+## #16 Monster Trex Vol — BLOCKED
+
+**فایل:** `monster_e007.txt` | **وضعیت:** نیاز به کتابخانه‌های Pine خارجی
+
+کتابخانه‌ها: `KhaksterTrexAtrLib`, `MarketStructureEngine`, `KhaksterEntryLib`, `KhaksterSmartMoneyLib`, `CandleRecognitionLib`
+
+**اقدام:** پورت دستی بعد از دریافت منطق کتابخانه‌ها یا بازنویسی ساده‌شده بر پایه FTC/RTP zones.
+
+---
+
+## پیشرفت batch (فاز ۱ — ۵۳ فایل کامل)
+
+| مرحله | تعداد | وضعیت |
+|--------|-------|--------|
+| تحلیل استاتیک | 75 | ✅ |
+| بک‌تست Python | **15** (#1–#15) | ✅ |
+| monster (کتابخانه خارجی) | 1 | ⏳ blocked |
+| باقی‌مانده zone/trend | ~37 | در صف |
+
+**بک‌تست شده:** `results/backtest_priority_zone.json`
 
 ---
