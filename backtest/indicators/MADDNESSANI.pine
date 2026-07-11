@@ -1,5 +1,5 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © MADDNESSANI — Farhad Master confluence strategy (52-indicator backtest synthesis)
+// © MADDNESSANI v2 — high-precision confluence (WR-focused tuning)
 
 //@version=6
 strategy("MADDNESSANI", shorttitle="MADDNESSANI", overlay=true, max_labels_count=200,
@@ -8,59 +8,79 @@ strategy("MADDNESSANI", shorttitle="MADDNESSANI", overlay=true, max_labels_count
      pyramiding=0, calc_on_every_tick=false, process_orders_on_close=true)
 
 // ═══════════════════════════════════════════════════════════════════
-// MADDNESSANI — Multi-style confluence strategy
-// Core: RSI Advanced + Liquidity Shift + Strong Pullback
-// Zones: FVG, Supply/Demand, SMC sweep
-// Tech: UT Bot + AlphaTrend + Zero-Lag + Bj Bot EMA21/50
-// SL/TP: Structural swing + liquidity level blend (RR configurable)
+// MADDNESSANI v2 — WR-optimized presets
+// precision (default): fewer trades, higher win rate (~50%+ target)
+// balanced: more signals | sniper: minimum trades, max quality
 // ═══════════════════════════════════════════════════════════════════
 
 string GRP_MODE  = "⚙ Mode"
 string GRP_CORE  = "🎯 Core Signals"
 string GRP_ZONE  = "📦 Zone Confluence"
 string GRP_TECH  = "📈 Technical Filters"
+string GRP_HTF   = "🕐 Higher Timeframe"
 string GRP_RISK  = "🛡 Risk Management"
 string GRP_VIS   = "👁 Display"
 
-string modeIn   = input.string("master", "Strategy Mode", options=["master", "master_strict"], group=GRP_MODE,
-     tooltip="master = balanced | master_strict = fewer, stricter entries")
-int    zoneLB     = input.int(10, "Zone Lookback (bars)", minval=3, maxval=30, group=GRP_ZONE)
-float  minScore   = input.float(5.5, "Min Confluence Score", step=0.5, minval=3.0, group=GRP_MODE)
-int    minZoneW   = input.int(1, "Min Zone Hits", minval=1, maxval=5, group=GRP_ZONE)
+string modeIn = input.string("precision", "Strategy Mode",
+     options=["precision", "balanced", "sniper"],
+     tooltip="precision=WR focus (default) | balanced=more trades | sniper=ultra strict",
+     group=GRP_MODE)
 
-bool   useRSI     = input.bool(true,  "RSI Advanced (Tier-1)", group=GRP_CORE)
-bool   useLiq     = input.bool(true,  "Liquidity Shift (Tier-1)", group=GRP_CORE)
-bool   usePullback= input.bool(true,  "Strong Pullback (Tier-1)", group=GRP_CORE)
-bool   useFVG     = input.bool(true,  "FVG Zone", group=GRP_ZONE)
-bool   useSD      = input.bool(true,  "Supply/Demand Pivot", group=GRP_ZONE)
+// Auto-tuned thresholds per mode
+int    effMinTier1 = modeIn == "sniper" ? 2 : modeIn == "precision" ? 2 : 1
+int    effTechNeed = modeIn == "sniper" ? 4 : modeIn == "precision" ? 4 : 2
+float  effMinScore = modeIn == "sniper" ? 9.0 : modeIn == "precision" ? 7.5 : 5.5
+int    effMinZone  = modeIn == "sniper" ? 2 : modeIn == "precision" ? 2 : 1
+int    effCooldown = modeIn == "sniper" ? 10 : modeIn == "precision" ? 5 : 3
 
-bool   useUT      = input.bool(true,  "UT Bot Trend", group=GRP_TECH)
-bool   useAlpha   = input.bool(true,  "AlphaTrend Momentum", group=GRP_TECH)
-bool   useZL      = input.bool(true,  "Zero-Lag Trend", group=GRP_TECH)
-bool   useBJ      = input.bool(true,  "Bj Bot EMA Structure", group=GRP_TECH)
+int    zoneLB    = input.int(8, "Zone Lookback (bars)", minval=3, maxval=20, group=GRP_ZONE)
+bool   useRSI    = input.bool(true,  "RSI Advanced", group=GRP_CORE)
+bool   useLiq    = input.bool(true,  "Liquidity Shift", group=GRP_CORE)
+bool   usePullback=input.bool(true,  "Strong Pullback", group=GRP_CORE)
+bool   useFVG    = input.bool(true,  "FVG Zone", group=GRP_ZONE)
+bool   useSD     = input.bool(true,  "S/D Retest", group=GRP_ZONE)
 
-int    rsiLen     = input.int(14, "RSI Length", group=GRP_CORE)
-int    pivLen     = input.int(5,  "Liquidity Pivot Length", minval=2, group=GRP_CORE)
-int    sdLen      = input.int(10, "S/D Pivot Length", minval=3, group=GRP_ZONE)
-float  utMult     = input.float(1.0, "UT ATR Multiplier", step=0.1, group=GRP_TECH)
-int    swingLen   = input.int(5,  "Swing Lookback (SL)", minval=2, group=GRP_RISK)
-float  riskM      = input.float(1.0, "ATR SL Buffer", step=0.1, group=GRP_RISK)
-float  rrRatio    = input.float(1.5, "Take Profit R:R", step=0.1, minval=0.5, group=GRP_RISK)
-float  minRiskAtr = input.float(0.35, "Min Risk (ATR mult)", step=0.05, group=GRP_RISK)
+bool   useUT     = input.bool(true,  "UT Bot Trend", group=GRP_TECH)
+bool   useAlpha  = input.bool(true,  "AlphaTrend", group=GRP_TECH)
+bool   useZL     = input.bool(true,  "Zero-Lag Trend", group=GRP_TECH)
+bool   useBJ     = input.bool(true,  "Bj EMA 21/50", group=GRP_TECH)
+bool   useADX    = input.bool(true,  "ADX Trend Filter", group=GRP_TECH)
+float  adxMin    = input.float(22.0, "Min ADX", step=1.0, group=GRP_TECH)
 
-bool   showDash   = input.bool(true, "Show Dashboard", group=GRP_VIS)
-bool   showMA     = input.bool(true, "Show EMA 21/50", group=GRP_VIS)
-bool   showLines  = input.bool(true, "Show UT / AlphaTrend", group=GRP_VIS)
+bool   useHTF    = input.bool(true,  "HTF Trend Filter", group=GRP_HTF)
+string htfTF     = input.timeframe("240", "HTF Timeframe", group=GRP_HTF)
 
-// ── ATR ───────────────────────────────────────────────────────────
+int    rsiLen    = input.int(14, "RSI Length", group=GRP_CORE)
+int    pivLen    = input.int(5,  "Liquidity Pivot", minval=2, group=GRP_CORE)
+int    sdLen     = input.int(10, "S/D Pivot", minval=3, group=GRP_ZONE)
+float  utMult    = input.float(1.0, "UT ATR Mult", step=0.1, group=GRP_TECH)
+int    swingLen  = input.int(5,  "Swing SL Lookback", minval=2, group=GRP_RISK)
+float  riskM     = input.float(1.0, "ATR SL Buffer", step=0.1, group=GRP_RISK)
+float  rrRatio   = input.float(1.0, "Take Profit R:R", step=0.1, minval=0.5, maxval=3.0, group=GRP_RISK,
+     tooltip="1.0 = higher WR | 1.5+ = bigger wins but lower WR")
+float  minRiskAtr= input.float(0.35, "Min Risk (ATR)", step=0.05, group=GRP_RISK)
+
+bool   showDash  = input.bool(true, "Dashboard", group=GRP_VIS)
+bool   showMA    = input.bool(true, "EMA 21/50", group=GRP_VIS)
+
 float atr14 = ta.atr(14)
 
-// ── RSI Advanced (core #1, PF≈2.96) ──────────────────────────────
-float rsiV    = ta.rsi(close, rsiLen)
-float ewo     = ta.sma(hl2, 5) - ta.sma(hl2, 34)
-float mfiV    = ta.mfi(hlc3, 14)
-float volMA   = ta.sma(volume, 20)
-bool  volOK   = volume > volMA * 0.8
+// ── ADX ───────────────────────────────────────────────────────────
+[diPlus, diMinus, adxV] = ta.dmi(14, 14)
+bool adxOK = not useADX or adxV >= adxMin
+
+// ── HTF trend (4h default on 1h chart) ───────────────────────────
+htfClose = request.security(syminfo.tickerid, htfTF, close[1], barmerge.gaps_off, barmerge.lookahead_off)
+htfEma50 = request.security(syminfo.tickerid, htfTF, ta.ema(close, 50)[1], barmerge.gaps_off, barmerge.lookahead_off)
+htfBull  = not useHTF or htfClose > htfEma50
+htfBear  = not useHTF or htfClose < htfEma50
+
+// ── RSI Advanced ──────────────────────────────────────────────────
+float rsiV = ta.rsi(close, rsiLen)
+float ewo  = ta.sma(hl2, 5) - ta.sma(hl2, 34)
+float mfiV = ta.mfi(hlc3, 14)
+float volMA = ta.sma(volume, 20)
+bool volOK = volume > volMA * 0.8
 float breakLv = ta.highest(high, 10)[1]
 var bool inOS = false
 if rsiV < 30
@@ -70,7 +90,7 @@ bool rsiShort = useRSI and rsiV[1] > 60 and rsiV <= 60 and mfiV < 70 and ewo < e
 if rsiLong
     inOS := false
 
-// ── Liquidity Shift (core #2, PF≈2.67) ─────────────────────────
+// ── Liquidity Shift ───────────────────────────────────────────────
 float ph = ta.pivothigh(high, pivLen, pivLen)
 float pl = ta.pivotlow(low, pivLen, pivLen)
 var float mSwingHi = na
@@ -89,24 +109,32 @@ if useLiq and not na(mSwingLo) and low < mSwingLo and close > mSwingLo
 if useLiq and not na(mSwingHi) and high > mSwingHi and close < mSwingHi
     bearPend := true
     bearLvl  := mSwingHi
-bool liqLong  = useLiq and bullPend and (close > mSwingHi or (close > open and math.abs(close - open) >= atr14 * 0.8))
-bool liqShort = useLiq and bearPend and (close < mSwingLo or (close < open and math.abs(close - open) >= atr14 * 0.8))
+bool liqLong  = useLiq and bullPend and close > mSwingHi
+bool liqShort = useLiq and bearPend and close < mSwingLo
 if liqLong
     bullPend := false
 if liqShort
     bearPend := false
 
-// ── Strong Pullback proxy (PF≈1.41) ────────────────────────────
+// ── Strong Pullback (trend + break + retest EMA34) ───────────────
 float emaF = ta.ema(close, 34)
 float emaS = ta.ema(close, 144)
-bool spLong  = usePullback and emaF > emaS and close > ta.highest(high, 20)[1] and close > open
-bool spShort = usePullback and emaF < emaS and close < ta.lowest(low, 20)[1] and close < open
+bool trendUp = emaF > emaS and close > emaS
+bool trendDn = emaF < emaS and close < emaS
+bool brokeUp = close > ta.highest(high, 20)[1] and close > open
+bool brokeDn = close < ta.lowest(low, 20)[1] and close < open
+bool retestL = low <= emaF and close > emaF
+bool retestS = high >= emaF and close < emaF
+bool spLong  = usePullback and trendUp and (brokeUp or retestL)
+bool spShort = usePullback and trendDn and (brokeDn or retestS)
 
-// ── Zone: FVG + Supply/Demand ────────────────────────────────────
+// ── Zones: FVG + S/D retest (not just pivot formation) ──────────
 bool fvgLong  = useFVG and low > high[2] and close > open
 bool fvgShort = useFVG and high < low[2] and close < open
-bool sdLong   = useSD and not na(ta.pivotlow(low, sdLen, sdLen))
-bool sdShort  = useSD and not na(ta.pivothigh(high, sdLen, sdLen))
+float sdBot = ta.lowest(low, sdLen)[1]
+float sdTop = ta.highest(high, sdLen)[1]
+bool sdLong  = useSD and low <= sdBot * 1.002 and close > sdBot and close > open
+bool sdShort = useSD and high >= sdTop * 0.998 and close < sdTop and close < open
 
 f_zone_long(int lb) =>
     int s = 0
@@ -122,7 +150,7 @@ f_zone_short(int lb) =>
             s += 1
     s
 
-// ── UT Bot trend filter ───────────────────────────────────────────
+// ── UT Bot ────────────────────────────────────────────────────────
 float utAtr = ta.atr(10) * utMult
 var float tsl = na
 tsl := close > nz(tsl[1], close - utAtr) and close[1] > nz(tsl[1], close - utAtr) ?
@@ -133,25 +161,25 @@ tsl := close > nz(tsl[1], close - utAtr) and close[1] > nz(tsl[1], close - utAtr
 bool utBull = not useUT or close > tsl
 bool utBear = not useUT or close < tsl
 
-// ── AlphaTrend momentum ───────────────────────────────────────────
+// ── AlphaTrend ────────────────────────────────────────────────────
 float atrP = ta.sma(ta.tr, 14)
 var float alphaTrend = na
 bool bullM = ta.mfi(close, 14) >= 50
-float upT  = low - atrP
-float dnT  = high + atrP
+float upT = low - atrP
+float dnT = high + atrP
 alphaTrend := bullM ?
      (nz(alphaTrend[1]) < upT ? upT : math.max(nz(alphaTrend[1]), upT)) :
      (nz(alphaTrend[1]) > dnT ? dnT : math.min(nz(alphaTrend[1]), dnT))
 bool alphaBull = not useAlpha or close > alphaTrend
 bool alphaBear = not useAlpha or close < alphaTrend
 
-// ── Zero-Lag trend state ──────────────────────────────────────────
-int   zlLen  = 70
+// ── Zero-Lag ──────────────────────────────────────────────────────
+int zlLen = 70
 float zlMult = 1.2
-int   lag    = (zlLen - 1) / 2
-float zlema  = ta.ema(close + (close - close[lag]), zlLen)
-float zlAtr  = ta.ema(ta.tr, zlLen)
-float zlVol  = ta.highest(zlAtr, zlLen * 3) * zlMult
+int lag = (zlLen - 1) / 2
+float zlema = ta.ema(close + (close - close[lag]), zlLen)
+float zlAtr = ta.ema(ta.tr, zlLen)
+float zlVol = ta.highest(zlAtr, zlLen * 3) * zlMult
 var int zlTrend = 0
 if close > zlema + zlVol and close[1] <= zlema[1] + zlVol[1]
     zlTrend := 1
@@ -160,7 +188,7 @@ if close < zlema - zlVol and close[1] >= zlema[1] - zlVol[1]
 bool zlBull = not useZL or zlTrend == 1
 bool zlBear = not useZL or zlTrend == -1
 
-// ── Bj Bot EMA structure ──────────────────────────────────────────
+// ── Bj Bot ────────────────────────────────────────────────────────
 float ma21 = ta.ema(close, 21)
 float ma50 = ta.ema(close, 50)
 bool bjBull = not useBJ or ma21 > ma50
@@ -168,72 +196,68 @@ bool bjBear = not useBJ or ma21 < ma50
 bool bjCrossL = ta.crossover(ma21, ma50)
 bool bjCrossS = ta.crossunder(ma21, ma50)
 
-// ── Technical score ───────────────────────────────────────────────
 int techLong  = (utBull ? 1 : 0) + (alphaBull ? 1 : 0) + (zlBull ? 1 : 0) + (bjBull ? 1 : 0)
 int techShort = (utBear ? 1 : 0) + (alphaBear ? 1 : 0) + (zlBear ? 1 : 0) + (bjBear ? 1 : 0)
-int techNeed  = modeIn == "master_strict" ? 3 : 2
 
-// ── Confluence scoring ────────────────────────────────────────────
-int tier1L = (rsiLong ? 3 : 0) + (liqLong ? 3 : 0) + (spLong ? 2 : 0) + (bjCrossL ? 1 : 0)
-int tier1S = (rsiShort ? 3 : 0) + (liqShort ? 3 : 0) + (spShort ? 2 : 0) + (bjCrossS ? 1 : 0)
+// Tier-1 count (weighted signals firing NOW)
+int tier1L = (rsiLong ? 1 : 0) + (liqLong ? 1 : 0) + (spLong ? 1 : 0) + (bjCrossL ? 1 : 0)
+int tier1S = (rsiShort ? 1 : 0) + (liqShort ? 1 : 0) + (spShort ? 1 : 0) + (bjCrossS ? 1 : 0)
 float zoneL = f_zone_long(zoneLB) * 1.5
 float zoneS = f_zone_short(zoneLB) * 1.5
-float scoreL = zoneL + tier1L + techLong * 0.5
-float scoreS = zoneS + tier1S + techShort * 0.5
-int  effMinZ = modeIn == "master_strict" ? 2 : minZoneW
-float effMin = modeIn == "master_strict" ? 8.0 : minScore
+float scoreL = zoneL + tier1L * 3.0 + techLong * 0.75
+float scoreS = zoneS + tier1S * 3.0 + techShort * 0.75
 
-bool goLong  = tier1L >= 1 and zoneL >= effMinZ and scoreL >= effMin and techLong >= techNeed and barstate.isconfirmed
-bool goShort = tier1S >= 1 and zoneS >= effMinZ and scoreS >= effMin and techShort >= techNeed and barstate.isconfirmed
+// ── Cooldown ──────────────────────────────────────────────────────
+var int lastSigBar = -999
+bool coolOK = bar_index - lastSigBar >= effCooldown
 
-// ── SL / TP (structural + liquidity blend) ────────────────────────
+bool rawLong  = tier1L >= effMinTier1 and zoneL >= effMinZone and scoreL >= effMinScore and
+     techLong >= effTechNeed and adxOK and htfBull and coolOK and barstate.isconfirmed
+bool rawShort = tier1S >= effMinTier1 and zoneS >= effMinZone and scoreS >= effMinScore and
+     techShort >= effTechNeed and adxOK and htfBear and coolOK and barstate.isconfirmed
+
+if rawLong or rawShort
+    lastSigBar := bar_index
+
+// ── SL / TP ───────────────────────────────────────────────────────
 float structLo = ta.lowest(low, swingLen)
 float structHi = ta.highest(high, swingLen)
-float liqSlL   = nz(bullLvl, structLo) - atr14 * 0.15
-float liqSlS   = nz(bearLvl, structHi) + atr14 * 0.15
-float longSL   = math.min(structLo - atr14 * riskM, liqSlL)
-float shortSL  = math.max(structHi + atr14 * riskM, liqSlS)
-float longRisk  = math.max(close - longSL,  atr14 * minRiskAtr)
+float longSL  = math.min(structLo - atr14 * riskM, nz(bullLvl, structLo) - atr14 * 0.15)
+float shortSL = math.max(structHi + atr14 * riskM, nz(bearLvl, structHi) + atr14 * 0.15)
+float longRisk  = math.max(close - longSL, atr14 * minRiskAtr)
 float shortRisk = math.max(shortSL - close, atr14 * minRiskAtr)
-float longTP    = close + longRisk * rrRatio
-float shortTP   = close - shortRisk * rrRatio
+float longTP  = close + longRisk * rrRatio
+float shortTP = close - shortRisk * rrRatio
 
-// ── Orders ────────────────────────────────────────────────────────
-if goLong and strategy.position_size <= 0
+if rawLong and strategy.position_size <= 0
     strategy.entry("MAD Long", strategy.long, comment="MADDNESSANI L")
     strategy.exit("MAD Long Exit", "MAD Long", stop=longSL, limit=longTP)
 
-if goShort and strategy.position_size >= 0
+if rawShort and strategy.position_size >= 0
     strategy.entry("MAD Short", strategy.short, comment="MADDNESSANI S")
     strategy.exit("MAD Short Exit", "MAD Short", stop=shortSL, limit=shortTP)
 
-// ── Alerts ────────────────────────────────────────────────────────
-alertcondition(goLong,  title="MADDNESSANI Long",  message='{"strategy":"MADDNESSANI","side":"long","price":"{{close}}"}')
-alertcondition(goShort, title="MADDNESSANI Short", message='{"strategy":"MADDNESSANI","side":"short","price":"{{close}}"}')
+alertcondition(rawLong,  title="MADDNESSANI Long",  message='{"strategy":"MADDNESSANI","side":"long"}')
+alertcondition(rawShort, title="MADDNESSANI Short", message='{"strategy":"MADDNESSANI","side":"short"}')
 
-// ── Visuals ───────────────────────────────────────────────────────
-plot(showMA ? ma21 : na, "EMA 21", color=color.new(color.blue, 0), linewidth=1)
-plot(showMA ? ma50 : na, "EMA 50", color=color.new(color.orange, 0), linewidth=1)
-plot(showLines ? tsl : na, "UT TSL", color=color.new(color.gray, 30), linewidth=1, style=plot.style_stepline)
-plot(showLines ? alphaTrend : na, "AlphaTrend", color=color.new(color.purple, 40), linewidth=1)
+plot(showMA ? ma21 : na, "EMA21", color=color.blue)
+plot(showMA ? ma50 : na, "EMA50", color=color.orange)
+plotshape(rawLong,  "Long",  shape.triangleup,   location.belowbar, color.new(#00ff88,0), size=size.small, text="MAD")
+plotshape(rawShort, "Short", shape.triangledown, location.abovebar, color.new(#ff3366,0), size=size.small, text="MAD")
 
-plotshape(goLong,  title="Long",  style=shape.triangleup,   location=location.belowbar,
-     color=color.new(#00ff88, 0), size=size.small, text="MAD", textcolor=color.white)
-plotshape(goShort, title="Short", style=shape.triangledown, location=location.abovebar,
-     color=color.new(#ff3366, 0), size=size.small, text="MAD", textcolor=color.white)
-
-// ── Dashboard ─────────────────────────────────────────────────────
-var table dash = table.new(position.top_right, 2, 6, bgcolor=color.new(#0d1117, 10), border_color=color.new(color.white, 80))
+var table dash = table.new(position.top_right, 2, 7, bgcolor=color.new(#0d1117,10))
 if showDash and barstate.islast
-    table.cell(dash, 0, 0, "MADDNESSANI", text_color=#00ff88, text_size=size.normal, bgcolor=color.new(#0d1117, 0))
-    table.cell(dash, 1, 0, modeIn, text_color=color.yellow, text_size=size.small, bgcolor=color.new(#0d1117, 0))
-    table.cell(dash, 0, 1, "Score L/S", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 1, str.tostring(scoreL, "#.#") + " / " + str.tostring(scoreS, "#.#"), text_color=color.yellow, text_size=size.small)
-    table.cell(dash, 0, 2, "Tier-1", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 2, str.tostring(tier1L) + " / " + str.tostring(tier1S), text_color=color.white, text_size=size.small)
-    table.cell(dash, 0, 3, "Zone", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 3, str.tostring(zoneL, "#.#") + " / " + str.tostring(zoneS, "#.#"), text_color=color.white, text_size=size.small)
-    table.cell(dash, 0, 4, "Tech", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 4, str.tostring(techLong) + "/4  " + str.tostring(techShort) + "/4", text_color=color.white, text_size=size.small)
-    table.cell(dash, 0, 5, "ZL Trend", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 5, zlTrend == 1 ? "▲ UP" : zlTrend == -1 ? "▼ DN" : "—", text_color=zlTrend == 1 ? color.lime : zlTrend == -1 ? color.red : color.gray, text_size=size.small)
+    table.cell(dash, 0, 0, "MADDNESSANI", text_color=#00ff88, text_size=size.normal)
+    table.cell(dash, 1, 0, modeIn, text_color=color.yellow, text_size=size.small)
+    table.cell(dash, 0, 1, "Tier1 need", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 1, str.tostring(tier1L)+"/"+str.tostring(effMinTier1)+"  "+str.tostring(tier1S)+"/"+str.tostring(effMinTier1), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 2, "Tech need", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 2, str.tostring(techLong)+"/"+str.tostring(effTechNeed)+"  "+str.tostring(techShort)+"/"+str.tostring(effTechNeed), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 3, "Score", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 3, str.tostring(scoreL,"#.#")+" / "+str.tostring(scoreS,"#.#"), text_color=color.yellow, text_size=size.small)
+    table.cell(dash, 0, 4, "HTF", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 4, htfBull ? "BULL" : htfBear ? "BEAR" : "—", text_color=htfBull?color.lime:color.red, text_size=size.small)
+    table.cell(dash, 0, 5, "ADX", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 5, str.tostring(adxV,"#.#"), text_color=adxOK?color.lime:color.red, text_size=size.small)
+    table.cell(dash, 0, 6, "R:R", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 6, str.tostring(rrRatio,"#.#"), text_color=color.white, text_size=size.small)
