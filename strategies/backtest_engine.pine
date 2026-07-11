@@ -1,0 +1,102 @@
+//@version=6
+// Reusable single-symbol strategy harness. Replace only the SIGNAL ADAPTER block
+// when evaluating a supplied indicator or trading strategy.
+strategy(
+     "Modular Backtest Engine",
+     overlay = true,
+     pyramiding = 0,
+     process_orders_on_close = true,
+     calc_on_order_fills = true,
+     commission_type = strategy.commission.percent,
+     commission_value = 0.0
+)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEST WINDOW
+// ─────────────────────────────────────────────────────────────────────────────
+windowMode = input.string("Last N days", "Test window", options = ["Last N days", "Custom dates"], group = "Test window")
+lookbackDays = input.int(30, "Days to test", minval = 1, group = "Test window")
+startDate = input.time(timestamp("01 Jan 2024 00:00 +0000"), "Start", group = "Test window")
+endDate = input.time(timestamp("01 Jan 2030 00:00 +0000"), "End", group = "Test window")
+
+inLastDays = time >= timenow - lookbackDays * 24 * 60 * 60 * 1000
+inCustomDates = time >= startDate and time <= endDate
+inTestWindow = windowMode == "Last N days" ? inLastDays : inCustomDates
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RISK AND EXECUTION
+// Set the mode to Percent for crypto and Pips for EURUSD/XAUUSD. For metals,
+// confirm the broker's tick convention and set the pip size explicitly.
+// ─────────────────────────────────────────────────────────────────────────────
+riskMode = input.string("Percent", "Risk unit", options = ["Percent", "Pips"], group = "Risk")
+stopPercent = input.float(1.0, "Stop loss (%)", minval = 0.01, step = 0.1, group = "Risk")
+stopPips = input.float(3.0, "Stop loss (pips)", minval = 0.1, step = 0.1, group = "Risk")
+pipSize = input.float(0.0001, "One pip in price units", minval = 0.00000001, step = 0.00001, group = "Risk")
+takeProfitMode = input.string("Risk/reward", "Take profit mode", options = ["Risk/reward", "Percent", "Pips"], group = "Risk")
+riskReward = input.float(1.5, "Risk/reward", minval = 0.1, step = 0.1, group = "Risk")
+targetPercent = input.float(1.5, "Take profit (%)", minval = 0.01, step = 0.1, group = "Risk")
+targetPips = input.float(5.0, "Take profit (pips)", minval = 0.1, step = 0.1, group = "Risk")
+allowLongs = input.bool(true, "Allow long trades", group = "Execution")
+allowShorts = input.bool(true, "Allow short trades", group = "Execution")
+
+stopDistance(price) =>
+    riskMode == "Percent" ? price * stopPercent / 100.0 : stopPips * pipSize
+
+targetDistance(price, stop) =>
+    takeProfitMode == "Risk/reward" ? stop * riskReward :
+     takeProfitMode == "Percent" ? price * targetPercent / 100.0 :
+     targetPips * pipSize
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIGNAL ADAPTER
+// This is the only block to replace for each supplied indicator. It must return
+// confirmed boolean entry conditions: longSignal and shortSignal.
+// The two built-in adapters are validation examples, not recommendations.
+// ─────────────────────────────────────────────────────────────────────────────
+signalSource = input.string("EMA crossover", "Signal adapter", options = ["EMA crossover", "RSI reversal"], group = "Signal adapter")
+fastLength = input.int(9, "Fast EMA / RSI length", minval = 1, group = "Signal adapter")
+slowLength = input.int(21, "Slow EMA / RSI threshold", minval = 2, group = "Signal adapter")
+
+fastEma = ta.ema(close, fastLength)
+slowEma = ta.ema(close, slowLength)
+rsi = ta.rsi(close, fastLength)
+
+emaLong = ta.crossover(fastEma, slowEma)
+emaShort = ta.crossunder(fastEma, slowEma)
+rsiLong = ta.crossover(rsi, slowLength)
+rsiShort = ta.crossunder(rsi, 100 - slowLength)
+
+longSignal = signalSource == "EMA crossover" ? emaLong : rsiLong
+shortSignal = signalSource == "EMA crossover" ? emaShort : rsiShort
+
+// Never open new trades outside the selected sample. A reversal closes the
+// current trade before placing the opposite entry, avoiding hidden pyramiding.
+var float activeStopDistance = na
+var float activeTargetDistance = na
+
+if inTestWindow and longSignal and allowLongs and strategy.position_size <= 0
+    activeStopDistance := stopDistance(close)
+    activeTargetDistance := targetDistance(close, activeStopDistance)
+    strategy.entry("Long", strategy.long, comment = "Long signal")
+
+if inTestWindow and shortSignal and allowShorts and strategy.position_size >= 0
+    activeStopDistance := stopDistance(close)
+    activeTargetDistance := targetDistance(close, activeStopDistance)
+    strategy.entry("Short", strategy.short, comment = "Short signal")
+
+if strategy.position_size > 0 and not na(activeStopDistance)
+    strategy.exit("Long risk exit", "Long", stop = strategy.position_avg_price - activeStopDistance, limit = strategy.position_avg_price + activeTargetDistance)
+
+if strategy.position_size < 0 and not na(activeStopDistance)
+    strategy.exit("Short risk exit", "Short", stop = strategy.position_avg_price + activeStopDistance, limit = strategy.position_avg_price - activeTargetDistance)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    activeStopDistance := na
+    activeTargetDistance := na
+
+if not inTestWindow and strategy.position_size != 0
+    strategy.close_all(comment = "End of test window")
+
+plot(signalSource == "EMA crossover" ? fastEma : na, "Fast EMA", color = color.teal)
+plot(signalSource == "EMA crossover" ? slowEma : na, "Slow EMA", color = color.orange)
+bgcolor(inTestWindow ? color.new(color.blue, 94) : na, title = "Backtest window")
