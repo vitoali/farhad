@@ -11,7 +11,7 @@ from config import CRYPTO_SL_PCT, CRYPTO_TP_PCT, FOREX_SL_PIPS, FOREX_TP_RR
 from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
 from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
-from indicators import alpha_trend_signals, bj_bot_signals, fib_fib_signals, ut_bot_signals
+from indicators import alpha_trend_signals, bj_bot_signals, fib_fib_signals, quadapt_signals, ut_bot_signals
 
 RESULTS_DIR = Path(__file__).parent / "results"
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -102,6 +102,16 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         res.notes.append(f"levels={touches}")
         return res
 
+    if name == "quadapt":
+        if len(df) < 150:
+            return BacktestResult(name, symbol, tf, market, notes=["need 150+ bars"])
+        sig = quadapt_signals(df)
+        if market == "crypto":
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=CRYPTO_SL_PCT, tp_pct=CRYPTO_TP_PCT)
+        else:
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=FOREX_SL_PIPS, tp_rr=FOREX_TP_RR)
+        return aggregate(trades, name, symbol, tf, market)
+
     raise ValueError(name)
 
 
@@ -153,7 +163,7 @@ def main():
     print("=== Fetching data (~31 days) ===")
     data = fetch_all(days=31, timeframes=TIMEFRAMES, force=True)
 
-    indicators = ["ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib"]
+    indicators = ["ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib", "quadapt"]
     all_results: list[dict] = []
 
     print("\n=== Running backtests ===")

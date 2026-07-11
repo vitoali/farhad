@@ -266,3 +266,87 @@ def fib_fib_signals(df: pd.DataFrame, fiblength: int = 265, touch_pct: float = 0
     out["sell"] = sell
     out["touch_level"] = touch_level
     return out
+
+
+# ---------------------------------------------------------------------------
+# #6 Quadapt ML Trader — envelope compression breakout (core signals)
+# ---------------------------------------------------------------------------
+
+def _synth_b(close: pd.Series, ema_close: pd.Series, length: int) -> pd.Series:
+    """Unused legacy helper — envelope uses inline synth in _envelope_side."""
+    base_ds = (close - ema_close).abs()
+    nd = base_ds / ema_close.abs().clip(lower=1e-8)
+    x = 0.68 * nd.pow(2) + 0.79 * nd + nd
+    synth = np.sin(x) * np.cos(x)
+    return synth.abs() * ema_close.abs().clip(lower=1e-8)
+
+
+def _envelope_side(close: pd.Series, length: int) -> tuple[pd.Series, pd.Series, pd.Series]:
+    ema_close = ema(close, length)
+    b = _synth_b(close, ema_close, length)
+    d = b.ewm(span=length, adjust=False).mean()
+    upper = ema_close + d
+    lower = ema_close - d
+    smooth_u = pd.Series(np.maximum(upper, close), index=close.index).ewm(span=length, adjust=False).mean()
+    smooth_l = pd.Series(np.minimum(close, lower), index=close.index).ewm(span=length, adjust=False).mean()
+    return smooth_u, smooth_l, ema_close
+
+
+def quadapt_signals(
+    df: pd.DataFrame,
+    len1: int = 120,
+    len2: int = 70,
+    enable_dual: bool = True,
+    consensus: str = "Independent",
+    strong_only: bool = False,
+) -> pd.DataFrame:
+    """Simplified port of Quadapt envelope signals (MLMA/OB/quality engine omitted)."""
+    out = df.copy()
+    close = out["close"]
+    rsi_14 = rsi(close, 14)
+
+    def side_signals(length: int) -> tuple[pd.Series, pd.Series, pd.Series, pd.Series]:
+        smooth_u, smooth_l, ema_c = _envelope_side(close, length)
+        rp = max(1, length // 5)
+        rising_l = smooth_l.diff().rolling(rp).min() > 0
+        falling_u = smooth_u.diff().rolling(rp).max() < 0
+        wedge = rising_l & falling_u
+        rng = smooth_u - smooth_l
+        falling_rng = rng.diff().rolling(length).max() < 0
+        falling_ended = falling_rng.shift(1).fillna(False) & ~falling_rng
+        buy = falling_ended & (close > smooth_l) & ~wedge
+        sell = falling_ended & (close < smooth_u) & ~wedge
+        strong_buy = buy & (close > ema_c) & (rsi_14 < 70)
+        strong_sell = sell & (close < ema_c) & (rsi_14 > 30)
+        return buy, sell, strong_buy, strong_sell
+
+    b1, s1, sb1, ss1 = side_signals(len1)
+    if enable_dual:
+        b2, s2, sb2, ss2 = side_signals(len2)
+    else:
+        b2 = s2 = sb2 = ss2 = pd.Series(False, index=close.index)
+
+    if consensus == "Consensus" and enable_dual:
+        buy = b1 & b2
+        sell = s1 & s2
+        strong_buy = sb1 & sb2
+        strong_sell = ss1 & ss2
+    elif consensus == "Primary Priority":
+        buy, sell, strong_buy, strong_sell = b1, s1, sb1, ss1
+    else:  # Independent
+        buy = b1 | b2
+        sell = s1 | s2
+        strong_buy = sb1 | sb2
+        strong_sell = ss1 | ss2
+
+    if strong_only:
+        out["buy"] = strong_buy
+        out["sell"] = strong_sell
+    else:
+        out["buy"] = buy | strong_buy
+        out["sell"] = sell | strong_sell
+
+    # one signal per edge
+    out["buy"] = out["buy"] & ~out["buy"].shift(1).fillna(False)
+    out["sell"] = out["sell"] & ~out["sell"].shift(1).fillna(False)
+    return out
