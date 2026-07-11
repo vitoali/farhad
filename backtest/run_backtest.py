@@ -37,6 +37,15 @@ from extra_indicators import (
     orderflow_print_signals,
     fair_value_gap_signals,
     fib_ote_signals,
+    mirage_lsp_signals,
+    trendmaster_signals,
+    pmax_signals,
+    volume_ob_retest_signals,
+    dynamic_trend_signals,
+    quantum_imbalance_signals,
+    multi_div_signals,
+    knn_pivot_signals,
+    hv_pivot_sr_signals,
 )
 from zone_engine import extract_zone_signals_from_df, simulate_zone_native
 from zone_indicators import (
@@ -80,6 +89,7 @@ ZONE_NATIVE = {
     "liquidity_pool",
     "liquidity_shift",
     "buyside_liquidity", "sr_signals_mtf", "fair_value_gap", "fib_ote",
+    "mirage_lsp", "volume_ob_retest", "quantum_imbalance", "multi_div", "hv_pivot_sr",
 }
 
 
@@ -124,6 +134,16 @@ def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) ->
         sig = fair_value_gap_signals(df)
     elif name == "fib_ote":
         sig = fib_ote_signals(df)
+    elif name == "mirage_lsp":
+        sig = mirage_lsp_signals(df)
+    elif name == "volume_ob_retest":
+        sig = volume_ob_retest_signals(df)
+    elif name == "quantum_imbalance":
+        sig = quantum_imbalance_signals(df)
+    elif name == "multi_div":
+        sig = multi_div_signals(df)
+    elif name == "hv_pivot_sr":
+        sig = hv_pivot_sr_signals(df)
     else:
         raise ValueError(name)
     zlist = extract_zone_signals_from_df(sig)
@@ -310,6 +330,22 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         sig = macd_mtf_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
 
+    if name == "trendmaster":
+        sig = trendmaster_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "pmax":
+        sig = pmax_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "dynamic_trend":
+        sig = dynamic_trend_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "knn_pivot":
+        sig = knn_pivot_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
     if name == "monster":
         return BacktestResult(name, symbol, tf, market, notes=["blocked: external pine libraries"])
 
@@ -374,6 +410,8 @@ def main():
         "sr_breaks", "liquidity_pool",         "slingshot", "ichimoku_ml", "liquidity_shift", "cm_ma_mtf",
         "fxpip_scob", "buyside_liquidity", "sr_signals_mtf", "divergence", "orderflow_print",
         "fair_value_gap", "fib_ote",
+        "mirage_lsp", "trendmaster", "pmax", "volume_ob_retest", "dynamic_trend",
+        "quantum_imbalance", "multi_div", "knn_pivot", "hv_pivot_sr",
     ]
     all_results: list[dict] = []
 

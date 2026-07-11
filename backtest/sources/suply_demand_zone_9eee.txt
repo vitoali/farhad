@@ -1,0 +1,426 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// ©fluxchart
+
+//@version=6
+indicator("Supply and Demand Zones | Flux Charts", overlay = true, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+//v2
+//#region CONSTANTS
+const string pivotLenTip = "How big a price swing must be before it forms a zone. Higher values give fewer, more significant zones; lower values give more zones that react faster to price."
+const string lookbackBarsTip = "How far back the indicator looks for zones, in bars. Higher keeps older zones on the chart; lower focuses on recent price action."
+const string cooldownBarsTip = "Waits this many bars before counting another test of the same zone, so price lingering at a level isn't counted as many separate retests."
+const string holdWindowTip = "After a retest, the zone must avoid a breakout for this many candles to count as a successful hold. Drives the Held stat and the Strongest ranking."
+const string showNearestTip = "How many supply and how many demand zones to show at once (each side is counted separately)."
+const string rankByTip = "Which zones get shown:\n\n• Strongest — zones that have most reliably held after retests, weighted by how often they've been tested and how close they are to price\n• Nearest — simply the closest zones to current price"
+const string minZoneSpacingTip = "Hides zones sitting too close to one already shown, to keep the chart clean. Set to 0 to show every zone."
+const string retestMarkerTip = "Marks where price tested a zone and was rejected. A failed breakout — price pushing through, then closing back — also counts as a retest. Choose the marker shape here."
+const string breakoutMarkerTip = "Marks where price broke cleanly through a zone. Choose the marker shape here."
+const string statsLabelTip = "Show the stats label to the right of each zone (Retests · Breakouts · Held %)."
+const string statsSizeTip = "Text size of the stats label."
+const string statsPosTip = "Where the stats label sits — above supply zones and below demand zones, centered against the zone's right edge, or to the right outside the zone."
+
+const string grpGeneral = "General"
+const string grpStyle = "Style"
+
+const int MAX_ZONES = 500
+const int WICK_AVG_BARS = 5
+const int FADE_BARS = 10
+const int GRADIENT_STEPS = 8
+const int GRADIENT_DEPTH = 35
+const int BOX_BUDGET = 480
+const int ZONE_TRANSPARENCY = 85
+const bool MARKER_GLOW = true
+const float MARKER_SHINE = 0.25
+const float DIST_SENS = 25.0          // Distance weight for Strongest. Lower = steadier list.
+const float HOLD_PRIOR_HITS = 1.0     // Assumed starting hold rate, so a zone tested once can't look perfect.
+const float HOLD_PRIOR_TOTAL = 2.0    // Higher = trust a zone's record less until it's been tested more.
+const float INCUMBENT_BONUS = 0.15    // Small edge for zones already shown, so the list doesn't keep swapping.
+color NONE_COLOR = #00000000
+disp = display.none
+//#endregion CONSTANTS
+
+//#region INPUTS
+int pivotLen = input.int(30, "Swing Period", minval = 2, tooltip = pivotLenTip, group = grpGeneral, display = disp)
+int lookbackBars = input.int(2000, "Lookback", minval = 100, tooltip = lookbackBarsTip, group = grpGeneral, display = disp)
+int showNearest = input.int(5, "Show", minval = 1, maxval = 20, tooltip = showNearestTip, group = grpGeneral, display = disp)
+string rankBy = input.string("Strongest", "Rank By", options = ["Strongest", "Nearest"], tooltip = rankByTip, group = grpGeneral, display = disp)
+float minZoneSpacing = input.float(0.1, "Min Zone Spacing (%)", minval = 0.0, maxval = 10.0, step = 0.1, tooltip = minZoneSpacingTip, group = grpGeneral, display = disp) / 100.0
+int cooldownBars = input.int(3, "Retest Cooldown", minval = 1, tooltip = cooldownBarsTip, group = grpGeneral, display = disp)
+int holdBars = input.int(10, "Hold Window", minval = 1, tooltip = holdWindowTip, group = grpGeneral, display = disp)
+
+bool showRetests = input.bool(true, "Retests", inline = "retest", group = grpStyle, display = disp)
+string retestMarker = input.string("Circle", "", options = ["Circle", "Triangle", "Cross", "Diamond"], tooltip = retestMarkerTip, inline = "retest", group = grpStyle, display = disp)
+bool showBreakouts = input.bool(false, "Breakouts", inline = "breakout", group = grpStyle, display = disp)
+string breakoutMarker = input.string("Circle", "", options = ["Triangle", "Circle", "Cross", "Diamond"], tooltip = breakoutMarkerTip, inline = "breakout", group = grpStyle, display = disp)
+bool showStats = input.bool(true, "Stats Label", inline = "stats", tooltip = statsLabelTip, group = grpStyle, display = disp)
+string statsSize = input.string("Small", "", options = ["Tiny", "Small", "Normal", "Large", "Huge"], tooltip = statsSizeTip, inline = "stats", group = grpStyle, display = disp)
+string statsPosition = input.string("Top & Bottom", "Position", options = ["Top & Bottom", "Center", "Right Center"], tooltip = statsPosTip, inline = "stats", group = grpStyle, display = disp)
+color supplyBase = input.color(#f23645, "Supply", inline = "col", group = grpStyle, display = disp)
+color demandBase = input.color(#089981, "Demand", inline = "col", group = grpStyle, display = disp)
+//#endregion INPUTS
+
+//#region UDTs
+type Segment
+    int startTime = 0
+    int endTime = 0
+    bool isSupply = false
+
+type Zone
+    int id = 0
+    float top = na
+    float bottom = na
+    int createdBar = 0
+    int createdTime = 0
+    int lastRetestBar = -1
+    int retests = 0
+    int breakouts = 0
+    bool isSupply = false
+    bool active = true
+    bool pendingFlip = false
+    array<int> retestTimes = na
+    array<bool> retestFromBelow = na
+    array<float> retestPrices = na
+    array<int> retestBars = na
+    array<int> breakoutTimes = na
+    array<bool> breakoutFromBelow = na
+    array<int> breakoutBars = na
+    array<Segment> segments = na
+
+type EventFlags
+    bool bullRetest = false
+    bool bearRetest = false
+    bool bullBreakout = false
+    bool bearBreakout = false
+
+type FadeEntry
+    Zone zone = na
+    int startBar = 0
+//#endregion UDTs
+
+//#region VARIABLES
+var float lastConfirmedClose = na
+var int zoneIdCounter = 0
+color supplyShine = color.from_gradient(MARKER_SHINE, 0.0, 1.0, supplyBase, color.white)
+color demandShine = color.from_gradient(MARKER_SHINE, 0.0, 1.0, demandBase, color.white)
+//#endregion VARIABLES
+
+//#region ARRAYS
+var array<Zone> supplyZones = array.new<Zone>()
+var array<Zone> demandZones = array.new<Zone>()
+var array<box> managedBoxes = array.new<box>()
+var array<label> managedLabels = array.new<label>()
+var array<line> managedLines = array.new<line>()
+var array<Zone> prevVisibleSupply = array.new<Zone>()
+var array<Zone> prevVisibleDemand = array.new<Zone>()
+var array<FadeEntry> fadingZones = array.new<FadeEntry>()
+//#endregion ARRAYS
+
+//#region FUNCTION DECLARATIONS
+// Picks the marker symbol and which way it points.
+markerChar(string style, bool fromBelow) =>
+    string result = "●"
+    if style == "Triangle"
+        result := fromBelow ? "▼" : "▲"
+    else if style == "Circle"
+        result := "●"
+    else if style == "Cross"
+        result := "✖"
+    else if style == "Diamond"
+        result := "◆"
+    result
+
+// Converts a size dropdown choice into a Pine size constant.
+sizeFromStr(string s) =>
+    switch s
+        "Tiny" => size.tiny
+        "Small" => size.small
+        "Normal" => size.normal
+        "Large" => size.large
+        "Huge" => size.huge
+        => size.small
+
+// Builds the top and bottom of a zone from the swing, padded by the average wick.
+getZoneBounds(int barsBack, bool isSupply) =>
+    float pivotH = high[barsBack]
+    float pivotL = low[barsBack]
+    float sumWick = 0.0
+    for k = 0 to WICK_AVG_BARS - 1
+        float h = high[barsBack + k]
+        float l = low[barsBack + k]
+        float o = open[barsBack + k]
+        float c = close[barsBack + k]
+        sumWick += isSupply ? (h - math.max(o, c)) : (math.min(o, c) - l)
+    float avgWick = sumWick / WICK_AVG_BARS
+    float top = isSupply ? pivotH : pivotL + avgWick
+    float bot = isSupply ? pivotH - avgWick : pivotL
+    [top, bot]
+
+// Keeps the zone list from growing forever.
+trimArray(array<Zone> zones) =>
+    if array.size(zones) > MAX_ZONES
+        array.shift(zones)
+
+// Checks if a new zone would sit on top of an existing one.
+hasOverlap(float newTop, float newBottom, array<Zone> zones) =>
+    bool overlap = false
+    if array.size(zones) > 0
+        for i = 0 to array.size(zones) - 1
+            Zone z = array.get(zones, i)
+            bool ageOk = bar_index - z.createdBar <= lookbackBars
+            if z.active and ageOk and newBottom <= z.top and newTop >= z.bottom
+                overlap := true
+                break
+    overlap
+
+// Checks each zone for new retests, breakouts and flips on this bar.
+updateZones(array<Zone> zones, EventFlags evts) =>
+    if array.size(zones) > 0
+        for i = 0 to array.size(zones) - 1
+            Zone z = array.get(zones, i)
+            if z.active and bar_index - z.createdBar > lookbackBars
+                z.active := false
+            if z.active
+                bool brokeThrough = (z.isSupply and close > z.top) or (not z.isSupply and close < z.bottom)
+                bool brokeBack = (z.isSupply and close < z.bottom) or (not z.isSupply and close > z.top)
+                bool flipped = false
+                bool pendingHandled = false
+                if z.pendingFlip and brokeThrough
+                    z.breakouts += 1
+                    array.push(z.breakoutTimes, time)
+                    array.push(z.breakoutFromBelow, z.isSupply)
+                    array.push(z.breakoutBars, bar_index)
+                    if z.isSupply
+                        evts.bullBreakout := true
+                    else
+                        evts.bearBreakout := true
+                    z.isSupply := not z.isSupply
+                    flipped := true
+                    if not na(z.segments) and array.size(z.segments) > 0
+                        Segment lastSeg = array.get(z.segments, array.size(z.segments) - 1)
+                        lastSeg.endTime := time
+                    array.push(z.segments, Segment.new(startTime = time, isSupply = z.isSupply))
+                    z.pendingFlip := false
+                    pendingHandled := true
+                if z.pendingFlip and brokeBack
+                    z.retests += 1
+                    z.lastRetestBar := bar_index
+                    array.push(z.retestTimes, time)
+                    array.push(z.retestFromBelow, z.isSupply)
+                    array.push(z.retestPrices, z.isSupply ? high : low)
+                    array.push(z.retestBars, bar_index)
+                    if z.isSupply
+                        evts.bearRetest := true
+                    else
+                        evts.bullRetest := true
+                    z.pendingFlip := false
+                    pendingHandled := true
+                if not pendingHandled and not z.pendingFlip and brokeThrough
+                    z.pendingFlip := true
+                if z.active and not flipped and not z.pendingFlip and not pendingHandled and bar_index > z.createdBar and bar_index - z.lastRetestBar >= cooldownBars
+                    bool reacted = false
+                    if z.isSupply
+                        if high >= z.bottom and close < z.bottom
+                            reacted := true
+                    else
+                        if low <= z.top and close > z.top
+                            reacted := true
+                    if reacted
+                        z.retests += 1
+                        z.lastRetestBar := bar_index
+                        array.push(z.retestTimes, time)
+                        array.push(z.retestFromBelow, z.isSupply)
+                        array.push(z.retestPrices, z.isSupply ? high : low)
+                        array.push(z.retestBars, bar_index)
+                        if z.isSupply
+                            evts.bearRetest := true
+                        else
+                            evts.bullRetest := true
+
+// Is this zone already in the list?
+zoneInArr(array<Zone> arr, Zone target) =>
+    bool found = false
+    if array.size(arr) > 0
+        for i = 0 to array.size(arr) - 1
+            if array.get(arr, i).id == target.id
+                found := true
+                break
+    found
+
+// Counts how many retests held: price came back, then the zone wasn't broken within the
+// Hold Window. Only counts retests old enough to have a full window behind them.
+// Returns [held, checked].
+computeHoldStats(Zone z) =>
+    int hits = 0
+    int resolved = 0
+    if not na(z.retestBars) and array.size(z.retestBars) > 0
+        for ri = 0 to array.size(z.retestBars) - 1
+            int rb = array.get(z.retestBars, ri)
+            if last_bar_index - rb >= holdBars
+                resolved += 1
+                bool broke = false
+                if not na(z.breakoutBars) and array.size(z.breakoutBars) > 0
+                    for bi = 0 to array.size(z.breakoutBars) - 1
+                        int bb = array.get(z.breakoutBars, bi)
+                        if bb > rb and bb <= rb + holdBars
+                            broke := true
+                            break
+                if not broke
+                    hits += 1
+    [hits, resolved]
+
+// Gives each zone a score for ranking.
+//  - Nearest: just how close it is to price.
+//  - Strongest: combines how reliably the zone held after retests, how many times it's been
+//    tested, and how close it is to price. A zone already on screen gets a small edge so the
+//    shown list stays steady instead of swapping every bar.
+scoreZone(Zone z) =>
+    float refClose = nz(lastConfirmedClose, close)
+    float mid = (z.top + z.bottom) / 2.0
+    float dist = math.abs(mid - refClose)
+    float result = na
+    if rankBy == "Nearest"
+        result := -dist
+    else
+        float relDist = refClose > 0 ? dist / refClose : dist
+        [hits, resolved] = computeHoldStats(z)
+        float quality = (hits + HOLD_PRIOR_HITS) / (resolved + HOLD_PRIOR_TOTAL)
+        float evidence = 1.0 + math.log(1 + z.retests)
+        float proximity = 1.0 / (1.0 + relDist * DIST_SENS)
+        float core = quality * evidence * proximity
+        bool incumbent = zoneInArr(prevVisibleSupply, z) or zoneInArr(prevVisibleDemand, z)
+        result := incumbent ? core * (1.0 + INCUMBENT_BONUS) : core
+    result
+
+// Clears all drawings so we can redraw fresh.
+clearManaged() =>
+    if array.size(managedBoxes) > 0
+        for i = 0 to array.size(managedBoxes) - 1
+            box.delete(array.get(managedBoxes, i))
+        array.clear(managedBoxes)
+    if array.size(managedLabels) > 0
+        for i = 0 to array.size(managedLabels) - 1
+            label.delete(array.get(managedLabels, i))
+        array.clear(managedLabels)
+    if array.size(managedLines) > 0
+        for i = 0 to array.size(managedLines) - 1
+            line.delete(array.get(managedLines, i))
+        array.clear(managedLines)
+
+// Gathers the zones that are still valid and on the right side of price.
+collectCandidates(array<Zone> source, array<Zone> supplyOut, array<Zone> demandOut) =>
+    float refClose = nz(lastConfirmedClose, close)
+    if array.size(source) > 0
+        for i = 0 to array.size(source) - 1
+            Zone z = array.get(source, i)
+            bool ageOk = bar_index - z.createdBar <= lookbackBars
+            bool sideOk = z.pendingFlip or (z.isSupply ? refClose <= z.top : refClose >= z.bottom)
+            if z.active and ageOk and sideOk
+                if z.isSupply
+                    array.push(supplyOut, z)
+                else
+                    array.push(demandOut, z)
+
+// Finds a fading zone in the fade list.
+fadeIdxOf(array<FadeEntry> arr, Zone target) =>
+    int result = -1
+    if array.size(arr) > 0
+        for i = 0 to array.size(arr) - 1
+            if array.get(arr, i).zone.id == target.id
+                result := i
+                break
+    result
+
+// Is this zone too close to one we've already chosen?
+isTooClose(float zMid, array<float> pickedMids, float refClose) =>
+    bool result = false
+    int pickedSize = array.size(pickedMids)
+    if minZoneSpacing > 0 and pickedSize > 0
+        for k = 0 to pickedSize - 1
+            float pzMid = array.get(pickedMids, k)
+            float dist = math.abs(zMid - pzMid)
+            float relDist = refClose > 0 ? dist / refClose : dist
+            if relDist < minZoneSpacing
+                result := true
+                break
+    result
+
+// Picks the top zones to show on each side, ranked by score.
+selectVisible(array<Zone> supplyCandidates, array<Zone> demandCandidates, array<Zone> supplyOut, array<Zone> demandOut) =>
+    float refClose = nz(lastConfirmedClose, close)
+    int supplyN = array.size(supplyCandidates)
+    int demandN = array.size(demandCandidates)
+    int supplyCap = math.min(showNearest, supplyN)
+    int demandCap = math.min(showNearest, demandN)
+    int maxPicks = supplyCap + demandCap
+    if maxPicks > 0
+        array<float> supplyScores = array.new<float>()
+        array<float> supplyMids = array.new<float>()
+        if supplyN > 0
+            for i = 0 to supplyN - 1
+                Zone z = array.get(supplyCandidates, i)
+                array.push(supplyScores, scoreZone(z))
+                array.push(supplyMids, (z.top + z.bottom) / 2.0)
+        array<float> demandScores = array.new<float>()
+        array<float> demandMids = array.new<float>()
+        if demandN > 0
+            for i = 0 to demandN - 1
+                Zone z = array.get(demandCandidates, i)
+                array.push(demandScores, scoreZone(z))
+                array.push(demandMids, (z.top + z.bottom) / 2.0)
+        array<bool> supplyUsed = array.new<bool>(supplyN, false)
+        array<bool> demandUsed = array.new<bool>(demandN, false)
+        array<float> pickedMids = array.new<float>()
+        for n = 0 to maxPicks - 1
+            int bestSupplyIdx = -1
+            int bestDemandIdx = -1
+            float bestScore = -1e20
+            bool bestIsSupply = false
+            if array.size(supplyOut) < supplyCap and supplyN > 0
+                for i = 0 to supplyN - 1
+                    if not array.get(supplyUsed, i)
+                        if not isTooClose(array.get(supplyMids, i), pickedMids, refClose)
+                            float s = array.get(supplyScores, i)
+                            if s > bestScore
+                                bestScore := s
+                                bestSupplyIdx := i
+                                bestIsSupply := true
+            if array.size(demandOut) < demandCap and demandN > 0
+                for i = 0 to demandN - 1
+                    if not array.get(demandUsed, i)
+                        if not isTooClose(array.get(demandMids, i), pickedMids, refClose)
+                            float s = array.get(demandScores, i)
+                            if s > bestScore
+                                bestScore := s
+                                bestDemandIdx := i
+                                bestIsSupply := false
+            if bestIsSupply and bestSupplyIdx >= 0
+                array.set(supplyUsed, bestSupplyIdx, true)
+                Zone bestZone = array.get(supplyCandidates, bestSupplyIdx)
+                array.push(supplyOut, bestZone)
+                array.push(pickedMids, array.get(supplyMids, bestSupplyIdx))
+            else if not bestIsSupply and bestDemandIdx >= 0
+                array.set(demandUsed, bestDemandIdx, true)
+                Zone bestZone = array.get(demandCandidates, bestDemandIdx)
+                array.push(demandOut, bestZone)
+                array.push(pickedMids, array.get(demandMids, bestDemandIdx))
+            else
+                break
+
+// Draws one zone: the colored box, its markers and its stats label.
+renderOneZone(Zone z, int steps, float fadeLevel) =>
+    int futureTime = time + timeframe.in_seconds() * 1000 * 10
+    int edgeTransp = math.min(100, int(math.round(100 * fadeLevel)))
+    color zoneColor = z.isSupply ? supplyBase : demandBase
+    color statusCol = color.new(zoneColor, edgeTransp)
+    float lightTransp = ZONE_TRANSPARENCY
+    float deepTransp = math.max(0.0, ZONE_TRANSPARENCY - GRADIENT_DEPTH)
+    if not na(z.segments) and array.size(z.segments) > 0
+        for j = 0 to array.size(z.segments) - 1
+            Segment seg = array.get(z.segments, j)
+            bool segActive = seg.endTime == 0
+            int segRight = segActive ? futureTime : seg.endTime
+            color segBaseColor = seg.isSupply ? supplyBase : demandBase
+            color segEdgeCol = color.new(segBaseColor, edgeTransp)
+            float transpBottom = seg.isSupply ? lightTransp : deepTransp
+            float transpTop = seg.isSupply ? deepTransp : lightTransp
+            float sliceH = (z.top - z.bottom) / steps
+            for s = 0 to steps - 1

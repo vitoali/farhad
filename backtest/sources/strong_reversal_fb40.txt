@@ -1,0 +1,109 @@
+//@version=6
+indicator("Strong Reversal Signals", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+
+gSrc = "Liquidity Source"
+src_mode = input.string("Macro Pivots", "Source", options=["Macro Pivots", "HTF Previous Bar", "Session High/Low"], group=gSrc)
+pivLen   = input.int(20, "Pivot Length", minval=3, maxval=100, group=gSrc)
+htfRes   = input.timeframe("240", "HTF Resolution", group=gSrc)
+sessTz   = input.string("America/New_York", "Session Timezone", group=gSrc)
+sAsia    = input.session("2000-0000", "Asian Session", group=gSrc)
+sLon     = input.session("0300-0800", "London Session", group=gSrc)
+sNy      = input.session("0900-1600", "New York Session", group=gSrc)
+grabWick = input.float(20.0, "Min Reversal Wick (%)", minval=1, maxval=100, tooltip="Minimum rejection-wick size on the candle that sweeps liquidity.", group=gSrc)
+
+gT = "Targets"
+tp1Pct = input.float(10.0, "TP1 % of ADR10", minval=0.5, step=0.5, group=gT)
+tp2Pct = input.float(25.0, "TP2 % of ADR10", minval=0.5, step=0.5, group=gT)
+slPct  = input.float(35.0, "SL % of ADR10",  minval=0.5, step=0.5, group=gT)
+expBars= input.int(120, "Trade Expiry (bars)", minval=10, group=gT)
+zoneW  = input.int(30, "Zone Width (bars)", minval=10, maxval=500, group=gT)
+zoneH  = input.float(2.0, "Zone Height % of ADR10", minval=0.1, step=0.1, group=gT)
+keptN  = input.int(100, "Max Signals Kept", minval=1, maxval=120, group=gT)
+
+gR = "Strength Ranking"
+minStars = input.int(0, "Minimum Stars To Plot", minval=0, maxval=4, tooltip="0 = show every signal. Raise to show only stronger setups; the dashboard still tracks every tier.", group=gR)
+wTrend = input.float(0.30, "Weight · Trend Context",   minval=0, maxval=1, step=0.05, group=gR)
+wWick  = input.float(0.25, "Weight · Rejection Wick",  minval=0, maxval=1, step=0.05, group=gR)
+wCalm  = input.float(0.20, "Weight · Volatility Regime",minval=0, maxval=1, step=0.05, group=gR)
+wNear  = input.float(0.15, "Weight · Mean Proximity",  minval=0, maxval=1, step=0.05, group=gR)
+wSweep = input.float(0.10, "Weight · Sweep Depth",     minval=0, maxval=1, step=0.05, group=gR)
+
+gC = "Colors"
+colBuy  = input.color(#1f9e6f, "Buy / Long",  inline="c", group=gC)
+colSell = input.color(#7e2330, "Sell / Short", inline="c", group=gC)
+colTP   = input.color(#1f9e6f, "Target Zones", group=gC)
+colSL   = input.color(#7e2330, "Stop Zone", group=gC)
+zoneAlpha   = input.int(82, "Zone Transparency", minval=0, maxval=100, group=gC)
+borderAlpha = input.int(45, "Border Transparency", minval=0, maxval=100, group=gC)
+showTags = input.bool(true, "Show SL/TP Tags", group=gC)
+lblSize  = input.string("Normal", "Signal Label Size", options=["Tiny","Small","Normal","Large","Huge"], group=gC)
+tagSize  = input.string("Normal", "SL/TP Tag Size", options=["Tiny","Small","Normal","Large","Huge"], group=gC)
+lblOff   = input.float(6.0, "Signal Label Offset (% of ADR10)", minval=0, step=0.5, tooltip="Pushes the BUY/SELL label clear of the candles (below the bar for buys, above for sells).", group=gC)
+
+gP = "Dashboard"
+showPanel = input.bool(true, "Show Dashboard", group=gP)
+panelPos  = input.string("Top Right", "Position", options=["Top Right","Top Left","Bottom Right","Bottom Left","Middle Right"], group=gP)
+panelSize = input.string("Normal", "Text Size", options=["Tiny","Small","Normal","Large","Huge"], group=gP)
+
+gA = "Alerts"
+alertsOn      = input.bool(true, "Enable Alerts", group=gA)
+alertMinStars = input.int(0, "Alert Minimum Stars", minval=0, maxval=4, tooltip="Only fire alerts for setups at or above this rank. 4 = strongest only.", group=gA)
+
+f_clamp(float v) => math.min(math.max(v, 0.0), 1.0)
+f_stars(float s) => s >= 7.5 ? "★★★★" : s >= 6.5 ? "★★★" : s >= 5.5 ? "★★" : s >= 4.5 ? "★" : "·"
+f_tier(float s)  => s >= 7.5 ? 4 : s >= 6.5 ? 3 : s >= 5.5 ? 2 : s >= 4.5 ? 1 : 0
+f_pos() =>
+    switch panelPos
+        "Top Right"    => position.top_right
+        "Top Left"     => position.top_left
+        "Bottom Right" => position.bottom_right
+        "Bottom Left"  => position.bottom_left
+        "Middle Right" => position.middle_right
+        => position.top_right
+f_sz(string s, bool head) => head ? (s=="Tiny"?size.tiny:s=="Small"?size.small:s=="Normal"?size.normal:s=="Large"?size.large:size.huge) : (s=="Tiny"?size.tiny:s=="Small"?size.small:s=="Normal"?size.small:s=="Large"?size.normal:size.large)
+f_lblsz(string s) => s=="Tiny"?size.tiny:s=="Small"?size.small:s=="Normal"?size.normal:s=="Large"?size.large:size.huge
+f_tname(float s) => s>=7.5?"ELITE":s>=6.5?"STRONG":s>=5.5?"MODERATE":s>=4.5?"WEAK":"MINIMAL"
+f_amsg(int dir, float sc, float e, float sl, float tp1, float tp2) =>
+    (dir==1?"BUY Reversal":"SELL Reversal") + "  " + f_stars(sc) + " (" + f_tname(sc) + ")\n" + syminfo.ticker + " " + timeframe.period + "\nStrength: " + str.tostring(sc,"#.0") + "/10\nEntry: " + str.tostring(e,format.mintick) + "\nSL: " + str.tostring(sl,format.mintick) + "\nTP1: " + str.tostring(tp1,format.mintick) + "\nTP2: " + str.tostring(tp2,format.mintick)
+
+float atr14  = nz(ta.atr(14), ta.cum(high - low) / (bar_index + 1))
+float ema50  = ta.ema(close, 50)
+float ema200 = ta.ema(close, 200)
+float atrPct = ta.percentrank(atr14, 100)
+int   L = (pivLen % 2 == 0) ? (pivLen + 1) : pivLen
+int   pv = int(L / 2)
+
+bool useHtf  = src_mode == "HTF Previous Bar"
+bool useSess = src_mode == "Session High/Low"
+
+[hHtf, lHtf] = request.security(syminfo.tickerid, htfRes, [high[1], low[1]], lookahead=barmerge.lookahead_on)
+bool newHtf = ta.change(time(htfRes)) != 0
+
+bool inAsia = not na(time(timeframe.period, sAsia, sessTz))
+bool inLon  = not na(time(timeframe.period, sLon,  sessTz))
+bool inNy   = not na(time(timeframe.period, sNy,   sessTz))
+var float aH = na
+var float aL = na
+var float lH = na
+var float lL = na
+var float nH = na
+var float nL = na
+if inAsia
+    aH := na(aH) ? high : math.max(aH, high)
+    aL := na(aL) ? low  : math.min(aL, low)
+if inLon
+    lH := na(lH) ? high : math.max(lH, high)
+    lL := na(lL) ? low  : math.min(lL, low)
+if inNy
+    nH := na(nH) ? high : math.max(nH, high)
+    nL := na(nL) ? low  : math.min(nL, low)
+bool aEnd = not inAsia and inAsia[1]
+bool lEnd = not inLon  and inLon[1]
+bool nEnd = not inNy   and inNy[1]
+
+float rngBar = (high - low) == 0 ? syminfo.mintick : (high - low)
+float upWick = (high - math.max(open, close)) / rngBar
+float dnWick = (math.min(open, close) - low) / rngBar
+
+float adr10 = request.security(syminfo.tickerid, "D", (math.sum(high[1] - low[1], 10)) / 10, lookahead=barmerge.lookahead_off)
+float adrA  = nz(adr10) > 0.0 ? adr10 : close * 0.04

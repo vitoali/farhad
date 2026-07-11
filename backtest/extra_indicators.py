@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from indicators import atr_wilder, crossover, crossunder, ema, rsi, sma
+from indicators import atr_wilder, crossover, crossunder, ema, rsi, sma, true_range
 from zone_engine import pivot_high, pivot_low
 from zone_engine import ZoneSignal, signals_to_df
 from zone_indicators import _htf_ema_series
@@ -631,6 +631,544 @@ def orderflow_print_signals(df: pd.DataFrame, vol_mult: float = 2.0) -> pd.DataF
 def fair_value_gap_signals(df: pd.DataFrame, min_gap_atr: float = 0.1, tp_rr: float = 1.5) -> pd.DataFrame:
     """LuxAlgo FVG display -> formation entry (same as matrix_fvg)."""
     return matrix_fvg_signals(df, min_gap_atr=min_gap_atr, tp_rr=tp_rr)
+
+
+# ---------------------------------------------------------------------------
+# #44 Mirage LSP — liquidity sweep + immediate entry (mirage_d9ef.txt)
+# ---------------------------------------------------------------------------
+
+def mirage_lsp_signals(
+    df: pd.DataFrame,
+    swing_len: int = 5,
+    lookback: int = 50,
+    min_score: float = 0.3,
+    sl_buf_atr: float = 0.25,
+    tp1_r: float = 1.0,
+) -> pd.DataFrame:
+    out = df.copy()
+    highs, lows, closes = out["high"].values, out["low"].values, out["close"].values
+    atr_v = atr_wilder(out, 14).values
+    ph = pivot_high(out["high"], swing_len, swing_len).values
+    pl = pivot_low(out["low"], swing_len, swing_len).values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    lo_lvl: list[tuple[float, int]] = []
+    hi_lvl: list[tuple[float, int]] = []
+    lo_used: list[bool] = []
+    hi_used: list[bool] = []
+
+    for i in range(swing_len * 2 + 2, n):
+        a = atr_v[i] if not np.isnan(atr_v[i]) and atr_v[i] > 0 else closes[i] * 0.005
+        if not np.isnan(pl[i]):
+            lo_lvl.append((lows[i - swing_len], i - swing_len))
+            lo_used.append(False)
+        if not np.isnan(ph[i]):
+            hi_lvl.append((highs[i - swing_len], i - swing_len))
+            hi_used.append(False)
+        if len(lo_lvl) > 30:
+            lo_lvl.pop(0)
+            lo_used.pop(0)
+        if len(hi_lvl) > 30:
+            hi_lvl.pop(0)
+            hi_used.pop(0)
+
+        bull_q = bear_q = False
+        anchor_lo = anchor_hi = np.nan
+        for j in range(len(lo_lvl) - 1, -1, -1):
+            if lo_used[j]:
+                continue
+            lvl, born = lo_lvl[j]
+            if i - born > lookback:
+                lo_used[j] = True
+                continue
+            if closes[i] < lvl:
+                lo_used[j] = True
+            elif lows[i] < lvl and closes[i] > lvl:
+                lo_used[j] = True
+                vol_comp = 1.0
+                score = vol_comp * (1 - abs(closes[i] - lvl) / max(a, 1e-9) * 0.1)
+                if score >= min_score:
+                    bull_q = True
+                    anchor_lo = lows[i]
+                break
+        for j in range(len(hi_lvl) - 1, -1, -1):
+            if hi_used[j]:
+                continue
+            lvl, born = hi_lvl[j]
+            if i - born > lookback:
+                hi_used[j] = True
+                continue
+            if closes[i] > lvl:
+                hi_used[j] = True
+            elif highs[i] > lvl and closes[i] < lvl:
+                hi_used[j] = True
+                vol_comp = 1.0
+                score = vol_comp * (1 - abs(closes[i] - lvl) / max(a, 1e-9) * 0.1)
+                if score >= min_score:
+                    bear_q = True
+                    anchor_hi = highs[i]
+                break
+
+        if bull_q and not bear_q:
+            entry = closes[i]
+            sl = anchor_lo - a * sl_buf_atr
+            risk = max(entry - sl, a * 0.5)
+            signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * tp1_r))
+        elif bear_q and not bull_q:
+            entry = closes[i]
+            sl = anchor_hi + a * sl_buf_atr
+            risk = max(sl - entry, a * 0.5)
+            signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp1_r))
+    return _zone_df(out, signals)
+
+
+# ---------------------------------------------------------------------------
+# #45 TrendMaster Pro — filtered MA cross (4_7c06.txt)
+# ---------------------------------------------------------------------------
+
+def _adx_series(df: pd.DataFrame, length: int = 14) -> pd.Series:
+    up = df["high"].diff()
+    down = -df["low"].diff()
+    plus_dm = np.where((up > down) & (up > 0), up, 0.0)
+    minus_dm = np.where((down > up) & (down > 0), down, 0.0)
+    tr = true_range(df)
+    atr_s = pd.Series(tr, index=df.index).ewm(alpha=1 / length, adjust=False).mean()
+    plus_di = 100 * pd.Series(plus_dm, index=df.index).ewm(alpha=1 / length, adjust=False).mean() / atr_s
+    minus_di = 100 * pd.Series(minus_dm, index=df.index).ewm(alpha=1 / length, adjust=False).mean() / atr_s
+    dx = (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan) * 100
+    return dx.ewm(alpha=1 / length, adjust=False).mean()
+
+
+def trendmaster_signals(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    short_ma = sma(out["close"], 9)
+    long_ma = sma(out["close"], 21)
+    buy_raw = crossover(short_ma, long_ma)
+    sell_raw = crossunder(short_ma, long_ma)
+    basis = sma(out["close"], 20)
+    dev = out["close"].rolling(20).std()
+    upper = basis + 2 * dev
+    lower = basis - 2 * dev
+    atr_bb = atr_wilder(out, 20)
+    vol_filt = (upper - lower) > (atr_bb * 2)
+    bb_long = out["close"] > basis
+    bb_short = out["close"] < basis
+    rsi_v = rsi(out["close"], 14)
+    rsi_long = rsi_v > 55
+    rsi_short = rsi_v < 45
+    ema12 = ema(out["close"], 12)
+    ema26 = ema(out["close"], 26)
+    macd_line = ema12 - ema26
+    macd_sig = ema(macd_line, 9)
+    macd_long = macd_line > macd_sig
+    macd_short = macd_line < macd_sig
+    lo = out["low"].rolling(14).min()
+    hi = out["high"].rolling(14).max()
+    k = sma(100 * (out["close"] - lo) / (hi - lo).replace(0, np.nan), 3)
+    stoch_long = k < 80
+    stoch_short = k > 20
+    adx_v = _adx_series(out, 14)
+    adx_ok = adx_v > 25
+    buy = buy_raw & vol_filt & bb_long & rsi_long & macd_long & stoch_long & adx_ok
+    sell = sell_raw & vol_filt & bb_short & rsi_short & macd_short & stoch_short & adx_ok
+    return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)
+
+
+# ---------------------------------------------------------------------------
+# #46 PMax Explorer — MAvg/PMax crossover (3_2c7c.txt)
+# ---------------------------------------------------------------------------
+
+def _pmax_series(src: pd.Series, df: pd.DataFrame, length: int = 10, atr_len: int = 10, mult: float = 3.0) -> tuple[pd.Series, pd.Series]:
+    mavg = ema(src, length)
+    atr_v = atr_wilder(df, atr_len)
+    n = len(df)
+    pmax = np.full(n, np.nan)
+    direction = np.ones(n, dtype=int)
+    long_stop_prev = short_stop_prev = np.nan
+    for i in range(n):
+        ls = mavg.iloc[i] - mult * atr_v.iloc[i]
+        ss = mavg.iloc[i] + mult * atr_v.iloc[i]
+        if not np.isnan(long_stop_prev):
+            ls = max(ls, long_stop_prev) if mavg.iloc[i] > long_stop_prev else ls
+        if not np.isnan(short_stop_prev):
+            ss = min(ss, short_stop_prev) if mavg.iloc[i] < short_stop_prev else ss
+        if i > 0:
+            if direction[i - 1] == -1 and mavg.iloc[i] > short_stop_prev:
+                direction[i] = 1
+            elif direction[i - 1] == 1 and mavg.iloc[i] < long_stop_prev:
+                direction[i] = -1
+            else:
+                direction[i] = direction[i - 1]
+        pmax[i] = ls if direction[i] == 1 else ss
+        long_stop_prev = ls
+        short_stop_prev = ss
+    return mavg, pd.Series(pmax, index=df.index)
+
+
+def pmax_signals(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    src = (out["high"] + out["low"]) / 2
+    mavg, pmax = _pmax_series(src, out)
+    buy = crossover(mavg, pmax)
+    sell = crossunder(mavg, pmax)
+    return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)
+
+
+# ---------------------------------------------------------------------------
+# #47 Volume-Trend OB Retest (volon_trend_order_block_93f7.txt)
+# ---------------------------------------------------------------------------
+
+def volume_ob_retest_signals(
+    df: pd.DataFrame,
+    st_len: int = 50,
+    st_mult: float = 3.5,
+    pivot_len: int = 7,
+    vol_pct: float = 0.5,
+) -> pd.DataFrame:
+    out = df.copy()
+    if "volume" not in out.columns:
+        return _signal_df(out, np.zeros(len(out), bool), np.zeros(len(out), bool))
+    highs, lows, opens, closes = out["high"].values, out["low"].values, out["open"].values, out["close"].values
+    vol = out["volume"].values
+    custom_atr = (out["high"] - out["low"]).rolling(st_len).mean().values
+    hl2 = ((out["high"] + out["low"]) / 2).values
+    n = len(out)
+    market_trend = 1
+    trend_stop = np.nan
+    active_top = active_bot = np.nan
+    active_buy_ratio = 0.5
+    active_ob_trend = 0
+    ph = pivot_high(out["high"], pivot_len, pivot_len).values
+    pl = pivot_low(out["low"], pivot_len, pivot_len).values
+    signals: list[ZoneSignal] = []
+
+    for i in range(st_len + pivot_len * 2, n):
+        a = custom_atr[i] if not np.isnan(custom_atr[i]) else (highs[i] - lows[i])
+        upper = hl2[i] + st_mult * a
+        lower = hl2[i] - st_mult * a
+        prev_stop = trend_stop if not np.isnan(trend_stop) else lower
+        if market_trend == 1:
+            trend_stop = max(lower, prev_stop)
+        else:
+            trend_stop = min(upper, prev_stop if not np.isnan(trend_stop) else upper)
+        prev_trend = market_trend
+
+        if i > 0 and closes[i] > trend_stop and closes[i - 1] <= trend_stop:
+            market_trend = 1
+            trend_stop = lower
+        elif i > 0 and closes[i] < trend_stop and closes[i - 1] >= trend_stop:
+            market_trend = -1
+            trend_stop = upper
+
+        if market_trend == 1 and not np.isnan(pl[i]):
+            ob_top = min(opens[i - pivot_len], closes[i - pivot_len])
+            ob_bot = ob_top - a
+            buy_vol = sell_vol = 0.0
+            for j in range(pivot_len + 1):
+                if closes[i - j] >= opens[i - j]:
+                    buy_vol += vol[i - j]
+                else:
+                    sell_vol += vol[i - j]
+            total = buy_vol + sell_vol
+            active_buy_ratio = buy_vol / total if total > 0 else 0.5
+            active_top, active_bot, active_ob_trend = ob_top, ob_bot, 1
+        if market_trend == -1 and not np.isnan(ph[i]):
+            ob_bot = max(opens[i - pivot_len], closes[i - pivot_len])
+            ob_top = ob_bot + a
+            buy_vol = sell_vol = 0.0
+            for j in range(pivot_len + 1):
+                if closes[i - j] >= opens[i - j]:
+                    buy_vol += vol[i - j]
+                else:
+                    sell_vol += vol[i - j]
+            total = buy_vol + sell_vol
+            active_buy_ratio = buy_vol / total if total > 0 else 0.5
+            active_top, active_bot, active_ob_trend = ob_top, ob_bot, -1
+
+        if not np.isnan(active_top) and not np.isnan(active_bot):
+            broken = (active_ob_trend == 1 and highs[i] < active_bot) or (active_ob_trend == -1 and lows[i] > active_top)
+            if broken:
+                active_top = active_bot = np.nan
+                active_ob_trend = 0
+
+        market_change = i > 0 and market_trend != prev_trend
+        sell_ratio = 1.0 - active_buy_ratio
+        if (
+            not np.isnan(active_top)
+            and lows[i - 1] <= active_top
+            and lows[i] > active_top
+            and active_buy_ratio >= vol_pct
+            and np.isnan(pl[i])
+            and not market_change
+        ):
+            entry = closes[i]
+            sl = active_bot - a * 0.1
+            risk = max(entry - sl, a * 0.3)
+            signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * 2.0))
+        if (
+            not np.isnan(active_bot)
+            and highs[i - 1] >= active_bot
+            and highs[i] < active_bot
+            and sell_ratio >= vol_pct
+            and np.isnan(ph[i])
+            and not market_change
+        ):
+            entry = closes[i]
+            sl = active_top + a * 0.1
+            risk = max(sl - entry, a * 0.3)
+            signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * 2.0))
+    return _zone_df(out, signals)
+
+
+# ---------------------------------------------------------------------------
+# #48 Dynamic Trend Bands — VWAP break signals (dynamic_trend_125b.txt)
+# ---------------------------------------------------------------------------
+
+def dynamic_trend_signals(df: pd.DataFrame, lr_len: int = 50, atr_len: int = 100, atr_mult: float = 3.0, pivot_len: int = 10) -> pd.DataFrame:
+    out = df.copy()
+    if "volume" not in out.columns:
+        out["volume"] = 1.0
+    atr_v = atr_wilder(out, atr_len).values
+    lr_center = ema(ema(out["close"], lr_len), lr_len).values
+    upper = lr_center + atr_v * atr_mult
+    lower = lr_center - atr_v * atr_mult
+    closes, highs, lows, opens, vol = out["close"].values, out["high"].values, out["low"].values, out["open"].values, out["volume"].values
+    n = len(out)
+    trend_state = 0
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    vwap_anchor = 0
+    cum_pv = cum_v = 0.0
+
+    for i in range(max(lr_len, atr_len, pivot_len) + 2, n):
+        if closes[i] > upper[i] and closes[i - 1] <= upper[i - 1]:
+            trend_state = 1
+        if closes[i] < lower[i] and closes[i - 1] >= lower[i - 1]:
+            trend_state = -1
+        lo_roll = lows[i - 1] == min(lows[i - pivot_len : i])
+        hi_roll = highs[i - 1] == max(highs[i - pivot_len : i])
+        if trend_state == -1 and lo_roll and lows[i] > lows[i - 1]:
+            vwap_anchor = i - 1
+            cum_pv = cum_v = 0.0
+        if trend_state == 1 and hi_roll and highs[i] < highs[i - 1]:
+            vwap_anchor = i - 1
+            cum_pv = cum_v = 0.0
+        if vwap_anchor > 0 and trend_state != 0:
+            span = i - vwap_anchor
+            cum_pv = cum_v = 0.0
+            for j in range(span + 1):
+                idx = i - j
+                cum_pv += closes[idx] * vol[idx]
+                cum_v += vol[idx]
+            vwap_val = cum_pv / cum_v if cum_v > 0 else closes[i]
+            if trend_state == 1 and closes[i] >= vwap_val:
+                buy[i] = True
+            if trend_state == -1 and closes[i] <= vwap_val:
+                sell[i] = True
+    return _signal_df(out, buy, sell)
+
+
+# ---------------------------------------------------------------------------
+# #49 Quantum Imbalance Trap (QUANTOM_4e3d.txt)
+# ---------------------------------------------------------------------------
+
+def quantum_imbalance_signals(
+    df: pd.DataFrame,
+    imb_len: int = 10,
+    imb_thresh: float = 0.55,
+    vol_mult: float = 1.2,
+    sl_atr: float = 1.5,
+    tp_r: float = 1.5,
+) -> pd.DataFrame:
+    out = df.copy()
+    if "volume" not in out.columns:
+        return _signal_df(out, np.zeros(len(out), bool), np.zeros(len(out), bool))
+    atr_v = atr_wilder(out, 14).values
+    vol_avg = sma(out["volume"], imb_len).values
+    body = (out["close"] - out["open"]).abs().values
+    rng = (out["high"] - out["low"]).values
+    body_rat = np.where(rng > 0, body / rng, 0)
+    vol_rat = np.where(vol_avg > 0, out["volume"].values / vol_avg, 1)
+    mom_fast = sma(out["close"], 5).values
+    mom_slow = sma(out["close"], imb_len * 2).values
+    closes, opens = out["close"].values, out["open"].values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    imb_bull = imb_bear = np.zeros(n, dtype=bool)
+    for i in range(imb_len * 2 + 2, n):
+        bull_body = closes[i] > opens[i]
+        bear_body = closes[i] < opens[i]
+        vol_spike = vol_rat[i] >= vol_mult
+        bull_trend = mom_fast[i] > mom_slow[i]
+        bear_trend = mom_fast[i] < mom_slow[i]
+        imb_bull[i] = bull_body and body_rat[i] >= imb_thresh and vol_spike and bull_trend
+        imb_bear[i] = bear_body and body_rat[i] >= imb_thresh and vol_spike and bear_trend
+        sig_bull = imb_bull[i - 1] and not imb_bull[i - 2]
+        sig_bear = imb_bear[i - 1] and not imb_bear[i - 2]
+        a = atr_v[i] if not np.isnan(atr_v[i]) else closes[i] * 0.005
+        if sig_bull:
+            entry = closes[i]
+            sl = entry - a * sl_atr
+            signals.append(ZoneSignal(i, "long", entry, sl, entry + a * sl_atr * tp_r))
+        if sig_bear:
+            entry = closes[i]
+            sl = entry + a * sl_atr
+            signals.append(ZoneSignal(i, "short", entry, sl, entry - a * sl_atr * tp_r))
+    return _zone_df(out, signals)
+
+
+# ---------------------------------------------------------------------------
+# #50 Multi-Divergence — RSI pivot divergence (multi_divergence_40f7.txt)
+# ---------------------------------------------------------------------------
+
+def multi_div_signals(df: pd.DataFrame, piv_len: int = 5, sl_atr: float = 1.5, tp_atr: float = 2.0) -> pd.DataFrame:
+    out = df.copy()
+    rsi_v = rsi(out["close"], 14).values
+    highs, lows, closes = out["high"].values, out["low"].values, out["close"].values
+    atr_v = atr_wilder(out, 14).values
+    ph_p = pivot_high(out["high"], piv_len, piv_len).values
+    pl_p = pivot_low(out["low"], piv_len, piv_len).values
+    ph_r = pivot_high(pd.Series(rsi_v, index=out.index), piv_len, piv_len).values
+    pl_r = pivot_low(pd.Series(rsi_v, index=out.index), piv_len, piv_len).values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    pr_lo: list[float] = []
+    pr_hi: list[float] = []
+    r_lo: list[float] = []
+    r_hi: list[float] = []
+
+    for i in range(piv_len * 2 + 2, n):
+        if not np.isnan(pl_p[i]):
+            pr_lo.append(lows[i - piv_len])
+            r_lo.append(rsi_v[i - piv_len])
+            if len(pr_lo) > 2:
+                pr_lo.pop(0)
+                r_lo.pop(0)
+        if not np.isnan(ph_p[i]):
+            pr_hi.append(highs[i - piv_len])
+            r_hi.append(rsi_v[i - piv_len])
+            if len(pr_hi) > 2:
+                pr_hi.pop(0)
+                r_hi.pop(0)
+        a = atr_v[i] if not np.isnan(atr_v[i]) else closes[i] * 0.005
+        if len(pr_lo) >= 2 and len(r_lo) >= 2:
+            if pr_lo[-1] < pr_lo[-2] and r_lo[-1] > r_lo[-2]:
+                entry = closes[i]
+                sl = entry - a * sl_atr
+                signals.append(ZoneSignal(i, "long", entry, sl, entry + a * tp_atr))
+        if len(pr_hi) >= 2 and len(r_hi) >= 2:
+            if pr_hi[-1] > pr_hi[-2] and r_hi[-1] < r_hi[-2]:
+                entry = closes[i]
+                sl = entry + a * sl_atr
+                signals.append(ZoneSignal(i, "short", entry, sl, entry - a * tp_atr))
+    return _zone_df(out, signals)
+
+
+# ---------------------------------------------------------------------------
+# #51 KNN Pivot ML (MACHIN_6545.txt)
+# ---------------------------------------------------------------------------
+
+def knn_pivot_signals(df: pd.DataFrame, pivot_len: int = 10, window: int = 20, k: int = 2) -> pd.DataFrame:
+    out = df.copy()
+    closes = out["close"].values
+    highs, lows = out["high"].values, out["low"].values
+    n = len(out)
+    ph = pivot_high(out["high"], pivot_len, pivot_len).values
+    pl = pivot_low(out["low"], pivot_len, pivot_len).values
+    hi_slopes: list[float] = []
+    lo_slopes: list[float] = []
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    prev_class = "Neutral"
+
+    def rolling_slope(src: np.ndarray, end: int, length: int) -> float:
+        if end < length:
+            return 0.0
+        y0 = np.mean(src[end - length + 1 : end + 1])
+        y1 = np.mean(src[end - length : end])
+        return y0 - y1
+
+    def knn_dist(cur: float, hist: list[float]) -> float:
+        if not hist:
+            return 1e6
+        dists = sorted(abs(cur - h) for h in hist)
+        kk = min(k, len(dists))
+        return sum(dists[:kk]) / kk
+
+    for i in range(pivot_len * 2 + window, n):
+        if not np.isnan(ph[i]):
+            hi_slopes.append(rolling_slope(highs, i - pivot_len, window))
+        if not np.isnan(pl[i]):
+            lo_slopes.append(rolling_slope(lows, i - pivot_len, window))
+        hi_slopes = hi_slopes[-50:]
+        lo_slopes = lo_slopes[-50:]
+        cur_slope = rolling_slope(closes, i, window)
+        d_hi = knn_dist(cur_slope, hi_slopes)
+        d_lo = knn_dist(cur_slope, lo_slopes)
+        if d_hi < d_lo:
+            knn_class = "Approaching Pivot High"
+        elif d_lo < d_hi:
+            knn_class = "Approaching Pivot Low"
+        else:
+            knn_class = "Neutral"
+        if prev_class == "Neutral" and knn_class == "Approaching Pivot Low":
+            buy[i] = True
+        if prev_class == "Neutral" and knn_class == "Approaching Pivot High":
+            sell[i] = True
+        prev_class = knn_class
+    return _signal_df(out, buy, sell)
+
+
+# ---------------------------------------------------------------------------
+# #52 High-Volume Pivot S/R (high_volom_pivoty_suport_809e.txt)
+# ---------------------------------------------------------------------------
+
+def hv_pivot_sr_signals(df: pd.DataFrame, sup_len: int = 10, tp_rr: float = 2.0) -> pd.DataFrame:
+    out = df.copy()
+    highs, lows, closes, opens = out["high"].values, out["low"].values, out["close"].values, out["open"].values
+    atr_v = atr_wilder(out, 14).values
+    ph = pivot_high(out["high"], sup_len, sup_len).values
+    pl = pivot_low(out["low"], sup_len, sup_len).values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    res_top = res_bot = sup_top = sup_bot = np.nan
+    res_broken = sup_broken = False
+
+    for i in range(sup_len * 2 + 2, n):
+        a = atr_v[i] if not np.isnan(atr_v[i]) else closes[i] * 0.005
+        if not np.isnan(ph[i]):
+            body_top = max(opens[i - sup_len], closes[i - sup_len])
+            res_top = body_top
+            res_bot = body_top - a
+            res_broken = False
+        if not np.isnan(pl[i]):
+            body_bot = min(opens[i - sup_len], closes[i - sup_len])
+            sup_top = body_bot
+            sup_bot = body_bot - a
+            sup_broken = False
+        if not np.isnan(res_top) and closes[i] > res_top and not res_broken:
+            entry = closes[i]
+            sl = res_bot - a * 0.1
+            risk = max(entry - sl, a * 0.3)
+            signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * tp_rr))
+            res_broken = True
+        if not np.isnan(sup_bot) and closes[i] < sup_bot and not sup_broken:
+            entry = closes[i]
+            sl = sup_top + a * 0.1
+            risk = max(sl - entry, a * 0.3)
+            signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
+            sup_broken = True
+        if not np.isnan(sup_top) and opens[i] > sup_top and lows[i] < sup_top and closes[i] > sup_top and i > sup_len + 2:
+            entry = closes[i]
+            sl = sup_bot - a * 0.1
+            risk = max(entry - sl, a * 0.3)
+            signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * tp_rr))
+        if not np.isnan(res_bot) and opens[i] < res_bot and highs[i] > res_bot and closes[i] < res_bot and i > sup_len + 2:
+            entry = closes[i]
+            sl = res_top + a * 0.1
+            risk = max(sl - entry, a * 0.3)
+            signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
+    return _zone_df(out, signals)
 
 
 def fib_ote_signals(df: pd.DataFrame, pivot_len: int = 10, tp_rr: float = 2.0) -> pd.DataFrame:

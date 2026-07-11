@@ -72,6 +72,15 @@ PORT_MAP: dict[str, str] = {
     "quadapt_ml_trader.pine": "quadapt",
     "atomatic_multi_pattern__9980.txt": "forge",
     "auto_pattern_detector_bf37.txt": "forge",
+    "mirage_d9ef.txt": "mirage_lsp",
+    "4_7c06.txt": "trendmaster",
+    "3_2c7c.txt": "pmax",
+    "volon_trend_order_block_93f7.txt": "volume_ob_retest",
+    "dynamic_trend_125b.txt": "dynamic_trend",
+    "QUANTOM_4e3d.txt": "quantum_imbalance",
+    "multi_divergence_40f7.txt": "multi_div",
+    "MACHIN_6545.txt": "knn_pivot",
+    "high_volom_pivoty_suport_809e.txt": "hv_pivot_sr",
 }
 
 KNOWN_DONE = {
@@ -117,6 +126,15 @@ KNOWN_DONE = {
     "orderflow_print": 41,
     "fair_value_gap": 42,
     "fib_ote": 43,
+    "mirage_lsp": 44,
+    "trendmaster": 45,
+    "pmax": 46,
+    "volume_ob_retest": 47,
+    "dynamic_trend": 48,
+    "quantum_imbalance": 49,
+    "multi_div": 50,
+    "knn_pivot": 51,
+    "hv_pivot_sr": 52,
 }
 
 

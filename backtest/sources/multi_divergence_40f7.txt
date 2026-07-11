@@ -1,0 +1,838 @@
+//@version=6
+indicator("Multi-Divergence Strategy | GainzAlgo", max_bars_back = 1000, overlay=true, max_labels_count=500)
+
+ui_width  = input.int(50, "Window Width (Bars)", minval=10)
+ui_offset = input.int(10, "Future Offset (Bars)", minval=0)
+piv_len   = input.int(5,  "Divergence Pivot Length", minval=2, maxval=10)
+show_technicals = input.bool(true, "Show Technical Overlay")
+rsi   = ta.rsi(close, 14)
+mfi   = ta.mfi(hlc3, 14)
+stoch = ta.stoch(close, high, low, 14)
+
+sma20   = ta.sma(close, 20)
+stdev20 = ta.stdev(close, 20)
+zsc     = stdev20 != 0 ? (close - sma20) / stdev20 : 0
+
+[_, _, adx] = ta.dmi(14, 14)
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+obv = ta.obv
+
+var array<int>   pr_hi_off = array.new<int>()
+var array<float> pr_hi_val = array.new<float>()
+var array<int>   pr_lo_off = array.new<int>()
+var array<float> pr_lo_val = array.new<float>()
+
+var array<int>   r_hi_off = array.new<int>()
+var array<float> r_hi_val = array.new<float>()
+var array<int>   r_lo_off = array.new<int>()
+var array<float> r_lo_val = array.new<float>()
+
+var array<int>   m_hi_off = array.new<int>()
+var array<float> m_hi_val = array.new<float>()
+var array<int>   m_lo_off = array.new<int>()
+var array<float> m_lo_val = array.new<float>()
+
+var array<int>   s_hi_off = array.new<int>()
+var array<float> s_hi_val = array.new<float>()
+var array<int>   s_lo_off = array.new<int>()
+var array<float> s_lo_val = array.new<float>()
+
+var array<int>   z_hi_off = array.new<int>()
+var array<float> z_hi_val = array.new<float>()
+var array<int>   z_lo_off = array.new<int>()
+var array<float> z_lo_val = array.new<float>()
+
+var array<int>   a_hi_off = array.new<int>()
+var array<float> a_hi_val = array.new<float>()
+var array<int>   a_lo_off = array.new<int>()
+var array<float> a_lo_val = array.new<float>()
+
+var array<int>   mc_hi_off = array.new<int>()
+var array<float> mc_hi_val = array.new<float>()
+var array<int>   mc_lo_off = array.new<int>()
+var array<float> mc_lo_val = array.new<float>()
+
+var array<int>   ob_hi_off = array.new<int>()
+var array<float> ob_hi_val = array.new<float>()
+var array<int>   ob_lo_off = array.new<int>()
+var array<float> ob_lo_val = array.new<float>()
+
+f_push(array<int> off_arr, array<float> val_arr, int off, float val) =>
+    array.unshift(off_arr, off)
+    array.unshift(val_arr, val)
+    if array.size(off_arr) > 2
+        array.pop(off_arr)
+        array.pop(val_arr)
+
+ph_price = ta.pivothigh(high,     piv_len, piv_len)
+pl_price = ta.pivotlow(low,       piv_len, piv_len)
+ph_rsi   = ta.pivothigh(rsi,      piv_len, piv_len)
+pl_rsi   = ta.pivotlow(rsi,       piv_len, piv_len)
+ph_mfi   = ta.pivothigh(mfi,      piv_len, piv_len)
+pl_mfi   = ta.pivotlow(mfi,       piv_len, piv_len)
+ph_stoch = ta.pivothigh(stoch,    piv_len, piv_len)
+pl_stoch = ta.pivotlow(stoch,     piv_len, piv_len)
+ph_zsc   = ta.pivothigh(zsc,      piv_len, piv_len)
+pl_zsc   = ta.pivotlow(zsc,       piv_len, piv_len)
+ph_adx   = ta.pivothigh(adx,      piv_len, piv_len)
+pl_adx   = ta.pivotlow(adx,       piv_len, piv_len)
+ph_macd  = ta.pivothigh(macdLine, piv_len, piv_len)
+pl_macd  = ta.pivotlow(macdLine,  piv_len, piv_len)
+ph_obv   = ta.pivothigh(obv,      piv_len, piv_len)
+pl_obv   = ta.pivotlow(obv,       piv_len, piv_len)
+
+// FIX: Track historical bar_index instead of fixed piv_len
+if not na(ph_price)
+    f_push(pr_hi_off, pr_hi_val, bar_index - piv_len, ph_price)
+if not na(pl_price)
+    f_push(pr_lo_off, pr_lo_val, bar_index - piv_len, pl_price)
+if not na(ph_rsi)
+    f_push(r_hi_off, r_hi_val, bar_index - piv_len, ph_rsi)
+if not na(pl_rsi)
+    f_push(r_lo_off, r_lo_val, bar_index - piv_len, pl_rsi)
+if not na(ph_mfi)
+    f_push(m_hi_off, m_hi_val, bar_index - piv_len, ph_mfi)
+if not na(pl_mfi)
+    f_push(m_lo_off, m_lo_val, bar_index - piv_len, pl_mfi)
+if not na(ph_stoch)
+    f_push(s_hi_off, s_hi_val, bar_index - piv_len, ph_stoch)
+if not na(pl_stoch)
+    f_push(s_lo_off, s_lo_val, bar_index - piv_len, pl_stoch)
+if not na(ph_zsc)
+    f_push(z_hi_off, z_hi_val, bar_index - piv_len, ph_zsc)
+if not na(pl_zsc)
+    f_push(z_lo_off, z_lo_val, bar_index - piv_len, pl_zsc)
+if not na(ph_adx)
+    f_push(a_hi_off, a_hi_val, bar_index - piv_len, ph_adx)
+if not na(pl_adx)
+    f_push(a_lo_off, a_lo_val, bar_index - piv_len, pl_adx)
+if not na(ph_macd)
+    f_push(mc_hi_off, mc_hi_val, bar_index - piv_len, ph_macd)
+if not na(pl_macd)
+    f_push(mc_lo_off, mc_lo_val, bar_index - piv_len, pl_macd)
+if not na(ph_obv)
+    f_push(ob_hi_off, ob_hi_val, bar_index - piv_len, ph_obv)
+if not na(pl_obv)
+    f_push(ob_lo_off, ob_lo_val, bar_index - piv_len, pl_obv)
+
+f_div_type(array<int> osc_hi_off, array<float> osc_hi_val, array<int> osc_lo_off, array<float> osc_lo_val) =>
+    int result = 0
+    if array.size(osc_hi_off) >= 2 and array.size(pr_hi_off) >= 2
+        float o1 = array.get(osc_hi_val, 0)
+        float o2 = array.get(osc_hi_val, 1)
+        float p1 = array.get(pr_hi_val,  0)
+        float p2 = array.get(pr_hi_val,  1)
+        if p1 > p2 and o1 < o2
+            result := -1
+    if array.size(osc_lo_off) >= 2 and array.size(pr_lo_off) >= 2
+        float o1 = array.get(osc_lo_val, 0)
+        float o2 = array.get(osc_lo_val, 1)
+        float p1 = array.get(pr_lo_val,  0)
+        float p2 = array.get(pr_lo_val,  1)
+        if p1 < p2 and o1 > o2
+            result := 1
+    result
+
+// Pane scaling logic
+top_y = ta.highest(high, 100)
+bot_y = ta.lowest(low, 100)
+hgt_y = top_y - bot_y
+
+int   panes   = 7
+float gap_pct = 0.02
+float pane_h  = hgt_y * (1.0 - gap_pct * (panes - 1)) / panes
+float gap_h   = hgt_y * gap_pct
+
+f_pane_top(int i, float t_y, float p_h, float g_h) => 
+    t_y - i * (p_h + g_h)
+
+var box      box_0  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var line     l70_0  = line.new(na, na, na, na, color=color.new(color.rgb(0, 255, 255), 50), style=line.style_dashed)
+var line     l30_0  = line.new(na, na, na, na, color=color.new(color.rgb(0, 255, 255), 50), style=line.style_dashed)
+var polyline poly_0 = na
+var array<label> lbls_0 = array.new<label>()
+
+var box      box_1  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var line     l70_1  = line.new(na, na, na, na, color=color.new(color.rgb(255, 20, 147), 50), style=line.style_dashed)
+var line     l30_1  = line.new(na, na, na, na, color=color.new(color.rgb(255, 20, 147), 50), style=line.style_dashed)
+var polyline poly_1 = na
+var array<label> lbls_1 = array.new<label>()
+
+var box      box_2  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var line     l70_2  = line.new(na, na, na, na, color=color.new(color.rgb(138, 43, 226), 50), style=line.style_dashed)
+var line     l30_2  = line.new(na, na, na, na, color=color.new(color.rgb(138, 43, 226), 50), style=line.style_dashed)
+var polyline poly_2 = na
+var array<label> lbls_2 = array.new<label>()
+
+var box      box_3  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var line     l0_3   = line.new(na, na, na, na, color=color.new(color.rgb(57, 255, 20), 50), style=line.style_dashed)
+var polyline poly_3 = na
+var array<label> lbls_3 = array.new<label>()
+
+var box      box_4  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var line     l25_4  = line.new(na, na, na, na, color=color.new(color.rgb(255, 255, 255), 50), style=line.style_dashed)
+var polyline poly_4 = na
+var array<label> lbls_4 = array.new<label>()
+
+var box      box_5  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var line     l0_5   = line.new(na, na, na, na, color=color.new(color.rgb(255, 100, 0), 50), style=line.style_dashed)
+var polyline poly_5  = na
+var polyline poly_5s = na
+var array<label> lbls_5 = array.new<label>()
+
+var box      box_6  = box.new(na, na, na, na, bgcolor=color.new(color.black, 85), border_color=color.new(color.gray, 60))
+var polyline poly_6 = na
+var array<label> lbls_6 = array.new<label>()
+
+// Neon glowing UI overlays
+f_draw_neon(int x, float y, int div_type, array<label> lbl_arr) =>
+    color c1 = div_type == 1 ? color.new(color.rgb(0, 255, 255), 0)  : color.new(color.rgb(255, 20, 147), 0)
+    color c2 = div_type == 1 ? color.new(color.rgb(0, 255, 255), 45) : color.new(color.rgb(255, 20, 147), 45)
+    color c3 = div_type == 1 ? color.new(color.rgb(0, 255, 255), 70) : color.new(color.rgb(255, 20, 147), 70)
+    color c4 = div_type == 1 ? color.new(color.rgb(0, 255, 255), 88) : color.new(color.rgb(255, 20, 147), 88)
+    array.push(lbl_arr, label.new(x, y, "●", xloc=xloc.bar_index, yloc=yloc.price, color=color.new(color.black, 100), textcolor=c4, style=label.style_none, size=size.large))
+    array.push(lbl_arr, label.new(x, y, "●", xloc=xloc.bar_index, yloc=yloc.price, color=color.new(color.black, 100), textcolor=c3, style=label.style_none, size=size.normal))
+    array.push(lbl_arr, label.new(x, y, "●", xloc=xloc.bar_index, yloc=yloc.price, color=color.new(color.black, 100), textcolor=c2, style=label.style_none, size=size.small))
+    array.push(lbl_arr, label.new(x, y, "●", xloc=xloc.bar_index, yloc=yloc.price, color=color.new(color.black, 100), textcolor=c1, style=label.style_none, size=size.tiny))
+
+f_clear_labels(array<label> lbl_arr) =>
+    while array.size(lbl_arr) > 0
+        label.delete(array.pop(lbl_arr))
+
+// Series evaluations pulled OUTSIDE the 'if' block
+float current_zsc_min  = ta.lowest(zsc, ui_width)
+float current_zsc_max  = ta.highest(zsc, ui_width)
+float current_macd_min = ta.lowest(macdLine, ui_width)
+float current_sig_min  = ta.lowest(signalLine, ui_width)
+float current_macd_max = ta.highest(macdLine, ui_width)
+float current_sig_max  = ta.highest(signalLine, ui_width)
+float current_obv_min  = ta.lowest(obv, ui_width)
+float current_obv_max  = ta.highest(obv, ui_width)
+
+if barstate.islast
+    int   left_x  = bar_index + ui_offset
+    int   right_x = left_x + ui_width
+
+    float zsc_min   = math.min(-4.0, current_zsc_min)
+    float zsc_max   = math.max( 4.0, current_zsc_max)
+    float zsc_range = math.max(zsc_max - zsc_min, 0.000001)
+
+    float macd_min   = math.min(current_macd_min, current_sig_min)
+    float macd_max   = math.max(current_macd_max, current_sig_max)
+    float macd_abs   = math.max(math.max(math.abs(macd_min), math.abs(macd_max)), 0.000001)
+    float macd_range = macd_abs * 2.0
+
+    float obv_min   = current_obv_min
+    float obv_max   = current_obv_max
+    float obv_range = math.max(obv_max - obv_min, 0.000001)
+
+    // Using the corrected dynamic pane positioning
+    float p0_top = f_pane_top(0, top_y, pane_h, gap_h)
+    float p0_bot = p0_top - pane_h
+    float p1_top = f_pane_top(1, top_y, pane_h, gap_h)
+    float p1_bot = p1_top - pane_h
+    float p2_top = f_pane_top(2, top_y, pane_h, gap_h)
+    float p2_bot = p2_top - pane_h
+    float p3_top = f_pane_top(3, top_y, pane_h, gap_h)
+    float p3_bot = p3_top - pane_h
+    float p4_top = f_pane_top(4, top_y, pane_h, gap_h)
+    float p4_bot = p4_top - pane_h
+    float p5_top = f_pane_top(5, top_y, pane_h, gap_h)
+    float p5_bot = p5_top - pane_h
+    float p6_top = f_pane_top(6, top_y, pane_h, gap_h)
+    float p6_bot = p6_top - pane_h
+
+    if show_technicals
+        // RSI window 
+        box.set_lefttop(box_0, left_x, p0_top)
+        box.set_rightbottom(box_0, right_x, p0_bot)
+        box.set_text(box_0, " RSI")
+        box.set_text_color(box_0, color.rgb(0, 255, 255))
+        box.set_text_halign(box_0, text.align_left)
+        box.set_text_valign(box_0, text.align_top)
+        box.set_text_size(box_0, size.normal)
+        line.set_xy1(l70_0, left_x,  p0_bot + 0.70 * pane_h)
+        line.set_xy2(l70_0, right_x, p0_bot + 0.70 * pane_h)
+        line.set_xy1(l30_0, left_x,  p0_bot + 0.30 * pane_h)
+        line.set_xy2(l30_0, right_x, p0_bot + 0.30 * pane_h)
+        array<chart.point> pts0 = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(rsi[i])
+                pts0.push(chart.point.from_index(right_x - i, p0_bot + (rsi[i] / 100.0) * pane_h))
+        if not na(poly_0)
+            polyline.delete(poly_0)
+        poly_0 := array.size(pts0) >= 2 ? polyline.new(pts0, line_color=color.rgb(0, 255, 255), line_width=2) : na
+        f_clear_labels(lbls_0)
+        int div0 = f_div_type(r_hi_off, r_hi_val, r_lo_off, r_lo_val)
+        if div0 != 0
+            float piv_val = div0 == -1 ? array.get(r_hi_val, 0) : array.get(r_lo_val, 0)
+            int   piv_bar = div0 == -1 ? array.get(r_hi_off, 0) : array.get(r_lo_off, 0)
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p0_bot + (piv_val / 100.0) * pane_h, div0, lbls_0)
+
+        // MFI window 
+        box.set_lefttop(box_1, left_x, p1_top)
+        box.set_rightbottom(box_1, right_x, p1_bot)
+        box.set_text(box_1, " MFI")
+        box.set_text_color(box_1, color.rgb(255, 20, 147))
+        box.set_text_halign(box_1, text.align_left)
+        box.set_text_valign(box_1, text.align_top)
+        box.set_text_size(box_1, size.normal)
+        line.set_xy1(l70_1, left_x,  p1_bot + 0.70 * pane_h)
+        line.set_xy2(l70_1, right_x, p1_bot + 0.70 * pane_h)
+        line.set_xy1(l30_1, left_x,  p1_bot + 0.30 * pane_h)
+        line.set_xy2(l30_1, right_x, p1_bot + 0.30 * pane_h)
+        array<chart.point> pts1 = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(mfi[i])
+                pts1.push(chart.point.from_index(right_x - i, p1_bot + (mfi[i] / 100.0) * pane_h))
+        if not na(poly_1)
+            polyline.delete(poly_1)
+        poly_1 := array.size(pts1) >= 2 ? polyline.new(pts1, line_color=color.rgb(255, 20, 147), line_width=2) : na
+        f_clear_labels(lbls_1)
+        int div1 = f_div_type(m_hi_off, m_hi_val, m_lo_off, m_lo_val)
+        if div1 != 0
+            float piv_val = div1 == -1 ? array.get(m_hi_val, 0) : array.get(m_lo_val, 0)
+            int   piv_bar = div1 == -1 ? array.get(m_hi_off, 0) : array.get(m_lo_off, 0)
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p1_bot + (piv_val / 100.0) * pane_h, div1, lbls_1)
+
+        // STOCH window 
+        box.set_lefttop(box_2, left_x, p2_top)
+        box.set_rightbottom(box_2, right_x, p2_bot)
+        box.set_text(box_2, " STOCH")
+        box.set_text_color(box_2, color.rgb(138, 43, 226))
+        box.set_text_halign(box_2, text.align_left)
+        box.set_text_valign(box_2, text.align_top)
+        box.set_text_size(box_2, size.normal)
+        line.set_xy1(l70_2, left_x,  p2_bot + 0.70 * pane_h)
+        line.set_xy2(l70_2, right_x, p2_bot + 0.70 * pane_h)
+        line.set_xy1(l30_2, left_x,  p2_bot + 0.30 * pane_h)
+        line.set_xy2(l30_2, right_x, p2_bot + 0.30 * pane_h)
+        array<chart.point> pts2 = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(stoch[i])
+                pts2.push(chart.point.from_index(right_x - i, p2_bot + (stoch[i] / 100.0) * pane_h))
+        if not na(poly_2)
+            polyline.delete(poly_2)
+        poly_2 := array.size(pts2) >= 2 ? polyline.new(pts2, line_color=color.rgb(138, 43, 226), line_width=2) : na
+        f_clear_labels(lbls_2)
+        int div2 = f_div_type(s_hi_off, s_hi_val, s_lo_off, s_lo_val)
+        if div2 != 0
+            float piv_val = div2 == -1 ? array.get(s_hi_val, 0) : array.get(s_lo_val, 0)
+            int   piv_bar = div2 == -1 ? array.get(s_hi_off, 0) : array.get(s_lo_off, 0)
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p2_bot + (piv_val / 100.0) * pane_h, div2, lbls_2)
+
+        // Z-SCORE window 
+        box.set_lefttop(box_3, left_x, p3_top)
+        box.set_rightbottom(box_3, right_x, p3_bot)
+        box.set_text(box_3, " Z-SCORE")
+        box.set_text_color(box_3, color.rgb(57, 255, 20))
+        box.set_text_halign(box_3, text.align_left)
+        box.set_text_valign(box_3, text.align_top)
+        box.set_text_size(box_3, size.normal)
+        line.set_xy1(l0_3, left_x,  p3_bot + ((0.0 - zsc_min) / zsc_range) * pane_h)
+        line.set_xy2(l0_3, right_x, p3_bot + ((0.0 - zsc_min) / zsc_range) * pane_h)
+        array<chart.point> pts3 = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(zsc[i])
+                float norm = math.max(0.0, math.min(1.0, (zsc[i] - zsc_min) / zsc_range))
+                pts3.push(chart.point.from_index(right_x - i, p3_bot + norm * pane_h))
+        if not na(poly_3)
+            polyline.delete(poly_3)
+        poly_3 := array.size(pts3) >= 2 ? polyline.new(pts3, line_color=color.rgb(57, 255, 20), line_width=2) : na
+        f_clear_labels(lbls_3)
+        int div3 = f_div_type(z_hi_off, z_hi_val, z_lo_off, z_lo_val)
+        if div3 != 0
+            float piv_val = div3 == -1 ? array.get(z_hi_val, 0) : array.get(z_lo_val, 0)
+            int   piv_bar = div3 == -1 ? array.get(z_hi_off, 0) : array.get(z_lo_off, 0)
+            float norm    = math.max(0.0, math.min(1.0, (piv_val - zsc_min) / zsc_range))
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p3_bot + norm * pane_h, div3, lbls_3)
+
+        // ADX window 
+        box.set_lefttop(box_4, left_x, p4_top)
+        box.set_rightbottom(box_4, right_x, p4_bot)
+        box.set_text(box_4, " ADX")
+        box.set_text_color(box_4, color.rgb(255, 255, 255))
+        box.set_text_halign(box_4, text.align_left)
+        box.set_text_valign(box_4, text.align_top)
+        box.set_text_size(box_4, size.normal)
+        line.set_xy1(l25_4, left_x,  p4_bot + 0.25 * pane_h)
+        line.set_xy2(l25_4, right_x, p4_bot + 0.25 * pane_h)
+        array<chart.point> pts4 = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(adx[i])
+                pts4.push(chart.point.from_index(right_x - i, p4_bot + (adx[i] / 100.0) * pane_h))
+        if not na(poly_4)
+            polyline.delete(poly_4)
+        poly_4 := array.size(pts4) >= 2 ? polyline.new(pts4, line_color=color.rgb(255, 255, 255), line_width=2) : na
+        f_clear_labels(lbls_4)
+        int div4 = f_div_type(a_hi_off, a_hi_val, a_lo_off, a_lo_val)
+        if div4 != 0
+            float piv_val = div4 == -1 ? array.get(a_hi_val, 0) : array.get(a_lo_val, 0)
+            int   piv_bar = div4 == -1 ? array.get(a_hi_off, 0) : array.get(a_lo_off, 0)
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p4_bot + (piv_val / 100.0) * pane_h, div4, lbls_4)
+
+        // MACD window 
+        box.set_lefttop(box_5, left_x, p5_top)
+        box.set_rightbottom(box_5, right_x, p5_bot)
+        box.set_text(box_5, " MACD")
+        box.set_text_color(box_5, color.rgb(255, 100, 0))
+        box.set_text_halign(box_5, text.align_left)
+        box.set_text_valign(box_5, text.align_top)
+        box.set_text_size(box_5, size.normal)
+        line.set_xy1(l0_5, left_x,  p5_bot + 0.5 * pane_h)
+        line.set_xy2(l0_5, right_x, p5_bot + 0.5 * pane_h)
+        array<chart.point> pts5  = array.new<chart.point>()
+        array<chart.point> pts5s = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(macdLine[i])
+                float norm = math.max(0.0, math.min(1.0, (macdLine[i] + macd_abs) / macd_range))
+                pts5.push(chart.point.from_index(right_x - i, p5_bot + norm * pane_h))
+            if not na(signalLine[i])
+                float norm = math.max(0.0, math.min(1.0, (signalLine[i] + macd_abs) / macd_range))
+                pts5s.push(chart.point.from_index(right_x - i, p5_bot + norm * pane_h))
+        if not na(poly_5)
+            polyline.delete(poly_5)
+        if not na(poly_5s)
+            polyline.delete(poly_5s)
+        poly_5  := array.size(pts5) >= 2 ? polyline.new(pts5, line_color=color.rgb(255, 100, 0), line_width=2) : na
+        poly_5s := array.size(pts5s) >= 2 ? polyline.new(pts5s, line_color=color.rgb(255, 204, 128), line_width=1) : na
+        f_clear_labels(lbls_5)
+        int div5 = f_div_type(mc_hi_off, mc_hi_val, mc_lo_off, mc_lo_val)
+        if div5 != 0
+            float piv_val = div5 == -1 ? array.get(mc_hi_val, 0) : array.get(mc_lo_val, 0)
+            int   piv_bar = div5 == -1 ? array.get(mc_hi_off, 0) : array.get(mc_lo_off, 0)
+            float norm    = math.max(0.0, math.min(1.0, (piv_val + macd_abs) / macd_range))
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p5_bot + norm * pane_h, div5, lbls_5)
+
+        // OBV window 
+        box.set_lefttop(box_6, left_x, p6_top)
+        box.set_rightbottom(box_6, right_x, p6_bot)
+        box.set_text(box_6, " OBV")
+        box.set_text_color(box_6, color.rgb(255, 255, 0))
+        box.set_text_halign(box_6, text.align_left)
+        box.set_text_valign(box_6, text.align_top)
+        box.set_text_size(box_6, size.normal)
+        array<chart.point> pts6 = array.new<chart.point>()
+        for i = 0 to ui_width - 1
+            if not na(obv[i])
+                float norm = math.max(0.0, math.min(1.0, (obv[i] - obv_min) / obv_range))
+                pts6.push(chart.point.from_index(right_x - i, p6_bot + norm * pane_h))
+        if not na(poly_6)
+            polyline.delete(poly_6)
+        poly_6 := array.size(pts6) >= 2 ? polyline.new(pts6, line_color=color.rgb(255, 255, 0), line_width=2) : na
+        f_clear_labels(lbls_6)
+        int div6 = f_div_type(ob_hi_off, ob_hi_val, ob_lo_off, ob_lo_val)
+        if div6 != 0
+            float piv_val = div6 == -1 ? array.get(ob_hi_val, 0) : array.get(ob_lo_val, 0)
+            int   piv_bar = div6 == -1 ? array.get(ob_hi_off, 0) : array.get(ob_lo_off, 0)
+            float norm    = math.max(0.0, math.min(1.0, (piv_val - obv_min) / obv_range))
+            int   draw_x  = right_x - (bar_index - piv_bar)
+            if draw_x >= left_x
+                f_draw_neon(draw_x, p6_bot + norm * pane_h, div6, lbls_6)
+
+
+var string GRP_SCR = "Divergence Screener"
+sl_atr_mult      = input.float(1.5,  "SL ATR Multiplier",      minval=0.1, maxval=10.0,  step=0.1, group=GRP_SCR)
+tp_atr_mult      = input.float(2.5,  "TP ATR Multiplier",      minval=0.1, maxval=20.0,  step=0.1, group=GRP_SCR)
+use_custom_sl    = input.bool(false, "Use Custom SL %",                                  group=GRP_SCR)
+custom_sl_pct    = input.float(1.0,  "Custom SL %",            minval=0.1, maxval=20.0,  step=0.1, group=GRP_SCR)
+show_table       = input.bool(true,  "Show Performance Table",                           group=GRP_SCR)
+show_tp_sl_lines = input.bool(true,  "Show TP / SL Lines",                               group=GRP_SCR)
+scr_piv_len      = input.int(5,      "Screener Pivot Length",  minval=2,   maxval=15,    group=GRP_SCR)
+
+atr14 = ta.atr(14)
+
+scr_ph_price = ta.pivothigh(high,     scr_piv_len, scr_piv_len)
+scr_pl_price = ta.pivotlow(low,       scr_piv_len, scr_piv_len)
+scr_ph_rsi   = ta.pivothigh(rsi,      scr_piv_len, scr_piv_len)
+scr_pl_rsi   = ta.pivotlow(rsi,       scr_piv_len, scr_piv_len)
+scr_ph_mfi   = ta.pivothigh(mfi,      scr_piv_len, scr_piv_len)
+scr_pl_mfi   = ta.pivotlow(mfi,       scr_piv_len, scr_piv_len)
+scr_ph_stoch = ta.pivothigh(stoch,    scr_piv_len, scr_piv_len)
+scr_pl_stoch = ta.pivotlow(stoch,     scr_piv_len, scr_piv_len)
+scr_ph_zsc   = ta.pivothigh(zsc,      scr_piv_len, scr_piv_len)
+scr_pl_zsc   = ta.pivotlow(zsc,       scr_piv_len, scr_piv_len)
+scr_ph_adx   = ta.pivothigh(adx,      scr_piv_len, scr_piv_len)
+scr_pl_adx   = ta.pivotlow(adx,       scr_piv_len, scr_piv_len)
+scr_ph_macd  = ta.pivothigh(macdLine, scr_piv_len, scr_piv_len)
+scr_pl_macd  = ta.pivotlow(macdLine,  scr_piv_len, scr_piv_len)
+scr_ph_obv   = ta.pivothigh(obv,      scr_piv_len, scr_piv_len)
+scr_pl_obv   = ta.pivotlow(obv,       scr_piv_len, scr_piv_len)
+
+var array<float> s_pr_hi     = array.new<float>()
+var array<float> s_pr_lo     = array.new<float>()
+var array<int>   s_pr_hi_idx = array.new<int>()
+var array<int>   s_pr_lo_idx = array.new<int>()
+
+var array<float> s_rsi_hi     = array.new<float>()
+var array<int>   s_rsi_hi_idx = array.new<int>()
+var array<float> s_rsi_lo     = array.new<float>()
+var array<int>   s_rsi_lo_idx = array.new<int>()
+
+var array<float> s_mfi_hi     = array.new<float>()
+var array<int>   s_mfi_hi_idx = array.new<int>()
+var array<float> s_mfi_lo     = array.new<float>()
+var array<int>   s_mfi_lo_idx = array.new<int>()
+
+var array<float> s_stoch_hi     = array.new<float>()
+var array<int>   s_stoch_hi_idx = array.new<int>()
+var array<float> s_stoch_lo     = array.new<float>()
+var array<int>   s_stoch_lo_idx = array.new<int>()
+
+var array<float> s_zsc_hi     = array.new<float>()
+var array<int>   s_zsc_hi_idx = array.new<int>()
+var array<float> s_zsc_lo     = array.new<float>()
+var array<int>   s_zsc_lo_idx = array.new<int>()
+
+var array<float> s_adx_hi     = array.new<float>()
+var array<int>   s_adx_hi_idx = array.new<int>()
+var array<float> s_adx_lo     = array.new<float>()
+var array<int>   s_adx_lo_idx = array.new<int>()
+
+var array<float> s_macd_hi     = array.new<float>()
+var array<int>   s_macd_hi_idx = array.new<int>()
+var array<float> s_macd_lo     = array.new<float>()
+var array<int>   s_macd_lo_idx = array.new<int>()
+
+var array<float> s_obv_hi     = array.new<float>()
+var array<int>   s_obv_hi_idx = array.new<int>()
+var array<float> s_obv_lo     = array.new<float>()
+var array<int>   s_obv_lo_idx = array.new<int>()
+
+f_scr_push(array<float> vals, array<int> idxs, float v, int idx) =>
+    array.unshift(vals, v)
+    array.unshift(idxs, idx)
+    if array.size(vals) > 2
+        array.pop(vals)
+        array.pop(idxs)
+
+if not na(scr_ph_price)
+    f_scr_push(s_pr_hi, s_pr_hi_idx, scr_ph_price, bar_index - scr_piv_len)
+if not na(scr_pl_price)
+    f_scr_push(s_pr_lo, s_pr_lo_idx, scr_pl_price, bar_index - scr_piv_len)
+if not na(scr_ph_rsi)
+    f_scr_push(s_rsi_hi, s_rsi_hi_idx, scr_ph_rsi, bar_index - scr_piv_len)
+if not na(scr_pl_rsi)
+    f_scr_push(s_rsi_lo, s_rsi_lo_idx, scr_pl_rsi, bar_index - scr_piv_len)
+if not na(scr_ph_mfi)
+    f_scr_push(s_mfi_hi, s_mfi_hi_idx, scr_ph_mfi, bar_index - scr_piv_len)
+if not na(scr_pl_mfi)
+    f_scr_push(s_mfi_lo, s_mfi_lo_idx, scr_pl_mfi, bar_index - scr_piv_len)
+if not na(scr_ph_stoch)
+    f_scr_push(s_stoch_hi, s_stoch_hi_idx, scr_ph_stoch, bar_index - scr_piv_len)
+if not na(scr_pl_stoch)
+    f_scr_push(s_stoch_lo, s_stoch_lo_idx, scr_pl_stoch, bar_index - scr_piv_len)
+if not na(scr_ph_zsc)
+    f_scr_push(s_zsc_hi, s_zsc_hi_idx, scr_ph_zsc, bar_index - scr_piv_len)
+if not na(scr_pl_zsc)
+    f_scr_push(s_zsc_lo, s_zsc_lo_idx, scr_pl_zsc, bar_index - scr_piv_len)
+if not na(scr_ph_adx)
+    f_scr_push(s_adx_hi, s_adx_hi_idx, scr_ph_adx, bar_index - scr_piv_len)
+if not na(scr_pl_adx)
+    f_scr_push(s_adx_lo, s_adx_lo_idx, scr_pl_adx, bar_index - scr_piv_len)
+if not na(scr_ph_macd)
+    f_scr_push(s_macd_hi, s_macd_hi_idx, scr_ph_macd, bar_index - scr_piv_len)
+if not na(scr_pl_macd)
+    f_scr_push(s_macd_lo, s_macd_lo_idx, scr_pl_macd, bar_index - scr_piv_len)
+if not na(scr_ph_obv)
+    f_scr_push(s_obv_hi, s_obv_hi_idx, scr_ph_obv, bar_index - scr_piv_len)
+if not na(scr_pl_obv)
+    f_scr_push(s_obv_lo, s_obv_lo_idx, scr_pl_obv, bar_index - scr_piv_len)
+
+
+f_scr_div(array<float> osc_hi, array<float> osc_lo) =>
+    int result = 0
+    if array.size(osc_hi) >= 2 and array.size(s_pr_hi) >= 2
+        if array.get(s_pr_hi, 0) > array.get(s_pr_hi, 1) and array.get(osc_hi, 0) < array.get(osc_hi, 1)
+            result := -1
+    if array.size(osc_lo) >= 2 and array.size(s_pr_lo) >= 2
+        if array.get(s_pr_lo, 0) < array.get(s_pr_lo, 1) and array.get(osc_lo, 0) > array.get(osc_lo, 1)
+            result := 1
+    result
+
+f_price_div() =>
+    int result = 0
+    if array.size(s_pr_hi) >= 2 and array.size(s_pr_lo) >= 2
+        float swing_up_1   = array.get(s_pr_hi, 1) - array.get(s_pr_lo, 1)
+        float swing_up_0   = array.get(s_pr_hi, 0) - array.get(s_pr_lo, 0)
+        float swing_down_1 = array.get(s_pr_hi, 1) - array.get(s_pr_lo, 0)
+        float swing_down_0 = array.get(s_pr_hi, 0) - array.get(s_pr_lo, 1)
+        if array.get(s_pr_hi, 0) > array.get(s_pr_hi, 1) and swing_up_0 < swing_up_1 * 0.7
+            result := -1
+        if array.get(s_pr_lo, 0) < array.get(s_pr_lo, 1) and swing_down_0 < swing_down_1 * 0.7
+            result := 1
+    result
+
+
+var int NUM_IND = 9
+
+var array<float> perf_entry_price = array.new<float>()
+var array<int>   perf_ind_id      = array.new<int>()
+var array<int>   perf_direction   = array.new<int>()
+var array<float> perf_entry_atr   = array.new<float>()
+var array<int>   perf_entry_bar   = array.new<int>()
+var array<float> perf_tp          = array.new<float>()
+var array<float> perf_sl          = array.new<float>()
+var array<int>   perf_status      = array.new<int>()
+
+var array<int>   ind_total_signals = array.new<int>(9, 0)
+var array<int>   ind_wins          = array.new<int>(9, 0)
+var array<int>   ind_losses        = array.new<int>(9, 0)
+var array<float> ind_cum_pnl_atr   = array.new<float>(9, 0.0)
+var array<float> ind_avg_win_atr   = array.new<float>(9, 0.0)
+var array<float> ind_avg_loss_atr  = array.new<float>(9, 0.0)
+
+var array<line> tp_lines = array.new<line>(9, na)
+var array<line> sl_lines = array.new<line>(9, na)
+
+
+f_delete_tpsl(int ind) =>
+    line tl = array.get(tp_lines, ind)
+    line sl = array.get(sl_lines, ind)
+    if not na(tl)
+        line.delete(tl)
+        array.set(tp_lines, ind, na)
+    if not na(sl)
+        line.delete(sl)
+        array.set(sl_lines, ind, na)
+
+f_draw_tpsl(int ind, float tp_price, float sl_price, int from_bar) =>
+    f_delete_tpsl(ind)
+    if show_tp_sl_lines
+        array.set(tp_lines, ind, line.new(from_bar, tp_price, bar_index + 20, tp_price,
+                  xloc=xloc.bar_index, color=color.new(color.lime, 20),
+                  style=line.style_dashed, width=2))
+        array.set(sl_lines, ind, line.new(from_bar, sl_price, bar_index + 20, sl_price,
+                  xloc=xloc.bar_index, color=color.new(color.red, 20),
+                  style=line.style_dashed, width=2))
+
+f_ind_name(int id) =>
+    string result = ""
+    if id == 0
+        result := "RSI"
+    else if id == 1
+        result := "MFI"
+    else if id == 2
+        result := "STOCH"
+    else if id == 3
+        result := "Z-SCR"
+    else if id == 4
+        result := "ADX"
+    else if id == 5
+        result := "MACD"
+    else if id == 6
+        result := "OBV"
+    else if id == 7
+        result := "PRICE"
+    else
+        result := "SWING"
+    result
+
+f_ind_color(int id) =>
+    color result = color.white
+    if id == 0
+        result := color.rgb(0, 255, 255) // Neon Blue
+    else if id == 1
+        result := color.rgb(255, 20, 147) // Neon Pink
+    else if id == 2
+        result := color.rgb(138, 43, 226) // Neon Purple
+    else if id == 3
+        result := color.rgb(57, 255, 20) // Cyber Green
+    else if id == 4
+        result := color.rgb(255, 255, 255) // White
+    else if id == 5
+        result := color.rgb(255, 100, 0) // Neon Orange
+    else if id == 6
+        result := color.rgb(255, 255, 0) // Neon Yellow
+    else if id == 7
+        result := color.rgb(255, 100, 100)
+    else
+        result := color.rgb(180, 255, 180)
+    result
+
+f_draw_signal_label(int ind_id, int direction, float tp, float sl) =>
+    string ind_nm  = f_ind_name(ind_id)
+    color  ind_cl  = f_ind_color(ind_id)
+    string dir_sym = direction == 1 ? "+" : "-"
+    string tp_str  = str.tostring(math.round(tp, 2))
+    string sl_str  = str.tostring(math.round(sl, 2))
+    string lbl_txt = dir_sym + " " + ind_nm + " DIV\nTP " + tp_str + "\nSL " + sl_str
+    float  lbl_y   = direction == 1 ? low  - atr14 * 0.5 : high + atr14 * 0.5
+    string lbl_sty = direction == 1 ? label.style_label_up : label.style_label_down
+    color dir_cl = direction == 1 ? color.new(color.rgb(0, 255, 255), 0) : color.new(color.rgb(255, 20, 147), 0)
+    label.new(bar_index, lbl_y,
+              text      = lbl_txt,
+              xloc      = xloc.bar_index,
+              yloc      = yloc.price,
+              style     = lbl_sty,
+              color     = color.new(color.black, 15),
+              textcolor = dir_cl,
+              size      = size.small)
+
+f_resolve_open_trades() =>
+    int n = array.size(perf_status)
+    if n > 0
+        for i = 0 to n - 1
+            if array.get(perf_status, i) == 0
+                int   dir  = array.get(perf_direction, i)
+                float tp_p = array.get(perf_tp, i)
+                float sl_p = array.get(perf_sl, i)
+                int   ind  = array.get(perf_ind_id, i)
+                bool  hit_tp = dir == 1 ? high >= tp_p : low  <= tp_p
+                bool  hit_sl = dir == 1 ? low  <= sl_p : high >= sl_p
+                if hit_tp or hit_sl
+                    array.set(perf_status, i, hit_tp ? 1 : -1)
+                    int   cur_wins  = array.get(ind_wins,   ind)
+                    int   cur_loss  = array.get(ind_losses, ind)
+                    float cur_pnl   = array.get(ind_cum_pnl_atr, ind)
+                    if hit_tp
+                        array.set(ind_wins, ind, cur_wins + 1)
+                        float aw = array.get(ind_avg_win_atr, ind)
+                        array.set(ind_avg_win_atr, ind, (aw * cur_wins + tp_atr_mult) / (cur_wins + 1))
+                        array.set(ind_cum_pnl_atr, ind, cur_pnl + tp_atr_mult)
+                    else
+                        array.set(ind_losses, ind, cur_loss + 1)
+                        float al = array.get(ind_avg_loss_atr, ind)
+                        array.set(ind_avg_loss_atr, ind, (al * cur_loss + sl_atr_mult) / (cur_loss + 1))
+                        array.set(ind_cum_pnl_atr, ind, cur_pnl - sl_atr_mult)
+
+f_resolve_open_trades()
+
+f_emit_signal(int ind_id, int direction) =>
+    f_delete_tpsl(ind_id)
+    float sl_raw  = use_custom_sl ? close * (custom_sl_pct / 100.0) : atr14 * sl_atr_mult
+    float tp_price = direction == 1 ? close + atr14 * tp_atr_mult : close - atr14 * tp_atr_mult
+    float sl_price = direction == 1 ? close - sl_raw              : close + sl_raw
+    array.push(perf_entry_price, close)
+    array.push(perf_ind_id,      ind_id)
+    array.push(perf_direction,   direction)
+    array.push(perf_entry_atr,   atr14)
+    array.push(perf_entry_bar,   bar_index)
+    array.push(perf_tp,          tp_price)
+    array.push(perf_sl,          sl_price)
+    array.push(perf_status,      0)
+    int cur_total = array.get(ind_total_signals, ind_id)
+    array.set(ind_total_signals, ind_id, cur_total + 1)
+    f_draw_tpsl(ind_id, tp_price, sl_price, bar_index)
+    f_draw_signal_label(ind_id, direction, tp_price, sl_price)
+
+// Detect divergence
+int div_rsi   = f_scr_div(s_rsi_hi,   s_rsi_lo)
+int div_mfi   = f_scr_div(s_mfi_hi,   s_mfi_lo)
+int div_stoch = f_scr_div(s_stoch_hi, s_stoch_lo)
+int div_zsc   = f_scr_div(s_zsc_hi,   s_zsc_lo)
+int div_adx   = f_scr_div(s_adx_hi,   s_adx_lo)
+int div_macd  = f_scr_div(s_macd_hi,  s_macd_lo)
+int div_obv   = f_scr_div(s_obv_hi,   s_obv_lo)
+int div_price = f_price_div()
+
+int div_swing = 0
+if array.size(s_pr_lo) >= 2 and array.size(s_obv_lo) >= 2
+    if array.get(s_pr_lo, 0) < array.get(s_pr_lo, 1) and array.get(s_obv_lo, 0) > array.get(s_obv_lo, 1)
+        div_swing := 1
+if array.size(s_pr_hi) >= 2 and array.size(s_obv_hi) >= 2
+    if array.get(s_pr_hi, 0) > array.get(s_pr_hi, 1) and array.get(s_obv_hi, 0) < array.get(s_obv_hi, 1)
+        div_swing := -1
+
+bool any_new_piv = not na(scr_ph_price) or not na(scr_pl_price)
+
+if any_new_piv
+    if div_rsi   != 0
+        f_emit_signal(0, div_rsi)
+    if div_mfi   != 0
+        f_emit_signal(1, div_mfi)
+    if div_stoch != 0
+        f_emit_signal(2, div_stoch)
+    if div_zsc   != 0
+        f_emit_signal(3, div_zsc)
+    if div_adx   != 0
+        f_emit_signal(4, div_adx)
+    if div_macd  != 0
+        f_emit_signal(5, div_macd)
+    if div_obv   != 0
+        f_emit_signal(6, div_obv)
+    if div_price != 0
+        f_emit_signal(7, div_price)
+    if div_swing != 0
+        f_emit_signal(8, div_swing)
+
+var table perf_table = table.new(position.bottom_right, 8, 11,
+          bgcolor      = color.new(color.black, 10),
+          border_color = color.new(color.gray, 40),
+          border_width = 1,
+          frame_color  = color.new(color.gray, 20),
+          frame_width  = 2)
+
+f_tbl_cell(int col, int row, string txt, color txt_col, color bg_col) =>
+    table.cell(perf_table, col, row, txt,
+               text_color = txt_col,
+               bgcolor    = bg_col,
+               text_size  = size.small)
+
+if barstate.islast and show_table
+    color hdr_bg  = color.new(color.rgb(20, 20, 40), 0)
+    color hdr_col = color.rgb(200, 200, 255)
+    f_tbl_cell(0, 0, "INDICATOR",  hdr_col, hdr_bg)
+    f_tbl_cell(1, 0, "SIGNALS",    hdr_col, hdr_bg)
+    f_tbl_cell(2, 0, "WINS",       hdr_col, hdr_bg)
+    f_tbl_cell(3, 0, "LOSSES",     hdr_col, hdr_bg)
+    f_tbl_cell(4, 0, "WIN%",       hdr_col, hdr_bg)
+    f_tbl_cell(5, 0, "AVG W",      hdr_col, hdr_bg)
+    f_tbl_cell(6, 0, "AVG L",      hdr_col, hdr_bg)
+    f_tbl_cell(7, 0, "CUM ATR MULTI",      hdr_col, hdr_bg)
+
+    int   tot_sigs = 0
+    int   tot_wins = 0
+    int   tot_loss = 0
+    float tot_pnl  = 0.0
+    for i = 0 to 8
+        tot_sigs += array.get(ind_total_signals, i)
+        tot_wins += array.get(ind_wins, i)
+        tot_loss += array.get(ind_losses, i)
+        tot_pnl  += array.get(ind_cum_pnl_atr, i)
+
+    float tot_wr     = tot_wins + tot_loss > 0 ? (tot_wins / (tot_wins + tot_loss)) * 100.0 : 0.0
+    color tot_pnl_cl = tot_pnl >= 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+    color summ_bg    = color.new(color.rgb(30, 30, 60), 0)
+    f_tbl_cell(0, 1, "ALL",                                        color.white,                summ_bg)
+    f_tbl_cell(1, 1, str.tostring(tot_sigs),                       color.rgb(220, 220, 220),   summ_bg)
+    f_tbl_cell(2, 1, str.tostring(tot_wins),                       color.new(color.lime, 0),   summ_bg)
+    f_tbl_cell(3, 1, str.tostring(tot_loss),                       color.new(color.red, 0),    summ_bg)
+    f_tbl_cell(4, 1, str.tostring(math.round(tot_wr,  1)) + "%",   tot_pnl_cl,                 summ_bg)
+    f_tbl_cell(5, 1, "-",                                          color.gray,                 summ_bg)
+    f_tbl_cell(6, 1, "-",                                          color.gray,                 summ_bg)
+    f_tbl_cell(7, 1, str.tostring(math.round(tot_pnl, 2)) + "%",   tot_pnl_cl,                 summ_bg)
+
+    for i = 0 to 8
+        int   sigs  = array.get(ind_total_signals, i)
+        int   wins  = array.get(ind_wins,          i)
+        int   loss  = array.get(ind_losses,        i)
+        float pnl   = array.get(ind_cum_pnl_atr,  i)
+        float avg_w = array.get(ind_avg_win_atr,  i)
+        float avg_l = array.get(ind_avg_loss_atr, i)
+        float wr    = wins + loss > 0 ? (wins / (wins + loss)) * 100.0 : 0.0
+        color ind_c = f_ind_color(i)
+        color row_bg = i % 2 == 0 ? color.new(color.rgb(15, 15, 30), 0) : color.new(color.rgb(22, 22, 42), 0)
+        color pnl_c  = pnl >= 0 ? color.new(color.lime, 0) : color.new(color.red, 0)
+        color wr_c   = wr >= 55.0 ? color.new(color.lime, 0) : wr >= 45.0 ? color.rgb(255, 200, 50) : color.new(color.red, 0)
+        f_tbl_cell(0, i + 2, f_ind_name(i),                              ind_c,                    row_bg)
+        f_tbl_cell(1, i + 2, str.tostring(sigs),                         color.rgb(200, 200, 200),  row_bg)
+        f_tbl_cell(2, i + 2, str.tostring(wins),                         color.new(color.lime, 0),  row_bg)
+        f_tbl_cell(3, i + 2, str.tostring(loss),                         color.new(color.red,  0),  row_bg)
+        f_tbl_cell(4, i + 2, str.tostring(math.round(wr,    1)) + "%",   wr_c,                      row_bg)
+        f_tbl_cell(5, i + 2, str.tostring(math.round(avg_w, 2)),         color.new(color.lime, 0),  row_bg)
+        f_tbl_cell(6, i + 2, str.tostring(math.round(avg_l, 2)),         color.new(color.red,  0),  row_bg)
+        f_tbl_cell(7, i + 2, str.tostring(math.round(pnl,   2)) + "%",   pnl_c,                     row_bg)

@@ -1,7 +1,7 @@
 {
-  "total_files": 90,
-  "complete": 78,
-  "incomplete": 12,
+  "total_files": 119,
+  "complete": 102,
+  "incomplete": 17,
   "known_analyzed": 6,
   "target_total": 60,
   "pending": 0,
@@ -44,6 +44,13 @@
       ]
     },
     {
+      "file": "New_Text_Document_1e8c.txt",
+      "name": "ICT Immediate Rebalance Toolkit [LuxAlgo]",
+      "issues": [
+        "براکت {} نامتعادل: {=9 }=10"
+      ]
+    },
+    {
       "file": "Support_and_Resistance_7693.txt",
       "name": "Support and Resistance (High Volume Boxes) [ChartPrime]",
       "issues": [
@@ -79,8 +86,36 @@
       ]
     },
     {
+      "file": "machin_learning_rsi_335f.txt",
+      "name": "Machine Learning RSI | AI Classification & Ranking (Zeiierman)",
+      "issues": [
+        "براکت {} نامتعادل: {=59 }=45"
+      ]
+    },
+    {
+      "file": "power_order_bloc_813f.txt",
+      "name": "Power Order Blocks [ChartPrime]",
+      "issues": [
+        "براکت {} نامتعادل: {=4 }=5"
+      ]
+    },
+    {
       "file": "rb_seteup_5_algo_7ddb.txt",
       "name": "Retest & Break Setup [LuxAlgo]",
+      "issues": [
+        "براکت {} نامتعادل: {=3 }=4"
+      ]
+    },
+    {
+      "file": "rb_seteup_5_algo_8c0c.txt",
+      "name": "Retest & Break Setup [LuxAlgo]",
+      "issues": [
+        "براکت {} نامتعادل: {=6 }=7"
+      ]
+    },
+    {
+      "file": "smart_mony_fibo_9951.txt",
+      "name": "Smart Money Fibonacci OTE Engine [ChartPrime]",
       "issues": [
         "براکت {} نامتعادل: {=3 }=4"
       ]
@@ -112,7 +147,49 @@
       "backtestable": "partial_native",
       "notes": [],
       "hash": "60f7ccd79f94a618",
-      "analyzed_at": "2026-07-11T16:33:33.822016+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.800385+00:00"
+    },
+    {
+      "file": "2_829e.txt",
+      "name": "3Commas Bot",
+      "pine_version": "5",
+      "script_type": "strategy",
+      "lines": 334,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "strategy/full_strategy",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_native",
+      "notes": [],
+      "hash": "0f824a40f850ddbf",
+      "analyzed_at": "2026-07-11T19:05:16.802029+00:00"
+    },
+    {
+      "file": "3_2c7c.txt",
+      "name": "PMax Explorer",
+      "pine_version": "4",
+      "script_type": "strategy",
+      "lines": 325,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "strategy/full_strategy",
+      "has_buy_sell": true,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_native",
+      "notes": [
+        "سیگنال بدون barstate.isconfirmed"
+      ],
+      "hash": "fd4b617a46049d4a",
+      "analyzed_at": "2026-07-11T19:05:16.803036+00:00"
     },
     {
       "file": "3_3fa8.txt",
@@ -132,7 +209,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "aa459b99cafbd2e6",
-      "analyzed_at": "2026-07-11T16:33:33.822485+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.803485+00:00"
     },
     {
       "file": "4_4040.txt",
@@ -154,7 +231,30 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "6debb7cc3f3365c7",
-      "analyzed_at": "2026-07-11T16:33:33.822931+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.803967+00:00"
+    },
+    {
+      "file": "4_7c06.txt",
+      "name": "TrendMaster Pro 2.3 with Alerts",
+      "pine_version": "6",
+      "script_type": "strategy",
+      "lines": 661,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/fibonacci",
+      "has_buy_sell": true,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": true,
+      "has_confirmed": false,
+      "backtestable": "partial_zone",
+      "notes": [
+        "ریسک lookahead در request.security",
+        "سیگنال بدون barstate.isconfirmed"
+      ],
+      "hash": "249012791e71dc95",
+      "analyzed_at": "2026-07-11T19:05:16.805501+00:00"
     },
     {
       "file": "ATR_SL_FINDER_977b.txt",
@@ -174,7 +274,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "7d9cf4aded8fd643",
-      "analyzed_at": "2026-07-11T16:33:33.823160+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.805806+00:00"
     },
     {
       "file": "AUTO_FIBO_ca53.txt",
@@ -194,7 +294,7 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "874821a148876a41",
-      "analyzed_at": "2026-07-11T16:33:33.823297+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.805949+00:00"
     },
     {
       "file": "AlphaTrend_b53f.txt",
@@ -216,7 +316,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "c68d17f23ea60972",
-      "analyzed_at": "2026-07-11T16:33:33.823837+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.806504+00:00"
     },
     {
       "file": "BREAKOUT_PROBIPILITY_1c91.txt",
@@ -236,7 +336,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "f7a04ba9af7a74cd",
-      "analyzed_at": "2026-07-11T16:33:33.825103+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.807838+00:00"
     },
     {
       "file": "Breaker_Blocks_with_Signals__LuxAlgo_103c.txt",
@@ -256,7 +356,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "9f4b5a9da61f7498",
-      "analyzed_at": "2026-07-11T16:33:33.829461+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.812454+00:00"
     },
     {
       "file": "Buyside___Sellside_Liquidity_631a.txt",
@@ -276,7 +376,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "3ebf0fea7af837ab",
-      "analyzed_at": "2026-07-11T16:33:33.831700+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.814913+00:00"
     },
     {
       "file": "CANDLE_d8b6.txt",
@@ -296,7 +396,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "d0897748ca016534",
-      "analyzed_at": "2026-07-11T16:33:33.832441+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.815679+00:00"
     },
     {
       "file": "CM_Ultimate_MA_MTF_202b.txt",
@@ -316,7 +416,7 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "e013e34a00e191c3",
-      "analyzed_at": "2026-07-11T16:33:33.832860+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.816131+00:00"
     },
     {
       "file": "CT_Concepts__LuxAlgo__d0c0.txt",
@@ -338,7 +438,7 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "96326cea812b72a4",
-      "analyzed_at": "2026-07-11T16:33:33.839145+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.822863+00:00"
     },
     {
       "file": "Cardwell_RSI_Trade_Navigator__MarkitTick_1c8f.txt",
@@ -360,7 +460,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "63d3fbae99d3d96b",
-      "analyzed_at": "2026-07-11T16:33:33.842076+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.826019+00:00"
     },
     {
       "file": "Chandelier_Exit_a3e4.txt",
@@ -380,11 +480,11 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "834f81032be481d8",
-      "analyzed_at": "2026-07-11T16:33:33.842527+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.826498+00:00"
     },
     {
       "file": "Divergence_for_Many_Indicators_2408.txt",
-      "name": "",
+      "name": "Divergence for Many Indicators v4",
       "pine_version": "4",
       "script_type": "study",
       "lines": 409,
@@ -400,11 +500,11 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "6f4c60d954c856c4",
-      "analyzed_at": "2026-07-11T16:33:33.845645+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.829309+00:00"
     },
     {
       "file": "Divergence_for_many_indicator_2b36.txt",
-      "name": "",
+      "name": "Divergence for many indicator v3",
       "pine_version": "4",
       "script_type": "study",
       "lines": 348,
@@ -420,7 +520,27 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "945621e40762e4af",
-      "analyzed_at": "2026-07-11T16:33:33.847651+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.831133+00:00"
+    },
+    {
+      "file": "ELYOT_661b.txt",
+      "name": "Elliott Wave [LuxAlgo]",
+      "pine_version": "5",
+      "script_type": "indicator",
+      "lines": 522,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/fibonacci",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": true,
+      "has_confirmed": false,
+      "backtestable": "partial_zone",
+      "notes": [],
+      "hash": "39539d816dc893ee",
+      "analyzed_at": "2026-07-11T19:05:16.834963+00:00"
     },
     {
       "file": "ELYOT_dcd0.txt",
@@ -443,7 +563,7 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "c5b1171bfe331ec7",
-      "analyzed_at": "2026-07-11T16:33:33.849974+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.837404+00:00"
     },
     {
       "file": "FVGGGG_f0e2.txt",
@@ -467,7 +587,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "f7750c943fb3ed03",
-      "analyzed_at": "2026-07-11T16:33:33.850659+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.838120+00:00"
     },
     {
       "file": "FVG_743a.txt",
@@ -489,7 +609,29 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "39f3f4ec9edac31a",
-      "analyzed_at": "2026-07-11T16:33:33.851844+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.839356+00:00"
+    },
+    {
+      "file": "FVG_G_3a49.txt",
+      "name": "Fair Value Gap",
+      "pine_version": "5",
+      "script_type": "indicator",
+      "lines": 205,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/fvg_ob",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": true,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "336ff13aaa956a52",
+      "analyzed_at": "2026-07-11T19:05:16.840691+00:00"
     },
     {
       "file": "FVG___IFVG_ICT_a586.txt",
@@ -509,7 +651,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "ad79369e14591a6b",
-      "analyzed_at": "2026-07-11T16:33:33.852749+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.841670+00:00"
     },
     {
       "file": "Fair_Value_Gap_f587.txt",
@@ -531,7 +673,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "9227e9a889b08f26",
-      "analyzed_at": "2026-07-11T16:33:33.854013+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.842969+00:00"
     },
     {
       "file": "FxPipFinder_Engagement_Zone_41e2.txt",
@@ -551,7 +693,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "76a3f668bf0a597b",
-      "analyzed_at": "2026-07-11T16:33:33.854860+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.843875+00:00"
     },
     {
       "file": "HISTORICAL_POPTRN_8ffc.txt",
@@ -571,7 +713,27 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "52cacaf9fa284158",
-      "analyzed_at": "2026-07-11T16:33:33.856012+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.845078+00:00"
+    },
+    {
+      "file": "HISTORICAL_POPTRN_e03d.txt",
+      "name": "Historical Pattern Projection [MarkitTick]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 442,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "other/uncategorized",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "2b9f1e4434d082ae",
+      "analyzed_at": "2026-07-11T19:05:16.848740+00:00"
     },
     {
       "file": "IFVG_ENGINE_6b53.txt",
@@ -591,7 +753,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "a47142ee1b78c4ad",
-      "analyzed_at": "2026-07-11T16:33:33.859628+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.852658+00:00"
     },
     {
       "file": "LIQUDITY_PPOOL_ce94.txt",
@@ -611,7 +773,7 @@
       "backtestable": "full_simplified",
       "notes": [],
       "hash": "33f5ffcb27fd8d4d",
-      "analyzed_at": "2026-07-11T16:33:33.861321+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.854448+00:00"
     },
     {
       "file": "LONG_SEL_285e.txt",
@@ -631,7 +793,27 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "e5901a51e75d520d",
-      "analyzed_at": "2026-07-11T16:33:33.862809+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.856025+00:00"
+    },
+    {
+      "file": "LONG_SEL_db3c.txt",
+      "name": "Strong Pullback Signals",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 579,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "other/uncategorized",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "51b0483ee5b86a04",
+      "analyzed_at": "2026-07-11T19:05:16.860123+00:00"
     },
     {
       "file": "Liquidity_Shift_Detection_eaf8.txt",
@@ -651,7 +833,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "b9761e0f3a3a16ff",
-      "analyzed_at": "2026-07-11T16:33:33.865999+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.863505+00:00"
     },
     {
       "file": "MACD_30e7.txt",
@@ -671,7 +853,27 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "4d2c2f684fcd087d",
-      "analyzed_at": "2026-07-11T16:33:33.866335+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.863928+00:00"
+    },
+    {
+      "file": "MACHIN_6545.txt",
+      "name": "Machine Learning Pivot Points (KNN) [SS]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 250,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "ml/ml_regression",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_core_only",
+      "notes": [],
+      "hash": "301af5756e44345e",
+      "analyzed_at": "2026-07-11T19:05:16.866044+00:00"
     },
     {
       "file": "MACHIN_a826.txt",
@@ -691,7 +893,7 @@
       "backtestable": "partial_core_only",
       "notes": [],
       "hash": "d4cd70d9266a6dcc",
-      "analyzed_at": "2026-07-11T16:33:33.867582+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.867332+00:00"
     },
     {
       "file": "M_Pivot_Points_M_3e8d.txt",
@@ -711,7 +913,7 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "f69d9b59a014d8a7",
-      "analyzed_at": "2026-07-11T16:33:33.868550+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.868346+00:00"
     },
     {
       "file": "Machine_Learning_Lorentzian_9f8e.txt",
@@ -733,7 +935,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "fc1a27ccfbe47429",
-      "analyzed_at": "2026-07-11T16:33:33.873575+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.873346+00:00"
     },
     {
       "file": "Market_Structure_with_Inducements___Sweeps_244c.txt",
@@ -755,7 +957,7 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "9852418361ecf741",
-      "analyzed_at": "2026-07-11T16:33:33.874777+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.874606+00:00"
     },
     {
       "file": "Money_Concepts_PRO_v2.tiktok0_9e67.txt",
@@ -778,7 +980,29 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "c28d921072cfbb8c",
-      "analyzed_at": "2026-07-11T16:33:33.877617+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.877710+00:00"
+    },
+    {
+      "file": "New_Text_Document_1e8c.txt",
+      "name": "ICT Immediate Rebalance Toolkit [LuxAlgo]",
+      "pine_version": "5",
+      "script_type": "indicator",
+      "lines": 837,
+      "complete": false,
+      "completeness_issues": [
+        "براکت {} نامتعادل: {=9 }=10"
+      ],
+      "category": "zone/order_block",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": true,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "blocked_incomplete",
+      "notes": [],
+      "hash": "8e732e438984ec45",
+      "analyzed_at": "2026-07-11T19:05:16.883404+00:00"
     },
     {
       "file": "New_Text_Document_ee2a.txt",
@@ -798,7 +1022,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "2638d9ba03b3a245",
-      "analyzed_at": "2026-07-11T16:33:33.879025+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.884963+00:00"
     },
     {
       "file": "ORDER_5f08.txt",
@@ -818,7 +1042,27 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "d0bbc94859a66fed",
-      "analyzed_at": "2026-07-11T16:33:33.880493+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.886541+00:00"
+    },
+    {
+      "file": "ORDER_711e.txt",
+      "name": "OrderFlow FVG Matrix MTF",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 632,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/fvg_ob",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": true,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "c174fed5c1edc74b",
+      "analyzed_at": "2026-07-11T19:05:16.891513+00:00"
     },
     {
       "file": "Order-Flow_Detection_d054.txt",
@@ -840,7 +1084,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "5cd9ddda898af01e",
-      "analyzed_at": "2026-07-11T16:33:33.886288+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.897665+00:00"
     },
     {
       "file": "PUT___CALL_VP_Levels_90f8.txt",
@@ -863,7 +1107,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "3dc06b4429bf5bd2",
-      "analyzed_at": "2026-07-11T16:33:33.889701+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.901299+00:00"
     },
     {
       "file": "Pivot_Points_High_Low___Missed__f352.txt",
@@ -883,11 +1127,11 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "52af6f3c85a75208",
-      "analyzed_at": "2026-07-11T16:33:33.890877+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.902545+00:00"
     },
     {
       "file": "QQE_KHOOB_1aba.txt",
-      "name": "",
+      "name": "QQE signals",
       "pine_version": "4",
       "script_type": "study",
       "lines": 57,
@@ -903,7 +1147,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "10593bf5f0758d83",
-      "analyzed_at": "2026-07-11T16:33:33.891224+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.902858+00:00"
     },
     {
       "file": "QUANTOM_4271.txt",
@@ -925,7 +1169,29 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "050bcdb63e9d309a",
-      "analyzed_at": "2026-07-11T16:33:33.892269+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.903970+00:00"
+    },
+    {
+      "file": "QUANTOM_4e3d.txt",
+      "name": "Quantum Imbalance Trap [MarkitTick]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 329,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/order_block",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "73ea4281e045b1bd",
+      "analyzed_at": "2026-07-11T19:05:16.906894+00:00"
     },
     {
       "file": "Ranked_Order_Block_Zones__Zeiierman_9c77.txt",
@@ -945,7 +1211,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "03b2247330429776",
-      "analyzed_at": "2026-07-11T16:33:33.894442+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.909220+00:00"
     },
     {
       "file": "Reversal_Signals__TIKTOK_6ff8.txt",
@@ -965,7 +1231,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "a4b16350de76c771",
-      "analyzed_at": "2026-07-11T16:33:33.898087+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.913083+00:00"
     },
     {
       "file": "SMART_MONEY_11c2.txt",
@@ -987,7 +1253,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "1f3d0745ceeaaabf",
-      "analyzed_at": "2026-07-11T16:33:33.903537+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.918869+00:00"
     },
     {
       "file": "SQZMOM_LB_5806.txt",
@@ -1007,7 +1273,30 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "dc81681173d8afa6",
-      "analyzed_at": "2026-07-11T16:33:33.903795+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.919130+00:00"
+    },
+    {
+      "file": "STOP_HUNT_c561.txt",
+      "name": "Stop Hunt Radar [GBB]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 666,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/smc",
+      "has_buy_sell": true,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security",
+        "سیگنال بدون barstate.isconfirmed"
+      ],
+      "hash": "13c12ba38160bea4",
+      "analyzed_at": "2026-07-11T19:05:16.924349+00:00"
     },
     {
       "file": "STOP_HUNT_e28b.txt",
@@ -1027,7 +1316,29 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "e84bf53b15fee7b7",
-      "analyzed_at": "2026-07-11T16:33:33.905491+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.926138+00:00"
+    },
+    {
+      "file": "STRATGY_b59b.txt",
+      "name": "",
+      "pine_version": "6",
+      "script_type": "strategy",
+      "lines": 2246,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "strategy/full_strategy",
+      "has_buy_sell": true,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_native",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "03955a2d4857c5c4",
+      "analyzed_at": "2026-07-11T19:05:16.950559+00:00"
     },
     {
       "file": "STRATGY_b6e6.txt",
@@ -1049,7 +1360,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "9fb23f15e90616e4",
-      "analyzed_at": "2026-07-11T16:33:33.906355+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.951560+00:00"
     },
     {
       "file": "SUPER_TREND_4ed2.txt",
@@ -1069,11 +1380,11 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "0b6dfa731fd06605",
-      "analyzed_at": "2026-07-11T16:33:33.907621+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.952961+00:00"
     },
     {
       "file": "SUPER_TREND_ccf2.txt",
-      "name": "",
+      "name": "Supertrend",
       "pine_version": "4",
       "script_type": "study",
       "lines": 37,
@@ -1091,7 +1402,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "eb300e693cc5901a",
-      "analyzed_at": "2026-07-11T16:33:33.908077+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.953372+00:00"
     },
     {
       "file": "Smart_Money_Renko_Matri_bb35.txt",
@@ -1113,7 +1424,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "3faa9faa8f27a92d",
-      "analyzed_at": "2026-07-11T16:33:33.911207+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.956760+00:00"
     },
     {
       "file": "Smart_Money_Structure__GainzAlgo_4e52.txt",
@@ -1136,7 +1447,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "8fd0eb192f907e71",
-      "analyzed_at": "2026-07-11T16:33:33.914389+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.960170+00:00"
     },
     {
       "file": "Smart_Trader__Episode_03__by_Ata_Sabanc_7446.txt",
@@ -1156,7 +1467,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "cca83fbed033d5f0",
-      "analyzed_at": "2026-07-11T16:33:33.940084+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.986234+00:00"
     },
     {
       "file": "Smart_Trend_Flow_Pro__MarkitTick_613c.txt",
@@ -1176,7 +1487,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "a1e41e7fe9bad574",
-      "analyzed_at": "2026-07-11T16:33:33.942698+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.988998+00:00"
     },
     {
       "file": "Support_Resistance_Interactiv_01cf.txt",
@@ -1196,7 +1507,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "cf9a075231fb56f4",
-      "analyzed_at": "2026-07-11T16:33:33.943614+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.989959+00:00"
     },
     {
       "file": "Support_and_Resistance_7693.txt",
@@ -1218,7 +1529,7 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "8655e024aa6a080e",
-      "analyzed_at": "2026-07-11T16:33:33.945002+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.991395+00:00"
     },
     {
       "file": "Support_and_Resistance_Levels_with_Breaks_9115.txt",
@@ -1238,7 +1549,7 @@
       "backtestable": "full_simplified",
       "notes": [],
       "hash": "29da87b72c1b7a1c",
-      "analyzed_at": "2026-07-11T16:33:33.945356+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.991793+00:00"
     },
     {
       "file": "Support_and_Resistance_Signals__bc86.txt",
@@ -1258,7 +1569,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "03d1cd56ee189347",
-      "analyzed_at": "2026-07-11T16:33:33.951150+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.997984+00:00"
     },
     {
       "file": "Swing_HighsLows___Candle_Patterns__143a.txt",
@@ -1278,11 +1589,11 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "67a5217ade754d52",
-      "analyzed_at": "2026-07-11T16:33:33.952091+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.998975+00:00"
     },
     {
       "file": "TREND_007c.txt",
-      "name": "",
+      "name": "CM_SlingShotSystem",
       "pine_version": "?",
       "script_type": "study",
       "lines": 45,
@@ -1298,7 +1609,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "688b00f3b56135fa",
-      "analyzed_at": "2026-07-11T16:33:33.952578+00:00"
+      "analyzed_at": "2026-07-11T19:05:16.999431+00:00"
     },
     {
       "file": "Trendline_Breakouts_With__df18.txt",
@@ -1318,7 +1629,7 @@
       "backtestable": "full_simplified",
       "notes": [],
       "hash": "1a281907c6b1a384",
-      "analyzed_at": "2026-07-11T16:33:33.953916+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.000823+00:00"
     },
     {
       "file": "Trendlines_with_Breaks_960f.txt",
@@ -1338,7 +1649,7 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "318eb23a9022a8fb",
-      "analyzed_at": "2026-07-11T16:33:33.954572+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.001503+00:00"
     },
     {
       "file": "UP_TEND_949b.txt",
@@ -1358,7 +1669,7 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "0027945d6aa8d851",
-      "analyzed_at": "2026-07-11T16:33:33.955258+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.002224+00:00"
     },
     {
       "file": "VOLOM_2fee.txt",
@@ -1380,10 +1691,30 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "acd4be958efa484b",
-      "analyzed_at": "2026-07-11T16:33:33.956380+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.003340+00:00"
     },
     {
-      "file": "WIN_LOS_fc44.txt",
+      "file": "VOLOM_e2b1.txt",
+      "name": "Multi-Distribution Volume Profile (Zeiierman)",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 743,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/smc",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "93b514cbdb634c8c",
+      "analyzed_at": "2026-07-11T19:05:17.009360+00:00"
+    },
+    {
+      "file": "WIN_LOS_5b2e.txt",
       "name": "Monte Carlo CT [SS]",
       "pine_version": "6",
       "script_type": "indicator",
@@ -1400,7 +1731,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "54c28de58a229ee0",
-      "analyzed_at": "2026-07-11T16:33:33.958000+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.011061+00:00"
     },
     {
       "file": "Zero_Lag_Trend_Signals_TIKTOK_8b12.txt",
@@ -1423,7 +1754,27 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "977e51d904b3efee",
-      "analyzed_at": "2026-07-11T16:33:33.959030+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.012151+00:00"
+    },
+    {
+      "file": "atomatic_multi_pattern__1b51.txt",
+      "name": "[ A L P H A X ] FORGE",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 971,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "pattern/chart_pattern",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_pattern",
+      "notes": [],
+      "hash": "ac2781a826d48d9c",
+      "analyzed_at": "2026-07-11T19:05:17.018272+00:00"
     },
     {
       "file": "atomatic_multi_pattern__9980.txt",
@@ -1443,7 +1794,27 @@
       "backtestable": "partial_pattern",
       "notes": [],
       "hash": "76860a898f6c44ab",
-      "analyzed_at": "2026-07-11T16:33:33.960111+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.019621+00:00"
+    },
+    {
+      "file": "auto_pattern_detector_a39f.txt",
+      "name": "Auto Pattern Detector Targets [MarkitTick]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 866,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "pattern/chart_pattern",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_pattern",
+      "notes": [],
+      "hash": "01b4834fcdc20ec1",
+      "analyzed_at": "2026-07-11T19:05:17.026108+00:00"
     },
     {
       "file": "auto_pattern_detector_bf37.txt",
@@ -1463,7 +1834,29 @@
       "backtestable": "partial_pattern",
       "notes": [],
       "hash": "02aab1729cae5bf9",
-      "analyzed_at": "2026-07-11T16:33:33.961111+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.027186+00:00"
+    },
+    {
+      "file": "cardvel_7430.txt",
+      "name": "Cardwell Range Analyze [MarkitTick]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 306,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "other/uncategorized",
+      "has_buy_sell": true,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "8fa31d44dd1b2639",
+      "analyzed_at": "2026-07-11T19:05:17.030170+00:00"
     },
     {
       "file": "cardvel_f64f.txt",
@@ -1485,7 +1878,27 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "c903427b3bbce90c",
-      "analyzed_at": "2026-07-11T16:33:33.962209+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.031312+00:00"
+    },
+    {
+      "file": "dynamic_trend_125b.txt",
+      "name": "Dynamic Trend Bands & Anchored VWAP Signals [BigBeluga]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 219,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "trend/trend_signal",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "full_simplified",
+      "notes": [],
+      "hash": "d8713120af4565c8",
+      "analyzed_at": "2026-07-11T19:05:17.032998+00:00"
     },
     {
       "file": "dynamic_trend_8e17.txt",
@@ -1507,7 +1920,7 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "0624d66a9ecf07fd",
-      "analyzed_at": "2026-07-11T16:33:33.962970+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.033809+00:00"
     },
     {
       "file": "entrylib_5e01.txt",
@@ -1529,29 +1942,7 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "4aeaabbf798bcef7",
-      "analyzed_at": "2026-07-11T16:33:33.963973+00:00"
-    },
-    {
-      "file": "forg_6b2d.txt",
-      "name": "[ A L P H A X ] FORGE",
-      "pine_version": "6",
-      "script_type": "indicator",
-      "lines": 971,
-      "complete": true,
-      "completeness_issues": [],
-      "category": "pattern/chart_pattern",
-      "has_buy_sell": false,
-      "has_sl_tp": true,
-      "has_ob": false,
-      "has_fvg": false,
-      "has_fib": false,
-      "has_confirmed": true,
-      "backtestable": "partial_pattern",
-      "notes": [],
-      "hash": "ac2781a826d48d9c",
-      "analyzed_at": "2026-07-11T16:33:33.969686+00:00",
-      "registry_id": 4,
-      "registry_status": "done"
+      "analyzed_at": "2026-07-11T19:05:17.034832+00:00"
     },
     {
       "file": "fvg_1bce.txt",
@@ -1571,7 +1962,29 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "03b640af0012ff8f",
-      "analyzed_at": "2026-07-11T16:33:33.970330+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.035496+00:00"
+    },
+    {
+      "file": "fvg_return_faf7.txt",
+      "name": "FVG Retest Entry Engine [trade_w_samet]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 2768,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/fvg_ob",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": true,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "6de736f9b9df8db6",
+      "analyzed_at": "2026-07-11T19:05:17.050500+00:00"
     },
     {
       "file": "high_volom_pivoty_suport_778c.txt",
@@ -1593,7 +2006,27 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "641f9921044f211b",
-      "analyzed_at": "2026-07-11T16:33:33.971200+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.051487+00:00"
+    },
+    {
+      "file": "high_volom_pivoty_suport_809e.txt",
+      "name": "High Volume Pivot Support & Resistance Zones [BigBeluga]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 281,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "other/uncategorized",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "8f92751949a7c4fa",
+      "analyzed_at": "2026-07-11T19:05:17.053775+00:00"
     },
     {
       "file": "machin_f3c0.txt",
@@ -1613,7 +2046,7 @@
       "backtestable": "partial_core_only",
       "notes": [],
       "hash": "6f8855a67494518b",
-      "analyzed_at": "2026-07-11T16:33:33.972101+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.054711+00:00"
     },
     {
       "file": "machin_learning_rsi_217a.txt",
@@ -1635,7 +2068,29 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "78ed2fa7efd4b8ac",
-      "analyzed_at": "2026-07-11T16:33:33.975520+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.058419+00:00"
+    },
+    {
+      "file": "machin_learning_rsi_335f.txt",
+      "name": "Machine Learning RSI | AI Classification & Ranking (Zeiierman)",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 603,
+      "complete": false,
+      "completeness_issues": [
+        "براکت {} نامتعادل: {=59 }=45"
+      ],
+      "category": "ml/ml_regression",
+      "has_buy_sell": true,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "blocked_incomplete",
+      "notes": [],
+      "hash": "d2d99ab55dc5429b",
+      "analyzed_at": "2026-07-11T19:05:17.063462+00:00"
     },
     {
       "file": "mirage_8451.txt",
@@ -1655,7 +2110,29 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "5d228cb0ef515a54",
-      "analyzed_at": "2026-07-11T16:33:33.976533+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.064488+00:00"
+    },
+    {
+      "file": "mirage_d9ef.txt",
+      "name": "Mirage Liquidity Sweep Pro [WillyAlgoTrader]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 1093,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "trend/trend_signal",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "full_simplified",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "a80857c8e506d026",
+      "analyzed_at": "2026-07-11T19:05:17.070108+00:00"
     },
     {
       "file": "monster_e007.txt",
@@ -1675,7 +2152,7 @@
       "backtestable": "partial_native",
       "notes": [],
       "hash": "60061720f1b77d7e",
-      "analyzed_at": "2026-07-11T16:33:33.978117+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.071675+00:00"
     },
     {
       "file": "multi_divergence_3058.txt",
@@ -1695,7 +2172,27 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "5cbd53c7b4a27ab3",
-      "analyzed_at": "2026-07-11T16:33:33.978721+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.072325+00:00"
+    },
+    {
+      "file": "multi_divergence_40f7.txt",
+      "name": "Multi-Divergence Strategy | GainzAlgo",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 838,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/order_block",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "6f0b5ee6b5494918",
+      "analyzed_at": "2026-07-11T19:05:17.077940+00:00"
     },
     {
       "file": "power_order_bloc_151a.txt",
@@ -1715,7 +2212,29 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "e4153b906b99eba9",
-      "analyzed_at": "2026-07-11T16:33:33.979494+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.078760+00:00"
+    },
+    {
+      "file": "power_order_bloc_813f.txt",
+      "name": "Power Order Blocks [ChartPrime]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 282,
+      "complete": false,
+      "completeness_issues": [
+        "براکت {} نامتعادل: {=4 }=5"
+      ],
+      "category": "zone/order_block",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": true,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "blocked_incomplete",
+      "notes": [],
+      "hash": "1a23437be8df37ad",
+      "analyzed_at": "2026-07-11T19:05:17.080597+00:00"
     },
     {
       "file": "qt_cx_7542.txt",
@@ -1735,7 +2254,29 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "f495b97e2da36983",
-      "analyzed_at": "2026-07-11T16:33:33.979960+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.081093+00:00"
+    },
+    {
+      "file": "qt_cx_ae81.txt",
+      "name": "cd_new_QT_Cx",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 1912,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/fvg_ob",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": true,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "1a401b27a0579561",
+      "analyzed_at": "2026-07-11T19:05:17.091447+00:00"
     },
     {
       "file": "quadpad_47cd.txt",
@@ -1755,7 +2296,7 @@
       "backtestable": "partial_zone",
       "notes": [],
       "hash": "acac6124c848f794",
-      "analyzed_at": "2026-07-11T16:33:33.987281+00:00",
+      "analyzed_at": "2026-07-11T19:05:17.098756+00:00",
       "registry_id": 6,
       "registry_status": "done"
     },
@@ -1779,7 +2320,29 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "c13d17a50a572838",
-      "analyzed_at": "2026-07-11T16:33:33.988093+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.099618+00:00"
+    },
+    {
+      "file": "rb_seteup_5_algo_8c0c.txt",
+      "name": "Retest & Break Setup [LuxAlgo]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 337,
+      "complete": false,
+      "completeness_issues": [
+        "براکت {} نامتعادل: {=6 }=7"
+      ],
+      "category": "other/uncategorized",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": false,
+      "backtestable": "blocked_incomplete",
+      "notes": [],
+      "hash": "1ac6f821b0fe349c",
+      "analyzed_at": "2026-07-11T19:05:17.101740+00:00"
     },
     {
       "file": "rsi_advanced_868b.txt",
@@ -1801,7 +2364,7 @@
         "سیگنال بدون barstate.isconfirmed"
       ],
       "hash": "70ee4e45b34af7ff",
-      "analyzed_at": "2026-07-11T16:33:33.988844+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.102489+00:00"
     },
     {
       "file": "smart_0f3d.txt",
@@ -1821,7 +2384,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "b050612b1a2ee0a4",
-      "analyzed_at": "2026-07-11T16:33:33.989506+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.103160+00:00"
     },
     {
       "file": "smart_ichimoko_d12e.txt",
@@ -1841,7 +2404,7 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "3cef52f765f6904c",
-      "analyzed_at": "2026-07-11T16:33:33.991705+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.105493+00:00"
     },
     {
       "file": "smart_mony_fibo_67b7.txt",
@@ -1861,7 +2424,29 @@
       "backtestable": "partial_zone",
       "notes": [],
       "hash": "6e955f332f9edf43",
-      "analyzed_at": "2026-07-11T16:33:33.992612+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.106431+00:00"
+    },
+    {
+      "file": "smart_mony_fibo_9951.txt",
+      "name": "Smart Money Fibonacci OTE Engine [ChartPrime]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 283,
+      "complete": false,
+      "completeness_issues": [
+        "براکت {} نامتعادل: {=3 }=4"
+      ],
+      "category": "zone/fibonacci",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": true,
+      "has_confirmed": false,
+      "backtestable": "blocked_incomplete",
+      "notes": [],
+      "hash": "ea0a9926a92b908d",
+      "analyzed_at": "2026-07-11T19:05:17.108435+00:00"
     },
     {
       "file": "strong_reversal_02f0.txt",
@@ -1881,10 +2466,10 @@
       "backtestable": "partial_manual",
       "notes": [],
       "hash": "2c3b08982eb81f57",
-      "analyzed_at": "2026-07-11T16:33:33.993569+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.109461+00:00"
     },
     {
-      "file": "suply_demand_zone_f0e7.txt",
+      "file": "suply_demand_zone_9eee.txt",
       "name": "Supply and Demand Zones | Flux Charts",
       "pine_version": "6",
       "script_type": "indicator",
@@ -1901,7 +2486,27 @@
       "backtestable": "full_simplified",
       "notes": [],
       "hash": "91c485813e95a826",
-      "analyzed_at": "2026-07-11T16:33:33.996910+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.112967+00:00"
+    },
+    {
+      "file": "supply_demand_72be.txt",
+      "name": "Supply and Demand Zones | Flux Charts",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 579,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "trend/trend_signal",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "full_simplified",
+      "notes": [],
+      "hash": "d9c6da1008367067",
+      "analyzed_at": "2026-07-11T19:05:17.118054+00:00"
     },
     {
       "file": "volon_trend_order_block_72a5.txt",
@@ -1923,7 +2528,27 @@
       "backtestable": "blocked_incomplete",
       "notes": [],
       "hash": "f08de846847c8197",
-      "analyzed_at": "2026-07-11T16:33:33.997538+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.118747+00:00"
+    },
+    {
+      "file": "volon_trend_order_block_93f7.txt",
+      "name": "Volume-Trend Order Block Engine [BigBeluga]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 185,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/order_block",
+      "has_buy_sell": false,
+      "has_sl_tp": true,
+      "has_ob": true,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [],
+      "hash": "43d5b32153f587fe",
+      "analyzed_at": "2026-07-11T19:05:17.119975+00:00"
     },
     {
       "file": "whale_liquidy_zone_181a.txt",
@@ -1945,7 +2570,29 @@
         "ریسک lookahead در request.security"
       ],
       "hash": "23004a9cf1043758",
-      "analyzed_at": "2026-07-11T16:33:34.002526+00:00"
+      "analyzed_at": "2026-07-11T19:05:17.125231+00:00"
+    },
+    {
+      "file": "whale_liquidy_zone_ebd2.txt",
+      "name": "Whale Liquidity and Absorption Profile [AlgoAlpha]",
+      "pine_version": "6",
+      "script_type": "indicator",
+      "lines": 474,
+      "complete": true,
+      "completeness_issues": [],
+      "category": "zone/smc",
+      "has_buy_sell": false,
+      "has_sl_tp": false,
+      "has_ob": false,
+      "has_fvg": false,
+      "has_fib": false,
+      "has_confirmed": true,
+      "backtestable": "partial_manual",
+      "notes": [
+        "ریسک lookahead در request.security"
+      ],
+      "hash": "cd86a6e466315fda",
+      "analyzed_at": "2026-07-11T19:05:17.131099+00:00"
     },
     {
       "file": "fib_fib.pine",
@@ -1965,7 +2612,7 @@
       "backtestable": "none_display_only",
       "notes": [],
       "hash": "be0e58809f3bf8ea",
-      "analyzed_at": "2026-07-11T16:33:34.002667+00:00",
+      "analyzed_at": "2026-07-11T19:05:17.131256+00:00",
       "registry_id": 5,
       "registry_status": "done"
     }

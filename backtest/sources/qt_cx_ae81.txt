@@ -1,0 +1,1912 @@
+//@version=6
+indicator('cd_new_QT_Cx', overlay = true, max_boxes_count = 500)
+
+     
+// ==========================================
+// --- 1. OBJECT STRUCTURE ---
+// ==========================================
+type CycleLayer
+	array<box> boxes
+    box[]   body     
+	array<label> labels
+	float o
+	float h
+	float l
+	float c
+    int   t
+	float h1
+	float l1
+	int limit
+	int b_width
+	string b_style
+	bool show_box
+	bool show_line
+    bool show_body
+	bool show_label
+	string current_id
+    int     ht
+    int     lt
+    int     h1t
+    int     l1t    
+    float   xh
+    float   xl
+    float   yh
+    float   yl
+    float   xh1
+    float   xl1
+    float   yh1
+    float   yl1
+    bool    hxsmt 
+    bool    lxsmt
+    bool    hysmt 
+    bool    lysmt
+    bool    hswp 
+    bool    lswp
+    bool    hxswp
+    bool    lxswp
+    bool    hyswp
+    bool    lyswp
+    float   c1 
+    float   o1
+    float   h2 
+    float   l2 
+    float   c2 
+    float   o2 
+    float   h3
+    float   l3
+    bool    bufvgtap
+    bool    befvgtap
+    bool    bsltap
+    bool    ssltap
+    bool    bslsmt 
+    bool    sslsmt
+    int     updw
+    bool    hcisd 
+    bool    lcisd
+    float   c3 
+    float   o3 
+    bool    qqhswp
+    bool    qqlswp
+    float   xc1 
+    float   yc1 
+    float   xo1 
+    float   yo1
+    float   xc 
+    float   yc 
+    float   xo 
+    float   yo
+    float   h4
+    float   l4 
+    int t1 
+    int  hst1 
+    int  hst2 
+    int  lst1 
+    int  lst2
+    string cyclb
+    bool    hsmt 
+    bool    lsmt
+             
+// ==========================================
+// --- 2. GİRİŞLER VE TAM MENÜ ---
+// ==========================================
+grp_t = 'General Settings  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+mtd1  = "First Upper Cycle"
+mtd2  = "Aligned Cycle" 
+
+mdl1 = "Free"
+mdl2 = "Daye's Theory"
+mdl3 = "Zeussy's Theory"
+
+
+mdl = input.string(defval = mdl1 ,title= "Selection Model for Daily Cycle",options=[mdl1,mdl2 ,mdl3], group = grp_t, inline = '0')
+bias_mtd = input.string(defval = mtd1, title= "Use to determine bias =>", options=[mtd1,mtd2], group = grp_t)
+
+grp_f = 'Free Model Settings  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+i_tz = input.string('GMT-4', title = '[Timezone]', options = ['GMT-11', 'GMT-10', 'GMT-9', 'GMT-8', 'GMT-7', 'GMT-6', 'GMT-5', 'GMT-4', 'GMT-3', 'GMT-2', 'GMT-1', 'GMT', 'GMT+1', 'GMT+2', 'GMT+3', 'GMT+4', 'GMT+5', 'GMT+5:30', 'GMT+6', 'GMT+7', 'GMT+8', 'GMT+9', 'GMT+10', 'GMT+11', 'GMT+12'], group = grp_f)
+start_hour_ = input.int(18, '[Start_hour]', group = grp_f, inline = '0')
+start_min_  = input.int(00, "[Minute]", group=grp_f, inline="0")
+free_day    = input.int(360, "[Duration of Daily Cycle (Minute) ]", group=grp_f, inline="1") 
+X_          = input.int(4, '[Division Coefficient (X)]', minval=2, group = grp_f, inline="3")
+
+grp_c = 'General Display & Color Settings  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+
+swp_show    = input.bool(true, '[Sweep]', inline = '3', group = grp_c)
+swp_clr     = input.color(color.black  ,title = "[Lines]",inline="3",group=grp_c)
+fvg_show    = input.bool(true, '[FVG]', inline = '3a', group = grp_c)
+fvg_clr     = input.color(color.new(color.orange,75),title = "",inline="3a",group=grp_c)
+bsl_show    = input.bool(true, '[BSL/SSL]', inline = '3b', group = grp_c)    
+bssl_clr    = input.color(color.black   ,title = "",inline="3b",group=grp_c) 
+divi_show   = input.bool(true, '[Divider]', inline = '3c', group = grp_c) 
+divi_clr    = input.color(color.new(color.navy,80)   ,title = "",inline="3c",group=grp_c) 
+true_show   = input.bool(true, '[True Opens]', inline = '3d', group = grp_c) 
+true_clr    = input.color(color.new(color.navy,0)   ,title = "",inline="3d",group=grp_c) 
+bull_csd    = input.color(color.teal   ,title = "[Bullish CISD] ",inline="5",group=grp_c)
+bear_csd    = input.color(color.red    ,title = "[Bearish CISD]",inline="5",group=grp_c)
+txt_clr     = input.color(color.black,  title = "[Text_color]",inline="6",group=grp_c)
+sz          = input.string(defval=size.tiny,title="[Text size]",options = [size.tiny,size.small,size.normal],group=grp_c,inline="6")
+
+get_style(s) =>
+    s == 'Dashed' ? line.style_dashed : s == 'Dotted' ? line.style_dotted : line.style_solid
+
+// --- CYCLE (Qx) ---
+grp_y = '[ Cycle Display Settings] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+y_show_b   = input.bool(true, '[Box]', inline = 'y1', group = grp_y)
+y_show_l   = input.bool(false, '[Line]', inline = 'y1', group = grp_y)
+y_show_bo  = input.bool(false, '[Body]', inline = 'y1', group = grp_y)
+y_show_lbl = input.bool(false, '[Label]', inline = 'y1', group = grp_y)
+use_nm     = input.bool(false, '[Numeric Labeling & Cycle Alignment Alert ]', inline = 'y2', group = grp_y, tooltip ="Alerts => (1-1-1) , (2-2-2) , (3-3-3) , (4-4-4)") 
+y_width    = input.int(1, '[Border Width]', inline = 'y3', group = grp_y)
+y_style    = input.string('Dashed', 'Type', options = ['Solid', 'Dashed', 'Dotted'], inline = 'y3', group = grp_y)
+
+grp_z = '[ Cycle SMT Settings ]  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+z_show      = input.bool(true, '[Cycle SMT]', inline = 'y4', group = grp_z)
+z_style     = input.string(line.style_solid, 'Type', options = [line.style_solid, line.style_dashed, line.style_dotted], inline = 'y4', group = grp_z)
+smt_clr     = input.color(color.purple ,title = "[SSMT Lines     ]",inline="3",group=grp_z)
+smt_wdth    = input.int(2,"",inline="3",group=grp_z)
+smtsub_clr  = input.color(color.blue   ,title = "[Lower SSMT Lines]",inline="3a",group=grp_z)
+smt_sub_wdth= input.int(1,"",inline="3a",group=grp_z)
+smtupp_clr  = input.color(color.olive  ,title = "[Upper SSMT Lines]",inline="3b",group=grp_z)
+smt_upp_wdth= input.int(3,"",inline="3b",group=grp_z)
+zlb_show    = input.bool(true, '[SSMT Labels]', inline = '4', group = grp_z)
+
+grp_x = '[ Candle SMT Settings ]  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+x_show     = input.bool(true, '[HTF SMT]', inline = '0', group = grp_x)
+x_style    = input.string(line.style_dashed, 'Type', options = [line.style_solid, line.style_dashed, line.style_dotted], inline = '0', group = grp_x)
+x_clr      = input.color(color.fuchsia ,title = "[SMT Lines]",inline="1",group=grp_x)
+x_wdth     = input.int(1,"",inline="1",group=grp_x)
+xlb_show   = input.bool(true, '[SMT Labels]', inline = '2', group = grp_x)
+x_psp      = input.bool(true, '[Chart PSP]', inline = '3', group = grp_x)
+
+g16="Cycle Candles  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+cndo  = "Auto (Current Cycle)" 
+cnddb = "Double (Current + Upper Cycle)"
+cndu  = "Upper Cycle"
+cnda  = "Bias Cycle"
+cnd1  = "HTF1"
+cnd2  = "HTF2"
+
+y_show_cnd  = input.bool(false, '[HTF Cycle Candles]', inline = 'y2', group = g16)
+cnd_opt     = input.string(cndo, 'Selection :', options = [cndo,cnddb,cndu,cnda,cnd1,cnd2], inline = 'y2', group = g16)
+dxx         = input.int(defval = 10 , title = "Offset => ",group= g16,inline="y2" )
+bull_clr    = input.color(color.rgb(0, 137, 123, 50)   ,title = "[Bullish Body]",inline="2",group=g16)
+bear_clr    = input.color(color.rgb(255, 82, 82, 50)    ,title = "[Bearish Body]",inline="2",group=g16)
+brd_clr     = input.color(color.black  ,title = "[Wick]",inline="2",group=g16)
+
+g13="Cycle Colors  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+q1_box_clr = input.color(color.gray, "[Q1/W1/A Box]", inline="qbox", group=g13)
+q2_box_clr = input.color(color.red, "[Q2/W2/M Box]", inline="qbox", group=g13)
+q3_box_clr = input.color(color.teal, "[Q3/W3/D Box]", inline="qbox1", group=g13)
+q4_box_clr = input.color(color.blue, "[Q4/W4/X Box]", inline="qbox1", group=g13)
+contrast   = input.int(95, '[Back ground Contrast]', minval=2, group = g13, inline="qbox2")
+contrast2  = input.int(50, '[Border  Contrast]', minval=2, group = g13, inline="qbox2")
+
+show_lower = input.bool(defval = true , title = "[Lower Cycle]"  ,group =g13,inline="qbox3")
+
+g14=" Table Display Settings  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+show_tb     = input.bool(defval =true ,   title = "[Bias Table]"     ,group =g14,inline="04")
+default_bg  = input.color(color.rgb(178, 181, 190, 50),title = "[Back ground]",inline="1",group=g14)
+tb_txt_clr  = input.color(color.black,title = "[Text_color]",inline="1",group=g14)
+pos         = input.string(defval=position.bottom_right,title="[Position]"  ,options = [position.bottom_left,position.bottom_right,position.middle_right,position.top_right,position.bottom_center],group=g14,inline="4")
+szt         = input.string(defval=size.tiny,title="[Text size]",options = [size.tiny,size.small,size.normal],group=g14,inline="4")
+
+
+g11 = "Triad😻 <=> 😻 <=> 😻" 
+tr1A = input.bool(defval=true,title="",group = g11,inline="t1")
+tr1B = input.bool(defval=true,title="",group = g11,inline="t2")
+tr1C = input.bool(defval=true,title="",group = g11,inline="t3")//
+
+st1  = input.symbol(defval="PEPPERSTONE:EURUSD",title =""  , group=g11, inline="t1")
+st2  = input.symbol(defval="PEPPERSTONE:GBPUSD", title ="&" , group=g11, inline="t1")
+st3  = input.symbol(defval="TVC:DXY",  title ="&" , group=g11, inline="t1")
+inv3 = input.bool(defval=true,title="Inverse",group = g11,inline="t1")
+
+st4  = input.symbol(defval="PEPPERSTONE:XAUUSD",title =""  , group=g11, inline="t2")
+st5  = input.symbol(defval="PEPPERSTONE:XAUAUD",title ="&" , group=g11, inline="t2")
+st6  = input.symbol(defval="OANDA:XAUCAD",title ="&" , group=g11, inline="t2")
+inv6 = input.bool(defval=false,title="Inverse",group = g11,inline="t2")
+
+st7  = input.symbol(defval="PEPPERSTONE:NAS100",  title =""     , group=g11, inline="t3")
+st8  = input.symbol(defval="PEPPERSTONE:US500", title ="&"    , group=g11, inline="t3")
+st9  = input.symbol(defval="PEPPERSTONE:US30",  title ="&"    , group=g11, inline="t3")
+inv9 = input.bool(defval=false,title="Inverse",group = g11,inline="t3")
+badj        = input.bool(defval = true , title = "B-ADJ: (For only futures)",group=g11,inline="key1")
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+sym = syminfo.tickerid
+var csym  = ""
+var tsym2 = ""
+var tsym3 = "" 
+arr_inv = array.from(false,false)
+///////////////
+arr_triadA = array.from(str.contains(sym,st1),str.contains(sym,st2),str.contains(sym,st3))
+arr_triadB = array.from(str.contains(sym,st4),str.contains(sym,st5),str.contains(sym,st6))
+arr_triadC = array.from(str.contains(sym,st7),str.contains(sym,st8),str.contains(sym,st9))
+triad_ok   = (array.some(arr_triadA) and tr1A) or (array.some(arr_triadB) and tr1B) or (array.some(arr_triadC) and tr1C)
+
+if triad_ok //and looksmt
+
+    tsym2 := str.contains(sym,st1) ? st2 : str.contains(sym,st2) ? st1 : str.contains(sym,st3) ? st1 : sym
+    tsym3 := str.contains(sym,st1) ? st3 : str.contains(sym,st2) ? st3 : str.contains(sym,st3) ? st2 : sym
+   
+    tsym2 := str.contains(sym,st4) ? st5 : str.contains(sym,st5) ? st4 : str.contains(sym,st6) ? st4 : tsym2    
+    tsym3 := str.contains(sym,st4) ? st6 : str.contains(sym,st5) ? st6 : str.contains(sym,st6) ? st5 : tsym3
+
+    tsym2 := str.contains(sym,st7) ? st8 : str.contains(sym,st8) ? st7 : str.contains(sym,st9) ? st7 : tsym2    
+    tsym3 := str.contains(sym,st7) ? st9 : str.contains(sym,st8) ? st9 : str.contains(sym,st9) ? st8 : tsym3 
+
+
+    if (str.contains(sym,st1) or str.contains(sym,st2)) and inv3
+        array.set(arr_inv,1,true)
+    if str.contains(sym,st3) and inv3
+        array.set(arr_inv,0,true)           
+        array.set(arr_inv,1,true) 
+    if (str.contains(sym,st4) or str.contains(sym,st5)) and inv6
+        array.set(arr_inv,1,true)
+    if str.contains(sym,st6) and inv6
+        array.set(arr_inv,0,true)           
+        array.set(arr_inv,1,true)
+    if (str.contains(sym,st7) or str.contains(sym,st8)) and inv9
+        array.set(arr_inv,1,true)
+    if str.contains(sym,st9) and inv9
+        array.set(arr_inv,0,true)           
+        array.set(arr_inv,1,true)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+if not triad_ok 
+    tsym2 := sym
+    tsym3 := sym 
+//////////////////////////
+res = timeframe.period
+arr_tf  = array.from("15S", "1",   "5", "15",  "60")
+arr_xtf = array.from(  "1", "5",  "15", "60", "240")
+arr_ytf = array.from(  "5","15",  "60","240",  "60")
+
+
+hix  = array.indexof(arr_tf,res)
+tf1  = hix != -1 ? array.get(arr_xtf,hix) : res
+tf2  = hix != -1 ? array.get(arr_ytf,hix) : res
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+var Year  = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 8,  y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Quart = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 10, y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Month = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 15, y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Week  = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Day   = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Sub   = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Micro = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, y_show_b, y_show_l, y_show_bo,  y_show_lbl, '')
+var Mini  = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, show_lower, false , false    ,  y_show_lbl, '')
+var htf1 =  CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, false   , false   , false    ,  false     , '')
+var htf2  = CycleLayer.new(array.new_box(),array.new_box(), array.new_label(), na,na, na, na, na, na, na, 20, y_width, y_style, false   , false   , false    ,  false     , '')
+
+var Q    = CycleLayer.new()
+var QQ   = CycleLayer.new()//
+var Qmin = CycleLayer.new()
+var Qbias = CycleLayer.new()
+tf = timeframe.multiplier
+atr = ta.atr(20)
+sec = timeframe.in_seconds(timeframe.period)
+is_min      = sec >= 60 and sec < 86400
+is_year_tf  = sec == 604800 //Yearly
+is_quart_tf = sec == 86400 //Quarterly
+is_mon_tf   = is_min and tf >= 240 //Monthly
+is_week_tf  = is_min and tf >= 60 and tf <= 120 //Weekly
+is_day_tf   = is_min and tf >= 15 and tf <= 30 //Daily
+is_sub_tf   = is_min and tf >= 3 and tf <= 10 //90m
+is_micro_tf = is_min and tf >= 1 and tf <= 2 //Micro
+is_mini_tf  = is_min and tf == 1
+dx = timeframe.in_seconds(res)*1000
+
+
+
+var tablo = table.new(position = pos,columns = 3,rows = 20,frame_color=color.black,frame_width=2,border_color=color.black,border_width=1)
+
+
+f_price_cor(_sym,_sym2)=>
+
+    xsym  = syminfo.type == "futures" ? (ticker.modify(_sym ,session = syminfo.session,backadjustment=badj ? backadjustment.on:backadjustment.off) ) :_sym //new
+    ysym  = syminfo.type == "futures" ? (ticker.modify(_sym2,session = syminfo.session,backadjustment=badj ? backadjustment.on:backadjustment.off) ) :_sym2 //new
+
+    [_cc,_co,_ch,_cl,_ct] = request.security(xsym,res,[close,open,high,low,time],lookahead = barmerge.lookahead_on,ignore_invalid_symbol = true)
+    [_dc,_do,_dh,_dl,_dt] = request.security(ysym,res,[close,open,high,low,time],lookahead = barmerge.lookahead_on,ignore_invalid_symbol = true)    
+    [_cc,_co,_ch,_cl,_ct,_dc,_do,_dh,_dl,_dt]
+/////////////////////////////////////////////////////////////////////////////////    
+[cc,co,ch,cl,ct,dc,do,dh,dl,dt] = f_price_cor(tsym2,tsym3)
+// ==========================================
+// --- 3. HESAPLAMA MOTORU (ALIGNED SAYAÇ) ---
+// ==========================================
+// Constants
+dur_hour  = 60 * 60 * 1000
+dur_min   = 60 * 1000
+msDay     = 24 * 60 * 60 * 1000
+msWeek    = 7 * 24 * 60 * 60 * 1000
+
+dur_day   = mdl == mdl1 ? free_day * dur_min : mdl == mdl2 ? 6 * dur_hour :  270 * dur_min
+X = mdl == mdl1 ? X_ : mdl == mdl2 ? 4  : 3  
+dur_sub   = dur_day / X
+dur_micro = dur_sub / X
+dur_mini  = dur_micro / X
+
+start_hour = mdl == mdl1 ? start_hour_ : mdl == mdl2 ? 18 : mdl == mdl3 ? 2 : 2 
+start_min  = mdl == mdl1 ? start_min_  : mdl == mdl2 ? 00 : mdl == mdl3 ? 30 : 00
+// Time components
+yy  = year(time, i_tz)
+mo  = month(time, i_tz)
+dom = dayofmonth(time, i_tz)
+dow = dayofweek(time,  i_tz)
+
+// Day start (timezone-aware)
+dayStartToday    = timestamp(  i_tz, yy, mo, dom, start_hour, start_min)
+dayStart         = time >= dayStartToday ? dayStartToday : dayStartToday - msDay
+var extdaystart = time
+
+extimestart    = timestamp(i_tz, yy, mo, dom, 16, 00)
+extimefinish   = timestamp(i_tz, yy, mo, dom, 02, 30)
+
+
+if timeframe.change("1D")
+    extdaystart := time
+
+extime     = time > extimestart or ( time >= extdaystart and time < extimefinish )
+
+/////////////////////////////////////////////////// 
+yy_c  = year(dayStart,   i_tz)
+mo_c  = month(dayStart,  i_tz)
+dom_c = dayofmonth(dayStart,  i_tz)
+dow_c = dayofweek(dayStart,   i_tz)
+
+// --- Cycle Calculations ---
+
+// Yearly Cycle (Quarters Q1-Q4)
+qYear = mo_c <= 3 ? 1 : mo_c <= 6 ? 2 : mo_c <= 9 ? 3 : 4
+
+// Quarterly Cycle (Sub-Quarters)
+qs_m    = math.floor((mo_c - 1) / 3) * 3 + 1
+qs_t    = timestamp(i_tz, yy_c, qs_m, 1, start_hour, 0)
+qe_t    = timestamp(i_tz, yy_c, qs_m + 3, 1, start_hour, 0)
+q_dur   = qe_t - qs_t
+q2Month = int(math.floor((time - qs_t) / q_dur * 4)) + 1
+q2Month := math.max(1, math.min(4, q2Month))
+// Monthly Cycle (Weeks) - Daye's Quarterly Theory (First Monday of the Month)
+monday_time = dayStart - (dow_c == dayofweek.sunday ? -1 : dow_c - 2) * msDay
+mon_y = year(monday_time, i_tz)
+mon_m = month(monday_time, i_tz)
+mon_d = dayofmonth(monday_time, i_tz)
+
+// Timezone-safe mathematical calculation of the first Monday of the calendar month
+dow_1st = ((1 - (mon_d - 1) % 7 + 7) % 7) + 1
+dow_mon_1st = dow_1st // preserve compatibility if referenced elsewhere
+
+first_monday_mon_m = dow_1st == dayofweek.monday ? 1 :
+                      dow_1st == dayofweek.tuesday ? 7 :
+                      dow_1st == dayofweek.wednesday ? 6 :
+                      dow_1st == dayofweek.thursday ? 5 :
+                      dow_1st == dayofweek.friday ? 4 :
+                      dow_1st == dayofweek.saturday ? 3 : 2
+
+week_index = math.round((mon_d - first_monday_mon_m) / 7)
+qMonth = week_index + 1
+
+qWeek = dow_c == dayofweek.sunday ? 1 : dow_c == dayofweek.monday ? 2 : dow_c == dayofweek.tuesday ? 3 : dow_c == dayofweek.wednesday ? 4 : dow_c == dayofweek.thursday ? 5 : dow_c == dayofweek.friday ? 6 : dow_c == dayofweek.saturday ? 7 : 0
+
+// Daily Cycle (6h Blocks)
+msFromDayStart = (time - dayStart) % msDay
+qDay = int(math.floor(msFromDayStart / dur_day)) + 1
+ 
+// 90m Cycle
+msInmain = msFromDayStart % dur_day
+qsub     =  int(math.floor(msInmain / dur_sub)) + 1
+
+// Micro Cycle
+msInSub = msFromDayStart % dur_sub
+qMicro  = int(math.floor(msInSub / dur_micro)) + 1
+qMicro := int(math.max(1, math.min(X, qMicro)))
+// Mini Cycle
+msInmicro = msFromDayStart % dur_micro
+qMini  = int(math.floor(msInmicro / dur_mini)) + 1
+qMini := int(math.max(1, math.min(X, qMini)))
+
+// Change Detection
+new_year  = ta.change(qYear)
+new_quart = ta.change(q2Month)
+new_month = ta.change(qMonth)
+new_week  = ta.change(qWeek)
+new_daily = ta.change(qDay)//main
+new_sub   = ta.change(qsub) //sub
+new_micro = ta.change(qMicro)
+new_mini  = ta.change(qMini)
+new_htf1  = timeframe.change(tf1)
+new_htf2  = timeframe.change(tf2)
+
+add_to_array(arr, value) =>
+    array.unshift(arr, value)
+    if array.size(arr) > 200
+        array.pop(arr)
+f_text(string _tf)=>
+    _text = str.tonumber(_tf) < 59 ? _tf + 'm'  :
+     str.tonumber(_tf) > 59  ? 'h'+ str.tostring(math.floor(str.tonumber(_tf)/60))    : _tf
+    _text := _tf == "1D" ? "D" : _tf == "1W" ? "W" : _tf == "1M" ? "M" : _text   
+tf_ok(_tf)=>
+    timeframe.in_seconds(_tf)  >= timeframe.in_seconds(timeframe.period)
+
+f_bias(bool _newq,_c1,_c2,_o2,hmax1,hmax2,lmin1,lmin2,_h0,_l0)=> 
+    var bias  = 0
+    var bias1 = 0
+    if _newq
+        bias1 := bias[1]
+        bias  := 0
+        if _c1 > hmax2 
+            bias := 1
+        if _c1 < lmin2
+            bias := -1
+        if _c1 < hmax2 and _c1 > lmin2 and hmax1 > hmax2 and lmin1 > lmin2
+            bias := -1
+        if _c1 > lmin2 and _c1 < hmax2 and hmax1 < hmax2 and lmin1 < lmin2
+            bias := 1
+        if hmax1 <= hmax2 and lmin1 >= lmin2 
+            bias := bias1 
+        if hmax1 > hmax2 and _c1 < hmax2 and lmin1 < lmin2 and _c1 > lmin2 //and _o2 > _c2 
+            bias := 0 
+        if hmax1 > hmax2 and _c1 < hmax2 and lmin1 < lmin2 and _c1 > lmin2 //and _o2 < _c2 
+            bias := 0   
+    if bias == 1 and _l0 <= lmin1 
+        bias := 2 
+    if bias == -1 and _h0 >= hmax1 
+        bias := -2           
+
+    bias
+
+update_data(CycleLayer layer, bool is_new, bool tf_visible) =>
+    var float layl0 = na , var float layh0 = na ,var float layc0 = na , var float layo0 = na 
+    var float layl1 = na , var float layh1 = na ,var float layc1 = na , var float layo1 = na 
+    var float layl2 = na , var float layh2 = na ,var float layc2 = na , var float layo2 = na 
+    var float layl3 = na , var float layh3 = na ,var float layc3 = na , var float layo3 = na
+    var float layl4 = na , var float layh4 = na ,var float layc4 = na , var float layo4 = na
+    var float layxl0 = na , var float layxh0 = na ,var float layxc0 = na , var float layxo0 = na 
+    var float layxl1 = na , var float layxh1 = na ,var float layxc1 = na , var float layxo1 = na 
+    var float layyl0 = na , var float layyh0 = na ,var float layyc0 = na , var float layyo0 = na 
+    var float layyl1 = na , var float layyh1 = na ,var float layyc1 = na , var float layyo1 = na 
+    var int layt0 = na , var int layt1 = na 
+    var int layht0 = na , var int layht1 = na 
+    var int laylt0 = na , var int laylt1 = na 
+
+
+    if tf_visible and (mdl == mdl3  ? (not extime ? true : false) : true)
+        if is_new
+            layt1      := layt0
+            layt0      := time 
+            layh4      := layh3, layl4 := layl3             
+            layh3      := layh2, layl3 := layl2 
+            layh2      := layh1, layl2 := layl1
+            layh1      := layh0, layl1 := layl0
+
+            layc3      := layc2, layo3 := layo2 
+            layc2      := layc1, layo2 := layo1 
+            layc1      := layc0, layo1 := layo0
+           
+            layxc1     := layxc0, layxo1 := layxo0
+            layyc1     := layyc0, layyo1 := layyo0                                  
+            layxh1     := layxh0, layxl1 := layxl0
+            layyh1     := layyh0, layyl1 := layyl0 
+            layht1     := layht0, laylt1 := laylt0
+            layo0      := open,   layh0 := high, layl0 := low, layc0 := close , layht0 := time , laylt0 := time
+            layxh0     := ch , layxl0 := cl 
+            layyh0     := dh , layyl0 := dl
+
+            layxo0 := co
+            layyo0 := do
+  
+        else
+            layht0   := high >= layh0 ? time : layht0 
+            laylt0   := low  <= layl0 ? time : laylt0 
+            layh0    := math.max(high, layh0)
+            layl0    := math.min(low,  layl0)
+            layc0    := close
+            layxh0   := math.max(ch, layxh0)
+            layxl0   := math.min(cl, layxl0)        
+            layyh0   := math.max(dh, layyh0)
+            layyl0   := math.min(dl, layyl0)
+
+        layer.updw   := layc0 > layo0 ? 1 : layc0 < layo0 ? -1 : 0
+        layxc0       := cc , layyc0 := dc
+        //////////////////////////////
+        layer.l  := layl0 ,  layer.h  := layh0 , layer.c  := layc0 , layer.o  := layo0 , layer.t  := layt0 , layer.ht  := layht0 ,layer.lt  := laylt0 
+        layer.l1 := layl1 ,  layer.h1 := layh1 , layer.c1 := layc1 , layer.o1 := layo1 , layer.t1 := layt1 , layer.h1t := layht1 ,layer.l1t := laylt1
+        layer.l2 := layl2 ,  layer.h2 := layh2 , layer.c2 := layc2 , layer.o2 := layo2 
+        layer.l3 := layl3 ,  layer.h3 := layh3 , layer.c3 := layc3 , layer.o3 := layo3 
+        layer.l4 := layl4 ,  layer.h4 := layh4 
+        layer.xl  := layxl0 ,  layer.xh  := layxh0 , layer.xc  := layxc0 , layer.xo  := layxo0  
+        layer.xl1 := layxl1 ,  layer.xh1 := layxh1 , layer.xc1 := layxc1 , layer.xo1 := layxo1 
+        layer.yl  := layyl0 ,  layer.yh  := layyh0 , layer.yc  := layyc0 , layer.yo  := layyo0  
+        layer.yl1 := layyl1 ,  layer.yh1 := layyh1 , layer.yc1 := layyc1 , layer.yo1 := layyo1 
+        layer.qqhswp := false , layer.qqlswp := false 
+
+
+// --- LABELS ---
+var lbl_q = array.from('Q1', 'Q2', 'Q3', 'Q4')
+var lbl_w = array.from('W1', 'W2', 'W3', 'W4', 'Gap')
+var lbl_d = array.from('A', 'M', 'D', 'X', 'Fr', 'Sat', 'Sun')
+var lbl_gen = array.from('A', 'M', 'D', 'X')
+var lbl_zeday = array.from('Lo', 'AM', 'PM', '')
+var lbl_zegen = array.from('A', 'M', 'D', '')
+var lbl_nm = array.from('1', '2', '3', '4','Fr', 'Sat', 'Sun')
+get_lbl(arr, idx) =>
+    if idx >= 1 and idx <= array.size(arr) and (mdl == mdl3  ? (not extime ? true : false) : true)
+        array.get(arr, idx - 1)
+    else
+        ''
+////////////////////////////////////////////////////////////////////////        
+update_data(Year,  mdl == mdl3 ? false : bool(new_year),  is_year_tf )
+update_data(Quart, mdl == mdl3 ? false : bool(new_quart), is_quart_tf or (is_year_tf and show_lower) )
+update_data(Month, mdl == mdl3 ? false : bool(new_month), is_mon_tf   or (is_quart_tf and show_lower)  )
+update_data(Week,  mdl == mdl3 ? false : bool(new_week),  is_week_tf  or (is_mon_tf and show_lower) )
+update_data(Day,   bool(new_daily), is_day_tf                  or (is_week_tf and show_lower) )
+update_data(Sub,   bool(new_sub) or bool(new_daily), is_sub_tf or (is_day_tf and show_lower))
+update_data(Micro, bool(new_micro), is_micro_tf                or (is_sub_tf and show_lower) )
+update_data(Mini,  bool(new_mini),  is_micro_tf and show_lower)
+
+update_data(htf1,  mdl == mdl3 ? false : bool(new_htf1),  x_show and not (tf1 == res) and tf_ok(tf1) )
+update_data(htf2,  mdl == mdl3 ? false : bool(new_htf2),  x_show and not (tf2 == res) and tf_ok(tf2) )
+// ==========================================
+// --- 4. ÇİZİM SİSTEMİ ---
+// ==========================================
+manege_layer(bool cond, bool tf_visible, CycleLayer layer, string id_text, int k) =>
+    sz_ = k == 1 ? size.small : size.tiny
+    if cond and tf_visible and (mdl == mdl3  ? not extime : true )
+        color phase_col = color.gray
+        if id_text == 'Q1' or id_text == 'W1' or id_text == 'A' or id_text == '1'
+            phase_col := q1_box_clr
+            phase_col
+        else if id_text == 'Q2' or id_text == 'W2' or id_text == 'M' or id_text == '2'
+            phase_col := q2_box_clr
+            phase_col
+        else if id_text == 'Q3' or id_text == 'W3' or id_text == 'D' or id_text == '3'
+            phase_col := q3_box_clr
+            phase_col
+        else if id_text == 'Q4' or id_text == 'W4' or id_text == 'X' or id_text == 'Fr' or id_text == '4'
+            phase_col := q4_box_clr
+            phase_col
+
+        b_c  =  color.new(phase_col, contrast2)
+        bg_c = layer.show_box ? color.new(phase_col, contrast) : color.new(phase_col, 100)
+        if layer.show_line and (mdl == mdl3  ? not extime : true )
+            line.new(bar_index, low, bar_index, high, extend = extend.both, color = color.new(phase_col, 40), style = get_style(layer.b_style))
+    
+        if mdl == mdl3  ? (not extime ? true : false) : true 
+            nb = box.new(bar_index, high, bar_index, low, border_color = b_c, bgcolor = bg_c, border_width = layer.b_width, border_style = get_style(layer.b_style))
+            array.push(layer.boxes, nb)
+            nl = label.new(bar_index, high,xloc=xloc.bar_index, text = layer.show_label ? id_text : '', color = color.new(color.white, 100), textcolor = phase_col, style = label.style_label_down, size = sz_)
+            array.push(layer.labels, nl)
+        if array.size(layer.boxes) > layer.limit
+            box.delete(array.shift(layer.boxes))
+            label.delete(array.shift(layer.labels))
+        if layer.show_body 
+            if mdl == mdl3 ? not extime : true 
+                nbo = box.new(bar_index, open, bar_index, close, border_color=b_c, bgcolor=bg_c, border_width=layer.b_width, border_style=get_style(layer.b_style))
+                array.push(layer.body, nbo)        
+        if array.size(layer.boxes) > layer.limit
+            box.delete(array.shift(layer.boxes)), label.delete(array.shift(layer.labels)),box.delete(array.shift(layer.body))
+
+
+update_box_visual(bool tf_visible, CycleLayer layer) =>
+    if array.size(layer.boxes) > 0 and (mdl == mdl3  ? (not extime ? true : false) : true )
+        b = array.get(layer.boxes, array.size(layer.boxes) - 1)
+        l = array.get(layer.labels, array.size(layer.labels) - 1)
+        if layer.show_box 
+            box.set_top(b, layer.h)
+            box.set_bottom(b, layer.l)
+            box.set_right(b, bar_index)
+        label.set_xy(l, math.round(math.avg(box.get_left(b), bar_index)), layer.h)
+        //label.set_xy(l, int(math.avg(time, box.get_left(b))), layer.h)
+    if array.size(layer.body) > 0 and layer.show_body and (mdl == mdl3 ? not extime : true ) 
+        body = array.get(layer.body, array.size(layer.body) - 1)//, l = array.get(layer.labels, array.size(layer.labels) - 1)
+        box.set_top(body, math.max(layer.o,layer.c)), box.set_bottom(body, math.min(layer.o,layer.c)), box.set_right(body, bar_index)
+        box.set_bgcolor(body, layer.c > layer.o ? color.new(bull_clr,80) : color.new(bear_clr,80))
+        box.set_border_color(body, layer.c > layer.o ? color.new(bull_clr,80) : color.new(bear_clr,80))
+// --- ÇIKTILAR ---
+manege_layer(mdl == mdl3 ? false : bool(new_year),  is_year_tf, Year,  get_lbl(lbl_q, qYear),1 )
+manege_layer(mdl == mdl3 ? false : bool(new_quart),is_quart_tf or (is_year_tf and show_lower), Quart,  get_lbl(use_nm ? lbl_nm : lbl_q, q2Month), is_quart_tf ? 1 : 0)
+manege_layer(mdl == mdl3 ? false : bool(new_month),  is_mon_tf or (is_quart_tf and show_lower), Month, get_lbl(use_nm ? lbl_nm : lbl_w, qMonth), is_mon_tf ? 1 : 0)
+manege_layer(mdl == mdl3 ? false : bool(new_week),  is_week_tf or (is_mon_tf and show_lower),  Week,   get_lbl(use_nm ? lbl_nm : lbl_d, qWeek),is_week_tf ? 1  : 0)
+manege_layer(bool(new_daily),                        is_day_tf or (is_week_tf and show_lower), Day,    get_lbl(use_nm ? lbl_nm : (mdl == mdl3 ? lbl_zeday :lbl_gen), qDay),is_day_tf ? 1 : 0)
+manege_layer(bool(new_sub) or bool(new_daily),       is_sub_tf or (is_day_tf and show_lower),  Sub,    get_lbl(use_nm ? lbl_nm : lbl_gen, qsub),is_sub_tf ? 1 : 0)
+manege_layer(bool(new_micro),                      is_micro_tf or (is_sub_tf and show_lower),  Micro,  get_lbl(use_nm ? lbl_nm : lbl_gen, qMicro),is_micro_tf ? 1 : 0)
+manege_layer(bool(new_mini) ,                                      is_micro_tf and show_lower, Mini,   get_lbl(use_nm ? lbl_nm : lbl_gen, qMini),0)
+
+update_box_visual(mdl == mdl3 ? false : is_year_tf,  Year)
+update_box_visual(mdl == mdl3 ? false : (is_quart_tf or (is_year_tf and show_lower)),  Quart)
+update_box_visual(mdl == mdl3 ? false : (is_mon_tf   or (is_quart_tf and show_lower)), Month)
+update_box_visual(mdl == mdl3 ? false : (is_week_tf  or (is_mon_tf and show_lower)),   Week)
+update_box_visual(is_day_tf   or (is_week_tf and show_lower), Day)
+update_box_visual(is_sub_tf   or (is_day_tf  and show_lower), Sub)
+update_box_visual(is_micro_tf or (is_sub_tf  and show_lower), Micro)
+update_box_visual(is_micro_tf and show_lower, Mini)
+var string yearlb = ""
+var string quarlb = "" 
+var string montlb = ""
+var string weeklb = ""
+var string  daylb = ""
+var string  sublb = ""
+var string  miclb = ""
+var string  minlb = ""
+
+yearlb := mdl == mdl3 ? "" : get_lbl(use_nm ? lbl_nm : lbl_q, qYear)
+quarlb := mdl == mdl3 ? "" : get_lbl(use_nm ? lbl_nm : lbl_q, q2Month) 
+montlb := mdl == mdl3 ? "" : get_lbl(use_nm ? lbl_nm : lbl_w, qMonth)
+weeklb := mdl == mdl3 ? "" : get_lbl(use_nm ? lbl_nm : lbl_d, qWeek)
+daylb  := get_lbl( use_nm ? lbl_nm : (mdl == mdl3 ? lbl_zeday :lbl_gen), qDay)
+sublb  := get_lbl( use_nm ? lbl_nm : (mdl == mdl3 ? lbl_zegen :lbl_gen), qsub)
+miclb  := get_lbl( use_nm ? lbl_nm : (mdl == mdl3 ? lbl_zegen :lbl_gen), qMicro) 
+minlb  := get_lbl( use_nm ? lbl_nm : (mdl == mdl3 ? lbl_zegen :lbl_gen), qMini)
+
+f_cycle_alert()=>
+    var con1_ = false 
+    var con2_ = false 
+    var con3_ = false
+
+    if bool(new_micro) 
+        con1_ := false
+    if bool(new_sub) 
+        con2_ := false
+    if bool(new_daily) 
+        con3_ := false
+
+    if use_nm
+        con1_ := is_micro_tf                              ? (miclb == sublb and sublb == daylb)    : false 
+        con2_ := is_sub_tf or is_micro_tf                 ? (sublb == daylb and daylb == weeklb)   : false
+        con3_ := is_sub_tf or is_micro_tf  or is_day_tf   ? (daylb == weeklb and weeklb == montlb) : false 
+        txt1 = miclb + "-" + sublb + "-" + daylb   
+        txt2 = sublb + "-" + daylb + "-" + weeklb  
+        txt3 = daylb + "-" + weeklb + "-" + montlb 
+        if show_tb
+            table.cell(tablo,0,7, text= "Cycle Alignment"  ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt,text_formatting = text.format_bold)
+            table.cell(tablo,0,8, text= "Micro - 90m - Daily  :  " + (con1_ ? txt1      : "-----" ) ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+            table.cell(tablo,0,9, text= "90m - Daily - Weekly :  " + (con2_ ? txt2      : "-----" )  ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+            table.cell(tablo,0,10,text= "Daily - Weekly - Monthly  :  " + (con3_ ? txt3 : "-----" )  ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)  
+        ale = con1_ or con2_ or con3_ 
+        if not ale[1] and ale 
+            alert( "Cycle Alignment Alert" ,  freq = alert.freq_once_per_bar)
+
+
+f_cycle_alert()
+
+
+var string cychist = "" 
+cychist := "" + '\n' 
+cychist := not (mdl == mdl3) and tf >= 1  ? cychist +                                                      "    Yearly : " + yearlb + '\n' : cychist 
+cychist := not (mdl == mdl3) and tf >= 1 and  not (timeframe.isweekly or timeframe.ismonthly)   ? cychist + "Quarterly : " + quarlb + '\n' : cychist 
+cychist := not (mdl == mdl3) and tf >= 1 and  not timeframe.isdwm ? cychist +                               "  Monthly : " + montlb + '\n' : cychist
+cychist := not (mdl == mdl3) and tf >= 1 and tf <= 120 and  not timeframe.isdwm? cychist +                  "  Weekly  :  " + weeklb + '\n' : cychist
+cychist := tf >= 1 and tf <= 30  and  not timeframe.isdwm ? cychist +                   "  Daily   :  " +  daylb + '\n' : cychist
+cychist := tf >= 1 and tf <= 10  and  not timeframe.isdwm? cychist +                    "  90m     :  " +  sublb + '\n' : cychist
+cychist := tf >= 1 and tf <= 2   and  not timeframe.isdwm ? cychist +   (mdl == mdl3 ?  "  30m     :  " : "  Micro   :  " )+  miclb + '\n' : cychist
+cychist := tf == 1 and tf == 1   and  not timeframe.isdwm ? cychist +   (mdl == mdl3 ?  "  10m     :  " : "  Mini    :  " )+  minlb  : cychist
+/////////////////////////////////////////////////////////////
+newq     = false
+newqq    = false
+newqmin  = false
+newqbias = false
+delq     = false
+valcc  = ""
+valhc  = ""
+valmin = ""
+valal  = ""
+qlb    = ""
+qqlb   = "" 
+qblb   = ""
+qminlb = ""
+if is_year_tf
+    Q        := Year
+    QQ       := Year
+    Qmin     := Quart
+    Qbias    := bias_mtd == mtd1 ? Year : Year 
+    newqbias := bias_mtd == mtd1 ? bool(new_year) : bool(new_year)    
+    newq     := mdl == mdl3 ? false :  bool(new_year)
+    newqq    := timeframe.change("12M")
+    newqmin  := mdl == mdl3 ? false : bool(new_quart)  
+    delq     := false 
+    valcc    := mdl == mdl3 ? "" : "Yearly"
+    valhc    := "Yearly" 
+    valmin   := "Quarterly"
+    valal    := ""
+    qlb      := yearlb 
+    qqlb     := ""
+    qblb     := ""
+    qminlb   := quarlb     
+else if is_quart_tf
+    Q        := Quart
+    QQ       := Year
+    Qmin     := Month
+    Qbias    := bias_mtd == mtd1 ? Year : Year 
+    newqbias := bias_mtd == mtd1 ? bool(new_year) : bool(new_year)         
+    newq     := mdl == mdl3 ? false : bool(new_quart) 
+    newqq    := mdl == mdl3 ? false : bool(new_year)
+    newqmin  := mdl == mdl3 ? false : bool(new_month) 
+    delq     := mdl == mdl3 ? false : bool(new_year)
+    valcc    := mdl == mdl3 ? "" : "Quarterly"
+    valhc    := "Yearly"
+    valmin   := "Monthly"
+    valal    := bias_mtd == mtd1 ? "Yearly" : ""   
+    qlb      := quarlb 
+    qqlb     := yearlb
+    qblb     := ""  
+    qminlb   := montlb                     
+else if is_mon_tf
+    Q        := Month
+    QQ       := Quart 
+    Qmin     := Week 
+    Qbias    := bias_mtd == mtd1 ? Quart : Year
+    newqbias := bias_mtd == mtd1 ? bool(new_quart) : bool(new_year)         
+    newq     := mdl == mdl3 ? false : bool(new_month) 
+    newqq    := mdl == mdl3 ? false : bool(new_quart) 
+    newqmin  := mdl == mdl3 ? false : bool(new_week)
+    delq     := mdl == mdl3 ? false : bool(new_year) 
+    valcc    := mdl == mdl3 ? "" : "Monthly"
+    valhc    := "Quarterly" 
+    valmin   := "Weekly"
+    valal    := bias_mtd == mtd1 ?"Quarterly" : "Yearly" 
+    qlb      := montlb 
+    qqlb     := quarlb
+    qblb     := bias_mtd == mtd1 ? quarlb : yearlb 
+    qminlb   := weeklb                         
+else if is_week_tf
+    Q        := Week
+    QQ       := Month
+    Qmin     := Day
+    Qbias    := bias_mtd == mtd1 ? Month : Quart  
+    newqbias := bias_mtd == mtd1 ? bool(new_month) : bool(new_quart)        
+    newq     := mdl == mdl3 ? false : bool(new_week)
+    newqq    := mdl == mdl3 ? false : bool(new_month) 
+    newqmin  := mdl == mdl3 ? false : bool(new_daily) 
+    delq     := mdl == mdl3 ? false : bool(new_quart) 
+    valcc    := mdl == mdl3 ? "" : "Weekly"
+    valhc    := "Monthly" 
+    valmin   := "Daily"
+    valal    := bias_mtd == mtd1 ?"Monthly" : "Quarterly" 
+    qlb      := weeklb 
+    qqlb     := montlb
+    qblb     := bias_mtd == mtd1 ? montlb : quarlb
+    qminlb   := daylb                             
+else if is_day_tf
+    Q        := Day
+    QQ       := Week
+    Qmin     := Sub
+    Qbias    := bias_mtd == mtd1 ? Week : Month 
+    newqbias := bias_mtd == mtd1 ? bool(new_week) : bool(new_month)         
+    newq     := bool(new_daily) 
+    newqq    := mdl == mdl3 ? false : bool(new_week)  
+    newqmin  := bool(new_sub)
+    delq     := mdl == mdl3 ? timeframe.change("1W") : bool(new_month)
+    valcc    := "Daily"
+    valhc    := "Weekly"
+    valmin   := mdl == mdl1 ? "Sub cycle" :  mdl == mdl2 ? "90m" : mdl == mdl3 ? "90m" : "30m" 
+    valal    := bias_mtd == mtd1 ?"Weekly" : "Monthly"  
+    qlb      := daylb 
+    qqlb     := weeklb
+    qblb     := bias_mtd == mtd1 ? weeklb : montlb 
+    qminlb   := sublb                     
+else if is_sub_tf
+    Q        := Sub 
+    QQ       := Day
+    Qmin     := Micro
+    Qbias    := mdl == mdl3 ? Day : (bias_mtd == mtd1 ? Day : Week )
+    newqbias := bias_mtd == mtd1 ? bool(new_daily) : bool(new_week)        
+    newq     := bool(new_sub)
+    newqq    := bool(new_daily) 
+    newqmin  := bool(new_micro) 
+    delq     := mdl == mdl3 ? timeframe.change("1D") : bool(new_week)
+    valcc    := mdl == mdl1 ? "Sub cycle" :  mdl == mdl2 ? "90m" : mdl == mdl3 ? "90m" : "30m" 
+    valhc    := "Daily"  
+    valmin   := "Micro" 
+    valal    := bias_mtd == mtd1 ?"Daily" : "Weekly"   
+    qlb      := sublb 
+    qqlb     := daylb
+    qblb     := bias_mtd == mtd1 ? daylb : weeklb  
+    qminlb   := miclb                  
+else if is_micro_tf
+    Q        := Micro
+    QQ       := Sub 
+    Qmin     := Mini
+    Qbias    := bias_mtd == mtd1 ? Sub : Day
+    newqbias := bias_mtd == mtd1 ? bool(new_sub) : bool(new_daily) 
+    newq     := bool(new_micro)
+    newqq    := bool(new_sub) 
+    newqmin  := bool(new_mini)
+    delq     := bool(new_daily) 
+    valcc    := mdl == mdl1 ? str.tostring(int(dur_micro/dx))+"m" : mdl == mdl2  ? "Micro" : "30m"
+    valhc    := mdl == mdl1 ? "Sub cycle" :  mdl == mdl2 ? "90m" : mdl == mdl3 ? "90m" : "30m"
+    valmin   := "Mini" 
+    valal    := bias_mtd == mtd1 ?"Sub 90m" : "Daily" 
+    qlb      := miclb 
+    qqlb     := sublb
+    qblb     := bias_mtd == mtd1 ? sublb : daylb 
+    qminlb   := minlb              
+else 
+    Q  := Q
+    QQ := QQ
+    Qmin := Qmin 
+    delq := delq
+    valcc := valcc
+    valhc := valhc
+    valmin := valmin  
+/////////////////////////////////////////
+type sline
+    float hl
+    line  ln
+    label lb
+    int updw
+     
+
+invx = array.get(arr_inv,0)
+invy = array.get(arr_inv,1)
+f_ssmt(O,newo,_smt_clr,lbok,swok,_sty,_show,_txt,nx,wd)=>
+
+    var hline = array.new<sline>()
+    var lline = array.new<sline>()
+    var line  hsw = na
+    var line  lsw = na
+    var line  hsm = na
+    var line  lsm = na
+    var label hlb = na
+    var label llb = na 
+    var label hlb2 = na
+    var label llb2 = na     
+    var int  htip = na 
+    var int  ltip = na 
+         
+    hswp = false , lswp = false
+    var bearstg2 = false ,var bullstg2 = false 
+    var hsmt  = false, var lsmt = false
+    var xhsmt  = false, var xlsmt = false
+    var yhsmt  = false, var ylsmt = false        
+    var hsmt1 = false, var lsmt1 = false
+
+      
+    if newo
+        hsmt1   := hsmt[1] 
+        hsmt    := false
+        O.hswp  := false, O.hxsmt  := false,  O.hysmt  := false
+        O.hxswp := false, O.hyswp := false 
+
+        if hswp[1]
+            line.set_x2(hsw,time[1])
+            add_to_array(hline,sline.new(O.h1, hsw , na,na))
+        if hsmt[1]
+            add_to_array(hline,sline.new(O.h1, hsm , hlb,htip[1]))
+
+    qt   = O.t
+    qt1  = O.t1    
+    cyh  = O.h
+    cyht = O.ht
+
+    if O.h > O.h1 and O.c < O.h1
+        O.hswp := true
+        hswp   := true
+    else 
+        O.hswp := false
+        hswp   := false
+    if O.xh > O.xh1 and cc < O.xh1
+        O.hxswp := true
+    else 
+        O.hxswp := false
+    if O.yh > O.yh1 and dc < O.yh1
+        O.hyswp := true
+    else 
+        O.hyswp := false
+
+    if not hswp[1] and hswp and swok and swp_show
+        hsw := line.new(O.h1t,O.h1,O.ht,O.h1,xloc=xloc.bar_time,color= swp_clr,style= line.style_dotted)
+    if not hswp and qt == qt[1] and line.get_x2(hsw) >= qt
+        line.delete(hsw) 
+
+    if not invx
+        if not (O.h == O.h1 and O.xh == O.xh1) and ( (O.h >= O.h1 and O.xh <= O.xh1) or (O.h <= O.h1 and O.xh >= O.xh1) )      
+            O.hxsmt := true
+        else 
+            O.hxsmt := false
+
+    if invx
+        if not (O.h == O.h1 and O.xl == O.xl1) and ( (O.h >= O.h1 and O.xl >= O.xl1) or (O.h <= O.h1 and O.xl <= O.xl1) )      
+            O.hxsmt := true
+        else 
+            O.hxsmt := false
+
+
+    if not invy
+        if not (O.h == O.h1 and O.yh == O.yh1) and ( (O.h >= O.h1 and O.yh <= O.yh1) or (O.h <= O.h1 and O.yh >= O.yh1) )      
+            O.hysmt := true
+        else 
+            O.hysmt := false
+
+    if invy
+        if not (O.h == O.h1 and O.yl == O.yl1) and ( (O.h >= O.h1 and O.yl >= O.yl1) or (O.h <= O.h1 and O.yl <= O.yl1) )      
+            O.hysmt := true
+        else 
+            O.hysmt := false
+
+    hsmt   := O.hysmt or O.hxsmt 
+       
+ 
+
+    if ((cyht != cyht[1] and hsmt) or (cyht == cyht[1] and not hsmt[1] and hsmt) or (hsmt[1] and hsmt and cyh >= cyh[1] and cyht > cyht[1]  )) and _show 
+
+        if nx ==0 
+            QQ.hst1 := O.h1t 
+            QQ.hst2 := O.ht  
+        if nx == 1 
+            Q.hst1 := O.h1t 
+            Q.hst2 := O.ht  
+        if nx ==2 
+            Qmin.hst1 := O.h1t 
+            Qmin.hst2 := O.ht 
+        if nx == 3 
+            htf1.hst1 := O.h1t 
+            htf1.hst2 := O.ht                                
+
+        if ( nx== 1 and not ( O.h1t == QQ.hst1 and O.ht == QQ.hst2 ) ) or 
+
+         ( ( nx== 2 and not ( O.h1t == QQ.hst1 and O.ht == QQ.hst2 ) ) and
+         (   nx== 2 and not ( O.h1t ==  Q.hst1 and O.ht ==  Q.hst2 ) ) ) or    
+
+         ( ( nx== 3 and not ( O.h1t ==   QQ.hst1 and O.ht ==   QQ.hst2 ) ) and
+         (   nx== 3 and not ( O.h1t ==    Q.hst1 and O.ht ==    Q.hst2 ) ) and 
+         (   nx== 3 and not ( O.h1t == Qmin.hst1 and O.ht == Qmin.hst2 ) ) ) or 
+
+         ( ( nx== 4 and not ( O.h1t ==   QQ.hst1 and O.ht ==   QQ.hst2 ) ) and
+         (   nx== 4 and not ( O.h1t ==    Q.hst1 and O.ht ==    Q.hst2 ) ) and
+         (   nx== 4 and not ( O.h1t == Qmin.hst1 and O.ht == Qmin.hst2 ) ) and          
+         (   nx== 4 and not ( O.h1t == htf1.hst1 and O.ht == htf1.hst2 ) ) ) or nx== 0
+
+            hsm  := line.new(O.h1t,O.h1,time,O.h,xloc=xloc.bar_time,color= _smt_clr,style= _sty,width = wd) 
+            symnm = O.hxsmt ? str.tostring(syminfo.ticker(tsym2)) : O.hysmt ?  str.tostring(syminfo.ticker(tsym3)) : ""
+            tx    = (time - O.h1t) / dx == 1 ? time : (O.h1t+time)/2
+            ty    = (O.ht - O.h1t) / dx == 1 ? O.h1  : math.round_to_mintick((O.h1 + O.h )/2)            
+            hlb  := label.new(x= tx  , y = ty ,text = lbok ? _txt +'\n' + symnm +'\n ⇅' : "" ,xloc=xloc.bar_time,yloc=yloc.price,color=color.new(color.gray,100),style=label.style_label_down,textcolor=_smt_clr,size=sz )
+            htip  := O.h > O.h1   ? 1 : O.h < O.h1   ? -1 : 0 
+
+
+    if not newo and not hsmt and hsmt[1]
+        line.delete(hsm)
+        label.delete(hlb)
+
+        
+    if  hsmt[1] and hsmt  and cyh >= cyh[1] and cyht > cyht[1] and not newo
+        line.delete(hsm[1])
+        label.delete(hlb[1])
+
+
+    if array.size(hline) > 0
+        for i = array.size(hline)-1 to 0
+            del  = array.get(hline,i)
+            dhi  = del.hl
+            dln  = del.ln
+            dlb  = del.lb
+            dtip = del.updw
+            if O.h > dhi
+                if (line.get_x2(dln) < O.t and line.get_x2(dln) > O.t1 and hsmt and dtip == -1)
+                    del.hl := O.h
+                if not (line.get_x2(dln) < O.t and line.get_x2(dln) > O.t1 and hsmt and dtip == -1) 
+                    line.delete(dln)
+                    label.delete(dlb)
+                    array.remove(hline,i)                    
+                 
+////////////////////////////////////////////////
+    if newo
+        lsmt1   := lsmt[1] 
+        lsmt    := false        
+        O.lswp := false , O.lxsmt := false,O.lysmt := false
+        O.lxswp := false , O.lyswp := false  
+        if lswp[1]
+            line.set_x2(lsw,time[1])           
+            add_to_array(lline,sline.new(O.l1, lsw , na,na))
+        if lsmt[1]
+            add_to_array(lline,sline.new(O.l1, lsm ,llb,ltip[1]))
+             
+    cyl  = O.l
+    cylt = O.lt
+    if O.l < O.l1 and O.c > O.l1
+        O.lswp := true
+        lswp   := true
+    else 
+        O.lswp := false
+        lswp   := false
+    if O.xl < O.xl1 and cc > O.xl1
+        O.lxswp := true
+    else 
+        O.lxswp := false
+    if O.yl < O.yl1 and dc > O.yl1
+        O.lyswp := true
+    else 
+        O.lyswp := false
+
+    if not lswp[1] and lswp and swok and swp_show
+        lsw := line.new(O.l1t,O.l1,O.lt,O.l1,xloc=xloc.bar_time,color= swp_clr,style= line.style_dotted)
+    if not lswp and qt == qt[1] and line.get_x2(lsw) >= qt
+        line.delete(lsw) 
+
+    if not invx 
+        if not (O.l == O.l1 and O.xl == O.xl1) and ( (O.l >= O.l1 and O.xl <= O.xl1) or (O.l <= O.l1 and O.xl >= O.xl1) )      
+            O.lxsmt := true
+        else 
+            O.lxsmt := false
+    if invx 
+        if not (O.l == O.l1 and O.xh == O.xh1) and ( (O.l >= O.l1 and O.xh >= O.xh1) or (O.l <= O.l1 and O.xh <= O.xh1) )      
+            O.lxsmt := true
+        else 
+            O.lxsmt := false            
+
+    if not invy    
+        if not (O.l == O.l1 and O.yl == O.yl1) and ( (O.l >= O.l1 and O.yl <= O.yl1) or (O.l <= O.l1 and O.yl >= O.yl1) )      
+            O.lysmt := true
+        else 
+            O.lysmt := false
+    if invy    
+        if not (O.l == O.l1 and O.yh == O.yh1) and ( (O.l >= O.l1 and O.yh >= O.yh1) or (O.l <= O.l1 and O.yh <= O.yh1) )      
+            O.lysmt := true
+        else 
+            O.lysmt := false       
+    lsmt   := O.lysmt or O.lxsmt
+
+
+    if ((cylt != cylt[1] and lsmt) or (cylt == cylt[1] and not lsmt[1] and lsmt) or (lsmt[1] and lsmt and cyl <= cyl[1] and cylt > cylt[1]  )  ) and _show 
+        if nx ==0 
+            QQ.lst1 := O.l1t 
+            QQ.lst2 := O.lt  
+        if nx == 1 
+            Q.lst1 := O.l1t 
+            Q.lst2 := O.lt  
+        if nx ==2 
+            Qmin.lst1 := O.l1t 
+            Qmin.lst2 := O.lt 
+        if nx == 3 
+            htf1.lst1 := O.l1t 
+            htf1.lst2 := O.lt                                
+
+        if ( nx== 1 and not ( O.l1t == QQ.lst1 and O.lt == QQ.lst2 ) ) or 
+
+         ( ( nx== 2 and not ( O.l1t == QQ.lst1 and O.lt == QQ.lst2 ) ) and
+         (   nx== 2 and not ( O.l1t ==  Q.lst1 and O.lt ==  Q.lst2 ) ) ) or    
+
+         ( ( nx== 3 and not ( O.l1t ==   QQ.lst1 and O.lt ==   QQ.lst2 ) ) and
+         (   nx== 3 and not ( O.l1t ==    Q.lst1 and O.lt ==    Q.lst2 ) ) and 
+         (   nx== 3 and not ( O.l1t == Qmin.lst1 and O.lt == Qmin.lst2 ) ) ) or 
+
+         ( ( nx== 4 and not ( O.l1t ==   QQ.lst1 and O.lt ==   QQ.lst2 ) ) and
+         (   nx== 4 and not ( O.l1t ==    Q.lst1 and O.lt ==    Q.lst2 ) ) and
+         (   nx== 4 and not ( O.l1t == Qmin.lst1 and O.lt == Qmin.lst2 ) ) and          
+         (   nx== 4 and not ( O.l1t == htf1.lst1 and O.lt == htf1.lst2 ) ) )  or nx == 0
+
+            lsm := line.new(O.l1t,O.l1,time,O.l,xloc=xloc.bar_time,color= _smt_clr,style= _sty,width = wd)        
+            symnn = O.lxsmt ? str.tostring(syminfo.ticker(tsym2)) : O.lysmt ?  str.tostring(syminfo.ticker(tsym3)) : ""
+            tx    = (time - O.l1t) / dx == 1 ? time : (O.l1t + time)/2
+            ty    = (O.lt - O.l1t) / dx == 1 ? O.l1  : math.round_to_mintick((O.l1 +O.l )/2) 
+            llb  := label.new(x= tx , y = ty ,text = lbok ? '⇵' + '\n' + _txt +'\n' + symnn : "" ,xloc=xloc.bar_time,yloc=yloc.price,color=color.new(color.gray,100),style=label.style_label_up,textcolor=_smt_clr,size=sz,textalign = text.align_center )
+            ltip := O.l > O.l1 ? 1 : O.l < O.l1 ? -1 : 0 
+
+     
+    if not newo and not lsmt and lsmt[1] 
+        line.delete(lsm)
+        label.delete(llb)
+
+    if  lsmt[1] and lsmt  and cyl <= cyl[1] and cylt > cylt[1] and not newo
+        line.delete(lsm[1])
+        label.delete(llb[1])
+
+    if array.size(lline) > 0
+        for i = array.size(lline)-1 to 0
+            del = array.get(lline,i)
+            dhi  = del.hl
+            dln  = del.ln
+            dlb  = del.lb
+            dtip = del.updw
+
+            if O.l < dhi
+                if (line.get_x2(dln) < O.t and line.get_x2(dln) > O.t1 and lsmt and dtip == 1)
+                    del.hl := O.l
+                if not (line.get_x2(dln) < O.t and line.get_x2(dln) > O.t1 and lsmt and dtip == 1)
+                    line.delete(dln)
+                    label.delete(dlb)
+                    array.remove(lline,i)             
+
+
+          
+
+type fvg
+    int t 
+    box imb
+    bool fill
+    box brd
+    int fillt
+type bssl 
+    int   t 
+    float hl 
+    line  ln 
+    bool  tap
+    bool  xbs 
+    float xhl 
+    bool  ybs 
+    float yhl
+    int smttime
+    label lb
+    int   tapt
+    bool  xtap 
+    bool  ytap 
+    int   xtapt 
+    int   ytapt
+
+
+
+var bull_fvg    = array.new<fvg>()
+var bear_fvg    = array.new<fvg>() 
+var arr_bsl     = array.new<bssl>()
+var arr_ssl     = array.new<bssl>()
+
+type cisd
+    float ex
+    float csd
+    line  ln 
+    label lb
+var arr_hcd = array.new<cisd>()
+var arr_lcd = array.new<cisd>()
+f_cisd()=>
+    var float betemp = na
+    var float betemp1 = na
+    var float exh = na
+    var line betmp = na
+    var int  baht = na
+    var int  baht1 = na    
+    var int  exht  = na
+    var bool becisd = false
+    var bool becon1 = false
+
+    var float butemp = na
+    var float butemp1 = na
+    var float exl = na
+    var line butmp = na
+    var int  balt = na
+    var int  balt1 = na   
+    var int  exlt  = na
+    var bool bucisd = false
+    var bool bucon1 = false
+
+    var bool minhsmt1 = false 
+    var bool minlsmt1 = false 
+    var bool tf1hsmt1 = false 
+    var bool tf1lsmt1 = false 
+    var bool tf2hsmt1 = false 
+    var bool tf2lsmt1 = false
+
+    var bool minhsmt = false 
+    var bool minlsmt = false 
+    var bool tf1hsmt = false 
+    var bool tf1lsmt = false 
+    var bool tf2hsmt = false 
+    var bool tf2lsmt = false  
+    var text_bear = "----"
+    var text_bull = "----" 
+    var text_bear1 = ""
+    var text_bull1 = "" 
+    var alertbear = false
+    var alertbull = false              
+    if newq 
+        Q.hsmt := false 
+        Q.lsmt := false
+        text_bear1 := text_bear[1]
+        text_bull1 := text_bull[1]
+        alertbear  := false
+        alertbull  := false        
+
+    if newqmin
+        minhsmt1 := minhsmt[1]
+        minlsmt1 := minlsmt[1]
+
+    if timeframe.change(tf1)
+        tf1hsmt1  := tf1hsmt[1] 
+        tf1lsmt1  := tf1lsmt[1] 
+
+
+    if timeframe.change(tf2)
+        tf2hsmt1  := tf2hsmt[1] 
+        tf2lsmt1  := tf2lsmt[1] 
+
+
+    Q.hsmt  := false
+    minhsmt := false 
+    tf1hsmt := false
+    tf2hsmt := false
+    if Q.hxsmt or Q.hysmt 
+        Q.hsmt := true
+    else if (QQ.hxsmt or QQ.hysmt) and QQ.h == Q.h 
+        Q.hsmt := true  
+    else if (Qmin.hxsmt or Qmin.hysmt) and (Qmin.h ==Q.h or (Qmin.h1 > Qmin.h and Qmin.h1 == Q.h))
+        Q.hsmt  := true 
+        minhsmt := true    
+    else if (htf1.hxsmt or htf1.hysmt) and (htf1.h ==Q.h or (htf1.h1 > htf1.h and htf1.h1 == Q.h))
+        Q.hsmt  := true
+        tf1hsmt := true        
+    else if (htf2.hxsmt or htf2.hysmt) and (htf2.h ==Q.h or (htf2.h1 > htf2.h and htf2.h1 == Q.h))
+        Q.hsmt  := true 
+        tf2hsmt := true
+    else if minhsmt1 and Qmin.h1 == Q.h
+        Q.hsmt := true 
+    else if tf1hsmt1 and htf1.h1 == Q.h
+        Q.hsmt := true 
+    else if tf2hsmt1 and htf2.h1 == Q.h
+        Q.hsmt := true
+    else 
+        Q.hsmt := false 
+
+
+    Q.lsmt  := false
+    minlsmt := false 
+    tf1lsmt := false
+    tf2lsmt := false
+    if Q.lxsmt or Q.lysmt 
+        Q.lsmt := true
+    else if (QQ.lxsmt or QQ.lysmt) and QQ.l == Q.l 
+        Q.lsmt := true  
+    else if (Qmin.lxsmt or Qmin.lysmt) and (Qmin.l ==Q.l or (Qmin.l1 < Qmin.l and Qmin.l1 == Q.l))
+        Q.lsmt  := true  
+        minlsmt := true   
+    else if (htf1.lxsmt or htf1.lysmt) and (htf1.l ==Q.l or (htf1.l1 < htf1.l and htf1.l1 == Q.l))
+        Q.lsmt  := true
+        tf1lsmt := true        
+    else if (htf2.lxsmt or htf2.lysmt) and (htf2.l ==Q.l or (htf2.l1 < htf2.l and htf2.l1 == Q.l))
+        Q.lsmt  := true
+        tf2lsmt := true
+    else if minlsmt1 and Qmin.l1 == Q.l
+        Q.lsmt := true 
+    else if tf1lsmt1 and htf1.l1 == Q.l
+        Q.lsmt := true 
+    else if tf2lsmt1 and htf2.l1 == Q.l
+        Q.lsmt := true
+    else 
+        Q.lsmt := false
+        
+    up = close > open , dw = close < open, eq = close == open
+    n= 20
+    becon =  (Q.bslsmt or (Q.hswp and (Q.hsmt or Q.befvgtap))) or (Q.hxswp and Q.hxsmt) or (Q.hyswp and Q.hysmt)
+
+
+    bucon =  (Q.sslsmt or (Q.lswp and (Q.lsmt or Q.bufvgtap))) or (Q.lxswp and Q.lxsmt) or (Q.lyswp and Q.lysmt) 
+      
+
+    qt = Q.t
+    if newq
+        Q.hcisd := false 
+        Q.lcisd := false
+        betemp1 := not na(betemp[1]) ? betemp[1] : na
+        butemp1 := not na(butemp[1]) ? butemp[1] : na 
+        baht1 := baht[1]
+        balt1 := balt[1]    
+        becon1 := becon[1] 
+        bucon1 := bucon[1]
+    
+    if Q.h == high or (Q.hcisd and high < Q.h and not becon[1] and becon)//and (becon or Q.h >= Q.h1 or Q.hxsmt or Q.hysmt ) 
+        Q.hcisd := false
+        exh      := Q.h            
+        exht     := time
+        becisd  := false
+        barh     = 0
+        for i = 1 to n
+            if high[i] > high
+                break
+            if up[i-1] and not up[i]  
+                barh  := i-1
+                betemp := open[i-1]
+                break
+        for i = 0 to barh
+            if up[i] and open[i] <= betemp
+                betemp := open[i]
+                baht  := time[i] 
+
+    if not na(betemp1) and Q.h1 > Q.h and not becon 
+        betemp := betemp1
+        baht   := baht1
+        line.set_x2(betmp,time)
+    else
+        betmp := line.new(x1 = baht, y1= betemp , x2 = Q.ht+2*dx, y2 = betemp , xloc=xloc.bar_time,color=bear_csd,style=line.style_dotted)
+        line.delete(betmp[1])
+
+    if not na(betemp) and not becisd
+        line.set_width(betmp,2)
+        line.set_x2(betmp,time)
+    //qh = Q.h
+    if close[1] < betemp[1] and Q.h <= exh and not becisd and time[1] > baht[1] 
+        becisd  := true
+        Q.hcisd := true
+        becur = line.new(x1 = baht[1], y1= betemp[1] , x2 =time[1], y2 = betemp[1] , xloc=xloc.bar_time,color=bear_csd,style=line.style_solid,width = 2)
+        add_to_array(arr_hcd, cisd.new(exh[1],betemp[1],becur,na)) 
+        line.delete(betmp) 
+        betemp := na 
+        betemp1 := na 
+    if qt == qt[1]  and high > exh[1] 
+        alertbear := false   
+    if array.size(arr_hcd) > 2 
+        for i = array.size(arr_hcd)-1 to 2
+            dln = array.get(arr_hcd,i)
+            line.delete(dln.ln)
+            label.delete(dln.lb)
+            array.remove(arr_hcd,i)
+    //////////////////////                            
+     
+
+    if Q.l == low or (Q.lcisd and low > Q.l and not bucon[1] and bucon)//and (bucon or Q.l <= Q.l1 or Q.lxsmt or Q.lysmt ) 
+        Q.lcisd := false
+        exl      := Q.l            
+        exlt     := time
+        bucisd  := false
+        barl     = 0
+        for i = 1 to n
+            if low[i] < low
+                break
+            if dw[i-1] and not dw[i]  
+                barl  := i-1
+                butemp := open[i-1]
+                break
+        for i = 0 to barl
+            if dw[i] and open[i] >= butemp
+                butemp := open[i]
+                balt   := time[i] 
+                
+    if not na(butemp1) and Q.l1 < Q.l and not bucon 
+        butemp := butemp1
+        balt := balt1
+        line.set_x2(butmp,time)         
+    else
+        butmp := line.new(x1 = balt, y1= butemp , x2 = Q.lt+2*dx, y2 = butemp , xloc=xloc.bar_time,color=bull_csd,style=line.style_dotted)
+        line.delete(butmp[1])
+    if not na(butemp) and not bucisd
+        line.set_width(butmp,2)
+        line.set_x2(butmp,time)
+    if close[1] > butemp[1] and Q.l >= exl and not bucisd and time[1] > balt[1] 
+        bucisd  := true
+        Q.lcisd := true
+        bucur = line.new(x1 = balt[1], y1= butemp[1] , x2 =time[1], y2 = butemp[1] , xloc=xloc.bar_time,color=bull_csd,style=line.style_solid,width = 2)
+        add_to_array(arr_lcd, cisd.new(exl[1],butemp[1],bucur)) 
+        line.delete(butmp) 
+        butemp := na 
+        butemp1 := na  
+    if qt == qt[1]  and low < exl[1] 
+        alertbull := false               
+    if array.size(arr_lcd) > 2 
+        for i = array.size(arr_lcd)-1 to 2
+            dln = array.get(arr_lcd,i)
+            line.delete(dln.ln)
+            array.remove(arr_lcd,i) 
+
+    txtpair1 = str.tostring(syminfo.ticker(tsym2))
+    txtpair2 = str.tostring(syminfo.ticker(tsym3))     
+    text_bear := (Q.hswp ? "Sweep " : "") + ( Q.hsmt ? " SMT " : "") +  ( Q.bslsmt ? " BSL SMT " : "") + ( Q.befvgtap ? " FVG tap " : "")+
+     ( Q.hxswp ? txtpair1 + " Sweep " : "") + ( Q.hxsmt ? txtpair1 + " SMT " : "") +  ( Q.hyswp ? txtpair2 + " Sweep " : "") + ( Q.hysmt ? txtpair2 +" SMT " : "")+ " CISD"
+    text_bull := (Q.lswp ? "Sweep " : "") + ( Q.lsmt ? " SMT " : "") +  ( Q.sslsmt ? " SSL SMT " : "") + ( Q.bufvgtap ? " FVG tap " : "")+
+     ( Q.lxswp ? txtpair1 + " Sweep " : "") + ( Q.lxsmt ? txtpair1 + " SMT " : "") +  ( Q.lyswp ? txtpair2 + " Sweep " : "") + ( Q.lysmt ? txtpair2 +" SMT " : "") + " CISD"
+
+    txtbear = "----------"
+    txtbull = "----------"  
+    beconn = (becon or (not becon and becon1 and baht < qt)) 
+    if becisd  and not becisd[1] and beconn and not alertbear    
+        alert("🔴 " +  str.tostring(syminfo.ticker(sym)) + " " + valcc + " Bearish Alert", freq = alert.freq_once_per_bar ) 
+        txtbear   := (not becon and becon1 and baht <qt) ? text_bear1 : text_bear 
+        baht := na
+        becon  := false
+        becon1 := false
+        alertbear := true
+    if  ( (becisd and not becisd[1] and beconn[1]) or (becisd and not beconn[1] and beconn) ) and  not alertbear[1] and alertbear
+        lbh   = label.new(x=time[1] ,y= high[1],xloc=xloc.bar_time,yloc=yloc.price,text = "⤵"  , color= color.new(color.white,100),textcolor=bear_clr,style=label.style_label_down,text_formatting=text.format_bold,size= size.large ) 
+
+    //"▼" : "X" "▲" : "X"
+    if show_tb
+        table.cell(tablo,0,5,text= "Bear :" + str.tostring(txtbear) ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+
+ 
+    buconn = (bucon or (not bucon and  bucon1 and balt < qt))
+    if bucisd and not bucisd[1] and buconn and not alertbull//and barstate.isconfirmed
+        alert("🟢 " +  str.tostring(syminfo.ticker(sym)) + " " + valcc + " Bullish Alert", freq = alert.freq_once_per_bar ) 
+        txtbull   := (not bucon and bucon1 and balt <qt) ? text_bull1 : text_bull 
+        balt := na
+        bucon  := false
+        bucon1 := false
+        alertbull := true  
+
+    if ((bucisd and not bucisd[1] and buconn[1] ) or (bucisd and not buconn[1] and buconn)) and not alertbull[1] and alertbull
+        lbx = label.new(x=time[1] ,y= low[1],xloc=xloc.bar_time,yloc=yloc.price,text = "⤴"  , color= color.new(color.white,100),textcolor=bull_clr,style=label.style_label_up,text_formatting=text.format_bold,size= size.large ) 
+    if show_tb
+        table.cell(tablo,0,6,text= "Bull :" + str.tostring(txtbull) ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+ 
+
+    [alertbear,alertbull]   
+
+f_fvg()=>
+    var qqt = time , var qqt1 = time, var qqt2 = time
+    var qti1 = time , var qti2 = time, var qti = time
+
+    if newqq or (mdl == mdl3 and is_day_tf and timeframe.change("1W"))//delq 
+        qqt  := time 
+        qqt1 := qqt[1]
+        qqt2 := qqt1[1]   
+    if newq
+        Q.bufvgtap := false 
+        Q.befvgtap := false
+        qti  := time
+        qti1 := qti[1]
+        qti2 := qti1[1]
+
+        bufvg = Q.l1 > Q.h3 and Q.c2 > Q.h3 and Q.c2 > Q.o2
+        if bufvg
+            bx  = box.new(left = qti2 , top = Q.l1, right = qti1-dx, bottom = Q.h3 , xloc=xloc.bar_time,
+             bgcolor = (fvg_show ? fvg_clr : color.new(fvg_clr,100)), border_color = (fvg_show ? fvg_clr : color.new(fvg_clr,100)), text = "+" , text_size = sz ,text_valign = text.align_center, text_halign = text.align_right ,text_color = txt_clr ) 
+            brd = box.new(left = qti2 , top = Q.l1, right = qti1-dx, bottom = Q.h3,xloc=xloc.bar_time, 
+             bgcolor=color.new(fvg_clr,fvg_show ? 95 : 100),border_color=color.new(fvg_clr,fvg_show ? 75 : 100))
+            add_to_array(bull_fvg,fvg.new(time[1],bx,false,brd,na))
+        befvg = Q.l3 > Q.h1 and Q.c2 < Q.l3 and Q.c2 < Q.o2
+        if befvg
+            bx  = box.new(left = qti2 , top = Q.l3, right = qti1-dx, bottom = Q.h1 , xloc=xloc.bar_time,
+             bgcolor = (fvg_show ? fvg_clr : color.new(fvg_clr,100)) , border_color = (fvg_show ? fvg_clr : color.new(fvg_clr,100)), text = "-" , text_size = sz ,text_valign = text.align_center, text_halign = text.align_right ,text_color = txt_clr ) 
+            brd = box.new(left = qti2 , top = Q.l3, right = qti1-dx, bottom = Q.h1 ,xloc=xloc.bar_time, 
+             bgcolor=color.new(fvg_clr,fvg_show ? 95 : 100),border_color=color.new(fvg_clr,fvg_show ? 75 : 100))
+            add_to_array(bear_fvg,fvg.new(time[1],bx,false,brd,na))
+
+    if array.size(bull_fvg)>0
+        for i = array.size(bull_fvg)-1 to 0
+            dar = array.get(bull_fvg,i)
+            dtb = dar.t
+            dbx = dar.imb 
+            dbo = dar.fill
+            top = box.get_top(dbx)
+            bot = box.get_bottom(dbx)
+            dbr = dar.brd
+            if not dbo and time > dtb and Q.l <= top 
+                Q.bufvgtap := true 
+                box.set_right(dbx,time)
+                box.set_right(dbr,time)                
+                if Q.l > bot 
+                    top := math.min(Q.l,top)
+                    box.set_top(dbx,top)
+
+
+            if low <= bot and not dbo
+                dar.fill := true
+                dar.fillt := time
+                box.set_top(dbx,bot)
+                box.set_right(dbx,time)
+                box.set_right(dbr,Q.t)
+
+    if array.size(bear_fvg)>0
+        for i = array.size(bear_fvg)-1 to 0
+            dar = array.get(bear_fvg,i)
+            dtb = dar.t
+            dbx = dar.imb 
+            dbo = dar.fill
+            top = box.get_top(dbx)
+            bot = box.get_bottom(dbx)
+            dbr = dar.brd            
+            if not dbo and time > dtb and Q.h >= bot 
+                Q.befvgtap := true 
+                box.set_right(dbx,time)
+                box.set_right(dbr,time)                
+                if Q.h < top 
+                    bot := math.max(Q.h,bot)
+                    box.set_bottom(dbx,bot)
+
+            if high >= top and not dbo
+                dar.fill  := true
+                dar.fillt := time
+                box.set_bottom(dbx,top)
+                box.set_right(dbx,time)
+                box.set_right(dbr,Q.t)
+                
+    if array.size(bull_fvg)>0
+        for i = array.size(bull_fvg)-1 to 0 
+            dbs = array.get(bull_fvg,i)            
+            if  (dbs.fill and dbs.fillt < qti1)
+                box.delete(dbs.imb)
+                box.delete(dbs.brd)                
+                array.remove(bull_fvg,i)            
+    if array.size(bear_fvg)>0
+        for i = array.size(bear_fvg)-1 to 0 
+            dbs = array.get(bear_fvg,i)            
+            if  (dbs.fill and dbs.fillt < qti1)
+                box.delete(dbs.imb)
+                box.delete(dbs.brd)                 
+                array.remove(bear_fvg,i)
+
+
+f_bssl(wt)=>
+    var qqt = time , var qqt1 = time, var qqt2 = time
+    var label llb = na 
+    var label hlb = na 
+    if delq 
+        qqt  := time 
+        qqt1 := qqt[1]
+        qqt2 := qqt1[1]
+    if newq
+        Q.bsltap := false 
+        Q.ssltap := false
+        Q.bslsmt := false 
+        Q.sslsmt := false        
+        qti1h  = Q.h1t
+        qti2h  = qti1h[1]
+        qti1l = Q.l1t
+        qti2l = qti1l[1] 
+        xxh1  = Q.xh1 , xxl1 = Q.xl1       
+        yyh1  = Q.yh1 , yyl1 = Q.yl1 
+        xxh2  = xxh1[1] , xxl2 = xxl1[1] 
+        yyh2  = yyh1[1] , yyl2 = yyl1[1]
+        xxh3  = xxh2[1] , xxl3 = xxl2[1] 
+        yyh3  = yyh2[1] , yyl3 = yyl2[1]
+
+        bsl   = Q.h2 >= Q.h3 and Q.h2 > Q.h1 
+        xbsl  = xxh2 >= xxh3 and xxh2 > xxh1
+        ybsl  = yyh2 >= yyh3 and yyh2 > yyh1 
+
+        ssl   = Q.l2 <= Q.l3 and Q.l2 < Q.l1
+        xssl  = xxl2 <= xxl3 and xxl2 < xxl1
+        yssl  = yyl2 <= yyl3 and yyl2 < yyl1
+
+        if bsl 
+            bl = line.new(x1=qti2h , y1 = Q.h2 , x2 = time , y2 = Q.h2, xloc=xloc.bar_time, color= bsl_show ? bssl_clr : color.new(bssl_clr,100),style = line.style_solid)
+            add_to_array(arr_bsl,bssl.new(time[1],Q.h2,bl,false, not invx ? xbsl : xssl, not invx ? xxh2 : xxl2 , not invy ? ybsl : yssl, not invy ? yyh2 : yyl2 ,na,na))
+
+
+        if ssl 
+            bl = line.new(x1=qti2l , y1 = Q.l2 , x2 = time , y2 = Q.l2, xloc=xloc.bar_time, color= bsl_show ? bssl_clr : color.new(bssl_clr,100),style = line.style_solid)
+            add_to_array(arr_ssl,bssl.new(time[1],Q.l2,bl,false,not invx ? xssl : xbsl , not invx ? xxl2 : xxh2 , not invy ? yssl : ybsl , not invy ? yyl2 : yyh2 ,na,na))
+
+    if array.size(arr_bsl) > 0
+        for i = array.size(arr_bsl)-1 to 0 
+            dbs = array.get(arr_bsl,i)            
+            if dbs.t < qqt2 or  (Q.h1 > Q.h2 and  Q.h2 >= dbs.hl ) or (Q.h1 >= dbs.hl and (QQ.t1 > dbs.tapt or QQ.t1 > dbs.smttime))
+                line.delete(dbs.ln)
+                label.delete(dbs.lb)
+                array.remove(arr_bsl,i)            
+    if array.size(arr_ssl) > 0
+        for i = array.size(arr_ssl)-1 to 0 
+            dbs = array.get(arr_ssl,i)            
+            if dbs.t < qqt2 or (Q.l1 < Q.l2 and  Q.l2 <= dbs.hl ) or (Q.l1 <= dbs.hl and (QQ.t1 > dbs.tapt or QQ.t1 > dbs.smttime))
+                line.delete(dbs.ln)
+                label.delete(dbs.lb)
+                array.remove(arr_ssl,i)
+                 
+
+    if array.size(arr_bsl)>0
+        for i = array.size(arr_bsl)-1 to 0
+            dbs = array.get(arr_bsl,i)
+            dtb = dbs.t 
+            dhl = dbs.hl 
+            dln = dbs.ln 
+            dbo = dbs.tap 
+            if not dbo //and Q.h < dhl 
+                line.set_x2(dln,time)
+            if not dbo and Q.h >= dhl 
+                dbs.tap  := true 
+                Q.bsltap := true 
+                dbs.tapt := time
+                line.set_style(dln,line.style_dashed)
+
+            if not invx and not dbs.xtap and Q.xh >= dbs.xhl and dbs.xbs 
+                dbs.xtap  := true 
+                dbs.xtapt := time
+            if     invx and not dbs.xtap and Q.xl <= dbs.xhl and dbs.xbs 
+                dbs.xtap  := true 
+                dbs.xtapt := time                
+
+            if not invy and not dbs.ytap and Q.yh >= dbs.yhl and dbs.ybs
+                dbs.ytap  := true 
+                dbs.ytapt := time    
+            if     invy and not dbs.ytap and Q.yl <= dbs.yhl and dbs.ybs
+                dbs.ytap  := true 
+                dbs.ytapt := time 
+
+    if array.size(arr_ssl)>0
+        for i = array.size(arr_ssl)-1 to 0
+            dbs = array.get(arr_ssl,i)
+            dtb = dbs.t 
+            dhl = dbs.hl 
+            dln = dbs.ln 
+            dbo = dbs.tap 
+            if not dbo //and Q.h < dhl 
+                line.set_x2(dln,time)
+            if not dbo and Q.l <= dhl 
+                dbs.tap  := true 
+                Q.ssltap := true 
+                dbs.tapt := time                
+                line.set_style(dln,line.style_dashed)
+            if not invx and not dbs.xtap and Q.xl <= dbs.xhl and dbs.xbs
+                dbs.xtap  := true 
+                dbs.xtapt := time
+            if     invx and not dbs.xtap and Q.xh >= dbs.xhl and dbs.xbs
+                dbs.xtap  := true 
+                dbs.xtapt := time                
+
+            if not invy and not dbs.ytap and Q.yl <= dbs.yhl and dbs.ybs
+                dbs.ytap  := true 
+                dbs.ytapt := time  
+            if     invy and not dbs.ytap and Q.yh >= dbs.yhl and dbs.ybs
+                dbs.ytap  := true 
+                dbs.ytapt := time                                  
+    ////////////////////////////////////////////
+    if array.size(arr_bsl)>0
+        for i = 0 to array.size(arr_bsl)-1 
+            dbs = array.get(arr_bsl,i) 
+            dhl = dbs.hl 
+            stxt = ""
+            Q.bslsmt := false             
+            conl =( (dbs.tapt >= wt and dbs.tap) and ((not dbs.xtap and dbs.xbs) or (not dbs.ytap and dbs.ybs) ) ) or 
+             ( not dbs.tap  and ((dbs.xbs and dbs.xtap and dbs.xtapt >= wt) or (dbs.ybs and dbs.ytap and dbs.ytapt >= wt)  )   )
+            if conl 
+                Q.bslsmt := true
+                dbs.smttime := Q.t
+                stxt :=( (dbs.tapt >= wt and dbs.tap) and (not dbs.xtap and dbs.xbs) ) or ( not dbs.tap and (dbs.xtap and dbs.xtapt >= wt) ) ? str.tostring(syminfo.ticker(tsym2)) : 
+                 ( (dbs.tapt >= wt and dbs.tap) and (not dbs.ytap and dbs.ybs) ) or ( not dbs.tap and (dbs.ytap and dbs.ytapt >= wt) ) ? str.tostring(syminfo.ticker(tsym3)) : ""    
+
+                if not na(dbs.lb) and bsl_show
+                    label.set_x(dbs.lb,Q.ht)
+                    label.set_y(dbs.lb,math.max(Q.h,dhl) + 1.5*atr)                      
+                    label.set_text(dbs.lb, "BSL-Smt" +'\n' + stxt +'\n ⇅')
+                else
+                    dbs.lb := label.new(x= Q.ht , y = math.max(Q.h,dhl) + 1.5*atr ,text ="BSL-Smt" +'\n' + stxt +'\n ⇅',xloc=xloc.bar_time,yloc=yloc.price,color=color.new(color.gray,100),style=label.style_label_down,textcolor=bsl_show ? smt_clr : na,size=sz )
+                line.set_color(dbs.ln,bsl_show ? smt_clr : color.new(bssl_clr,100))
+
+                break
+            else
+                if wt ==  wt[1] and  not Q.bslsmt  and dbs.smttime == wt 
+                    label.delete(dbs.lb)
+    if array.size(arr_ssl)>0
+        for i = 0 to array.size(arr_ssl)-1 
+            dbs = array.get(arr_ssl,i) 
+            dhl = dbs.hl 
+            stxt = ""
+            Q.sslsmt := false 
+                      
+            conl = ( (dbs.tapt >= wt and dbs.tap) and ((not dbs.xtap and dbs.xbs) or (not dbs.ytap and dbs.ybs)) ) or 
+             ( not dbs.tap and ((dbs.xbs and dbs.xtap and dbs.xtapt >= wt) or (dbs.ybs and dbs.ytap and dbs.ytapt >= wt))   )
+            if conl 
+                Q.sslsmt := true
+                dbs.smttime := Q.t
+                stxt :=( (dbs.tapt >= wt and dbs.tap) and (not dbs.xtap and dbs.xbs) ) or ( not dbs.tap and (dbs.xtap and dbs.xtapt >= wt) ) ? str.tostring(syminfo.ticker(tsym2)) : 
+                 ( (dbs.tapt >= wt and dbs.tap) and (not dbs.ytap and dbs.ybs) ) or ( not dbs.tap and (dbs.ytap and dbs.ytapt >= wt) ) ? str.tostring(syminfo.ticker(tsym3)) : ""    
+
+                if not na(dbs.lb) and bsl_show
+                    label.set_x(dbs.lb,Q.lt)
+                    label.set_y(dbs.lb,math.min(Q.l,dhl) - 1.5*atr)                    
+                    label.set_text(dbs.lb, '⇵' + '\n' + "SSL-Smt" +'\n' + stxt)
+                else
+                    dbs.lb := label.new(x= Q.lt , y = math.min(Q.l,dhl) - 1.5*atr,text ='⇵' + '\n' + "SSL-Smt" +'\n' + stxt ,xloc=xloc.bar_time,yloc=yloc.price,color=color.new(color.gray,100),style=label.style_label_up,textcolor=bsl_show ? smt_clr : na,size=sz,textalign = text.align_center )
+                line.set_color(dbs.ln,bsl_show ? smt_clr : color.new(bssl_clr,100))
+
+                break
+            else
+                if wt ==  wt[1] and  not Q.sslsmt and dbs.smttime == wt 
+                    label.delete(dbs.lb)
+
+
+type barbox
+    box body
+    box up 
+    box dw 
+    box sh 
+    box sl
+    line mid
+    line hswp
+    line hsmt
+    line lswp 
+    line lsmt
+    box bsl 
+    box ssl
+    label lbl
+
+
+Getcolor_candle(_o,_c)=>
+    clr = _c > _o ? bull_clr : _o > _c ? bear_clr: color.gray
+    clr
+//////////plot htf candle /////////////////////////////
+
+f_plot_classic(bool is_new , CycleLayer O, string name, int dy, string qtxt)=>  
+    var arr_boxp  = array.new<barbox>() 
+    _c = close , _o = O.o, _h = O.h, _l = O.l
+    lblh = math.max(O.h,O.h1,O.h2,O.h3)
+    var box pfvgbe = na 
+    var box pfvgbu = na
+    var box wbsl = na 
+    var box wssl = na    
+    var line hsmt = na , var line hswp = na, var line lsmt = na , var line lswp = na
+    var label lbl = na
+    var psp = false
+    var psp_txt0 = "", var psp_txt1 = "", var psp_txt2 = "" , var psp_txt = ""
+    var qqhsmt01 = false , var qqlsmt01 = false 
+    var qqhsmt12 = false , var qqlsmt12 = false
+    var qqhsmt   = false , var qqlsmt = false 
+    var qqhswp01 = false , var qqlswp01 = false 
+    var qqhswp12 = false , var qqlswp12 = false
+    var qqhswp   = false , var qqlswp = false    
+    if is_new
+        psp := false
+        ps0 = O.c1  > O.o1  ? 1 : O.c1  < O.o1  ? -1 : 0 
+        ps2 = O.xc1 > O.xo1 ? 1 : O.xc1 < O.xo1 ? -1 : 0                           
+        ps3 = O.yc1 > O.yo1 ? 1 : O.yc1 < O.yo1 ? -1 : 0 
+        //psp := ps0 != ps2 or ps0 != ps3 
+        psp := not(invx and invy)  and (ps0 != ps2 or ps0 != ps3 ) 
+        psp :=    (invx and invy)  and (ps0 == ps2 or ps0 == ps3 ) 
+        psp := (not invx and ps0 != ps2) or (invy and ps0 == ps3 ) 
+
+
+        psp_txt0 := psp ? "psp" : ""
+        psp_txt1 := psp_txt0[1]
+        psp_txt2 := psp_txt1[1]
+        qqhsmt01 := qqhsmt 
+        qqhsmt12 := qqhsmt01
+        qqlsmt01 := qqlsmt 
+        qqlsmt12 := qqlsmt01 
+
+        qqhswp01 := qqhswp 
+        qqhswp12 := qqhswp01
+        qqlswp01 := qqlswp 
+        qqlswp12 := qqlswp01                 
+    else 
+        qqhsmt := O.hxsmt or O.hysmt
+        qqlsmt := O.lxsmt or O.lysmt        
+        qqhswp := O.hswp
+        qqlswp := O.lswp
+
+    if array.size(arr_boxp) > 0 
+        for i = array.size(arr_boxp) - 1 to 0
+            dbox = array.get(arr_boxp,i)
+            box.delete(dbox.body)
+            box.delete(dbox.up)                
+            box.delete(dbox.dw)
+            box.delete(dbox.sh)
+            box.delete(dbox.sl)
+            label.delete(dbox.lbl)
+            line.delete(dbox.mid)
+            line.delete(dbox.hswp)
+            line.delete(dbox.lswp)
+            line.delete(dbox.hsmt)
+            line.delete(dbox.lsmt)
+            box.delete(dbox.bsl)
+            box.delete(dbox.ssl)                                                            
+            array.remove(arr_boxp,i)
+
+    mm = 3 
+ 
+                   
+    bl0 = box.new(left=bar_index+dxx + dy + 12 ,top= _c , right= bar_index+ dxx + dy + 14 , bottom = _o  , bgcolor =  Getcolor_candle(_o,_c), border_color = Getcolor_candle(_o,_c), text = qtxt , text_size = sz ,text_valign = text.align_center , text_halign = text.align_center ,text_color = txt_clr)
+    wup = box.new(left=bar_index+dxx + dy + 13 ,top= _h , right= bar_index+ dxx + dy + 13 , bottom = math.max(_o,_c)  , border_color = brd_clr,border_width =1)
+    wdw = box.new(left=bar_index+dxx + dy + 13 ,top= _l , right= bar_index+ dxx + dy + 13 , bottom = math.min(_o,_c) , border_color = brd_clr,border_width =1)
+    lbl := label.new(x=bar_index+dxx + dy + 9  ,y = lblh , text = name,yloc= yloc.price,style=label.style_label_down,textcolor = txt_clr,size=sz,color=color.new(color.teal,100) )
+ 
+    add_to_array(arr_boxp,barbox.new(bl0,wup,wdw,na,na,na,hswp,na,lswp,na,na,na,lbl))
+
+
+
+ 
+    for i = 0 to mm-1
+        _c  := i == 0 ? O.c1 : i==1 ? O.c2 :  O.c3   
+        _o  := i == 0 ? O.o1 : i==1 ? O.o2 :  O.o3 
+        _h  := i == 0 ? O.h1 : i==1 ? O.h2 :  O.h3  
+        _l  := i == 0 ? O.l1 : i==1 ? O.l2 :  O.l3 
+        psp_txt  := i == 0 ? psp_txt0 : i==1 ? psp_txt1 :  psp_txt2             
+
+        if i < 3
+            _pl = i == 0 ? O.l  : i==1 ? O.l1 :  O.l2 
+            _ph = i == 0 ? O.h  : i==1 ? O.h1 :  O.h2 
+            _fl = i == 0 ? O.l2 : i==1 ? O.l3 :  O.l4 
+            _fh = i == 0 ? O.h2 : i==1 ? O.h3 :  O.h4 
+            qaskh = i == 0 ? qqhsmt : i == 1 ? qqhsmt01 : qqhsmt12 
+            qaskl = i == 0 ? qqlsmt : i == 1 ? qqlsmt01 : qqlsmt12 
+            qswph = i == 0 ? qqhswp : i == 1 ? qqhswp01 : qqhswp12 
+            qswpl = i == 0 ? qqlswp : i == 1 ? qqlswp01 : qqlswp12 
+            cntfvgbe = _pl > _fh  ? 50 : 100 
+            cntfvgbu = _fl > _ph  ? 50 : 100
+
+            pfvgbe  := box.new(left=bar_index+dxx + dy + 0 + (mm -i) * 3  ,top= _pl , right= bar_index+ dxx + dy + 3 + (mm-i) * 3 , bottom = _fh , border_color = color.new(fvg_clr,100) ,border_width =1, bgcolor =  color.new(fvg_clr,cntfvgbe))
+            pfvgbu  := box.new(left=bar_index+dxx + dy + 0 + (mm -i) * 3  ,top= _fl , right= bar_index+ dxx + dy + 3 + (mm-i) * 3 , bottom = _ph , border_color = color.new(fvg_clr,100) ,border_width =1, bgcolor =  color.new(fvg_clr,cntfvgbu))
+            if qswph and i < mm - 1
+                hswp := line.new(x1= bar_index + dxx + dy + 1 + (mm -i) * 3  , y1= _h ,   x2=  bar_index+ dxx + dy + 4 + (mm-i) * 3 , y2 = _h  , color = swp_clr,width = 1,style= line.style_dotted)
+            if qswpl and i < mm - 1
+                lswp := line.new(x1= bar_index + dxx + dy + 1 + (mm -i) * 3  , y1= _l ,   x2=  bar_index+ dxx + dy + 4 + (mm-i) * 3 , y2 = _l  , color = swp_clr,width = 1,style= line.style_dotted)
+            if qaskh and i < mm - 1
+                hsmt := line.new(x1= bar_index + dxx + dy + 1 + (mm -i) * 3  , y1= _h ,   x2=  bar_index+ dxx + dy + 4 + (mm-i) * 3 , y2 = _ph  , color = smt_clr,width = 1,style= line.style_dotted)
+            if qaskl and i < mm - 1
+                lsmt := line.new(x1= bar_index + dxx + dy + 1 + (mm -i) * 3  , y1= _l ,   x2=  bar_index+ dxx + dy + 4 + (mm-i) * 3 , y2 = _pl  , color = smt_clr,width = 1,style= line.style_dotted)
+
+        mdll = math.round_to_mintick((_h + _l)/2)
+        bbl0 = box.new(left=bar_index+dxx+ dy + 0 + (mm -i) * 3  ,top= _c , right= bar_index+ dxx + dy + 2 + (mm-i) * 3 , bottom = _o  , bgcolor =  Getcolor_candle(_o,_c), border_color = Getcolor_candle(_o,_c), text =  psp_txt , text_size = sz ,text_valign = text.align_center , text_halign = text.align_center ,text_color = txt_clr)
+        wwup = box.new(left=bar_index+dxx+ dy + 1 + (mm -i) * 3  ,top= _h , right= bar_index+ dxx + dy + 1 + (mm-i) * 3 , bottom = math.max(_o,_c)  , border_color = brd_clr,border_width =1)
+        wwdw = box.new(left=bar_index+dxx+ dy + 1 + (mm -i) * 3  ,top= _l , right= bar_index+ dxx + dy + 1 + (mm-i) * 3 , bottom = math.min(_o,_c) , border_color = brd_clr,border_width =1)
+        mmmd = line.new(x1= bar_index+dxx+ dy + 0 + (mm -i) * 3  ,y1= mdll ,   x2=  bar_index+ dxx + dy + 2 + (mm-i) * 3 , y2 = mdll  , color = brd_clr,width = 1,style= line.style_dotted)
+
+        add_to_array(arr_boxp,barbox.new(bbl0,wwup,wwdw,pfvgbe,pfvgbu,mmmd,hswp,hsmt,lswp,lsmt,wbsl,wssl))
+
+/////////////////////////////////////////
+update_data(Q, bool(newq), true)
+update_data(QQ, bool(newqq), true)
+update_data(Qmin, bool(newqmin), true)
+update_data(Qbias, bool(newqbias), true)
+/////////////////////////////////////////
+f_ssmt(QQ,newqq,smtupp_clr ,zlb_show,false,z_style,z_show,valhc,0,smt_upp_wdth)
+f_ssmt(Q, newq,smt_clr,zlb_show,true,z_style,z_show,valcc,1,smt_wdth)
+f_ssmt(Qmin,newqmin,smtsub_clr,zlb_show,false,z_style,z_show,valmin,2,smt_sub_wdth)
+f_ssmt(htf1,new_htf1,x_clr ,xlb_show,false,x_style,x_show,f_text(tf1) + '\n'+" SMT",3,x_wdth)
+f_ssmt(htf2,new_htf2,x_clr ,xlb_show,false,x_style,x_show,f_text(tf2)+'\n'+" SMT",4,x_wdth)
+
+f_fvg()
+f_bssl(Q.t)
+bias = f_bias(newqbias,Qbias.c1,Qbias.c2,Qbias.o2,Qbias.h1,Qbias.h2,Qbias.l1,Qbias.l2,Qbias.h,Qbias.l)
+[alert_bear,alert_bull] = f_cisd()
+
+if y_show_cnd
+    if cnd_opt == cndo
+        f_plot_classic(newq, Q,valcc,0,qlb)
+    if cnd_opt == cnddb 
+        f_plot_classic(newq,  Q ,valcc,0,qlb)
+        f_plot_classic(newqq, QQ,valhc,20,qqlb)           
+    if cnd_opt == cndu 
+        f_plot_classic(newqq, QQ,valhc,0,qqlb)
+    if cnd_opt == cnda 
+        f_plot_classic(newqbias,Qbias,valal,0,qblb)
+
+    if cnd_opt == cnd1
+        f_plot_classic(timeframe.change(tf1),htf1,f_text(tf1),0,"")                                                
+    if cnd_opt == cnd2
+        f_plot_classic(timeframe.change(tf2),htf2,f_text(tf2),0,"") 
+
+
+if newqq and y_show_b and (mdl == mdl3 ? not extime  : true) and not is_mon_tf
+    line.new(bar_index, low, bar_index, high, extend = extend.both, color = divi_show ? divi_clr : color.new(divi_clr, 100))
+if  y_show_b and (mdl == mdl3 ? not extime  : true) and is_mon_tf 
+    if montlb[1] != "W1" and montlb == "W1" 
+        line.new(bar_index, low, bar_index, high, extend = extend.both, color = divi_show ? divi_clr : color.new(divi_clr, 100))
+
+/////////////////psp    
+ps0 = close[1]  > open[1]  ? 1 : close[1]  < open[1]  ? -1 : 0 
+ps2 = cc[1] > co[1] ? 1 : cc[1] < co[1] ? -1 : 0                           
+ps3 = dc[1] > do[1] ? 1 : dc[1] < do[1] ? -1 : 0
+psp = false 
+psp := not(invx and invy)  and (ps0 != ps2 or ps0 != ps3 ) 
+psp :=    (invx and invy)  and (ps0 == ps2 or ps0 == ps3 ) 
+psp := (not invx and ps0 != ps2) or (invy and ps0 == ps3 ) 
+pspcon = 
+ ((Q.h == high or Q.xh == ch or Q.yh == dh) and (Q.hxsmt or Q.hysmt or Q.bslsmt or Q.hswp or Q.befvgtap or Qmin.hxsmt or Qmin.hysmt or QQ.hxsmt or QQ.hysmt ))  or  
+ ((Q.l == low  or Q.xl == cl or Q.yl == dl) and (Q.lxsmt or Q.lysmt or Q.sslsmt or Q.lswp or Q.bufvgtap or Qmin.lxsmt or Qmin.lysmt or QQ.lxsmt or QQ.lysmt))
+barcolor(x_psp and psp and pspcon[1] ? (ps0 == 1 ? bull_clr :  bear_clr ) : na,offset = -1)
+   
+bias_txt = bias == 1 ? "Bullish" : bias == -1 ? "Bearish" : bias == 2 ? "Invalid Bullish Bias" : bias ==-2 ? "Invalid Bearish Bias" : "-------"
+if show_tb
+    table.cell(tablo,0,0,text= "Model: "   + mdl  ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)    
+    table.cell(tablo,0,1,text= "Cycle: "   + str.tostring(valcc)  ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+    table.cell(tablo,0,2,text= "Bias: "    + bias_txt  ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+    table.cell(tablo,0,3,text= "📋Cycles📋" ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+    table.cell(tablo,0,4,text= str.tostring(cychist) ,text_color=tb_txt_clr,bgcolor= default_bg, text_size = szt)
+
+/////true opens 
+var float  cur_tro = na
+var int    cur_trt = na 
+var float qcur_tro = na
+var int   qcur_trt = na 
+
+tru_conq   = qlb  == "Q2" or  qlb == "W2" or  qlb == "M"
+tru_conqq  = qqlb == "Q2" or qqlb == "W2" or qqlb == "M"
+if not tru_conq[1] and tru_conq 
+    cur_tro := open
+    cur_trt := time
+if not tru_conqq[1] and tru_conqq 
+    qcur_tro := open
+    qcur_trt := time
+f_get_open(string xx)=>
+    trop = xx  == "Yearly" ? "TYO" : xx == "Quarterly" ? "TQO" : xx == "Monthly" ? "TMO" : xx== "Weekly" ? "TWO" : 
+     xx == "Daily" ? "TDO" : xx == "90m" ? "TSO" : xx == "Micro" ? "TMSO" :"" 
+    trop := str.contains(xx ,"Sub") ? "TSO" : trop 
+    trop
+if true_show and not (mdl == mdl3)
+    tr_q = line.new(cur_trt,cur_tro,time+5*dx,cur_tro,xloc=xloc.bar_time, color= true_clr)
+    line.delete(tr_q[1])
+    lbl_r = label.new(x=time+5*dx  ,y = cur_tro , text = f_get_open(valcc),xloc=xloc.bar_time,yloc= yloc.price,style=label.style_label_left,textcolor = true_clr,size=sz,color=color.new(color.teal,100) )
+    label.delete(lbl_r[1])
+if true_show and not (mdl == mdl3) and (is_micro_tf or is_sub_tf or is_day_tf)
+
+    tr_qq = line.new(qcur_trt,qcur_tro,time+5*dx,qcur_tro,xloc=xloc.bar_time, color= true_clr)
+    line.delete(tr_qq[1])
+    lbl_qq = label.new(x=time+5*dx  ,y = qcur_tro , text = f_get_open(valhc),xloc=xloc.bar_time,yloc= yloc.price,style=label.style_label_left,textcolor = true_clr,size=sz,color=color.new(color.teal,100) )
+    label.delete(lbl_qq[1])
+alertcondition(alert_bear, "Bear","Bear")
+alertcondition(alert_bull, "Bull","Bull")
+   

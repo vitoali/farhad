@@ -1,0 +1,632 @@
+//@version=6
+indicator("OrderFlow FVG Matrix MTF", overlay = true,
+     max_boxes_count = 500, max_labels_count = 500, max_lines_count = 100, max_bars_back = 5000)
+
+string G_MTF = "①  Multi-Timeframe"
+bool   i_en1  = input.bool(true, "TF 1", inline = "t1", group = G_MTF)
+string i_tf1  = input.timeframe("60",  "", inline = "t1", group = G_MTF)
+bool   i_en2  = input.bool(true, "TF 2", inline = "t2", group = G_MTF)
+string i_tf2  = input.timeframe("120", "", inline = "t2", group = G_MTF)
+bool   i_en3  = input.bool(true, "TF 3", inline = "t3", group = G_MTF)
+string i_tf3  = input.timeframe("240", "", inline = "t3", group = G_MTF)
+bool   i_bull = input.bool(true, "Bullish", inline = "d", group = G_MTF)
+bool   i_bear = input.bool(true, "Bearish", inline = "d", group = G_MTF)
+int    i_maxZones = input.int(14, "Max Active Zones (total)", minval = 1, maxval = 30, group = G_MTF, tooltip = "Newest N zones across all timeframes are kept.")
+int    i_extendR  = input.int(24, "Zone Extend (bars)", minval = 2, maxval = 120, group = G_MTF)
+
+string G_MRG = "②  Confluence Merge"
+bool   i_merge    = input.bool(true, "Merge Overlapping Zones", group = G_MRG, tooltip = "Any two same-direction zones whose bands overlap are fused into one Confluence FVG tagged with every timeframe involved. Guarantees no overlapping zones on the chart.")
+float  i_mergeATR = input.float(0.30, "Merge Distance (ATR ×)", minval = 0.0, maxval = 3.0, step = 0.05, group = G_MRG, tooltip = "Extra tolerance added to the overlap test so near-touching zones also merge.")
+float  i_confBonus= input.float(0.6, "Confluence Bonus / Extra TF", minval = 0.0, maxval = 2.0, step = 0.1, group = G_MRG, tooltip = "Strength added per additional timeframe stacked into a confluence zone.")
+
+string G_DET = "③  Gap Filter"
+bool   i_useATR   = input.bool(true, "Filter Gap by ATR", group = G_DET)
+float  i_atrMult  = input.float(0.35, "Min Gap (ATR ×)", minval = 0.05, maxval = 3.0, step = 0.05, group = G_DET)
+int    i_atrLen   = input.int(14, "ATR Length", minval = 1, maxval = 200, group = G_DET)
+float  i_minGapPct= input.float(0.0, "Min Gap (% of price, 0 = off)", minval = 0.0, step = 0.05, group = G_DET)
+
+string G_HGT = "④  Universal Zone Height"
+bool   i_norm     = input.bool(true, "Normalize All Zone Heights", group = G_HGT, tooltip = "Force every FVG to one fixed height so none are tall towers. Uses chart ATR so all zones match on screen.")
+string i_normMode = input.string("ATR Based", "Height Method", options = ["ATR Based", "Fixed Percentage"], group = G_HGT)
+float  i_normATR  = input.float(0.60, "Height (ATR ×)", minval = 0.1, maxval = 3.0, step = 0.05, group = G_HGT)
+float  i_normPct  = input.float(0.30, "Height (% of price)", minval = 0.05, maxval = 2.0, step = 0.05, group = G_HGT)
+
+string G_STR = "⑤  Strength Engine (0-10)"
+float  i_minStr = input.float(3.5, "Min Strength To Show", minval = 0.0, maxval = 10.0, step = 0.5, group = G_STR)
+float  i_wSize  = input.float(0.28, "  Weight · Displacement (gap/ATR)", minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wAlign = input.float(0.26, "  Weight · Delta Alignment",        minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wRvol  = input.float(0.18, "  Weight · Relative Volume",        minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wDom   = input.float(0.12, "  Weight · Flow Dominance",         minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wDisp  = input.float(0.10, "  Weight · Middle-Candle Body",     minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wAbs   = input.float(0.06, "  Weight · Absorption",             minval = 0, maxval = 1, step = 0.02, group = G_STR)
+int    i_rvolLen= input.int(50, "RVOL Baseline (bars)", minval = 5, maxval = 500, group = G_STR)
+
+string G_MIT = "⑥  Mitigation"
+string i_mitType = input.string("50% Fill", "Fill Rule", options = ["Touch", "50% Fill", "Full Fill"], group = G_MIT)
+bool   i_keepMit = input.bool(true, "Keep Filled Zones (dark grey history)", group = G_MIT, tooltip = "Leave mitigated zones on the chart as greyed-out history instead of deleting them.")
+
+string G_VIZ = "⑦  Visuals"
+bool   i_showTag   = input.bool(true, "Show TF / Confluence Badge", group = G_VIZ)
+bool   i_showCells = input.bool(true, "Show Tier Word In Zone", group = G_VIZ)
+bool   i_showBars  = input.bool(true, "Show Bull/Bear Flow Bars", group = G_VIZ)
+bool   i_showStats = input.bool(true, "Show Delta / Volume Labels", group = G_VIZ)
+int    i_barMaxW   = input.int(80, "Flow Bar Max Width (bars)", minval = 20, maxval = 300, group = G_VIZ)
+int    i_barOff    = input.int(4, "Flow Bar Offset (bars)", minval = 1, maxval = 100, group = G_VIZ)
+float  i_barH      = input.float(0.55, "Flow Bar Height (ATR ×)", minval = 0.1, maxval = 3.0, step = 0.05, group = G_VIZ)
+string i_txtSize   = input.string("Small", "Label Text Size", options = ["Tiny", "Small", "Normal", "Large"], group = G_VIZ)
+
+string G_COL = "⑧  Theme (maroon / dark green)"
+color  i_bullZone = input.color(color.rgb(20, 105, 62),  "Bullish Zone", inline = "z", group = G_COL)
+color  i_bearZone = input.color(color.rgb(120, 28, 42),  "Bearish Zone", inline = "z", group = G_COL)
+color  i_bullBar  = input.color(color.rgb(22, 130, 74),  "Bullish Bar",  inline = "b", group = G_COL)
+color  i_bearBar  = input.color(color.rgb(158, 32, 46),  "Bearish Bar",  inline = "b", group = G_COL)
+color  i_mitCol   = input.color(color.rgb(74, 80, 92),   "Filled History", group = G_COL)
+
+string G_DASH = "⑨  Dashboard"
+bool   i_showDash = input.bool(true, "Show Dashboard", group = G_DASH)
+string i_dashPos  = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Middle Right"], group = G_DASH)
+string i_dashSize = input.string("Normal", "Text Size", options = ["Tiny", "Small", "Normal"], group = G_DASH)
+
+color C_PANEL = color.rgb(9, 10, 14)
+color C_ALT   = color.rgb(17, 20, 28)
+color C_HDR   = color.rgb(24, 29, 41)
+color C_SUB   = color.rgb(14, 17, 24)
+color C_EDGE  = color.rgb(44, 50, 62)
+color C_TXT   = color.rgb(228, 232, 240)
+color C_LO    = color.rgb(122, 132, 148)
+color C_NEU   = color.rgb(92, 100, 114)
+color C_GOLD  = color.rgb(216, 170, 92)
+color C_GREEN = color.rgb(46, 190, 120)
+color C_RED   = color.rgb(216, 76, 94)
+
+f_clamp(float v, float lo, float hi) => math.max(lo, math.min(hi, v))
+
+f_fmt(float v) =>
+    float a = math.abs(v)
+    string s = v < 0 ? "-" : ""
+    a >= 1e9 ? s + str.tostring(a / 1e9, "#.##") + "B" : a >= 1e6 ? s + str.tostring(a / 1e6, "#.##") + "M" : a >= 1e3 ? s + str.tostring(a / 1e3, "#.##") + "K" : s + str.tostring(a, "#")
+
+f_txt(string s) =>
+    switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        => size.small
+
+f_dpos(string p) =>
+    switch p
+        "Top Left"     => position.top_left
+        "Bottom Right" => position.bottom_right
+        "Bottom Left"  => position.bottom_left
+        "Middle Right" => position.middle_right
+        => position.top_right
+
+f_stars(float s) => s >= 8 ? "★★★★★" : s >= 6.5 ? "★★★★" : s >= 5 ? "★★★" : s >= 3.5 ? "★★" : s >= 2 ? "★" : "·"
+f_tier(float s)  => s >= 8 ? "PEAK" : s >= 6.5 ? "HIGH" : s >= 5 ? "FAIR" : s >= 3.5 ? "SOFT" : "WEAK"
+
+f_tflabel(string tf) =>
+    int s = timeframe.in_seconds(tf)
+    s % 86400 == 0 ? "D" + str.tostring(s / 86400) : s >= 3600 and s % 3600 == 0 ? "H" + str.tostring(s / 3600) : s >= 60 ? "M" + str.tostring(s / 60) : "S" + str.tostring(s)
+
+f_sess() =>
+    int m = hour(time, "GMT") * 60 + minute(time, "GMT")
+    m >= 480 and m < 780 ? "London" : m >= 780 and m < 1320 ? "NY" : m >= 0 and m < 540 ? "Asian" : "Other"
+
+f_buy(float h, float l, float c, float v) => (h - l) > 0 ? v * (c - l) / (h - l) : v * 0.5
+f_abs(float o, float h, float l, float c, float v) =>
+    float rng = h - l
+    rng > 0 ? v * ((h - math.max(o, c)) + (math.min(o, c) - l)) / rng * 0.5 : 0.0
+
+f_strength(bool isBull, float gap, float atrv, float fVol, float fDlt, float fAbs, float avgV, float midBody, float midRng) =>
+    float sizeS  = f_clamp(gap / math.max(atrv * 1.5, 1e-9), 0.0, 1.0)
+    float dir    = isBull ? fDlt : -fDlt
+    float alignS = fVol > 0 ? f_clamp(dir / fVol, 0.0, 1.0) : 0.0
+    float rvolS  = avgV > 0 ? f_clamp(fVol / (avgV * 3.0) / 2.0, 0.0, 1.0) : 0.0
+    float domS   = f_clamp(math.abs(fDlt) / math.max(fVol, 1.0), 0.0, 1.0)
+    float dispS  = midRng > 0 ? f_clamp(math.abs(midBody) / midRng, 0.0, 1.0) : 0.0
+    float absS   = f_clamp(fAbs / math.max(fVol, 1.0) * 2.0, 0.0, 1.0)
+    float wSum   = math.max(i_wSize + i_wAlign + i_wRvol + i_wDom + i_wDisp + i_wAbs, 1e-6)
+    float sc = (sizeS * i_wSize + alignS * i_wAlign + rvolS * i_wRvol + domS * i_wDom + dispS * i_wDisp + absS * i_wAbs) / wSum * 10.0
+    f_clamp(sc, 0.0, 10.0)
+
+string L1 = f_tflabel(i_tf1)
+string L2 = f_tflabel(i_tf2)
+string L3 = f_tflabel(i_tf3)
+
+f_tfset(bool h1, bool h2, bool h3) =>
+    string s = ""
+    if h1
+        s := L1
+    if h2
+        s := s == "" ? L2 : s + "·" + L2
+    if h3
+        s := s == "" ? L3 : s + "·" + L3
+    s == "" ? "—" : s
+
+detect_bull() =>
+    var float a_top = na
+    var float a_bot = na
+    var float a_sc = 0.0
+    var int a_t = na
+    var float a_buy = 0.0
+    var float a_vol = 0.0
+    var float a_dlt = 0.0
+    var float a_abs = 0.0
+    var float a_rv = 0.0
+    float atrv = ta.atr(i_atrLen)[1]
+    float avgV = ta.sma(volume, i_rvolLen)[1]
+    if low[1] > high[3]
+        float gtop = low[1]
+        float gbot = high[3]
+        float gap = gtop - gbot
+        float minGap = i_useATR ? atrv * i_atrMult : (i_minGapPct > 0 ? close[1] * i_minGapPct / 100.0 : 0.0)
+        if gap >= minGap
+            float b1 = f_buy(high[1], low[1], close[1], volume[1])
+            float b2 = f_buy(high[2], low[2], close[2], volume[2])
+            float b3 = f_buy(high[3], low[3], close[3], volume[3])
+            a_buy := b1 + b2 + b3
+            a_vol := volume[1] + volume[2] + volume[3]
+            a_dlt := 2.0 * a_buy - a_vol
+            a_abs := f_abs(open[1], high[1], low[1], close[1], volume[1]) + f_abs(open[2], high[2], low[2], close[2], volume[2]) + f_abs(open[3], high[3], low[3], close[3], volume[3])
+            a_rv  := avgV > 0 ? a_vol / (avgV * 3.0) * 100.0 : 100.0
+            a_top := gtop
+            a_bot := gbot
+            a_sc  := f_strength(true, gap, atrv, a_vol, a_dlt, a_abs, avgV, close[2] - open[2], high[2] - low[2])
+            a_t   := time[1]
+    if not na(a_bot) and close[1] < a_bot
+        a_top := na
+        a_bot := na
+        a_sc  := 0.0
+        a_t   := na
+    [a_top, a_bot, a_sc, a_t, a_buy, a_vol, a_dlt, a_abs, a_rv]
+
+detect_bear() =>
+    var float a_top = na
+    var float a_bot = na
+    var float a_sc = 0.0
+    var int a_t = na
+    var float a_buy = 0.0
+    var float a_vol = 0.0
+    var float a_dlt = 0.0
+    var float a_abs = 0.0
+    var float a_rv = 0.0
+    float atrv = ta.atr(i_atrLen)[1]
+    float avgV = ta.sma(volume, i_rvolLen)[1]
+    if high[1] < low[3]
+        float gtop = low[3]
+        float gbot = high[1]
+        float gap = gtop - gbot
+        float minGap = i_useATR ? atrv * i_atrMult : (i_minGapPct > 0 ? close[1] * i_minGapPct / 100.0 : 0.0)
+        if gap >= minGap
+            float b1 = f_buy(high[1], low[1], close[1], volume[1])
+            float b2 = f_buy(high[2], low[2], close[2], volume[2])
+            float b3 = f_buy(high[3], low[3], close[3], volume[3])
+            a_buy := b1 + b2 + b3
+            a_vol := volume[1] + volume[2] + volume[3]
+            a_dlt := 2.0 * a_buy - a_vol
+            a_abs := f_abs(open[1], high[1], low[1], close[1], volume[1]) + f_abs(open[2], high[2], low[2], close[2], volume[2]) + f_abs(open[3], high[3], low[3], close[3], volume[3])
+            a_rv  := avgV > 0 ? a_vol / (avgV * 3.0) * 100.0 : 100.0
+            a_top := gtop
+            a_bot := gbot
+            a_sc  := f_strength(false, gap, atrv, a_vol, a_dlt, a_abs, avgV, close[2] - open[2], high[2] - low[2])
+            a_t   := time[1]
+    if not na(a_top) and close[1] > a_top
+        a_top := na
+        a_bot := na
+        a_sc  := 0.0
+        a_t   := na
+    [a_top, a_bot, a_sc, a_t, a_buy, a_vol, a_dlt, a_abs, a_rv]
+
+[b1t, b1b, b1s, b1x, b1by, b1v, b1d, b1a, b1r] = request.security(syminfo.tickerid, i_tf1, detect_bull(), lookahead = barmerge.lookahead_off)
+[b2t, b2b, b2s, b2x, b2by, b2v, b2d, b2a, b2r] = request.security(syminfo.tickerid, i_tf2, detect_bull(), lookahead = barmerge.lookahead_off)
+[b3t, b3b, b3s, b3x, b3by, b3v, b3d, b3a, b3r] = request.security(syminfo.tickerid, i_tf3, detect_bull(), lookahead = barmerge.lookahead_off)
+[r1t, r1b, r1s, r1x, r1by, r1v, r1d, r1a, r1r] = request.security(syminfo.tickerid, i_tf1, detect_bear(), lookahead = barmerge.lookahead_off)
+[r2t, r2b, r2s, r2x, r2by, r2v, r2d, r2a, r2r] = request.security(syminfo.tickerid, i_tf2, detect_bear(), lookahead = barmerge.lookahead_off)
+[r3t, r3b, r3s, r3x, r3by, r3v, r3d, r3a, r3r] = request.security(syminfo.tickerid, i_tf3, detect_bear(), lookahead = barmerge.lookahead_off)
+
+float atrChart = ta.atr(i_atrLen)
+float avgChart = ta.sma(volume, i_rvolLen)
+float barHt    = atrChart * i_barH
+
+type OFZone
+    box    body
+    box    c1
+    box    c2
+    box    c3
+    box    c4
+    box    barBe
+    box    barBu
+    label  stat
+    label  tag
+    bool   isBull
+    bool   hasTf1
+    bool   hasTf2
+    bool   hasTf3
+    float  topP
+    float  botP
+    float  scoreBase
+    float  score
+    float  buyVol
+    float  totVol
+    float  delta
+    float  bullPct
+    float  bearPct
+    float  absorb
+    float  relVol
+    string tier
+    bool   mit
+
+var OFZone[] zones = array.new<OFZone>()
+var int cMit = 0
+var int lb1 = na
+var int lb2 = na
+var int lb3 = na
+var int lr1 = na
+var int lr2 = na
+var int lr3 = na
+
+f_normH() => i_norm ? (i_normMode == "ATR Based" ? atrChart * i_normATR : close * i_normPct / 100.0) : na
+
+f_build(bool isBull, bool h1, bool h2, bool h3, float rawTop, float rawBot, float sc, float buyv, float totv, float dlt, float ab, float rv) =>
+    float topP = rawTop
+    float botP = rawBot
+    if i_norm
+        float h = f_normH()
+        float m = (rawTop + rawBot) / 2.0
+        topP := m + h / 2.0
+        botP := m - h / 2.0
+    float bPct = totv > 0 ? buyv / totv * 100.0 : 50.0
+    color zc = isBull ? i_bullZone : i_bearZone
+    int   ztr = int(f_clamp(90.0 - sc * 4.0, 55.0, 90.0))
+    box body = box.new(bar_index - 2, topP, bar_index + i_extendR, botP, bgcolor = color.new(zc, ztr), border_color = color.new(zc, math.max(0, ztr - 35)), border_width = 1)
+    box c1 = box.new(bar_index, topP, bar_index, botP, bgcolor = na, border_color = na, text_color = C_TXT, text_size = f_txt(i_txtSize), text_halign = text.align_center, text_valign = text.align_center)
+    box c2 = box.new(bar_index, topP, bar_index, botP, bgcolor = na, border_color = na, text_color = C_TXT, text_size = f_txt(i_txtSize), text_halign = text.align_center, text_valign = text.align_center)
+    box c3 = box.new(bar_index, topP, bar_index, botP, bgcolor = na, border_color = na, text_color = C_TXT, text_size = f_txt(i_txtSize), text_halign = text.align_center, text_valign = text.align_center)
+    box c4 = box.new(bar_index, topP, bar_index, botP, bgcolor = na, border_color = na, text_color = C_TXT, text_size = f_txt(i_txtSize), text_halign = text.align_center, text_valign = text.align_center)
+    box barBe = box.new(bar_index, topP, bar_index, botP, bgcolor = na, border_color = na, text_color = C_TXT, text_size = f_txt(i_txtSize), text_halign = text.align_right, text_valign = text.align_center)
+    box barBu = box.new(bar_index, topP, bar_index, botP, bgcolor = na, border_color = na, text_color = C_TXT, text_size = f_txt(i_txtSize), text_halign = text.align_right, text_valign = text.align_center)
+    label stat = label.new(bar_index, botP, "", style = label.style_label_left, color = color.new(C_PANEL, 20), textcolor = C_TXT, size = f_txt(i_txtSize), textalign = text.align_left)
+    label tag = label.new(bar_index, topP, "", style = label.style_label_right, color = color.new(zc, 12), textcolor = C_TXT, size = f_txt(i_txtSize))
+    OFZone.new(body, c1, c2, c3, c4, barBe, barBu, stat, tag, isBull, h1, h2, h3, topP, botP, sc, sc, buyv, totv, dlt, bPct, 100.0 - bPct, ab, rv, f_tier(sc), false)
+
+f_spawn(bool isBull, int tfIdx, float top, float bot, float sc, float buyv, float totv, float dlt, float ab, float rv) =>
+    if not na(top) and not na(bot) and sc >= i_minStr
+        zones.push(f_build(isBull, tfIdx == 1, tfIdx == 2, tfIdx == 3, top, bot, sc, buyv, totv, dlt, ab, rv))
+
+f_absorbInto(OFZone a, OFZone b) =>
+    a.hasTf1 := a.hasTf1 or b.hasTf1
+    a.hasTf2 := a.hasTf2 or b.hasTf2
+    a.hasTf3 := a.hasTf3 or b.hasTf3
+    float wA = math.max(a.totVol, 1.0)
+    float wB = math.max(b.totVol, 1.0)
+    float wT = wA + wB
+    float aMid = math.avg(a.topP, a.botP)
+    float bMid = math.avg(b.topP, b.botP)
+    float nMid = (aMid * wA + bMid * wB) / wT
+    a.buyVol += b.buyVol
+    a.totVol += b.totVol
+    a.absorb += b.absorb
+    a.delta  := 2.0 * a.buyVol - a.totVol
+    a.bullPct := a.totVol > 0 ? a.buyVol / a.totVol * 100.0 : 50.0
+    a.bearPct := 100.0 - a.bullPct
+    a.relVol  := (a.relVol * wA + b.relVol * wB) / wT
+    float h = i_norm ? f_normH() : (a.topP - a.botP)
+    a.topP := nMid + h / 2.0
+    a.botP := nMid - h / 2.0
+    int cc = (a.hasTf1 ? 1 : 0) + (a.hasTf2 ? 1 : 0) + (a.hasTf3 ? 1 : 0)
+    a.scoreBase := math.max(a.scoreBase, b.scoreBase)
+    a.score := f_clamp(a.scoreBase + i_confBonus * (cc - 1), 0.0, 10.0)
+    a.tier := f_tier(a.score)
+    b.body.delete()
+    b.c1.delete()
+    b.c2.delete()
+    b.c3.delete()
+    b.c4.delete()
+    b.barBe.delete()
+    b.barBu.delete()
+    b.stat.delete()
+    b.tag.delete()
+
+f_consolidate() =>
+    bool didMerge = false
+    int n = zones.size()
+    if n > 1
+        for i = 0 to n - 2
+            if didMerge
+                break
+            for j = i + 1 to n - 1
+                OFZone A = zones.get(i)
+                OFZone B = zones.get(j)
+                if not A.mit and not B.mit and A.isBull == B.isBull
+                    float tol = atrChart * i_mergeATR
+                    if A.botP <= B.topP + tol and B.botP <= A.topP + tol
+                        f_absorbInto(A, B)
+                        zones.remove(j)
+                        didMerge := true
+                        break
+    didMerge
+
+if barstate.isconfirmed
+    if i_bull
+        if i_en1 and not na(b1x) and (na(lb1) or b1x != lb1)
+            f_spawn(true, 1, b1t, b1b, b1s, b1by, b1v, b1d, b1a, b1r)
+            lb1 := b1x
+        if i_en2 and not na(b2x) and (na(lb2) or b2x != lb2)
+            f_spawn(true, 2, b2t, b2b, b2s, b2by, b2v, b2d, b2a, b2r)
+            lb2 := b2x
+        if i_en3 and not na(b3x) and (na(lb3) or b3x != lb3)
+            f_spawn(true, 3, b3t, b3b, b3s, b3by, b3v, b3d, b3a, b3r)
+            lb3 := b3x
+    if i_bear
+        if i_en1 and not na(r1x) and (na(lr1) or r1x != lr1)
+            f_spawn(false, 1, r1t, r1b, r1s, r1by, r1v, r1d, r1a, r1r)
+            lr1 := r1x
+        if i_en2 and not na(r2x) and (na(lr2) or r2x != lr2)
+            f_spawn(false, 2, r2t, r2b, r2s, r2by, r2v, r2d, r2a, r2r)
+            lr2 := r2x
+        if i_en3 and not na(r3x) and (na(lr3) or r3x != lr3)
+            f_spawn(false, 3, r3t, r3b, r3s, r3by, r3v, r3d, r3a, r3r)
+            lr3 := r3x
+
+    if i_merge
+        int guard = 0
+        while f_consolidate() and guard < 40
+            guard += 1
+
+    while zones.size() > i_maxZones
+        OFZone o = zones.shift()
+        o.body.delete(), o.c1.delete(), o.c2.delete(), o.c3.delete(), o.c4.delete()
+        o.barBe.delete(), o.barBu.delete(), o.stat.delete(), o.tag.delete()
+
+if zones.size() > 0
+    for i = zones.size() - 1 to 0
+        OFZone z = zones.get(i)
+        if z.mit
+            continue
+        float mid = math.avg(z.topP, z.botP)
+        bool hit = switch i_mitType
+            "Touch"     => z.isBull ? low  <= z.topP : high >= z.botP
+            "Full Fill" => z.isBull ? low  <= z.botP : high >= z.topP
+            => z.isBull ? low <= mid : high >= mid
+
+        if hit
+            z.mit := true
+            cMit += 1
+            if i_keepMit
+                z.body.set_bgcolor(color.new(i_mitCol, 84))
+                z.body.set_border_color(color.new(i_mitCol, 62))
+                z.body.set_top(z.topP)
+                z.body.set_bottom(z.botP)
+                z.body.set_right(bar_index)
+            else
+                z.body.delete()
+            z.c1.delete(), z.c2.delete(), z.c3.delete(), z.c4.delete()
+            z.barBe.delete(), z.barBu.delete(), z.stat.delete(), z.tag.delete()
+            continue
+
+        z.body.set_top(z.topP)
+        z.body.set_bottom(z.botP)
+        z.body.set_right(bar_index + i_extendR)
+
+        int cc = (z.hasTf1 ? 1 : 0) + (z.hasTf2 ? 1 : 0) + (z.hasTf3 ? 1 : 0)
+        string ts = f_tfset(z.hasTf1, z.hasTf2, z.hasTf3)
+        color zc = z.isBull ? i_bullZone : i_bearZone
+
+        if i_showTag
+            z.tag.set_xy(math.max(0, bar_index - 24), z.topP)
+            z.tag.set_text(cc > 1 ? "⚡ Confluence FVG · " + ts : "⏱ " + ts)
+            z.tag.set_color(cc > 1 ? color.new(C_GOLD, 12) : color.new(zc, 12))
+            z.tag.set_textcolor(cc > 1 ? color.rgb(12, 12, 14) : C_TXT)
+        else
+            z.tag.set_text("")
+
+        if i_showCells
+            int l0 = math.max(0, bar_index - 24)
+            int cw = math.max(1, int((bar_index - l0) / 4))
+            box[] cells = array.from(z.c1, z.c2, z.c3, z.c4)
+            for k = 0 to 3
+                box cb = array.get(cells, k)
+                int cl = l0 + cw * k
+                int cr = k == 3 ? bar_index : l0 + cw * (k + 1)
+                int tr = int(f_clamp(80.0 - z.score * 3.0 - k * 5.0, 30.0, 85.0))
+                cb.set_lefttop(cl, z.topP)
+                cb.set_rightbottom(cr, z.botP)
+                cb.set_bgcolor(color.new(zc, tr))
+                cb.set_text(str.substring(z.tier, k, k + 1))
+        else
+            z.c1.set_bgcolor(na), z.c1.set_text("")
+            z.c2.set_bgcolor(na), z.c2.set_text("")
+            z.c3.set_bgcolor(na), z.c3.set_text("")
+            z.c4.set_bgcolor(na), z.c4.set_text("")
+
+        if i_showBars
+            int bl  = bar_index + i_extendR + i_barOff
+            int beR = bl + int(i_barMaxW * z.bearPct / 100.0)
+            int buR = bl + int(i_barMaxW * z.bullPct / 100.0)
+            z.barBe.set_lefttop(bl, mid + barHt)
+            z.barBe.set_rightbottom(beR, mid)
+            z.barBe.set_bgcolor(color.new(i_bearBar, 12))
+            z.barBe.set_text(str.tostring(z.bearPct, "#.0") + "%")
+            z.barBu.set_lefttop(bl, mid)
+            z.barBu.set_rightbottom(buR, mid - barHt)
+            z.barBu.set_bgcolor(color.new(i_bullBar, 12))
+            z.barBu.set_text(str.tostring(z.bullPct, "#.0") + "%")
+        else
+            z.barBe.set_bgcolor(na), z.barBe.set_text("")
+            z.barBu.set_bgcolor(na), z.barBu.set_text("")
+
+        if i_showStats
+            int lx = bar_index + i_extendR + i_barOff + i_barMaxW + 3
+            color dc = z.delta >= 0 ? i_bullBar : i_bearBar
+            string s = (cc > 1 ? "CONF " : "") + ts + " · Δ " + (z.delta >= 0 ? "+" : "") + f_fmt(z.delta) + "\n" + f_fmt(z.totVol) + " (" + str.tostring(z.relVol, "#.0") + "%)"
+            z.stat.set_xy(lx, mid)
+            z.stat.set_text(s)
+            z.stat.set_textcolor(dc)
+        else
+            z.stat.set_text("")
+
+float cBuy   = f_buy(high, low, close, volume)
+float cDelta = 2.0 * cBuy - volume
+float cvdBias= ta.ema(cDelta, 20) / math.max(ta.ema(volume, 20), 1.0)
+
+var table d = table.new(f_dpos(i_dashPos), 4, 16, bgcolor = C_PANEL, frame_color = C_EDGE, frame_width = 1, border_color = color.new(C_EDGE, 62), border_width = 1)
+f_c(int col, int row, string t, color tc, color bg, string al) => table.cell(d, col, row, t, text_color = tc, bgcolor = bg, text_size = f_txt(i_dashSize), text_halign = al == "r" ? text.align_right : al == "c" ? text.align_center : text.align_left)
+
+f_biasTxt(float dv, int nb, int nr) => nb + nr == 0 ? "—" : dv > 0 ? "▲ BULL" : dv < 0 ? "▼ BEAR" : "● FLAT"
+f_biasCol(float dv, int nb, int nr, color g, color rr, color n) => nb + nr == 0 ? n : dv > 0 ? g : dv < 0 ? rr : n
+
+if barstate.islast and i_showDash
+    int t1b = 0
+    int t1r = 0
+    float t1d = 0.0
+    int t2b = 0
+    int t2r = 0
+    float t2d = 0.0
+    int t3b = 0
+    int t3r = 0
+    float t3d = 0.0
+    float nearUp = na
+    string nearUpTf = ""
+    float nearUpS = na
+    float nearDn = na
+    string nearDnTf = ""
+    float nearDnS = na
+    float bestS = 0.0
+    float bestPx = na
+    bool bestBull = true
+    string bestTf = ""
+    int  bestCC = 0
+    float aggDlt = 0.0
+    int active = 0
+    int confluences = 0
+    if zones.size() > 0
+        for i = 0 to zones.size() - 1
+            OFZone z = zones.get(i)
+            if z.mit
+                continue
+            active += 1
+            int cc = (z.hasTf1 ? 1 : 0) + (z.hasTf2 ? 1 : 0) + (z.hasTf3 ? 1 : 0)
+            if cc > 1
+                confluences += 1
+            float mid = math.avg(z.topP, z.botP)
+            aggDlt += z.delta
+            if z.hasTf1
+                t1d += z.delta
+                if z.isBull
+                    t1b += 1
+                else
+                    t1r += 1
+            if z.hasTf2
+                t2d += z.delta
+                if z.isBull
+                    t2b += 1
+                else
+                    t2r += 1
+            if z.hasTf3
+                t3d += z.delta
+                if z.isBull
+                    t3b += 1
+                else
+                    t3r += 1
+            if mid >= close and (na(nearUp) or mid < nearUp)
+                nearUp := mid
+                nearUpTf := f_tfset(z.hasTf1, z.hasTf2, z.hasTf3)
+                nearUpS := z.score
+            if mid <= close and (na(nearDn) or mid > nearDn)
+                nearDn := mid
+                nearDnTf := f_tfset(z.hasTf1, z.hasTf2, z.hasTf3)
+                nearDnS := z.score
+            if z.score > bestS
+                bestS := z.score
+                bestPx := mid
+                bestBull := z.isBull
+                bestTf := f_tfset(z.hasTf1, z.hasTf2, z.hasTf3)
+                bestCC := cc
+
+    f_c(0, 0, "◢ ORDERFLOW FVG · MTF", C_GOLD, C_HDR, "l")
+    f_c(1, 0, "", C_GOLD, C_HDR, "l")
+    f_c(2, 0, "", C_LO, C_HDR, "r")
+    f_c(3, 0, timeframe.period + " · " + syminfo.ticker, C_LO, C_HDR, "r")
+
+    f_c(0, 1, "TIMEFRAMES", C_TXT, C_ALT, "l")
+    f_c(1, 1, "BULL", C_LO, C_ALT, "r")
+    f_c(2, 1, "BEAR", C_LO, C_ALT, "r")
+    f_c(3, 1, "BIAS", C_LO, C_ALT, "r")
+
+    f_c(0, 2, (i_en1 ? "● " : "○ ") + L1, i_en1 ? C_TXT : C_NEU, C_PANEL, "l")
+    f_c(1, 2, i_en1 ? str.tostring(t1b) : "—", C_GREEN, C_PANEL, "r")
+    f_c(2, 2, i_en1 ? str.tostring(t1r) : "—", C_RED, C_PANEL, "r")
+    f_c(3, 2, i_en1 ? f_biasTxt(t1d, t1b, t1r) : "off", f_biasCol(t1d, t1b, t1r, C_GREEN, C_RED, C_NEU), C_PANEL, "r")
+
+    f_c(0, 3, (i_en2 ? "● " : "○ ") + L2, i_en2 ? C_TXT : C_NEU, C_SUB, "l")
+    f_c(1, 3, i_en2 ? str.tostring(t2b) : "—", C_GREEN, C_SUB, "r")
+    f_c(2, 3, i_en2 ? str.tostring(t2r) : "—", C_RED, C_SUB, "r")
+    f_c(3, 3, i_en2 ? f_biasTxt(t2d, t2b, t2r) : "off", f_biasCol(t2d, t2b, t2r, C_GREEN, C_RED, C_NEU), C_SUB, "r")
+
+    f_c(0, 4, (i_en3 ? "● " : "○ ") + L3, i_en3 ? C_TXT : C_NEU, C_PANEL, "l")
+    f_c(1, 4, i_en3 ? str.tostring(t3b) : "—", C_GREEN, C_PANEL, "r")
+    f_c(2, 4, i_en3 ? str.tostring(t3r) : "—", C_RED, C_PANEL, "r")
+    f_c(3, 4, i_en3 ? f_biasTxt(t3d, t3b, t3r) : "off", f_biasCol(t3d, t3b, t3r, C_GREEN, C_RED, C_NEU), C_PANEL, "r")
+
+    f_c(0, 5, "KEY ZONES", C_TXT, C_ALT, "l")
+    f_c(1, 5, "PRICE", C_LO, C_ALT, "r")
+    f_c(2, 5, "TF", C_LO, C_ALT, "r")
+    f_c(3, 5, "SCORE", C_LO, C_ALT, "r")
+
+    f_c(0, 6, bestCC > 1 ? "★ Strongest ⚡" : "★ Strongest", C_GOLD, C_PANEL, "l")
+    f_c(1, 6, na(bestPx) ? "—" : str.tostring(bestPx, format.mintick), bestBull ? C_GREEN : C_RED, C_PANEL, "r")
+    f_c(2, 6, na(bestPx) ? "—" : bestTf, C_TXT, C_PANEL, "r")
+    f_c(3, 6, na(bestPx) ? "—" : str.tostring(bestS, "#.0") + " " + f_tier(bestS), C_GOLD, C_PANEL, "r")
+
+    f_c(0, 7, "▲ Nearest Up", C_RED, C_SUB, "l")
+    f_c(1, 7, na(nearUp) ? "—" : str.tostring(nearUp, format.mintick), C_TXT, C_SUB, "r")
+    f_c(2, 7, na(nearUp) ? "—" : nearUpTf, C_TXT, C_SUB, "r")
+    f_c(3, 7, na(nearUp) ? "—" : str.tostring(nearUpS, "#.0"), C_LO, C_SUB, "r")
+
+    f_c(0, 8, "▼ Nearest Dn", C_GREEN, C_PANEL, "l")
+    f_c(1, 8, na(nearDn) ? "—" : str.tostring(nearDn, format.mintick), C_TXT, C_PANEL, "r")
+    f_c(2, 8, na(nearDn) ? "—" : nearDnTf, C_TXT, C_PANEL, "r")
+    f_c(3, 8, na(nearDn) ? "—" : str.tostring(nearDnS, "#.0"), C_LO, C_PANEL, "r")
+
+    f_c(0, 9, "FLOW PRESSURE", C_TXT, C_ALT, "l")
+    f_c(1, 9, "", C_LO, C_ALT, "l")
+    f_c(2, 9, "", C_LO, C_ALT, "l")
+    f_c(3, 9, "", C_LO, C_ALT, "r")
+
+    f_c(0, 10, "FVG Net Δ", C_LO, C_PANEL, "l")
+    f_c(1, 10, (aggDlt >= 0 ? "+" : "") + f_fmt(aggDlt), aggDlt >= 0 ? C_GREEN : C_RED, C_PANEL, "l")
+    f_c(2, 10, "Regime", C_LO, C_PANEL, "r")
+    f_c(3, 10, aggDlt > 0 ? "ACCUM" : aggDlt < 0 ? "DISTRIB" : "FLAT", aggDlt > 0 ? C_GREEN : aggDlt < 0 ? C_RED : C_NEU, C_PANEL, "r")
+
+    f_c(0, 11, "Chart Δ", C_LO, C_SUB, "l")
+    f_c(1, 11, (cDelta >= 0 ? "+" : "") + f_fmt(cDelta), cDelta >= 0 ? C_GREEN : C_RED, C_SUB, "l")
+    f_c(2, 11, "RVOL", C_LO, C_SUB, "r")
+    f_c(3, 11, avgChart > 0 ? str.tostring(volume / avgChart * 100.0, "#") + "%" : "—", volume > avgChart ? C_GOLD : C_LO, C_SUB, "r")
+
+    f_c(0, 12, "CVD Bias", C_LO, C_PANEL, "l")
+    f_c(1, 12, str.tostring(cvdBias * 100.0, "#") + "%", cvdBias >= 0 ? C_GREEN : C_RED, C_PANEL, "l")
+    f_c(2, 12, "Session", C_LO, C_PANEL, "r")
+    f_c(3, 12, f_sess(), C_TXT, C_PANEL, "r")
+
+    f_c(0, 13, "Active / Confluence", C_LO, C_SUB, "l")
+    f_c(1, 13, str.tostring(active) + " / " + str.tostring(confluences), C_TXT, C_SUB, "l")
+    f_c(2, 13, "Filled", C_LO, C_SUB, "r")
+    f_c(3, 13, str.tostring(cMit), C_NEU, C_SUB, "r")
+
+    f_c(0, 14, "Min Strength", C_LO, C_PANEL, "l")
+    f_c(1, 14, str.tostring(i_minStr, "#.0") + "/10", C_TXT, C_PANEL, "l")
+    f_c(2, 14, "Height", C_LO, C_PANEL, "r")
+    f_c(3, 14, i_norm ? (i_normMode == "ATR Based" ? "ATR×" + str.tostring(i_normATR, "#.##") : str.tostring(i_normPct, "#.##") + "%") : "raw", C_NEU, C_PANEL, "r")
+
+    f_c(0, 15, "Engine", C_NEU, C_HDR, "l")
+    f_c(1, 15, "Range-Δ", C_NEU, C_HDR, "l")
+    f_c(2, 15, "Merge", C_NEU, C_HDR, "r")
+    f_c(3, 15, i_merge ? "on" : "off", C_NEU, C_HDR, "r")
+
+bool anyNewBull = barstate.isconfirmed and i_bull and ((i_en1 and not na(b1x) and (na(lb1[1]) or b1x != lb1[1])) or (i_en2 and not na(b2x) and (na(lb2[1]) or b2x != lb2[1])) or (i_en3 and not na(b3x) and (na(lb3[1]) or b3x != lb3[1])))
+bool anyNewBear = barstate.isconfirmed and i_bear and ((i_en1 and not na(r1x) and (na(lr1[1]) or r1x != lr1[1])) or (i_en2 and not na(r2x) and (na(lr2[1]) or r2x != lr2[1])) or (i_en3 and not na(r3x) and (na(lr3[1]) or r3x != lr3[1])))
+
+alertcondition(anyNewBull, "New Bullish OF-FVG (MTF)", "OrderFlow FVG: bullish MTF imbalance formed on {{ticker}} @ {{close}}")
+alertcondition(anyNewBear, "New Bearish OF-FVG (MTF)", "OrderFlow FVG: bearish MTF imbalance formed on {{ticker}} @ {{close}}")
+alertcondition(anyNewBull or anyNewBear, "Any New OF-FVG (MTF)", "OrderFlow FVG: new MTF imbalance formed on {{ticker}} @ {{close}}")
