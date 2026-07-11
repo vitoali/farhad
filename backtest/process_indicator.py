@@ -39,6 +39,8 @@ PORT_MAP: dict[str, str] = {
     "Zero_Lag_Trend_Signals_TIKTOK_8b12.txt": "zero_lag",
     "Trendline_Breakouts_With__df18.txt": "trendline_breakout",
     "rsi_advanced_868b.txt": "rsi_advanced",
+    "machin_rsi_313b.txt": "ml_rsi",
+    "machin_learning_rsi_217a.txt": "ml_rsi",
 }
 
 KNOWN_DONE = {
@@ -57,6 +59,7 @@ KNOWN_DONE = {
     "zero_lag": 13,
     "trendline_breakout": 14,
     "rsi_advanced": 15,
+    "ml_rsi": 17,
 }
 
 

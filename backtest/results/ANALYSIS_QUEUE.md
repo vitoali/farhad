@@ -7,7 +7,7 @@
 | وضعیت | تعداد |
 |--------|-------|
 | تحلیل‌شده قبلی (چت) | 6 |
-| بک‌تست Python | 15 | ✅ (#1–#15) |
+| بک‌تست Python | 17 | ✅ (#1–#17) |
 | تحلیل استاتیک batch | ~75 |
 | ناقص (منتظر آپلود) | 12 |
 | **هدف نهایی** | ~60 |
@@ -31,6 +31,7 @@
 | 13 | Zero Lag | `Zero_Lag_Trend_Signals_TIKTOK_8b12.txt` | ✅ |
 | 14 | Trendline Breakout | `Trendline_Breakouts_With__df18.txt` | ✅ (low sample) |
 | 15 | RSI Advanced | `rsi_advanced_868b.txt` | ✅ |
+| 17 | ML RSI Zeiierman | `machin_rsi_313b.txt` | ✅ |
 | 16 | Monster Trex | `monster_e007.txt` | ⏳ blocked (ext libs) |
 
 ## اولویت بعدی برای پورت Python

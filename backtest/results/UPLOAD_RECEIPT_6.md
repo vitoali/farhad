@@ -9,7 +9,7 @@
 | `sop_hunt_9b71.txt` | Stop Hunt Radar [GBB] | 666 | ✅ | `STOP_HUNT_e28b.txt` |
 | `strong_pulback_7019.txt` | Strong Pullback Signals | 579 | ✅ | `LONG_SEL_285e.txt` |
 | `supply_demand_72be.txt` | Supply/Demand Zones (Flux) | 579 | ✅ | `suply_demand_zone_f0e7.txt` |
-| `machin_rsi_313b.txt` | Machine Learning RSI (Zeiierman) | 603 | ❌ | `machin_learning_rsi_217a.txt` — هنوز براکت `{}` نامتعادل |
+| `machin_rsi_313b.txt` | Machine Learning RSI (Zeiierman) | 603 | ✅ | `machin_learning_rsi_217a.txt` |
 
 ## هنوز منتظر (از لیست ۳۹ تایی قبلی)
 

@@ -11,6 +11,7 @@ from config import CRYPTO_SL_PCT, CRYPTO_TP_PCT, FOREX_SL_PIPS, FOREX_TP_RR
 from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
 from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
+from ml_indicators import ml_rsi_signals
 from zone_engine import extract_zone_signals_from_df, simulate_zone_native
 from zone_indicators import (
     breaker_blocks_signals,
@@ -195,6 +196,12 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         sig = rsi_advanced_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
 
+    if name == "ml_rsi":
+        if len(df) < 200:
+            return BacktestResult(name, symbol, tf, market, notes=["need 200+ bars"])
+        sig = ml_rsi_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
     raise ValueError(name)
 
 
@@ -249,7 +256,7 @@ def main():
     indicators = [
         "ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib", "quadapt",
         "supertrend", "chandelier_exit", "lorentzian",
-        "ifvg", "breaker_blocks", "smc_pro", "zero_lag", "trendline_breakout", "rsi_advanced",
+        "ifvg", "breaker_blocks", "smc_pro", "zero_lag", "trendline_breakout", "rsi_advanced", "ml_rsi",
     ]
     all_results: list[dict] = []
 

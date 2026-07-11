@@ -476,6 +476,45 @@ SL = 25% فاصله entry→target (پیش‌فرض)
 
 ---
 
+## #17 Machine Learning RSI (Zeiierman)
+
+**فایل:** `machin_rsi_313b.txt` | **نوع:** ML / 8-feature KNN on RSI
+
+### منطق
+- ۸ ویژگی RSI (value, slope, accel, mid, percentile, volatility, spread, regime)
+- بانک حافظه ۵۰۰ بار + KNN با فاصله Lorentzian فشرده
+- Rank ≥60 و Confidence ≥50 + Trend Gate (ML Supertrend) + Vol Band + Chop Filter
+- سیگنال روی flip stance با cooldown ۵ بار
+
+### نتایج (~۳۱ روز، SL/TP 5% crypto)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| HYPEUSDT | 15m | 12 | 58.3 | **1.81** |
+| HYPEUSDT | 1h | 8 | 62.5 | **1.45** |
+| BEATUSDT | 15m | 58 | 50.0 | **1.21** |
+| BEATUSDT | 1h | 7 | 42.9 | 0.69 |
+| BTCUSDT | 15m | 11 | 18.2 | 0.16 |
+
+### نقاط قوت
+- **PF>1.4 روی HYPE** — فیلتر rank/confidence کار می‌کند
+- **BEAT 15m PF=1.21** با WR 50%
+- ML Supertrend + chop filter
+- `barstate.isconfirmed` + cooldown
+
+### نقاط ضعف
+- BTC ضعیف — فیلترها سخت
+- فارکس/طلا با SL 5% نامناسب
+- 4h تقریباً بدون سیگنال
+- Auto-weight optimizer ساده‌شده
+
+### نگه داریم / حذف / بهبود
+- **نگه:** HYPE/BEAT 15m-1h — **بهترین ML تا اینجا**
+- **بهبود:** Fisher auto-weights کامل
+- **ترکیب:** فیلتر confluence با SMC PRO
+
+---
+
 ## #16 Monster Trex Vol — BLOCKED
 
 **فایل:** `monster_e007.txt` | **وضعیت:** نیاز به کتابخانه‌های Pine خارجی
