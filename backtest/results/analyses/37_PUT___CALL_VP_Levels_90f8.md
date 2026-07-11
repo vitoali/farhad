@@ -1,0 +1,27 @@
+# #37 PK
+
+**فایل:** `PUT___CALL_VP_Levels_90f8.txt`
+**تاریخ:** 2026-07-11 16:35 UTC
+**نوع:** indicator | Pine v6
+**دسته:** trend/trend_signal
+**کامل:** بله
+**بک‌تست:** full_simplified
+
+## ویژگی‌های فنی
+
+- سیگنال buy/sell: True
+- SL/TP در کد: False
+- Order Block: False
+- FVG: False
+- Fib: False
+- barstate.isconfirmed: False
+- request.security: True
+
+## یادداشت‌های تحلیل استاتیک
+
+- ریسک lookahead در request.security
+- سیگنال بدون barstate.isconfirmed
+
+## بک‌تست
+
+نیاز به پورت دستی یا بک‌تستر zone/pattern.

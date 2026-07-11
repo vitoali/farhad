@@ -186,3 +186,102 @@ SL = 25% فاصله entry→target (پیش‌فرض)
 - TF 1h+ ترجیحاً
 
 ---
+
+## #7 SuperTrend
+
+**فایل:** `SUPER_TREND_ccf2.txt` | **نوع:** روند (ATR trailing)
+
+### نتایج
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 15m | 103 | 56.3 | **1.56** |
+| BEATUSDT | 1h | 21 | 57.1 | **1.38** |
+| BTCUSDT | 1h | 18 | 38.9 | 0.61 |
+| BTCUSDT | 15m | 31 | 25.8 | 0.54 |
+| XAUUSD | 15m | 47 | 38.3 | 0.12 |
+
+### نقاط قوت
+- **BEAT 15m/1h PF>1.3** — روی آلت‌کوین پرنوسان بهتر از BTC
+- منطق ساده و قابل فهم — ATR×3 + HL2
+- سیگنال کمتر از UT Bot
+
+### نقاط ضعف
+- فارکس/طلا با SL 5% ثابت شکست می‌خورد (PF<0.2)
+- بدون `barstate.isconfirmed` — ریسک repaint جزئی
+- BTC 15m ضعیف
+
+### نگه داریم / حذف / بهبود
+- **نگه:** فیلتر روند روی BEAT/crypto
+- **بهبود:** confirmed close، mult بالاتر روی XAU
+- **ترکیب:** با Bj Bot به‌عنوان تأیید جهت
+
+---
+
+## #8 Chandelier Exit
+
+**فایل:** `Chandelier_Exit_a3e4.txt` | **نوع:** روند (highest/lowest − ATR)
+
+### نتایج
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BTCUSDT | 4h | 4 | 75.0 | **3.77** |
+| BEATUSDT | 15m | 135 | 46.7 | **1.37** |
+| BTCUSDT | 1h | 30 | 33.3 | 0.50 |
+| XAUUSD | 15m | 60 | 28.3 | 0.07 |
+
+### نقاط قوت
+- **BTC 4h PF=3.77** (نمونه کم)
+- `barstate.isconfirmed` در آلرت‌ها
+- SL ساختاری داخل خود اندیکاتور (longStop/shortStop)
+
+### نقاط ضعف
+- overtrading در 15m (135 trade روی BEAT)
+- فارکس/طلا با مدل 5% SL نامناسب
+- شبیه SuperTrend ولی سیگنال بیشتر
+
+### نگه داریم / حذف / بهبود
+- **نگه:** TF 4h برای crypto
+- **بهبود:** فیلتر ADX، کاهش سیگنال 15m
+- **ترکیب:** لایه خروج/تریلینگ در استراتژی نهایی
+
+---
+
+## #9 Lorentzian Classification
+
+**فایل:** `Machine_Learning_Lorentzian_9f8e.txt` | **نوع:** ML/KNN
+
+### نتایج (پورت ساده‌شده — بدون kernel filter)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 15m | 160 | 46.9 | **0.86** |
+| HYPEUSDT | 15m | 87 | 34.5 | **0.85** |
+| BTCUSDT | 1h | 72 | 23.6 | 0.39 |
+| BTCUSDT | 15m | 75 | 26.7 | 0.49 |
+
+### نقاط قوت
+- پیش‌بینی ۴ کندل آینده با KNN Lorentzian — منطق نوآورانه
+- فیلترهای volatility/regime/ADX در Pine (در پورت خاموش)
+- نزدیک به breakeven روی BEAT/HYPE 15m
+
+### نقاط ضعف
+- **هنوز PF<1** با مدل 5%/5% — نیاز به فیلتر kernel+EMA
+- محاسبه سنگین — وابسته به MLExtensions
+- early signal flip در رنج
+
+### نگه داریم / حذف / بهبود
+- **نگه:** ایده feature engineering (RSI/WT/CCI/ADX)
+- **بهبود:** پورت کامل kernel filter + worst-case mode
+- **ترکیب:** فیلتر confluence، نه ورود مستقل
+
+---
+
+## پیشرفت batch (فایل‌های کامل)
+
+- **تحلیل استاتیک:** ~45 فایل کامل در `results/analyses/`
+- **بک‌تست Python:** ۹ اندیکاتور (#1–#9)
+- **صف:** `results/ANALYSIS_QUEUE.md`
+
+---

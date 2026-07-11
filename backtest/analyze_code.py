@@ -32,6 +32,7 @@ def _extract_title(text: str) -> str:
     for pat in [
         r'indicator\s*\(\s*title\s*=\s*["\']([^"\']+)',
         r'strategy\s*\(\s*["\']([^"\']+)',
+        r'study\s*\(\s*["\']([^"\']+)',
         r'study\s*\(\s*title\s*=\s*["\']([^"\']+)',
         r'indicator\s*\(\s*["\']([^"\']+)',
     ]:

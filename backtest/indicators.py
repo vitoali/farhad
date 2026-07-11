@@ -350,3 +350,246 @@ def quadapt_signals(
     out["buy"] = out["buy"] & ~out["buy"].shift(1).fillna(False)
     out["sell"] = out["sell"] & ~out["sell"].shift(1).fillna(False)
     return out
+
+
+# ---------------------------------------------------------------------------
+# #7 SuperTrend
+# ---------------------------------------------------------------------------
+
+def supertrend_signals(
+    df: pd.DataFrame,
+    periods: int = 10,
+    multiplier: float = 3.0,
+    use_wilder_atr: bool = True,
+    source_col: str = "hl2",
+) -> pd.DataFrame:
+    """Classic SuperTrend (Pine v4 port)."""
+    out = df.copy()
+    src = out[source_col] if source_col in out.columns else (out["high"] + out["low"]) / 2
+    atr_v = atr_wilder(out, periods) if use_wilder_atr else true_range(out).rolling(periods).mean()
+
+    up = np.zeros(len(out))
+    dn = np.zeros(len(out))
+    trend = np.ones(len(out), dtype=int)
+    src_v = src.values
+    close_v = out["close"].values
+    atr_a = atr_v.values
+
+    for i in range(len(out)):
+        if np.isnan(atr_a[i]):
+            if i > 0:
+                up[i], dn[i], trend[i] = up[i - 1], dn[i - 1], trend[i - 1]
+            continue
+        up_i = src_v[i] - multiplier * atr_a[i]
+        dn_i = src_v[i] + multiplier * atr_a[i]
+        up1 = up[i - 1] if i > 0 else up_i
+        dn1 = dn[i - 1] if i > 0 else dn_i
+        if i > 0 and close_v[i - 1] > up1:
+            up_i = max(up_i, up1)
+        if i > 0 and close_v[i - 1] < dn1:
+            dn_i = min(dn_i, dn1)
+        up[i], dn[i] = up_i, dn_i
+        prev_trend = trend[i - 1] if i > 0 else 1
+        if prev_trend == -1 and close_v[i] > dn1:
+            trend[i] = 1
+        elif prev_trend == 1 and close_v[i] < up1:
+            trend[i] = -1
+        else:
+            trend[i] = prev_trend
+
+    buy = np.zeros(len(out), dtype=bool)
+    sell = np.zeros(len(out), dtype=bool)
+    for i in range(1, len(out)):
+        buy[i] = trend[i] == 1 and trend[i - 1] == -1
+        sell[i] = trend[i] == -1 and trend[i - 1] == 1
+
+    out["trend"] = trend
+    out["buy"] = buy
+    out["sell"] = sell
+    return out
+
+
+# ---------------------------------------------------------------------------
+# #8 Chandelier Exit
+# ---------------------------------------------------------------------------
+
+def chandelier_exit_signals(
+    df: pd.DataFrame,
+    length: int = 22,
+    mult: float = 3.0,
+    use_close: bool = True,
+) -> pd.DataFrame:
+    """Chandelier Exit (everget v6 port)."""
+    out = df.copy()
+    atr_v = mult * atr_wilder(out, length)
+    hi_base = out["close"] if use_close else out["high"]
+    lo_base = out["close"] if use_close else out["low"]
+    highest = hi_base.rolling(length).max()
+    lowest = lo_base.rolling(length).min()
+
+    long_stop = np.zeros(len(out))
+    short_stop = np.zeros(len(out))
+    direction = np.ones(len(out), dtype=int)
+    close_v = out["close"].values
+    atr_a = atr_v.values
+    hi_a = highest.values
+    lo_a = lowest.values
+
+    for i in range(len(out)):
+        if np.isnan(atr_a[i]):
+            if i > 0:
+                long_stop[i], short_stop[i], direction[i] = long_stop[i - 1], short_stop[i - 1], direction[i - 1]
+            continue
+        ls = hi_a[i] - atr_a[i]
+        ss = lo_a[i] + atr_a[i]
+        ls_prev = long_stop[i - 1] if i > 0 else ls
+        ss_prev = short_stop[i - 1] if i > 0 else ss
+        if i > 0 and close_v[i - 1] > ls_prev:
+            ls = max(ls, ls_prev)
+        if i > 0 and close_v[i - 1] < ss_prev:
+            ss = min(ss, ss_prev)
+        long_stop[i], short_stop[i] = ls, ss
+        if close_v[i] > ss_prev:
+            direction[i] = 1
+        elif close_v[i] < ls_prev:
+            direction[i] = -1
+        else:
+            direction[i] = direction[i - 1] if i > 0 else 1
+
+    buy = np.zeros(len(out), dtype=bool)
+    sell = np.zeros(len(out), dtype=bool)
+    for i in range(1, len(out)):
+        buy[i] = direction[i] == 1 and direction[i - 1] == -1
+        sell[i] = direction[i] == -1 and direction[i - 1] == 1
+
+    out["dir"] = direction
+    out["buy"] = buy
+    out["sell"] = sell
+    return out
+
+
+# ---------------------------------------------------------------------------
+# #9 Lorentzian Classification (simplified core KNN port)
+# ---------------------------------------------------------------------------
+
+def _cci(series: pd.Series, length: int = 20) -> pd.Series:
+    tp = series
+    sma_tp = sma(tp, length)
+    mad = (tp - sma_tp).abs().rolling(length).mean()
+    return (tp - sma_tp) / (0.015 * mad.replace(0, np.nan))
+
+
+def _adx(df: pd.DataFrame, length: int = 14) -> pd.Series:
+    up_move = df["high"].diff()
+    down_move = -df["low"].diff()
+    plus_dm = np.where((up_move > down_move) & (up_move > 0), up_move, 0.0)
+    minus_dm = np.where((down_move > up_move) & (down_move > 0), down_move, 0.0)
+    tr = true_range(df)
+    atr_v = pd.Series(tr, index=df.index).ewm(alpha=1 / length, adjust=False).mean()
+    plus_di = 100 * pd.Series(plus_dm, index=df.index).ewm(alpha=1 / length, adjust=False).mean() / atr_v
+    minus_di = 100 * pd.Series(minus_dm, index=df.index).ewm(alpha=1 / length, adjust=False).mean() / atr_v
+    dx = (plus_di - minus_di).abs() / (plus_di + minus_di).replace(0, np.nan) * 100
+    return dx.ewm(alpha=1 / length, adjust=False).mean()
+
+
+def _wave_trend(hlc3: pd.Series, channel: int = 10, avg: int = 11) -> pd.Series:
+    esa = ema(hlc3, channel)
+    de = ema((hlc3 - esa).abs(), channel)
+    ci = (hlc3 - esa) / (0.015 * de.replace(0, np.nan))
+    wt1 = ema(ci, avg)
+    return wt1
+
+
+def _norm_rsi(close: pd.Series, length: int = 14) -> pd.Series:
+    return rsi(close, length) / 100.0
+
+
+def _norm_cci(close: pd.Series, length: int = 20) -> pd.Series:
+    raw = _cci(close, length)
+    return ((raw + 200) / 400).clip(0, 1)
+
+
+def _norm_adx(df: pd.DataFrame, length: int = 20) -> pd.Series:
+    return (_adx(df, length) / 100.0).clip(0, 1)
+
+
+def _norm_wt(hlc3: pd.Series, channel: int = 10, avg: int = 11) -> pd.Series:
+    raw = _wave_trend(hlc3, channel, avg)
+    return ((raw + 100) / 200).clip(0, 1)
+
+
+def lorentzian_signals(
+    df: pd.DataFrame,
+    neighbors_count: int = 8,
+    max_bars_back: int = 500,
+    feature_count: int = 5,
+    use_kernel_filter: bool = False,
+) -> pd.DataFrame:
+    """Simplified Lorentzian KNN — core ANN + direction flip entries (filters off by default)."""
+    out = df.copy()
+    close = out["close"]
+    hlc3 = (out["high"] + out["low"] + out["close"]) / 3
+
+    f1 = _norm_rsi(close, 14).values
+    f2 = _norm_wt(hlc3, 10, 11).values
+    f3 = _norm_cci(close, 20).values
+    f4 = _norm_adx(out, 20).values
+    f5 = _norm_rsi(close, 9).values
+    feats = [f1, f2, f3, f4, f5][:feature_count]
+    src = close.values
+    n = len(out)
+
+    y_train = np.zeros(n, dtype=int)
+    for i in range(n):
+        if i + 4 < n:
+            if src[i + 4] < src[i]:
+                y_train[i] = -1
+            elif src[i + 4] > src[i]:
+                y_train[i] = 1
+
+    prediction = np.zeros(n)
+    signal = np.zeros(n, dtype=int)
+    for bar in range(n):
+        if bar < 50:
+            continue
+        start = max(0, bar - max_bars_back)
+        last_dist = -1.0
+        dists: list[float] = []
+        preds: list[int] = []
+        for i in range(start, bar):
+            if i % 4 == 0:
+                continue
+            d = 0.0
+            for f in feats:
+                d += np.log1p(abs(f[bar] - f[i]))
+            if d >= last_dist:
+                last_dist = d
+                dists.append(d)
+                preds.append(int(y_train[i]))
+                if len(preds) > neighbors_count:
+                    q_idx = int(neighbors_count * 3 / 4)
+                    last_dist = dists[q_idx] if q_idx < len(dists) else dists[-1]
+                    dists.pop(0)
+                    preds.pop(0)
+        prediction[bar] = sum(preds)
+        if prediction[bar] > 0:
+            signal[bar] = 1
+        elif prediction[bar] < 0:
+            signal[bar] = -1
+        else:
+            signal[bar] = signal[bar - 1] if bar > 0 else 0
+
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    for i in range(1, n):
+        sig_chg = signal[i] != signal[i - 1]
+        if signal[i] == 1 and sig_chg:
+            buy[i] = True
+        if signal[i] == -1 and sig_chg:
+            sell[i] = True
+
+    out["prediction"] = prediction
+    out["signal"] = signal
+    out["buy"] = buy
+    out["sell"] = sell
+    return out
