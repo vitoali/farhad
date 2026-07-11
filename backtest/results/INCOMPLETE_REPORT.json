@@ -1,0 +1,321 @@
+{
+  "total": 92,
+  "incomplete_count": 39,
+  "complete_count": 53,
+  "incomplete_files": [
+    {
+      "file": "2_297c.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "3_3fa8.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "4_4040.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "ELYOT_dcd0.txt",
+      "lines": 348,
+      "incomplete": true,
+      "issues": [
+        "خط آخر ناقص: _1y  > _3y and"
+      ]
+    },
+    {
+      "file": "FVGGGG_f0e2.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "FVG_G_74aa.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "FVG___IFVG_ICT_a586.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "HISTORICAL_POPTRN_8ffc.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "LONG_SEL_285e.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "MACHIN_a826.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "New_Text_Document_ee2a.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "ORDER_5f08.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "QUANTOM_4271.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "STOP_HUNT_e28b.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "STRATGY_b6e6.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "SUPER_TREND_4ed2.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "VOLOM_2fee.txt",
+      "lines": 94,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (94) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "WIN_LOS_fc44.txt",
+      "lines": 162,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (162) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "atomatic_multi_pattern__9980.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "auto_pattern_detector_bf37.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "cardvel_f64f.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "dynamic_trend_8e17.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "entrylib_5e01.txt",
+      "lines": 110,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (110) — احتمال قطع شدن هنگام آپلود",
+        "کتابخانه Pine (library) ناقص — به‌تنهایی اجرا نمی‌شود"
+      ]
+    },
+    {
+      "file": "fvg_1bce.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "high_volom_pivoty_suport_778c.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "machin_f3c0.txt",
+      "lines": 110,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (110) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "machin_learning_rsi_217a.txt",
+      "lines": 426,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (426) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "mirage_8451.txt",
+      "lines": 110,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (110) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "multi_divergence_3058.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "power_order_bloc_151a.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "qt_cx_7542.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "rb_seteup_5_algo_7ddb.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "smart_0f3d.txt",
+      "lines": 110,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (110) — احتمال قطع شدن هنگام آپلود",
+        "کتابخانه Pine (library) ناقص — به‌تنهایی اجرا نمی‌شود"
+      ]
+    },
+    {
+      "file": "smart_ichimoko_d12e.txt",
+      "lines": 426,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (426) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "smart_mony_fibo_67b7.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "strong_reversal_02f0.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "suply_demand_zone_f0e7.txt",
+      "lines": 426,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (426) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "volon_trend_order_block_72a5.txt",
+      "lines": 109,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (109) — احتمال قطع شدن هنگام آپلود"
+      ]
+    },
+    {
+      "file": "whale_liquidy_zone_181a.txt",
+      "lines": 426,
+      "incomplete": true,
+      "issues": [
+        "تعداد خط مشکوک (426) — احتمال قطع شدن هنگام آپلود"
+      ]
+    }
+  ]
+}

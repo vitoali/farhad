@@ -1,0 +1,109 @@
+// This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International  
+// https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © BigBeluga
+
+//@version=6
+indicator("Dynamic Trend Bands & Anchored VWAP Signals [BigBeluga]", "Dynamic Trend Bands & Signals [BigBeluga]", overlay = true, max_bars_back = 5000, max_labels_count = 500, max_polylines_count = 100, calc_bars_count = 5000)
+
+// ＩＮＰＵＴＳ ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+
+int lrLength    = input.int(50, minval=1, title="Baseline Length", tooltip="Sets the period for the central moving average baseline calculation.")
+int atrLength   = input.int(100, minval=1, title="ATR Volatility Length", tooltip="Determines the number of bars used to measure market volatility for band spacing.")
+float atrMult   = input.float(3.0, minval=0.1, step=0.1, title="ATR Band Multiplier", tooltip="Multiplies the volatility value to widen or narrow the outer support/resistance bands.")
+int pivotLength = input.int(10, minval=1, title="Pivot Point Detection Length", tooltip="The number of bars required on each side to confirm a valid market structural high or low pivot.")
+
+// Style & Color Inputs
+color bullColor = input.color(color.lime, title="Bullish / Up Color", group="Color Settings")
+color bearColor = input.color(color.rgb(158, 55, 255), title="Bearish / Down Color", group="Color Settings")
+
+// Dashboard Settings
+bool showDash    = input.bool(true, title="Show Information Dashboard", group="Dashboard Settings")
+string dashPos   = input.string(position.top_right, title="Dashboard Position", options=[position.top_right, position.top_left, position.bottom_right, position.bottom_left], group="Dashboard Settings")
+
+// }
+// ＣＡＬＣＵＬＡＴＩＯＮＳ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+
+// ── Volatility Band Calculations ──
+float atrValue   = ta.atr(atrLength)
+float lrCenter   = ta.ema(ta.ema(close, lrLength), lrLength)
+
+float upperBand  = lrCenter + (atrValue * atrMult)
+float lowerBand  = lrCenter - (atrValue * atrMult)
+
+// ── State Tracking Logic ──
+var int trendState = 0
+
+if ta.crossover(close, upperBand)
+    trendState := 1
+if ta.crossunder(close, lowerBand)
+    trendState := -1
+
+float plotUpper = trendState == -1 ? upperBand : na
+float plotLower = trendState == 1 ? lowerBand : na
+
+// ── Signal & Tracking Variables ──
+bool breakUp = false
+bool breakDn = false
+
+var float finalDeltaVolLow  = 0.0
+var float finalDeltaVolHigh = 0.0
+var label lbl               = na
+
+// Clear the real-time tracking label on every new bar tick before rewriting
+lbl.delete()
+
+// ── Pivot & VWAP Logic (Low / Bearish Regime) ──
+float pl      = ta.pivotlow(pivotLength, pivotLength)
+float l       = ta.lowest(pivotLength)
+bool lowPivot = low[1] == l and low > l 
+
+var int lowIndx  = 0 
+var int lowIndex = 0
+
+if trendState == -1
+    if lowPivot
+        lowIndx := bar_index - 1
+    if not na(pl)
+        lowIndex := lowIndx
+
+float vwap = ta.vwap(low[1], lowPivot)
+
+var polyline poly = na
+chart.point[] cp  = array.new<chart.point>()
+
+
+if trendState == -1
+    if not na(pl) and trendState[pivotLength] == -1
+        cp.clear()
+        poly.delete()
+        poly := polyline.new(cp)
+    else if not na(poly) 
+        poly.delete()
+        float loopDeltaVolLow = 0.0
+        
+        for i = 0 to bar_index - lowIndex - 1
+            cp.push(chart.point.from_index(bar_index - i, vwap[i]))
+            loopDeltaVolLow := loopDeltaVolLow + (close[i] > open[i] ? volume[i] : -volume[i])
+        
+        lbl  := label.new(bar_index, vwap, str.tostring(loopDeltaVolLow, format.volume), textcolor = bearColor, color = color.new(bearColor, 100), style = label.style_label_left)
+        poly := polyline.new(cp, line_color = bearColor, line_style = line.style_dotted, line_width = 2)
+
+        if close <= vwap and na(pl)
+            poly             := na
+            breakDn          := true
+            finalDeltaVolLow := loopDeltaVolLow
+
+// ── Pivot & VWAP Logic (High / Bullish Regime) ──
+float ph       = ta.pivothigh(pivotLength, pivotLength)
+float h        = ta.highest(pivotLength)
+bool highPivot = high[1] == h and high < h 
+
+var polyline poly1 = na
+chart.point[] cp1  = array.new<chart.point>()
+
+var int highIndx  = 0 
+var int highIndex = 0
+
+if trendState == 1
+    if highPivot
+        highIndx := bar_index - 1

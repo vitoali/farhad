@@ -1,0 +1,94 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © spacemanbtc
+
+//@version=5
+indicator("Fair Value Gap",shorttitle= "Fair Value Gap SpaceManBTC", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+
+
+//Fair Value Gap
+//V1, 2022.4.12
+
+//This indicator displays the fair value gap of the current timeframe AND an optional higher time frame.
+
+//What the script does is take into account the values of the current bar high/low and compare with 2 bars previous
+//The "gap" is generated from the lack of overlap between these bars
+//Bearish or Bullish gaps determined via whether the gap is above or below price, as they tend to be filled gaps can be used as targets.
+
+
+// ———————————————————— Inputs {
+
+// Standard practice declared input variables with i_ easier to identify
+i_tf = input.timeframe("D", "MTF Timeframe", group = "MTF Settings")
+i_mtf = input.string(defval = "Current TF",group = "MTF Settings", title = "MTF Options", options = ["Current TF", "Current + HTF", "HTF"])
+i_tfos = input.int(defval = 10,title = "Offset", minval = 0, maxval = 500 ,group = "MTF Settings", inline = "OS")
+i_mtfos = input.int(defval = 20,title = "MTF Offset", minval = 0, maxval = 500 ,group = "MTF Settings", inline = "OS")
+i_fillByMid = input.bool(false, "MidPoint Fill",group = "General Settings", tooltip = "When enabled FVG is filled when midpoint is tested")
+i_deleteonfill = input.bool(true, "Delete Old On Fill",group = "General Settings")
+i_labeltf = input.bool(true,"Label FVG Timeframe",group = "General Settings")
+
+
+i_bullishfvgcolor = input.color(color.new(color.green,90), "Bullish FVG", group = "Coloring", inline = "BLFVG")
+i_mtfbullishfvgcolor = input.color(color.new(color.lime,80), "MTF Bullish FVG", group = "Coloring", inline = "BLFVG")
+i_bearishfvgcolor = input.color(color.new(color.red,90), "Bearish FVG", group = "Coloring", inline = "BRFVG")
+i_mtfbearishfvgcolor = input.color(color.new(color.maroon,80), "MTF Bearish FVG", group = "Coloring", inline = "BRFVG")
+i_midPointColor = input.color(color.new(color.white,85), "MidPoint Color", group = "Coloring")
+i_textColor = input.color(color.white, "Text Color", group = "Coloring")
+
+// }
+
+// ———————————————————— Global data {
+//Using current bar data for HTF highs and lows instead of security to prevent future leaking
+var htfH = open
+var htfL = open
+
+if close > htfH 
+    htfH:= close
+if close < htfL
+    htfL := close
+
+
+//Security Data, used for HTF Bar Data reference
+
+
+sClose = request.security(syminfo.tickerid, i_tf, close[1], barmerge.gaps_off, barmerge.lookahead_on)
+sHighP2 = request.security(syminfo.tickerid, i_tf, high[2], barmerge.gaps_off, barmerge.lookahead_on)
+sLowP2 = request.security(syminfo.tickerid, i_tf, low[2], barmerge.gaps_off, barmerge.lookahead_on)
+sOpen = request.security(syminfo.tickerid, i_tf, open[1], barmerge.gaps_off, barmerge.lookahead_on)
+sBar = request.security(syminfo.tickerid, i_tf, bar_index, barmerge.gaps_off, barmerge.lookahead_on)
+
+
+// }
+
+
+
+
+//var keyword can be used to hold data in memory, with pinescript all data is lost including variables unless the var keyword is used to preserve this data
+var bullishgapholder = array.new_box(0)
+var bearishgapholder = array.new_box(0)
+var bullishmidholder = array.new_line(0)
+var bearishmidholder = array.new_line(0)
+var bullishlabelholder = array.new_label(0)
+var bearishlabelholder = array.new_label(0)
+var transparentcolor = color.new(color.white,100)
+
+
+
+// ———————————————————— Functions {
+
+//function paramaters best declared with '_' this helps defer from variables in the function scope declaration and elsewhere e.g. close => _close
+f_gapCreation(_upperlimit,_lowerlimit,_midlimit,_bar,_boxholder,_midholder,_labelholder,_boxcolor,_mtfboxcolor, _htf)=>
+    timeholder = str.tostring(i_tf)
+    offset = i_mtfos
+    boxbgcolor = _mtfboxcolor
+    if _htf == false
+        timeholder := str.tostring(timeframe.period)
+        offset := i_tfos
+        boxbgcolor := _boxcolor
+    array.push(_boxholder,box.new(_bar,_upperlimit,_bar+1,_lowerlimit,border_color=transparentcolor,bgcolor = boxbgcolor, extend = extend.right))
+    if i_fillByMid 
+        array.push(_midholder,line.new(_bar,_midlimit,_bar+1,_midlimit,color = i_midPointColor, extend = extend.right))
+    if i_labeltf
+  
+        
+   

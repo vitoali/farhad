@@ -1,0 +1,109 @@
+// This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+// https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © MarkitTick
+
+//@version=6
+indicator("Auto Pattern Detector Targets [MarkitTick]", overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500, max_bars_back=1000)
+
+// ── INPUTS ──────────────────────────────────────────────────────────────────
+grp_gen = "General"
+grp_pat = "Patterns"
+grp_piv = "Pivot"
+grp_vis = "Vis"
+grp_flt = "Filters"
+string GRP_DASH = "📊 Dashboard Settings"
+
+cooldown          = input.int(5,      "Pattern Cooldown (Bars)",    minval=1,    group=grp_gen)
+sym_tol           = input.float(10.0, "Symmetry Tolerance (%)",     minval=1.0,  step=0.5,  group=grp_gen) / 100
+lvl_tol           = input.float(3.0,  "Level Tolerance (%)",        minval=0.1,  step=0.1,  group=grp_gen) / 100
+min_size_pct      = input.float(0.5,  "Min Pattern Size (% of Price)", minval=0.1, group=grp_gen) / 100
+min_atr_mult      = input.float(1.0,  "Min Pattern Size (ATR Multiplier)", minval=0.1, step=0.1, group=grp_gen)
+
+show_dt_top       = input.bool(true,  "Double Top",                 group=grp_pat)
+show_dt_bot       = input.bool(true,  "Double Bottom",              group=grp_pat)
+show_tt_top       = input.bool(true,  "Triple Top",                 group=grp_pat)
+show_tt_bot       = input.bool(true,  "Triple Bottom",              group=grp_pat)
+show_hs_std       = input.bool(true,  "Head and Shoulders",         group=grp_pat)
+show_hs_inv       = input.bool(true,  "Inverted Head and Shoulders",group=grp_pat)
+show_flag_bull    = input.bool(true,  "Bullish Flag",               group=grp_pat)
+show_flag_bear    = input.bool(true,  "Bearish Flag",               group=grp_pat)
+show_pennant_bull = input.bool(true,  "Bullish Pennant",            group=grp_pat)
+show_pennant_bear = input.bool(true,  "Bearish Pennant",            group=grp_pat)
+show_wedge_rise   = input.bool(true,  "Rising Wedge",               group=grp_pat)
+show_wedge_fall   = input.bool(true,  "Falling Wedge",              group=grp_pat)
+show_tri_gen      = input.bool(true,  "Triangle",                   group=grp_pat)
+show_rect_gen     = input.bool(true,  "Rectangle",                  group=grp_pat)
+show_cup_std      = input.bool(true,  "Cup and Handle",             group=grp_pat)
+show_cup_inv      = input.bool(true,  "Inverted Cup and Handle",    group=grp_pat)
+
+lb_left          = input.int(10,   "Pivot Lookback Left",    minval=1,   group=grp_piv)
+lb_right         = input.int(10,   "Pivot Lookback Right",   minval=1,   group=grp_piv)
+max_piv_hist     = input.int(500, "Max Pivots to Remember", minval=5, maxval=1000, group=grp_piv)
+
+req_close_brk    = input.bool(false,  "Require Candle Close Outside?",    group=grp_flt)
+req_body_brk     = input.bool(false, "Require Full Body Breakout?",       group=grp_flt)
+use_atr_brk      = input.bool(true, "Use ATR for Threshold?",           group=grp_flt)
+break_atr        = input.float(1.0,  "Breakout Threshold (ATR)",  minval=0.1, step=0.1, group=grp_flt)
+break_pct        = input.float(0.3,  "Breakout Threshold (%)",    minval=0.0, step=0.1, group=grp_flt) / 100
+brk_confirm_bars = input.int(1,      "Confirmation Bars (Consecutive)", minval=1, group=grp_flt)
+show_ignore_conf = input.bool(false, "Show Patterns Without Confirmation", group=grp_flt)
+min_brk_bar      = input.int(1,      "Scan Lookback Bars",           minval=1,   group=grp_flt)
+req_vol          = input.bool(false,  "Require Volume Spike?",               group=grp_flt)
+vol_mult         = input.float(1,    "Volume Multiplier",  minval=1.0, step=0.1, group=grp_flt)
+vol_len          = input.int(20,     "Volume SMA Length",                   group=grp_flt)
+min_rr           = input.float(1.0,  "Min Risk:Reward Ratio",  minval=0.1, step=0.1, group=grp_flt)
+slippage_ticks   = input.float(1.0,  "Slippage (Ticks)",       minval=0.0, step=0.1, group=grp_flt)
+commission_pct   = input.float(0.0001,"Commission (%)",         minval=0.0, step=0.0001, group=grp_flt)
+
+col_bull         = input.color(color.rgb(0, 255, 180, 0),    "Bullish Color",       group=grp_vis)
+col_bear         = input.color(color.rgb(255, 30, 120, 0),   "Bearish Color",       group=grp_vis)
+col_neu          = input.color(color.rgb(160, 80, 255, 0),   "Neutral/Text Color",  group=grp_vis)
+col_pend         = input.color(color.rgb(0, 200, 255, 0),    "Pending Pattern Color", group=grp_vis)
+fill_transp      = input.int(80, "Fill Transparency", minval=50, maxval=99, group=grp_vis)
+show_tgt         = input.bool(true,  "Show Measured Targets",     group=grp_vis)
+stop_buffer      = input.float(0.5,  "Stop Loss ATR Buffer", minval=0.0, step=0.1, group=grp_vis)
+use_sl_pct_tgt   = input.bool(true, "SL as % of Target Dist", group=grp_vis)
+sl_pct_tgt       = input.float(25.0, "SL % of Target Dist",    minval=1.0, maxval=100.0, step=0.5, group=grp_vis) / 100
+max_patterns     = input.int(1,      "Max Patterns Displayed", minval=1, maxval=50, group=grp_vis)
+extend_lines     = input.bool(false, "Extend Breakout Lines",      group=grp_vis)
+col_entry        = input.color(color.rgb(255, 220, 0, 0),    "Entry Line Color",  group=grp_vis)
+col_stop         = input.color(color.rgb(255, 50, 130, 0),   "Stop Line Color",   group=grp_vis)
+col_target       = input.color(color.rgb(0, 255, 160, 0),    "Target Line Color", group=grp_vis)
+
+color  dash_bg_color  = input.color(color.rgb(10, 10, 18, 5),    "Background Color", group=GRP_DASH)
+color  dash_txt_color = input.color(color.rgb(220, 220, 235, 0), "Text Color",       group=GRP_DASH)
+string GRP_ALRT = "Alerts"
+string GRP_RISK = "Risk"
+string GRP_VOL  = "Volatility"
+string GRP_UX   = "UI/UX"
+bool   alert_en      = input.bool(true, "Enable Alerts",           group=GRP_ALRT)
+bool   rr_dyn_en     = input.bool(false, "Dynamic R:R Multiplier",  group=GRP_RISK)
+float  rr_dyn_mult   = input.float(2.0,  "R:R Multiplier", minval=0.1, step=0.1, group=GRP_RISK)
+bool   atr_norm_en   = input.bool(false, "Normalized ATR Display",  group=GRP_VOL)
+bool   lbl_scale_en  = input.bool(false, "Custom Label Scaling",    group=GRP_UX)
+string lbl_scale_sel = input.string("Normal", "Label Size", options=["Small", "Normal", "Large"], group=GRP_UX)
+
+// ── USER-DEFINED TYPES ───────────────────────────────────────────────────────
+type Pivot
+    float p
+    int   i
+
+type PatternResult
+    bool   detected
+    string name
+    bool   isBullish
+    float  entryPrice
+    float  stopPrice
+    float  targetPrice
+    line   l_upper
+    line   l_lower
+    int    start_idx
+    int    breakout_idx
+    int    fux1
+    float  fuy1
+    int    fux2
+    float  fuy2
+    int    flx1
+    float  fly1
+    int    flx2
+    float  fly2

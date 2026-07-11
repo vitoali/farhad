@@ -1,0 +1,109 @@
+//@version=6
+indicator('cd_new_QT_Cx', overlay = true, max_boxes_count = 500)
+
+     
+// ==========================================
+// --- 1. OBJECT STRUCTURE ---
+// ==========================================
+type CycleLayer
+	array<box> boxes
+    box[]   body     
+	array<label> labels
+	float o
+	float h
+	float l
+	float c
+    int   t
+	float h1
+	float l1
+	int limit
+	int b_width
+	string b_style
+	bool show_box
+	bool show_line
+    bool show_body
+	bool show_label
+	string current_id
+    int     ht
+    int     lt
+    int     h1t
+    int     l1t    
+    float   xh
+    float   xl
+    float   yh
+    float   yl
+    float   xh1
+    float   xl1
+    float   yh1
+    float   yl1
+    bool    hxsmt 
+    bool    lxsmt
+    bool    hysmt 
+    bool    lysmt
+    bool    hswp 
+    bool    lswp
+    bool    hxswp
+    bool    lxswp
+    bool    hyswp
+    bool    lyswp
+    float   c1 
+    float   o1
+    float   h2 
+    float   l2 
+    float   c2 
+    float   o2 
+    float   h3
+    float   l3
+    bool    bufvgtap
+    bool    befvgtap
+    bool    bsltap
+    bool    ssltap
+    bool    bslsmt 
+    bool    sslsmt
+    int     updw
+    bool    hcisd 
+    bool    lcisd
+    float   c3 
+    float   o3 
+    bool    qqhswp
+    bool    qqlswp
+    float   xc1 
+    float   yc1 
+    float   xo1 
+    float   yo1
+    float   xc 
+    float   yc 
+    float   xo 
+    float   yo
+    float   h4
+    float   l4 
+    int t1 
+    int  hst1 
+    int  hst2 
+    int  lst1 
+    int  lst2
+    string cyclb
+    bool    hsmt 
+    bool    lsmt
+             
+// ==========================================
+// --- 2. GİRİŞLER VE TAM MENÜ ---
+// ==========================================
+grp_t = 'General Settings  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+mtd1  = "First Upper Cycle"
+mtd2  = "Aligned Cycle" 
+
+mdl1 = "Free"
+mdl2 = "Daye's Theory"
+mdl3 = "Zeussy's Theory"
+
+
+mdl = input.string(defval = mdl1 ,title= "Selection Model for Daily Cycle",options=[mdl1,mdl2 ,mdl3], group = grp_t, inline = '0')
+bias_mtd = input.string(defval = mtd1, title= "Use to determine bias =>", options=[mtd1,mtd2], group = grp_t)
+
+grp_f = 'Free Model Settings  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+i_tz = input.string('GMT-4', title = '[Timezone]', options = ['GMT-11', 'GMT-10', 'GMT-9', 'GMT-8', 'GMT-7', 'GMT-6', 'GMT-5', 'GMT-4', 'GMT-3', 'GMT-2', 'GMT-1', 'GMT', 'GMT+1', 'GMT+2', 'GMT+3', 'GMT+4', 'GMT+5', 'GMT+5:30', 'GMT+6', 'GMT+7', 'GMT+8', 'GMT+9', 'GMT+10', 'GMT+11', 'GMT+12'], group = grp_f)
+start_hour_ = input.int(18, '[Start_hour]', group = grp_f, inline = '0')
+start_min_  = input.int(00, "[Minute]", group=grp_f, inline="0")
+free_day    = input.int(360, "[Duration of Daily Cycle (Minute) ]", group=grp_f, inline="1") 
+X_          = input.int(4, '[Division Coefficient (X)]', minval=2, group = grp_f, inline="3")

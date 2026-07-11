@@ -1,0 +1,162 @@
+//@version=6
+indicator("Strong Pullback Signals", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+gTrend = "01 · Trend Engine"
+fastLen   = input.int(34,  "Fast EMA",       minval = 1, group = gTrend, tooltip = "Reactive trend EMA.")
+slowLen   = input.int(144, "Slow EMA",       minval = 1, group = gTrend, tooltip = "Primary trend filter.")
+pullLen   = input.int(21,  "Pullback EMA",   minval = 1, group = gTrend, tooltip = "Limit entries are anchored to this EMA.")
+slopeLook = input.int(5,   "Slope Lookback", minval = 1, group = gTrend, tooltip = "Fast EMA must slope with the trend over this many bars.")
+
+gSetup = "02 · Pullback Setup Engine"
+breakLook   = input.int(20, "Breakout Lookback",       minval = 3,  maxval = 300, group = gSetup, tooltip = "Bars used to define the swing the breakout must clear.")
+minWaitBars = input.int(2,  "Min Bars After Breakout", minval = 1,  maxval = 50,  group = gSetup, tooltip = "Wait at least this long after a breakout before the limit can fill.")
+maxHuntBars = input.int(40, "Max Bars To Fill",        minval = 5,  maxval = 500, group = gSetup, tooltip = "Setup expires if the pullback limit is not filled within this window.")
+minBreakBody= input.float(0.20, "Min Breakout Body / ATR", minval = 0.01, maxval = 5.0, step = 0.05, group = gSetup, tooltip = "Filters weak breakout candles.")
+useCooldown = input.bool(true, "Use Signal Cooldown", group = gSetup)
+cooldownBars= input.int(10, "Cooldown Bars", minval = 1, maxval = 500, group = gSetup, tooltip = "Minimum bars between consecutive entries.")
+
+gEntry = "03 · Entry (Limit Into Pullback)"
+atrLen      = input.int(14, "ATR Length", minval = 1, group = gEntry)
+entryDepth  = input.float(0.40, "Entry Depth (ATR below pullback EMA)", minval = 0.0, maxval = 3.0, step = 0.05, group = gEntry, tooltip = "How far INTO the pullback the limit sits, beyond the pullback EMA. Deeper = better price & higher win rate, but fewer fills. Validated sweet spot ≈ 0.35–0.50.")
+requireClose= input.bool(false, "Require Close Confirmation At Fill", group = gEntry, tooltip = "If ON, also require the fill bar to close back in the trend direction. Fewer, slightly later entries.")
+
+gFilt = "04 · Filters"
+useHtf      = input.bool(true,  "HTF Trend Alignment (block counter-trend)", group = gFilt, tooltip = "Only LONGs above the HTF EMA, only SHORTs below. On the test data, counter-HTF trades hit ~52% vs ~58% aligned — this is the one filter that reliably helps.")
+htfTF       = input.timeframe("240", "HTF Timeframe", group = gFilt)
+htfEmaLen   = input.int(50, "HTF EMA Length", minval = 5, maxval = 500, group = gFilt)
+useSession  = input.bool(false, "Block Weak Hours", group = gFilt, tooltip = "Blocks the few exchange-hours that tested below 50%. Small, less robust effect — default OFF to avoid over-fitting.")
+weakHoursTxt= input.string("4,13,18", "Weak Hours (exchange tz, comma-sep)", group = gFilt)
+useRsi      = input.bool(false, "RSI Direction Filter", group = gFilt)
+rsiLen      = input.int(14, "RSI Length", minval = 2, group = gFilt)
+rsiLongMin  = input.float(50.0, "RSI Long Minimum",  minval = 1, maxval = 99, step = 1, group = gFilt)
+rsiShortMax = input.float(50.0, "RSI Short Maximum", minval = 1, maxval = 99, step = 1, group = gFilt)
+
+gTrade = "05 · Trade Levels"
+slBufAtr    = input.float(0.30, "Stop Buffer Beyond Swing (ATR)", minval = 0.0, maxval = 3.0, step = 0.05, group = gTrade, tooltip = "Stop sits beyond the pullback swing extreme by this ATR cushion.")
+maxRiskAtr  = input.float(2.5, "Max Risk (ATR) — stop cap",  minval = 0.5, maxval = 8.0, step = 0.1, group = gTrade, tooltip = "Hard cap on stop distance so a structural stop can never become a 'wide stop'.")
+minRiskAtr  = input.float(0.5, "Min Risk (ATR) — stop floor", minval = 0.1, maxval = 4.0, step = 0.1, group = gTrade, tooltip = "Floor on stop distance so the 1R target can never become a 'tight TP'.")
+tp1R        = input.float(1.0, "TP1 (R)", minval = 0.5, maxval = 50, step = 0.1, group = gTrade, tooltip = "First target. Kept at ≥1R by design — this is the honest, non-gamed first target.")
+tp2R        = input.float(2.0, "TP2 (R)", minval = 0.5, maxval = 50, step = 0.1, group = gTrade)
+tp3R        = input.float(3.0, "TP3 (R)", minval = 0.5, maxval = 50, step = 0.1, group = gTrade)
+levelLen    = input.int(10, "Level Shelf (bars)", minval = 2, maxval = 500, group = gTrade, tooltip = "Forward shelf length for the SL/TP level labels while a trade is live. When the trade closes, the whole ticket snaps back to the exit bar so labels never float away from the setup.")
+showLines   = input.bool(true, "Show SL / TP Lines",  group = gTrade)
+showBoxes   = input.bool(true, "Show SL / TP Zones",   group = gTrade)
+showLevelLbl= input.bool(true, "Label Level Prices",   group = gTrade)
+showExitLbl = input.bool(true, "Show Trade Result Labels", group = gTrade)
+maxHist     = input.int(30, "Max Historical Trades", minval = 1, maxval = 80, group = gTrade)
+
+gScore = "06 · Setup-Quality Score"
+onlyStrong = input.bool(false, "Only Show Strong Signals", group = gScore, tooltip = "Filter by score. NOTE: in testing the score is a confluence read, not a strong win-rate predictor — use mainly to thin signals.")
+strongThr  = input.float(5.0, "Strong Threshold (score)", minval = 0, maxval = 10, step = 0.5, group = gScore)
+wHtf   = input.float(0.30, "Weight: HTF Alignment", minval = 0, maxval = 1, step = 0.02, group = gScore)
+wSess  = input.float(0.12, "Weight: Good Session",  minval = 0, maxval = 1, step = 0.02, group = gScore)
+wTrend = input.float(0.22, "Weight: Trend Strength",minval = 0, maxval = 1, step = 0.02, group = gScore)
+wDepth = input.float(0.16, "Weight: Entry Depth",   minval = 0, maxval = 1, step = 0.02, group = gScore)
+wMom   = input.float(0.10, "Weight: Momentum",      minval = 0, maxval = 1, step = 0.02, group = gScore)
+wVol   = input.float(0.10, "Weight: Volume",        minval = 0, maxval = 1, step = 0.02, group = gScore)
+sepNorm  = input.float(2.5, "Trend Separation For Full Score (ATR)", minval = 0.2, maxval = 20, step = 0.1, group = gScore)
+
+gDash = "07 · Dashboard"
+showDash    = input.bool(true, "Show Dashboard", group = gDash)
+dashPosOpt  = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Middle Right"], group = gDash)
+dashSizeOpt = input.string("Normal", "Text Size", options = ["Tiny", "Small", "Normal"], group = gDash)
+showHeatRow = input.bool(true, "Show Per-Target Breakdown", group = gDash)
+
+gVis = "08 · Visuals"
+theme      = input.string("Emerald", "Color Theme", options = ["Emerald", "Ice Blue", "Gold Black", "Aqua Violet"], group = gVis)
+showSignal = input.bool(true, "Show Signal Labels", group = gVis)
+showStars  = input.bool(true, "Show ★ Ranking On Labels", group = gVis)
+lblSizeOpt = input.string("Small", "Signal Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = gVis)
+
+longCol = theme == "Ice Blue" ? color.rgb(0, 190, 255) : theme == "Gold Black" ? color.rgb(255, 196, 48) : theme == "Aqua Violet" ? color.rgb(0, 230, 200) : color.rgb(0, 200, 120)
+shortCol= theme == "Ice Blue" ? color.rgb(255, 120, 70) : theme == "Gold Black" ? color.rgb(255, 78, 60)  : theme == "Aqua Violet" ? color.rgb(180, 110, 255) : color.rgb(235, 64, 64)
+tpFill  = theme == "Ice Blue" ? color.rgb(0, 90, 130)   : theme == "Gold Black" ? color.rgb(96, 74, 0)    : theme == "Aqua Violet" ? color.rgb(0, 95, 90)     : color.rgb(0, 96, 60)
+slFill  = theme == "Ice Blue" ? color.rgb(150, 30, 70)  : theme == "Gold Black" ? color.rgb(150, 40, 18)  : theme == "Aqua Violet" ? color.rgb(110, 30, 120)  : color.rgb(150, 22, 30)
+
+color panelBg     = #0a0c12
+color panelBgAlt  = #0f131c
+color panelHdr    = #161b27
+color panelBorder = #2c3342
+color txtHi       = #ebeef5
+color txtLo       = #8791a2
+color neutralCol  = #69748a
+color goodCol     = #21c87a
+color badCol      = #e6435a
+
+f_size(string s) =>
+    switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        => size.small
+
+f_pos(string p) =>
+    switch p
+        "Top Left"     => position.top_left
+        "Top Right"    => position.top_right
+        "Bottom Left"  => position.bottom_left
+        "Bottom Right" => position.bottom_right
+        "Middle Right" => position.middle_right
+        => position.top_right
+
+f_stars(float sc) => sc >= 8.5 ? "★★★★★" : sc >= 7 ? "★★★★" : sc >= 5.5 ? "★★★" : sc >= 4 ? "★★" : sc >= 2.5 ? "★" : "·"
+f_tier(float sc)  => sc >= 8.5 ? "ELITE" : sc >= 7 ? "VERY STRONG" : sc >= 5.5 ? "STRONG" : sc >= 4 ? "MODERATE" : sc >= 2.5 ? "WEAK" : "FORMING"
+f_signedR(float v) => (v >= 0 ? "+" : "") + str.tostring(v, "#.##") + "R"
+
+f_inList(string csv, int hr) =>
+    bool found = false
+    arr = str.split(csv, ",")
+    if array.size(arr) > 0
+        for s in arr
+            if str.tonumber(str.trim(s)) == hr
+                found := true
+    found
+
+fastEma = ta.ema(close, fastLen)
+slowEma = ta.ema(close, slowLen)
+pullEma = ta.ema(close, pullLen)
+atr     = ta.atr(atrLen)
+rsi     = ta.rsi(close, rsiLen)
+volSma  = ta.sma(volume, 20)
+
+body  = math.abs(close - open)
+hour0 = hour(time, syminfo.timezone)
+
+htfEma = request.security(syminfo.tickerid, htfTF, ta.ema(close, htfEmaLen)[1], lookahead = barmerge.lookahead_off)
+
+bullTrend = fastEma > slowEma and close > slowEma and fastEma > fastEma[slopeLook]
+bearTrend = fastEma < slowEma and close < slowEma and fastEma < fastEma[slopeLook]
+
+hiBefore = ta.highest(high[1], breakLook)
+loBefore = ta.lowest(low[1],  breakLook)
+breakBodyOk  = body >= atr * minBreakBody
+bullBreakout = bullTrend and close > hiBefore and close > open and breakBodyOk
+bearBreakout = bearTrend and close < loBefore and close < open and breakBodyOk
+
+inWeakHour = useSession and f_inList(weakHoursTxt, hour0)
+
+var bool  armed   = false
+var int   adir    = 0
+var int   armBar  = na
+var float swingExt= na
+var int   lastSigBar  = na
+var int   lastSigSide = 0
+
+cooldownOk = not useCooldown or na(lastSigBar) or (bar_index - lastSigBar >= cooldownBars)
+
+if (bullBreakout or bearBreakout) and not armed and cooldownOk
+    armed    := true
+    adir     := bullBreakout ? 1 : -1
+    armBar   := bar_index
+    swingExt := bullBreakout ? low : high
+
+limitPx = na(adir) or adir == 0 ? na : pullEma - entryDepth * atr * adir
+if armed
+    swingExt := adir == 1 ? math.min(swingExt, low) : math.max(swingExt, high)
+
+age = armed and not na(armBar) ? bar_index - armBar : na
+expireSetup = armed and not na(age) and age > maxHuntBars
+flipSetup   = armed and ((adir == 1 and not bullTrend) or (adir == -1 and not bearTrend))
+
+fillNow = ar

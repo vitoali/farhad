@@ -1,0 +1,110 @@
+//@version=6
+library("KhaksterSmartMoneyLib", overlay=true)
+
+export const int SIG_LIQUIDITY = 1
+export const int SIG_ORDERBLOCK = 2
+export const int SIG_VOLUME = 4
+
+export type SmartMoneySettings
+    int swingLen
+    int volBars
+    int volRows
+    float vaPercent
+    int internalLen
+    int minConfirmations
+    int maxSweepAge
+    int maxObKeep
+
+export defaultSmartMoneySettings() =>
+    SmartMoneySettings.new(5, 150, 24, 70.0, 5, 2, 300, 8)
+
+export zonesOverlap(float t1, float b1, float t2, float b2) =>
+    not (b1 > t2 or t1 < b2)
+
+export overlapRatio(float t1, float b1, float t2, float b2) =>
+    float h1 = t1 - b1
+    float top = math.min(t1, t2)
+    float bot = math.max(b1, b2)
+    h1 <= 0 ? 0.0 : math.max(top - bot, 0.0) / h1
+
+export calcVolumeNodes(int bbars, int cnum, float pct) =>
+    float top = ta.highest(bbars)
+    float bot = ta.lowest(bbars)
+    if top <= bot or cnum < 2
+        [na, na, na]
+    else
+        float step = (top - bot) / cnum
+        float[] totals = array.new_float(cnum, 0.0)
+        for bars = 0 to bbars - 1
+            float bodyTop = math.max(close[bars], open[bars])
+            float bodyBot = math.min(close[bars], open[bars])
+            float topwick = high[bars] - bodyTop
+            float bottomwick = bodyBot - low[bars]
+            float body = bodyTop - bodyBot
+            float denom = 2.0 * topwick + 2.0 * bottomwick + body
+            float bodyvol = denom > 0 ? body * volume[bars] / denom : 0.0
+            for x = 0 to cnum - 1
+                float lvlBot = bot + step * x
+                float lvlTop = bot + step * (x + 1)
+                float add = bodyvol
+                if lvlTop > bodyBot and lvlBot < bodyTop
+                    array.set(totals, x, array.get(totals, x) + add)
+        int poc = 0
+        float pocVol = array.get(totals, 0)
+        for x = 1 to cnum - 1
+            float v = array.get(totals, x)
+            if v > pocVol
+                pocVol := v
+                poc := x
+        float totalMax = array.sum(totals) * pct / 100.0
+        float vaTot = array.get(totals, poc)
+        int up = poc
+        int dn = poc
+        for x = 0 to cnum - 1
+            if vaTot >= totalMax
+                break
+            float upper = up < cnum - 1 ? array.get(totals, up + 1) : 0.0
+            float lower = dn > 0 ? array.get(totals, dn - 1) : 0.0
+            if upper == 0 and lower == 0
+                break
+            if upper >= lower
+                vaTot += upper
+                up += 1
+            else
+                vaTot += lower
+                dn -= 1
+        float pocLvl = bot + step * (poc + 0.5)
+        float vaTop = bot + step * (up + 1)
+        float vaBot = bot + step * dn
+        [pocLvl, vaTop, vaBot]
+
+export volumeConfirmsZone(float zTop, float zBot, float poc, float vaTop, float vaBot, float minRatio) =>
+    bool pocIn = poc >= zBot and poc <= zTop
+    bool vaHit = zonesOverlap(vaTop, vaBot, zTop, zBot) and overlapRatio(zTop, zBot, vaTop, vaBot) >= minRatio
+    pocIn or vaHit
+
+export type SweepZone
+    float top
+    float bot
+    int bias
+    int birthBar
+
+export liquiditySweepUpdate(int len, int maxAge, array<SweepZone> zones) =>
+    float ph = ta.pivothigh(len, len)
+    float pl = ta.pivotlow(len, len)
+    if not na(ph)
+        array.unshift(zones, SweepZone.new(ph, ph, -1, bar_index - len))
+    if not na(pl)
+        array.unshift(zones, SweepZone.new(pl, pl, 1, bar_index - len))
+    if array.size(zones) > 0
+        for i = array.size(zones) - 1 to 0
+            SweepZone z = array.get(zones, i)
+            bool remove = bar_index - z.birthBar > maxAge
+            if z.bias == -1
+                if high > z.top and close < z.top
+                    array.set(zones, i, SweepZone.new(high, z.bot, -1, z.birthBar))
+                    z := array.get(zones, i)
+                if close > z.top
+                    remove := true
+            else
+                if low < z.bot and close > z.bot

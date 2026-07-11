@@ -1,0 +1,94 @@
+// ▒█▀▀█ ░░░▒█ ▒█▀▀▀█ ▒█▀▀█ ▒█▀▀█ ▒█░▒█ ▒█▀▄▀█ 
+// ▒█▀▀▄ ░▄░▒█ ▒█░░▒█ ▒█▄▄▀ ▒█░▄▄ ▒█░▒█ ▒█▒█▒█ 
+// ▒█▄▄█ ▒█▄▄█ ▒█▄▄▄█ ▒█░▒█ ▒█▄▄█ ░▀▄▄▀ ▒█░░▒█
+//
+// @strategy_alert_message {{strategy.order.alert_message}} 
+//@version=5
+
+strategy("3Commas Bot", "Bj Bot", true, precision=3, default_qty_type=strategy.cash, commission_value= 0.05, commission_type=strategy.commission.percent, slippage=1, currency=currency.USD, default_qty_value= 10000, initial_capital= 10000)
+
+// ================================== //
+// ---------> Tool Time <------------ //
+// ================================== //
+
+longTradesTip           = "Turn on/off long trades. Perhaps you are overall bearish and wish to exempt long trades on this asset"  
+shortTradesTip          = "Turn on/off short trades. Perhaps you are overall bullish and wish to exempt long trades on this asset"
+useLimitTip             = "Turns on/off the limit exit method. eg: using trail and not setting a limit exit. Must use trail, or strategy has no exit criteria"
+trailStopTip            = "Turns on/off the ATR trailing stop exit method." 
+FLIPTip                 = "Allows a reversal trade. eg. flipping short from a long pos. False will isolate trades from one another, while true allows an opposite bias entry while in a position already"
+setMaxDrawdownTip       = "Enables max drawdown protection. Enabling this will stop the bot if the overall strategy drawdown drops below the defined risk appetite"
+RnRTip                  = "This sets your risk to reward as a multiple. 1 is stop/limit equal distance from entry" 
+RiskMTip                = "Multiplier as a function of the ATR value projected from the calculated swing high/low. This allows for a buffer for your stop placing it behind support/resistance for the lookback period"  
+swinglookbackTip        = "This is your swing lookback. The the number of bars within the period calculated for lowest or highest value to establish a swing pivot"  
+maxPercDdTip            = "Risk appetite. Every strategy sees downside. This is how much you could stomach to allow the bot to lose if you let it run. Strategy stops taking trades below this level" 
+atrLenTip               = "Length of the period for the ATR to average"  
+trailStopSizeTip        = "The ATR multiplier for ATR-based trailing stop. Higher number yields a higher volatility based risk adjustment from the swing low"
+trailSourceTip          = "The price source for calculating ATR trailing stop"
+rrExitTip               = "This is the % of reward (target price) that must hit in order to trigger the trail expressed as a decimal. eg. 0.5 = 50% to target."
+maType1Tip              = "Sets the moving average type for the first MA" 
+maType2Tip              = "Sets the moving average type for the second MA"
+maLength1Tip            = "Sets the length for the first MA. (it is likely best to keep MA1 length less than MA2, or it may result in opposite trade bias desired depending on MA type"
+maLength2Tip            = "Sets the length for the second MA. (it is likely best to keep MA2 length greater than MA2, or it may result in opposite trade bias desired depending on MA type"  
+drawEntryTip            = "Shows the trade entry level"
+exitLvlTip              = "Shows the level that the trailing stop is triggered"
+useTimeFilterTip        = "Turns on/off time session filter"
+timeSessionTip          = "Time session to ignore trades (useful for ignoring trades during times you don't want to trade. eg. Markets are slow for a period of time in the night)"
+startTimeTip            = "Start date & time to begin backtest period. Also useful for beginning new bot. eg. Set time to now to make broker emulator in a flat position before setting alerts"
+endTimeTip              = "End date & time to stop searching for setups for back testing."
+
+// ================================== //
+// ---------> User Input <----------- //
+// ================================== //
+
+longTrades              = input.bool    (true,       "Detect Long Trades",                  group="Trade variables",    tooltip=longTradesTip)
+shortTrades             = input.bool    (true,       "Detect Short Trades",                 group="Trade variables",    tooltip=shortTradesTip)
+useLimit                = input.bool    (true,       "Use Limit exit",                      group="Trade variables",    tooltip=useLimitTip)   
+trailStop               = input.bool    (false,      "Use ATR Trailing Stop",               group="Trade variables",    tooltip=trailStopTip)  
+FLIP                    = input.bool    (false,      "Allow Reversal Trades",               group="Trade variables",    tooltip=FLIPTip)       
+setMaxDrawdown          = input.bool    (false,      "Set Max Total DrawDown",              group="Trade variables",    tooltip=setMaxDrawdownTip)  
+
+RnR                     = input.float   (1,          "Reward to Risk Ratio",                group="Risk Management",    tooltip=RnRTip,         minval=0)
+RiskM                   = input.float   (1,          "Risk Adjustment",                     group="Risk Management",    tooltip=RiskMTip,       minval=0)
+swinglookback           = input.int     (5,          "Swing Lookback",                      group="Risk Management",    tooltip=swinglookbackTip) 
+maxPercDd               = input.int     (20,         "Max Drawdown (%)",                    group="Risk Management",    tooltip=maxPercDdTip)       
+atrLen                  = input.int     (14,         "ATR length",                          group="Risk Management",    tooltip=atrLenTip)          
+
+trailStopSize           = input.float   (1.0,       "ATR Trailing Stop Multiplier",         group="Trailing Stop",      tooltip=trailStopSizeTip)
+trailSource             = input.string  ("High/Low","ATR Trailing Stop Source",             group="Trailing Stop",      tooltip=trailSourceTip, options=["High/Low", "Close", "Open"])
+rrExit                  = input.float   (0.0,       "R:R To Trigger Exit",                  group="Trailing Stop",      tooltip=rrExitTip)
+
+maType1                 = input.string  ("EMA",     "MA Type #1",                           group="MA Type",            tooltip=maType1Tip,     options=["EMA", "HEMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP", "T3"]) 
+maType2                 = input.string  ("EMA",     "MA Type #2",                           group="MA Type",            tooltip=maType2Tip,     options=["EMA", "HEMA", "SMA", "HMA", "WMA", "DEMA", "VWMA", "VWAP", "T3"]) 
+
+maLength1               = input.int     (21,        "MA Length #1",                         group="MA Settings",        tooltip=maLength1Tip,   minval=1)
+maLength2               = input.int     (50,        "MA Length #2",                         group="MA Settings",        tooltip=maLength2Tip,   minval=1)
+
+maBull1                 = input.color   (#64b5f6,   "",                                     inline="1",                 group="MA Color/ Transp/ Linewidth")
+maBear1                 = input.color   (#ef5350,   "",                                     inline="1",                 group="MA Color/ Transp/ Linewidth")
+maBull2                 = input.color   (#64b5f6,   "",                                     inline="2",                 group="MA Color/ Transp/ Linewidth")
+maBear2                 = input.color   (#ef5350,   "",                                     inline="2",                 group="MA Color/ Transp/ Linewidth")
+
+drawEntry               = input.bool    (false,     "Draw entry price",                     group="Display",            tooltip=drawEntryTip)
+exitLvl                 = input.bool    (true,      "Draw trail trigger price",             group="Display",            tooltip=exitLvlTip)
+
+useTimeFilter           = input.bool    (false,     "Use Time Session Filter",              group="Filters",            tooltip=useTimeFilterTip)  
+timeSession             = input.session ("0000-0300", "Time Session To Ignore Trades",      group="Filters",            tooltip=timeSessionTip)    
+startTime               = input.time(timestamp("01 Jan 2000 00:00 GMT-7"), "Start Filter",  group="Filters",            tooltip=startTimeTip)      
+endTime                 = input.time(timestamp("01 Jan 2099 00:00 GMT-7"), "End Filter",    group="Filters",            tooltip=endTimeTip)        
+
+// ================================== //
+// -----> Invariable Constants <----- //
+// ================================== //
+
+    // built in functions to make the script more readable when referencing position conditions //
+    
+FLAT                        = strategy.position_size == 0
+LONG                        = strategy.position_size > 0
+SHORT                       = strategy.position_size < 0
+confirmed                   = barstate.isconfirmed
+entry                       = strategy.position_avg_price
+
+    // using the var function allows "saving" of values to be set later. This allows us to "set" a stop for example and not have it change as its recalcualted on each bar. //
+
+var lookForExit             = false   
+var

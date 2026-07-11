@@ -1,0 +1,109 @@
+//@version=6
+indicator("Multi-Divergence Strategy | GainzAlgo", max_bars_back = 1000, overlay=true, max_labels_count=500)
+
+ui_width  = input.int(50, "Window Width (Bars)", minval=10)
+ui_offset = input.int(10, "Future Offset (Bars)", minval=0)
+piv_len   = input.int(5,  "Divergence Pivot Length", minval=2, maxval=10)
+show_technicals = input.bool(true, "Show Technical Overlay")
+rsi   = ta.rsi(close, 14)
+mfi   = ta.mfi(hlc3, 14)
+stoch = ta.stoch(close, high, low, 14)
+
+sma20   = ta.sma(close, 20)
+stdev20 = ta.stdev(close, 20)
+zsc     = stdev20 != 0 ? (close - sma20) / stdev20 : 0
+
+[_, _, adx] = ta.dmi(14, 14)
+[macdLine, signalLine, _] = ta.macd(close, 12, 26, 9)
+
+obv = ta.obv
+
+var array<int>   pr_hi_off = array.new<int>()
+var array<float> pr_hi_val = array.new<float>()
+var array<int>   pr_lo_off = array.new<int>()
+var array<float> pr_lo_val = array.new<float>()
+
+var array<int>   r_hi_off = array.new<int>()
+var array<float> r_hi_val = array.new<float>()
+var array<int>   r_lo_off = array.new<int>()
+var array<float> r_lo_val = array.new<float>()
+
+var array<int>   m_hi_off = array.new<int>()
+var array<float> m_hi_val = array.new<float>()
+var array<int>   m_lo_off = array.new<int>()
+var array<float> m_lo_val = array.new<float>()
+
+var array<int>   s_hi_off = array.new<int>()
+var array<float> s_hi_val = array.new<float>()
+var array<int>   s_lo_off = array.new<int>()
+var array<float> s_lo_val = array.new<float>()
+
+var array<int>   z_hi_off = array.new<int>()
+var array<float> z_hi_val = array.new<float>()
+var array<int>   z_lo_off = array.new<int>()
+var array<float> z_lo_val = array.new<float>()
+
+var array<int>   a_hi_off = array.new<int>()
+var array<float> a_hi_val = array.new<float>()
+var array<int>   a_lo_off = array.new<int>()
+var array<float> a_lo_val = array.new<float>()
+
+var array<int>   mc_hi_off = array.new<int>()
+var array<float> mc_hi_val = array.new<float>()
+var array<int>   mc_lo_off = array.new<int>()
+var array<float> mc_lo_val = array.new<float>()
+
+var array<int>   ob_hi_off = array.new<int>()
+var array<float> ob_hi_val = array.new<float>()
+var array<int>   ob_lo_off = array.new<int>()
+var array<float> ob_lo_val = array.new<float>()
+
+f_push(array<int> off_arr, array<float> val_arr, int off, float val) =>
+    array.unshift(off_arr, off)
+    array.unshift(val_arr, val)
+    if array.size(off_arr) > 2
+        array.pop(off_arr)
+        array.pop(val_arr)
+
+ph_price = ta.pivothigh(high,     piv_len, piv_len)
+pl_price = ta.pivotlow(low,       piv_len, piv_len)
+ph_rsi   = ta.pivothigh(rsi,      piv_len, piv_len)
+pl_rsi   = ta.pivotlow(rsi,       piv_len, piv_len)
+ph_mfi   = ta.pivothigh(mfi,      piv_len, piv_len)
+pl_mfi   = ta.pivotlow(mfi,       piv_len, piv_len)
+ph_stoch = ta.pivothigh(stoch,    piv_len, piv_len)
+pl_stoch = ta.pivotlow(stoch,     piv_len, piv_len)
+ph_zsc   = ta.pivothigh(zsc,      piv_len, piv_len)
+pl_zsc   = ta.pivotlow(zsc,       piv_len, piv_len)
+ph_adx   = ta.pivothigh(adx,      piv_len, piv_len)
+pl_adx   = ta.pivotlow(adx,       piv_len, piv_len)
+ph_macd  = ta.pivothigh(macdLine, piv_len, piv_len)
+pl_macd  = ta.pivotlow(macdLine,  piv_len, piv_len)
+ph_obv   = ta.pivothigh(obv,      piv_len, piv_len)
+pl_obv   = ta.pivotlow(obv,       piv_len, piv_len)
+
+// FIX: Track historical bar_index instead of fixed piv_len
+if not na(ph_price)
+    f_push(pr_hi_off, pr_hi_val, bar_index - piv_len, ph_price)
+if not na(pl_price)
+    f_push(pr_lo_off, pr_lo_val, bar_index - piv_len, pl_price)
+if not na(ph_rsi)
+    f_push(r_hi_off, r_hi_val, bar_index - piv_len, ph_rsi)
+if not na(pl_rsi)
+    f_push(r_lo_off, r_lo_val, bar_index - piv_len, pl_rsi)
+if not na(ph_mfi)
+    f_push(m_hi_off, m_hi_val, bar_index - piv_len, ph_mfi)
+if not na(pl_mfi)
+    f_push(m_lo_off, m_lo_val, bar_index - piv_len, pl_mfi)
+if not na(ph_stoch)
+    f_push(s_hi_off, s_hi_val, bar_index - piv_len, ph_stoch)
+if not na(pl_stoch)
+    f_push(s_lo_off, s_lo_val, bar_index - piv_len, pl_stoch)
+if not na(ph_zsc)
+    f_push(z_hi_off, z_hi_val, bar_index - piv_len, ph_zsc)
+if not na(pl_zsc)
+    f_push(z_lo_off, z_lo_val, bar_index - piv_len, pl_zsc)
+if not na(ph_adx)
+    f_push(a_hi_off, a_hi_val, bar_index - piv_len, ph_adx)
+if not na(pl_adx)
+    f_push(a_lo_off, a_lo_val, bar_index - piv_len, pl_adx)

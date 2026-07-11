@@ -1,0 +1,162 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════
+//  STOP HUNT RADAR [GBB] v3.7 — Asset Auto-Adapt
+
+indicator("Stop Hunt Radar [GBB]", "SHR", overlay = true, max_boxes_count = 500, max_labels_count = 500, max_lines_count = 500)
+
+// ═══════════════════════════════════════════════════════════════════════════
+//                               INPUTS
+// ═══════════════════════════════════════════════════════════════════════════
+gD = "═══ Display ═══"
+showThr   = input.float(0.0, "Min Score To Display", minval = 0, maxval = 10, step = 0.5, group = gD, tooltip = "Pools scoring below this are tracked invisibly and appear once their score grows.")
+dispRad   = input.float(3.0, "Display Radius (% of price, 0 = off)", minval = 0.0, step = 0.25, group = gD, tooltip = "Pools farther than this from current price are tracked invisibly (and still feed the dashboard) but not drawn. They reappear when price approaches.")
+maxLive   = input.int(6, "Max Armed Pools Per Side", minval = 1, maxval = 15, group = gD, tooltip = "When the cap is hit, the farthest out-of-radius pool is dropped first; otherwise the lowest-scoring one.")
+maxKept   = input.int(40, "Max Outcome Markers Kept", minval = 0, maxval = 100, group = gD, tooltip = "Resolved-pool receipts (⚡ / ✕) stay on chart up to this many.")
+showTags  = input.bool(true, "Show Pool Labels", group = gD, tooltip = "Compact price tags. Hover a tag for the full heat breakdown.")
+showDash  = input.bool(false, "Show Radar Dashboard", group = gD, tooltip = "Optional corner panel: nearest pool each side with distance, rank, drivers, plus the sweep base rates. Off by default — the chart carries the essentials (labels, depth guides, receipts).")
+dashTitle = input.string("STOP HUNT RADAR [GBB]", "Dashboard Title", group = gD)
+dashPos   = input.string("Top Right", "Dashboard Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group = gD)
+showRates = input.bool(true, "Show Sweep Base Rates", group = gD, tooltip = "Rolling outcome stats over the last N classified sweeps on this chart: ⚡ reclaim rate, median and 95th-percentile sweep depth. Descriptive — your chart's own base rates, kept honest automatically.")
+baseN     = input.int(50, "Base-Rate Window (sweeps)", minval = 10, maxval = 200, group = gD)
+labMode   = input.string("Beginner (plain words)", "Label Style", options = ["Beginner (plain words)", "Pro (compact)"], group = gD, tooltip = "Beginner spells it out on-chart ('Sell stops · 61,330'); Pro uses compact codes (BSL/SSL, ◆ rank marks). Hover tooltips are plain-language in both modes.")
+uiScale   = input.string("Normal", "UI Text Size", options = ["Compact", "Normal", "Large"], group = gD, tooltip = "Scales the dashboard, legend, depth-guide labels, and outcome receipts together. Pool labels are sized separately via Label Size.")
+labSizeS  = input.string("Normal", "Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = gD)
+showGuides= input.bool(true, "Sweep Depth Guides", group = gD, tooltip = "For every visible ranked pool: dotted lines in the pool's color showing how deep the typical and the 1-in-20 sweep wick reached on this chart (from the base-rate journal). Each label names its pool's price. The on-chart answer to 'is my stop too close?'")
+guideMinHv= input.float(3.0, "Hide Guides For Gray Pools (min rank 0–10)", minval = 0, maxval = 10, step = 0.5, group = gD, tooltip = "Guides are drawn only for pools whose on-screen rank (the color) is at least this. 0 = guides on every visible pool; raise it to annotate only the strongest levels. Default keeps gray minor swings clean.")
+showLegend= input.bool(true, "Show Legend", group = gD)
+autoAsset = input.bool(true, "Auto-Adapt To Asset Class", group = gD, tooltip = "Adjusts the asset-specific details automatically: forex symbols get big-figure/half-figure round numbers (e.g. 1.0850 steps on EURUSD instead of nonsense), and symbols without volume data (indices, some CFDs) get the volume factor switched off instead of polluting the rank. Crypto behavior is unchanged — that is the validated configuration. Active adaptations are listed in the legend. Most of the indicator self-scales anyway (ATR geometry, %-based tolerances, per-chart base rates).")
+plainMode = labMode == "Beginner (plain words)"
+lookbackBars = input.int(3000, "Lookback (bars, 0 = all loaded)", minval = 0, group = gD)
+
+gS = "═══ Swing Detection ═══"
+leftBars  = input.int(8, "Pivot Left",  minval = 2, group = gS)
+rightBars = input.int(3, "Pivot Right", minval = 1, group = gS, tooltip = "Higher = sturdier swings, slower confirmation. Sweeps are validated against close-back, so confirmation lag does not repaint sweep events.")
+maxLife   = input.int(1500, "Max Armed Life (bars)", minval = 50, group = gS, tooltip = "Pools never swept within this window are silently retired.")
+
+gZ = "═══ Pool Geometry ═══"
+atrLen    = input.int(100, "ATR Length", minval = 1, maxval = 500, group = gZ)
+depthMult = input.float(0.50, "Pocket Depth (ATR mult)", minval = 0.1, maxval = 5.0, step = 0.05, group = gZ, tooltip = "How far beyond the swing level the stop pocket is drawn.")
+eqTolMode = input.string("% of Price", "EQ Merge Tolerance Mode", options = ["ATR", "% of Price"], group = gZ, tooltip = "ATR mode is too tight on LTF crypto for levels formed hours apart — % of price clusters more naturally.")
+eqTolMult = input.float(0.25, "EQ Tolerance (ATR mult)", minval = 0.05, maxval = 2.0, step = 0.05, group = gZ)
+eqTolPct  = input.float(0.15, "EQ Tolerance (% of price)", minval = 0.01, maxval = 2.0, step = 0.01, group = gZ)
+
+gW = "═══ Sweep / Outcome ═══"
+penMult   = input.float(0.05, "Min Sweep Penetration (ATR mult)", minval = 0.0, step = 0.01, group = gW, tooltip = "Wick must pierce at least this far beyond the level to count as a sweep — filters equal-touch noise.")
+graceBars = input.int(10, "Multi-Bar Sweep Grace (bars, 0 = off)", minval = 0, maxval = 50, group = gW, tooltip = "When price CLOSES through a pool, wait this many bars for a re-close back across the level before confirming a clean break. Captures multi-bar capitulation sweeps (V-reversals).")
+confMult  = input.float(0.50, "Reclaim Confirmation (ATR mult)", minval = 0.1, step = 0.05, group = gW, tooltip = "After a sweep, a close this far back beyond the level confirms the reversal.")
+watchBars = input.int(30, "Outcome Watch Window (bars)", minval = 3, maxval = 300, group = gW, tooltip = "Bars after a sweep to wait for reclaim or break before fading the pool out.")
+
+gStr = "═══ Pool Heat Scoring (0–10) ═══"
+wEQ     = input.float(0.45, "Weight: EQ Cluster Size", minval = 0, maxval = 1, step = 0.05, group = gStr)
+wAge    = input.float(0.25, "Weight: Untested Age", minval = 0, maxval = 1, step = 0.05, group = gStr)
+wConf   = input.float(0.30, "Weight: Confluence (Session + Round)", minval = 0, maxval = 1, step = 0.05, group = gStr)
+wVol    = input.float(0.25, "Weight: Formation Volume", minval = 0, maxval = 1, step = 0.05, group = gStr, tooltip = "Pools born on a volume spike (capitulation flush, climax bar) carry dense fresh stops — they heat up immediately instead of waiting on age/cluster.")
+eqNorm  = input.float(3.0, "Pivots For Full EQ Score", minval = 1, step = 0.5, group = gStr)
+volNorm = input.float(2.5, "Rel. Volume For Full Score (× baseline)", minval = 1.0, step = 0.25, group = gStr)
+volLen  = input.int(20, "Volume Baseline Length", minval = 1, group = gStr)
+ageNorm = input.int(300, "Bars For Full Age Score", minval = 10, group = gStr, tooltip = "Untested age saturates here — stops accumulate, but not forever.")
+useSess = input.bool(true, "Session Confluence (PDH/PDL/PWH/PWL)", group = gStr)
+useRound= input.bool(true, "Round Number Confluence", group = gStr)
+roundStep = input.float(0.0, "Round Number Step (0 = auto)", minval = 0.0, group = gStr, tooltip = "Auto picks a step from price magnitude (e.g. 1000 on BTC at 60k). Set manually for FX (e.g. 0.005).")
+
+gC = "═══ Heat Palette & Receipts ═══"
+heatScale = input.string("Relative (rank among pools)", "Heat Color Scale", options = ["Relative (rank among pools)", "Absolute (0–10)"], group = gC, tooltip = "Relative stretches the color ramp across the currently tracked pools, so the hottest pool on the chart always renders hot. Absolute maps the raw 0–10 score directly. Tooltip and dashboard NUMBERS are always the absolute score either way.")
+colCold   = input.color(#5d6b7d, "Cold (0)", group = gC, inline = "p1")
+colWarm   = input.color(#21c997, "Warm (5)", group = gC, inline = "p1")
+colHot    = input.color(#f5a623, "Hot (8)", group = gC, inline = "p2")
+colPrime  = input.color(#ff3b6b, "Prime (10)", group = gC, inline = "p2")
+pocketInt = input.int(6, "Pocket Fill Strength", minval = 1, maxval = 10, group = gC)
+showGlow  = input.bool(true, "Glow On HOT Pools", group = gC)
+receiptMode = input.string("Wins + Losses", "Outcome Receipts", options = ["Wins + Losses", "Wins Only", "None"], group = gC, tooltip = "Descriptive event markers: ⚡ = sweep that was reclaimed (label shows sweep depth in ATR); ✕ = level broken cleanly. These record what happened — they are NOT performance claims; the validation study found post-sweep returns indistinguishable from random. Default shows both outcomes; that is the point.")
+colWin    = input.color(#2bd9a3, "⚡ Receipt", group = gC, inline = "p3")
+colLoss   = input.color(#6b7480, "✕ Marker", group = gC, inline = "p3")
+
+gA = "═══ Alerts ═══"
+hotThr    = input.float(3.5, "High-Rank Pool Score (absolute)", minval = 0, maxval = 10, step = 0.5, group = gA, tooltip = "Raw heat scores typically range ~1–4 with default weights; this threshold is on the absolute score, not the relative color. (Pre-v3.2 default of 7 was effectively unreachable, so these alerts never fired.)")
+alertProx = input.float(0.25, "Proximity (% of price)", minval = 0.0, step = 0.01, group = gA, tooltip = "Proximity alerts fire when price is within this % of a high-rank pool's level.")
+// ═══════════════════════════════════════════════════════════════════════════
+//                               HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+int NSLICE = 4   // gradient slices per pocket
+
+f_size(s) =>
+    switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        => size.small
+
+// UI text scale: A = secondary text (headers, legend, guides, ✕ markers),
+// B = primary text (dashboard data, ⚡ receipts)
+f_szA() => uiScale == "Compact" ? size.tiny : uiScale == "Normal" ? size.small : size.normal
+f_szB() => uiScale == "Compact" ? size.small : uiScale == "Normal" ? size.normal : size.large
+
+f_tier(sc) => sc >= 8 ? "MAX" : sc >= 6.5 ? "HIGH" : sc >= 5 ? "MODERATE" : sc >= 3 ? "LOW" : "MINIMAL"
+
+// The defining visual: heat → color ramp (cold slate → brand teal → amber → prime).
+// Pure ramp over 0–10; f_heatColor below applies relative/absolute scaling first.
+f_heatRamp(float v) => v <= 5.0 ? color.from_gradient(v, 0, 5, colCold, colWarm) : v <= 8.0 ? color.from_gradient(v, 5, 8, colWarm, colHot) : color.from_gradient(v, 8, 10, colHot, colPrime)
+
+// Slice transparency: densest at the level line, fading into the pocket;
+// hotter pools are more opaque overall.
+f_sliceTransp(int i, float sc) => math.min(math.max(94 - pocketInt * 2.0 - sc * 2.0 + i * 4.0, 45), 97)
+
+f_heatBar(float sc) =>
+    string s = ""
+    int f = int(math.min(math.max(math.round(sc / 2.0), 0), 5))
+    for i = 1 to 5
+        s += i <= f ? "█" : "░"
+    s
+
+f_dashCorner() =>
+    switch dashPos
+        "Top Right"    => position.top_right
+        "Top Left"     => position.top_left
+        "Bottom Right" => position.bottom_right
+        "Bottom Left"  => position.bottom_left
+        => position.top_right
+
+// ═══════════════════════════════════════════════════════════════════════════
+//                               TYPES + RECEIPT ARCHIVE
+// ═══════════════════════════════════════════════════════════════════════════
+type liqZone
+    array<box> slices  = na
+    line       lvlLn   = na
+    line       glowLn  = na
+    label      tag     = na
+    int        phase   = 1        // 1 = armed, 2 = swept (watch), 3 = broken (reclaim watch)
+    int        side    = 1        // 1 = SSL (below swing lows), -1 = BSL (above swing highs)
+    float      level   = na
+    float      edge    = na
+    int        bornBar = na
+    int        sweepBar= na
+    int        breakBar= na
+    float      ext     = na       // max excursion beyond the level
+    int        cluster = 1
+    float      sweepPen= 0.0
+    float      volF    = 1.0
+    float      score   = 0.0
+    int        heatKey = -1       // render cache: skip repaint when nothing changed
+
+type zoneRec
+    label t
+    line  l
+
+var array<zoneRec> kept = array.new<zoneRec>()
+
+f_keep(label t, line l) =>
+    if maxKept <= 0
+        label.delete(t)
+        line.delete(l)
+    else
+        array.push(kept, zoneRec.new(t, l))
+        while array.size(kept) > maxKept
+            zoneRec r = array.shift(kept)
+            label.delete(r.t)
+            line.delete(r.l)
+
+// Rolling sweep-outcome base rates (descriptive; per side, last baseN sweeps)
+var array<float> bslOut = array.new<float>()
+var array<float> bslDep = array.new<float>()
+var array<float> s

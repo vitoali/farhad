@@ -1,0 +1,109 @@
+// Dashboard position: bottom-right | Entry and close labels: emoji enabled
+//@version=6
+indicator(
+     "FVG Retest Entry Engine [trade_w_samet]",
+     shorttitle="FVG Retest Entry Engine [trade_w_samet]",
+     overlay=true,
+     behind_chart=false,
+     max_bars_back=5000,
+     max_boxes_count=500,
+     max_lines_count=500,
+     max_labels_count=500,
+     format=format.price
+ )
+
+const string TWS_SIGNATURE = "trade_w_samet"
+
+// GROUPS
+
+tws_group_mode    = "⚡ Signal Blueprint"
+tws_group_experience = "🪪 Retest Experience"
+tws_group_classic = "🧬 Original Sync Engine"
+tws_group_structure = "🧭 Structure Pulse"
+tws_group_imbalance       = "🧱 Gap Intelligence"
+tws_group_return    = "🎯 Reaction Trigger"
+tws_group_gate   = "🛂 Quality Checkpoints"
+tws_group_defense      = "🛡️ Position Architecture"
+tws_group_visuals    = "🎨 Chart Design"
+tws_group_delivery    = "📡 Alert Center"
+
+// OPERATING PROFILE
+
+tws_engine_profile = input.string(
+     "Original Sync",
+     "Engine Style",
+     options=["Original Sync", "Balanced Flow", "Precision Flow", "Fast Flow", "Position Flow", "Custom Lab"],
+     tooltip="Original Sync preserves the first validated signal map. Balanced Flow, Precision Flow, Fast Flow and Position Flow apply different trade_w_samet sensitivity models. Custom Lab unlocks every advanced parameter.",
+     group=tws_group_mode,
+     display=display.none
+ )
+
+bool tws_classic_profile = tws_engine_profile == "Original Sync"
+bool tws_custom_profile = tws_engine_profile == "Custom Lab"
+
+tws_allow_longs = input.bool(
+     true,
+     "Allow Bullish Setups",
+     tooltip="Allows validated bullish gap reactions to create an entry model.",
+     group=tws_group_mode,
+     display=display.none
+ )
+
+tws_allow_shorts = input.bool(
+     true,
+     "Allow Bearish Setups",
+     tooltip="Allows validated bearish gap reactions to create an entry model.",
+     group=tws_group_mode,
+     display=display.none
+ )
+
+// RETEST EXPERIENCE
+
+tws_passport_mode = input.string(
+     "Compact",
+     "FVG Retest Passport",
+     options=["Off", "Compact", "Detailed"],
+     tooltip="Adds a clear setup identity to every confirmed retest. Compact shows age and depth; Detailed also shows structure, FVG size and filter status.",
+     group=tws_group_experience,
+     display=display.none
+ )
+
+tws_show_blocker_lens = input.bool(
+     true,
+     "Show Blocker Lens",
+     tooltip="Explains the engine's current state, including waiting for structure, retest delay, volume block, DI block, HTF block, weak reaction, grade block and ready-at-close states.",
+     group=tws_group_experience,
+     display=display.none
+ )
+
+tws_signal_timing_mode = input.string(
+     "Confirmed Close",
+     "Signal Timing",
+     options=["Confirmed Close", "Live Preview"],
+     tooltip="Both modes commit entries, labels and alerts only after the chart candle closes. Live Preview only updates the dashboard intrabar, so provisional conditions never become historical signals and do not repaint.",
+     group=tws_group_experience,
+     display=display.none
+ )
+
+// ORIGINAL SYNC ENGINE
+
+tws_classic_preset = input.string(
+     "Manual Sync",
+     "Original Signal Calibration",
+     options=["Manual Sync", "Bitcoin Map", "Ethereum Map", "Solana Map", "Gold Map"],
+     tooltip="Recreates the first validated signal calibration. Manual Sync exposes the base values; market maps apply the matching original overrides.",
+     group=tws_group_classic,
+     display=display.none,
+     active=tws_classic_profile
+ )
+
+bool tws_classic_manual = tws_classic_profile and tws_classic_preset == "Manual Sync"
+
+tws_classic_structure_len_input = input.int(
+     8,
+     "Structure Window",
+     minval=5,
+     maxval=19,
+     group=tws_group_classic,
+     display=display.none,
+     active=tws_classic_manual

@@ -1,0 +1,109 @@
+// This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International  
+// https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © BigBeluga
+
+//@version=6
+indicator('High Volume Pivot Support & Resistance Zones [BigBeluga]', overlay = true, max_boxes_count = 500)
+
+// ＩＮＰＵＴＳ ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+
+var string G_PIVOT = 'Pivot Settings'
+resLen = input.int(40, title = 'Resistance Pivot Length', minval = 1, group = G_PIVOT, tooltip = 'The number of bars required before and after a high peak to confirm a structural resistance pivot.')
+supLen = input.int(40, title = 'Support Pivot Length', minval = 1, group = G_PIVOT, tooltip = 'The number of bars required before and after a low trough to confirm a structural support pivot.')
+
+var string G_VOL = 'Volume Validation'
+volAvgLen = input.int(20, title = 'Volume MA Length', minval = 1, group = G_VOL, tooltip = 'The lookback period used to calculate the Simple Moving Average (SMA) of volume for baseline comparison.')
+volMult = input.float(1.2, title = 'Volume Threshold Multiplier', minval = 0.1, group = G_VOL, tooltip = 'The multiplier applied to the volume SMA baseline. A pivot bar must exceed this total value to be validated.')
+
+var string G_ZONE = 'Zone Settings'
+atrLen      = 100
+resColor    = input.color(color.new(#2196f3, 85), title = 'Resistance Zone Color', group = G_ZONE, tooltip = 'The background fill color applied to active resistance zones.')
+resLine     = input.color(#2196f3, title = 'Resistance Line Color', group = G_ZONE, tooltip = 'The outline border color for resistance zones and its corresponding text markers.')
+supColor    = input.color(color.new(#ffc13b, 85), title = 'Support Zone Color', group = G_ZONE, tooltip = 'The background fill color applied to active support zones.')
+supLine     = input.color(#ffc13b, title = 'Support Line Color', group = G_ZONE, tooltip = 'The outline border color for support zones and its corresponding text markers.')
+
+// }
+// ＣＡＬＣＵＬＡＴＩＯＮＳ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+
+// ATR for box padding
+atr = ta.atr(200)
+
+// Volume Validation
+avgVol = ta.sma(volume, volAvgLen)
+isHighVolume = volume > avgVol * volMult
+
+// Calculate Volume Delta per bar (Up volume minus Down volume based on bar close)
+volDelta = close >= open ? volume : -volume
+
+// Pivot Detection
+pHi = ta.pivothigh(high, resLen, resLen)
+pLo = ta.pivotlow(low, supLen, supLen)
+
+// Detect valid pivots on the bar where they are confirmed
+validPivotHigh = not na(pHi) and isHighVolume[resLen]
+validPivotLow = not na(pLo) and isHighVolume[supLen]
+
+// Zone & Polyline Management Initialization
+var box lastResBox = na
+var box lastSupBox = na
+
+var polyline resDeltaLine = na
+var polyline supDeltaLine = na
+
+var label resCvdLabel = na
+var label supCvdLabel = na
+
+var array<chart.point> resPoints = array.new<chart.point>()
+var array<chart.point> supPoints = array.new<chart.point>()
+var array<float> resDeltas = array.new<float>()
+var array<float> supDeltas = array.new<float>()
+
+var float cumResDelta = 0.0
+var float cumSupDelta = 0.0
+
+var bool resBroken = false
+var bool supBroken = false
+
+bool triggerResBreak = false
+bool triggerSupBreak = false
+bool triggerResRetest = false
+bool triggerSupRetest = false
+bool triggerFlippedResRetest = false
+bool triggerFlippedSupRetest = false
+
+// Helper Functions
+normalizeDeltaToBox(float currentDelta, float minDelta, float maxDelta, float boxBottom, float boxTop) =>
+    float rangeDelta = maxDelta - minDelta
+    float rangeBox = boxTop - boxBottom
+    rangeDelta == 0 ? boxBottom + rangeBox / 2 : boxBottom + (currentDelta - minDelta) / rangeDelta * rangeBox
+
+formatVolume(float vol) =>
+    float absVol = math.abs(vol)
+    string sign = vol < 0 ? '-' : ''
+    if absVol >= 1000000
+        sign + str.tostring(absVol / 1000000, '0.0') + 'M'
+    else if absVol >= 1000
+        sign + str.tostring(absVol / 1000, '0.0') + 'K'
+    else
+        sign + str.tostring(absVol, '0')
+
+// }
+// ＰＬＯＴ ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――{
+
+// Handle Resistance Zone Actions
+if validPivotHigh
+    resBroken := false
+    float pivotBodyTop = math.max(open[resLen], close[resLen])
+    float topPrice = pivotBodyTop + atr[resLen]
+    float bottomPrice = pivotBodyTop
+
+    if not na(lastResBox)
+        box.set_right(lastResBox, bar_index)
+
+    string volText = 'Vol: ' + formatVolume(-volume[resLen])
+    lastResBox := box.new(left = bar_index - resLen, top = topPrice, right = bar_index, bottom = bottomPrice, bgcolor = resColor, border_color = resLine, border_style = line.style_solid, text = volText, text_size = size.small, text_color = resLine, text_valign = text.align_top, text_halign = text.align_left)
+
+    if not na(resDeltaLine)
+        polyline.delete(resDeltaLine)
+    if not na(resCvdLabel)
+        label.delete(resCvdLabel)

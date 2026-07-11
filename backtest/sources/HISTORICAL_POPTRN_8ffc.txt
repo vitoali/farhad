@@ -1,0 +1,162 @@
+// This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+// https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © MarkitTick
+
+//@version=6
+indicator("Historical Pattern Projection [MarkitTick]", overlay=true, max_bars_back=2000, max_lines_count=500, max_labels_count=50, max_boxes_count=20)
+
+// =========================================================================
+// SECTION 1: INPUT GROUPS & CONFIGURATIONS
+// =========================================================================
+string GRP_CORE  = "⚙️ Core"
+string GRP_PROJ  = "🔮 Proj"
+string GRP_VIS   = "🎨 Vis"
+string GRP_TRADE = "Risk"
+string GRP_DASH  = "Dash"
+
+i_freeze       = input.bool(false, "Freeze Data", group=GRP_CORE, tooltip="")
+i_pattern_len  = input.int(30, "Fingerprint Length", minval=10, maxval=100, group=GRP_CORE, tooltip="")
+i_search_depth = input.int(500, "Search Depth", minval=100, maxval=2000, group=GRP_CORE, tooltip="")
+i_top_matches  = input.int(3, "Top Matches", minval=1, maxval=5, group=GRP_CORE)
+i_min_score    = input.float(60.0, "Min Score (%)", minval=30.0, maxval=95.0, step=1.0, group=GRP_CORE, tooltip="")
+i_proj_len     = input.int(20, "Ghost Length", minval=5, maxval=60, group=GRP_PROJ)
+
+i_show_ghost   = input.bool(true, "Ghost Line", group=GRP_PROJ)
+i_show_range   = input.bool(true, "Range Band", group=GRP_PROJ)
+i_show_match   = input.bool(true, "Best Match Zone", group=GRP_PROJ)
+i_show_score   = input.bool(true, "Score Label", group=GRP_VIS)
+i_show_table   = input.bool(true, "ECHO Dashboard", group=GRP_VIS)
+i_tbl_pos      = input.string("top_right", "Dash Position", options=["top_right","top_left","bottom_right","bottom_left"], group=GRP_VIS)
+i_ghost_color  = input.color(color.new(#7C4DFF,0), "Ghost Color", group=GRP_VIS)
+i_match_color  = input.color(color.new(#FF6F00,0), "Match Color", group=GRP_VIS)
+
+i_show_trade   = input.bool(true, "Trade Levels", group=GRP_TRADE)
+i_entry_width  = input.float(0.25, "Entry Width (xATR)", minval=0.05, maxval=2.0, step=0.05, group=GRP_TRADE)
+i_sl_mult      = input.float(1.5, "SL (xATR)", minval=0.5, maxval=5.0, step=0.1, group=GRP_TRADE)
+i_tp1_mult     = input.float(1.0, "TP1 (xATR)", minval=0.1, maxval=10.0, step=0.1, group=GRP_TRADE)
+i_tp2_mult     = input.float(2.0, "TP2 (xATR)", minval=0.1, maxval=15.0, step=0.1, group=GRP_TRADE)
+i_tp3_mult     = input.float(3.0, "TP3 (xATR)", minval=0.1, maxval=20.0, step=0.1, group=GRP_TRADE)
+i_entry_color  = input.color(color.new(#FFD600,15), "Entry Color", group=GRP_TRADE)
+i_sl_color     = input.color(color.new(#F44336,15), "SL Color", group=GRP_TRADE)
+i_tp_color     = input.color(color.new(#00C853,15), "TP Color", group=GRP_TRADE)
+
+color dash_bg_color  = input.color(color.rgb(10,10,18,5), "BG", group=GRP_DASH)
+color dash_txt_color = input.color(color.rgb(220,220,235,0), "Text", group=GRP_DASH)
+color i_tbl_hdr_bg   = input.color(color.new(#4527A0,15), "Table Header BG", group=GRP_DASH)
+color i_tbl_cell_bg1 = input.color(color.new(#0D0D1A,30), "Table Cell BG 1", group=GRP_DASH)
+color i_tbl_cell_bg2 = input.color(color.new(#0D0D1A,40), "Table Cell BG 2", group=GRP_DASH)
+color i_tbl_cell_bg3 = input.color(color.new(#0D0D1A,50), "Table Cell BG 3", group=GRP_DASH)
+color i_tbl_cell_bg4 = input.color(color.new(#0D0D1A,60), "Table Cell BG 4", group=GRP_DASH)
+color i_tbl_cell_hl  = input.color(color.new(#1A0F2E,20), "Table Highlight BG", group=GRP_DASH)
+color i_tbl_border   = input.color(color.rgb(50,50,70,20), "Table Border", group=GRP_DASH)
+color i_tbl_frame    = input.color(color.rgb(60,60,90,10), "Table Frame", group=GRP_DASH)
+color i_dim          = input.color(color.new(color.gray,10), "Dim Text", group=GRP_DASH)
+color i_dim2         = input.color(color.new(color.gray,5), "Dim Text 2", group=GRP_DASH)
+color i_pur          = input.color(color.new(#CE93D8,0), "Accent Text", group=GRP_DASH)
+
+// =========================================================================
+// SECTION 2: CHART VALIDATION & SAFETY CHECKS
+// =========================================================================
+string clean_ticker = syminfo.prefix + ":" + syminfo.ticker
+
+bool isNonStandard = chart.is_heikinashi or chart.is_renko or chart.is_linebreak or chart.is_kagi or chart.is_pnf
+if isNonStandard and barstate.islast
+    runtime.error("Non-standard charts (Heikin Ashi, Renko, etc.) cause synthetic pricing and historical repainting. Please switch to standard Japanese Candlesticks.")
+
+// =========================================================================
+// SECTION 3: CUSTOM MATH & STATISTICAL FUNCTIONS
+// =========================================================================
+f_zscore(series float src, simple int len) =>
+    float m = ta.sma(src, len)
+    float s = ta.stdev(src, len)
+    s > 0.0 ? (src - m) / s : 0.0
+
+f_pearson(float[] a, float[] b, simple int len) =>
+    float sum_a  = 0.0
+    float sum_b  = 0.0
+    float sum_ab = 0.0
+    float sum_a2 = 0.0
+    float sum_b2 = 0.0
+    for i = 0 to len - 1
+        float ai = array.get(a, i)
+        float bi = array.get(b, i)
+        sum_a  += ai
+        sum_b  += bi
+        sum_ab += ai * bi
+        sum_a2 += ai * ai
+        sum_b2 += bi * bi
+    float n   = float(len)
+    float num = n * sum_ab - sum_a * sum_b
+    float den = math.sqrt((n * sum_a2 - sum_a * sum_a) * (n * sum_b2 - sum_b * sum_b))
+    den > 1e-10 ? num / den : 0.0
+
+// =========================================================================
+// SECTION 4: GLOBAL VARIABLES & STATE INITIALIZATION
+// =========================================================================
+float z_close = f_zscore(close, i_pattern_len)
+float atr_now = ta.atr(14)
+
+var float[] match_scores   = array.new_float(0)
+var int[]   match_bars_ago = array.new_int(0)
+var float[] match_outcome  = array.new_float(0)
+var float[] ghost_path     = array.new_float(0)
+var float[] ghost_high     = array.new_float(0)
+var float[] ghost_low      = array.new_float(0)
+
+var float best_score  = 0.0
+var int   best_offset = 0
+var float avg_outcome = 0.0
+var int   bull_count  = 0
+var int   bear_count  = 0
+var int   neut_count  = 0
+var int   anchor_bar  = bar_index
+var bool  data_frozen = false
+
+// =========================================================================
+// SECTION 5: CORE PATTERN RECOGNITION ALGORITHM
+// =========================================================================
+bool do_update = (barstate.islastconfirmedhistory or (barstate.islast and barstate.isconfirmed)) and not (i_freeze and data_frozen)
+
+if do_update
+    anchor_bar := bar_index
+    array.clear(match_scores)
+    array.clear(match_bars_ago)
+    array.clear(match_outcome)
+    array.clear(ghost_path)
+    array.clear(ghost_high)
+    array.clear(ghost_low)
+    best_score  := 0.0
+    best_offset := 0
+    avg_outcome := 0.0
+    bull_count  := 0
+    bear_count  := 0
+    neut_count  := 0
+    
+    float[] cur_fp = array.new_float(i_pattern_len)
+    for i = 0 to i_pattern_len - 1
+        array.set(cur_fp, i, z_close[i_pattern_len - 1 - i])
+        
+    int max_depth = math.min(i_search_depth, bar_index - i_pattern_len - i_proj_len - 5)
+    for offset = i_pattern_len + i_proj_len + 2 to max_depth
+        float[] cand_fp = array.new_float(i_pattern_len)
+        bool valid = true
+        float cand_m = 0.0
+        
+        for k = 0 to i_pattern_len - 1
+            cand_m += close[offset - k]
+        cand_m /= i_pattern_len
+        
+        float cand_s = 0.0
+        for k = 0 to i_pattern_len - 1
+            float d = close[offset - k] - cand_m
+            cand_s += d * d
+        cand_s := math.sqrt(cand_s / i_pattern_len)
+        
+        for i = 0 to i_pattern_len - 1
+            int idx = offset - i
+            if idx > bar_index
+                valid := false
+                break
+            float z = cand_s > 0.0 ? (close[idx] - cand_m) / cand_s : 0.0
+            array.set(cand_fp, i_pattern_len - 1 - i, z)
+            V

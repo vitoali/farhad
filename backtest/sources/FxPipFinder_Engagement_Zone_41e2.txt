@@ -1,0 +1,99 @@
+// This Pine Script™ code is subject to the terms of the Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © FxPipFinder
+// @version=6
+
+indicator('FxPipFinder Engagement Zone', shorttitle='FxPipFinder EZ', overlay=true,max_boxes_count = 500)
+
+showSCOB = input.bool(true,title = "Show Single Candle Order Block (SCOB)",group = "Single Candle Order Block Settings")
+mitigationStyle = input.string("Close",title = "Mitigation Method",options = ["Close","Wick"],group = "Single Candle Order Block Settings")
+showLast = input.int(3,title = "Show Last X Single Candle Order Blocks",group = "Single Candle Order Block Settings",minval = 1 , maxval = 15)
+volatilityFilter = input.bool(false,title = "Apply Volatility Filter",group = "Single Candle Order Block Settings",
+ tooltip ="Enables filtering of Order Blocks based on volatility. When enabled, only Order Blocks with an Average True Range (ATR) above the mean value of the ATR" )
+bullishScobColor = input.color(color.new(#00FF00, 80), title = "Bullish/Bearish SCOB Block Color", group = "Single Candle Order Block Style Settings",inline = "color")
+bearishScobColor = input.color(color.new(#BD10E0, 80), title = " ", group = "Single Candle Order Block Style Settings",inline = "color")
+
+type scob
+    float top
+    float bottom
+    int barStart
+    box block
+    bool broken
+
+var array<scob> bullishScobArray = array.new<scob>()    
+var array<scob> bearishScobArray = array.new<scob>()   
+
+f_check_overlap(array<scob> scobArray, float top, float bottom) =>
+    overlap = false
+    if scobArray.size() > 1
+        for i = 0 to array.size(scobArray) - 1
+            scobElement = array.get(scobArray, i)
+            if ((top < scobElement.top and top > scobElement.bottom) or (bottom > scobElement.bottom and bottom < scobElement.top))
+                overlap:= true
+    overlap
+
+detectBullishSCOB = open[2] > close[2] and close[1] > open[1] and close > open and low[1] < low[2] and close > high[1]
+detectBearishSCOB = open[2] < close[2] and close[1] < open[1] and close < open and high[1] > high[2] and close < low[1]
+atr = ta.atr(14)
+atrFilter = ta.sma(atr,200)
+
+if detectBearishSCOB
+    newScob = scob.new(top = high[1],bottom = low[1],barStart = time[1],block = na,broken = false)
+    if not f_check_overlap(bearishScobArray, newScob.top, newScob.bottom)
+        if volatilityFilter and atr > atrFilter
+            array.push(bearishScobArray,newScob)
+        if not volatilityFilter
+            array.push(bearishScobArray,newScob)
+    if bearishScobArray.size() > 20
+        testScob = bearishScobArray.shift()
+        box.delete(testScob.block)
+
+if detectBullishSCOB
+    newScob = scob.new(top = high[1],bottom = low[1],barStart = time[1],block = na,broken = false)
+    if not f_check_overlap(bullishScobArray, newScob.top, newScob.bottom)
+        if volatilityFilter and atr > atrFilter
+            array.push(bullishScobArray,newScob)
+        if not volatilityFilter
+            array.push(bullishScobArray,newScob)
+    if bullishScobArray.size() > 20
+        testScob = bullishScobArray.shift()
+        box.delete(testScob.block)
+
+if showSCOB
+    if bullishScobArray.size() > 0
+        counter = 0
+        for i = bullishScobArray.size() - 1 to 0 
+            bullishScob = bullishScobArray.get(i)
+            if counter < showLast
+                if na(bullishScob.block) 
+                    bullishScob.block := box.new(top = bullishScob.top,bottom = bullishScob.bottom,left = bullishScob.barStart,right = time,xloc=xloc.bar_time,bgcolor = bullishScobColor,border_color = bullishScobColor
+                     ,text = "Bu-SCOB",text_color = color.new(color.white,65),text_halign = text.align_right,text_size = size.tiny)
+                if not na(bullishScob.block) and bullishScob.bottom > (mitigationStyle == "Close" ? close : low)
+                    deletedScob = bullishScobArray.remove(i)
+                    deletedScob.block.delete()
+                    break
+                counter := counter + 1
+                bullishScob.block.set_right(time)
+            else 
+                bullishScob.block.delete()
+                bullishScob.block := na
+
+    if bearishScobArray.size() > 0
+        counter = 0
+        for i = bearishScobArray.size() - 1 to 0
+            bearishScob = bearishScobArray.get(i)
+            if counter < showLast
+                if na(bearishScob.block)
+                    bearishScob.block := box.new(top = bearishScob.top,bottom = bearishScob.bottom,left = bearishScob.barStart,right = time,xloc=xloc.bar_time,bgcolor = bearishScobColor,border_color = bearishScobColor
+                     ,text = "Be-SCOB",text_color = color.new(color.white,65),text_halign = text.align_right,text_size = size.tiny)
+                if not na(bearishScob.block) and bearishScob.top < (mitigationStyle == "Close" ? close : high)
+                    deletedScob = bearishScobArray.remove(i)
+                    deletedScob.block.delete()
+                    break
+                counter := counter + 1
+                bearishScob.block.set_right(time)
+            else 
+                bearishScob.block.delete()
+                bearishScob.block := na
+
+alertcondition(detectBullishSCOB, title="Bullish SCOB Detected", message="A Bullish Single Candle Order Block has formed")
+alertcondition(detectBearishSCOB, title="Bearish SCOB Detected", message="A Bearish Single Candle Order Block has formed")

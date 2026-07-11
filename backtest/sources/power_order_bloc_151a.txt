@@ -1,0 +1,109 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © ChartPrime
+//@version=6
+
+indicator("Power Order Blocks [ChartPrime]", overlay=true, max_boxes_count=500, max_labels_count=500, max_lines_count=500)
+
+// --------------------------------------------------------------------------------------------------------------------}
+// 📌 𝙐𝙎𝙀𝙍 𝙄𝙉𝙋𝙐𝙏𝙎
+// --------------------------------------------------------------------------------------------------------------------{
+grp1 = "Order Block Settings"
+maxBlocks   = 10
+dispThresh  = input.float(0.5, title="Displacement Multiplier", step=0.1, group=grp1, tooltip="How much larger the engulfing candle must be to validate an OB.")
+strLookback = 100
+
+grp2 = "Styling"
+bullColor   = input.color(#1bd37a, title="Bullish OB Color",  group=grp2)
+bearColor   = input.color(#bc14e6, title="Bearish OB Color",  group=grp2)
+borderColor = color.new(#ffffff, 100)
+textColor   = input.color(color.new(#ffffff, 0),  title="Text Color",   group=grp2)
+showEqLine  = input.bool(true, title="Show Equilibrium Line", group=grp2, tooltip="Draws a dashed midpoint line inside each Order Block.")
+powerFade   = input.bool(true, title="Power Intensity",       group=grp2, tooltip="Higher power OBs appear more vivid; weaker OBs are more transparent.")
+
+grp3 = "Signals"
+showRetests = input.bool(true, title="Show Retest Labels", group=grp3, tooltip="Plots an arrow label when price taps into an active Order Block.")
+
+// --------------------------------------------------------------------------------------------------------------------}
+// 📌 𝙏𝙔𝙋𝙀𝙎
+// --------------------------------------------------------------------------------------------------------------------{
+type OBBlock
+    box   bx
+    box   infoBox
+    line  eqLine
+    int   touches
+    int   birthBar
+    float obTop
+    float obBtm
+    float powerPct
+
+// --------------------------------------------------------------------------------------------------------------------}
+// 📌 𝙄𝙉𝘿𝙄𝘾𝘼𝙏𝙊𝙍 𝘾𝘼𝙇𝘾𝙐𝙇𝘼𝙏𝙄𝙊𝙉𝙎
+// --------------------------------------------------------------------------------------------------------------------{
+var OBBlock[] bullBlocks = array.new<OBBlock>()
+var OBBlock[] bearBlocks = array.new<OBBlock>()
+
+var int lastBullRetestBar = na
+var int lastBearRetestBar = na
+
+bool isBearishCandle = close[1] < open[1]
+bool isBullishDisp   = close > open and close > high[1] and (close - open) > (high[1] - low[1]) * dispThresh
+bool bullOB          = isBearishCandle and isBullishDisp
+
+bool isBullishCandle = close[1] > open[1]
+bool isBearishDisp   = close < open and close < low[1] and (open - close) > (high[1] - low[1]) * dispThresh
+bool bearOB          = isBullishCandle and isBearishDisp
+
+float maxCandleSize = ta.highest(high - low, strLookback)
+float atr           = ta.atr(14) * 0.2
+
+// Power % drives transparency: high power = low transp (vivid), low power = high transp (faded)
+// Power 100% -> transp 60, Power 0% -> transp 92
+calcPowerTransp(float powerPct) =>
+    int transp = math.round(92 - (powerPct / 100.0) * 32)
+    transp
+
+buildLabel(int touches, float pct) =>
+    "Power: " + str.tostring(math.round(pct)) + "%  |  Touches: " + str.tostring(touches)
+
+bool bullRetestRaw = false
+bool bearRetestRaw = false
+
+// --- Update bullish blocks ---
+int bullSize = array.size(bullBlocks)
+if bullSize > 0
+    for i = bullSize - 1 to 0
+        OBBlock ob  = array.get(bullBlocks, i)
+        float   btm = ob.obBtm
+        float   top = ob.obTop
+
+        if close < btm
+            box.delete(ob.bx)
+            box.delete(ob.infoBox)
+            if not na(ob.eqLine)
+                line.delete(ob.eqLine)
+            array.remove(bullBlocks, i)
+        else
+            int transp = powerFade ? calcPowerTransp(ob.powerPct) : 80
+            box.set_bgcolor(ob.bx, color.new(bullColor, transp))
+            box.set_right(ob.bx, bar_index + 25)
+
+            box.set_left(ob.infoBox,   bar_index)
+            box.set_right(ob.infoBox,  bar_index + 25)
+            box.set_top(ob.infoBox,    top)
+            box.set_bottom(ob.infoBox, btm)
+
+            if showEqLine and not na(ob.eqLine)
+                line.set_x2(ob.eqLine, bar_index)
+
+            if low[1] <= top and low >= top and bar_index > box.get_left(ob.bx)
+                bullRetestRaw := true
+                ob.touches    += 1
+                float pct      = maxCandleSize > 0 ? ((top - btm) / maxCandleSize) * 100 : 0
+                box.set_text(ob.infoBox, "Bullish OB\n" + buildLabel(ob.touches, pct))
+
+// --- Update bearish blocks ---
+int bearSize = array.size(bearBlocks)
+if bearSize > 0
+    for i = bearSize - 1 to 0
+        OBBlock ob  = array.get(bearBlocks, i)
+        float   top = ob.obTop

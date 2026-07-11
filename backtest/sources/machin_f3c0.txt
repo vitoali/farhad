@@ -1,0 +1,110 @@
+//@version=6
+indicator("Machine Learning Smart Money Concepts | GainzAlgo", overlay=true, max_labels_count = 500, max_boxes_count=500, max_lines_count=500, max_bars_back=5000)
+
+//UI 
+grp_algo   = "🧠 Quant Engine"
+lookahead  = input.int(20,   "Look-Ahead Window (Bars)",     minval=5,   maxval=100,  step=5,   group=grp_algo)
+windowLen  = input.int(1500, "Historical Memory Window",     minval=500, maxval=3000, step=100, group=grp_algo)
+kNeighbors = input.int(5,    "K-Nearest Neighbors (K)",      minval=1,   maxval=10,             group=grp_algo)
+minScore   = input.int(60,   "Min Significance Score (%)",   minval=0,   maxval=100,  step=5,   group=grp_algo)
+atrLen     = input.int(14,   "ATR Period",                   minval=5,                          group=grp_algo)
+swingLen   = input.int(5,    "Pivot Length",                 minval=2,   maxval=20,             group=grp_algo)
+
+grp_ui     = "🎨 Visual Style"
+themeMode  = input.string("Obsidian", "Theme", options=["Obsidian", "Monochrome Alpha"], group=grp_ui)
+hiProbClr  = input.color(color.rgb(160, 130, 255), "High Probability (>80%)",   group=grp_ui)
+medProbClr = input.color(color.rgb(200, 180, 255),  "Medium Probability (≥60%)", group=grp_ui)
+bgTableClr = input.color(color.rgb(8, 8, 14),    "Panel Background",          group=grp_ui)
+txtTable   = input.color(color.rgb(190, 185, 210), "Panel Text",               group=grp_ui)
+
+grp_lines       = "📐 Structure"
+showSwingLines  = input.bool(true,  "CHoCH Connector Lines",   group=grp_lines)
+showBrokenLevel = input.bool(true,  "Broken Level Marker",     group=grp_lines)
+extendLines     = input.bool(false, "Extend Active Level",     group=grp_lines)
+showWickTrace   = input.bool(true,  "Neon Wick Trace",         group=grp_lines)
+showFill        = input.bool(true,  "CHoCH Region Fill",       group=grp_lines)
+fillTransp      = input.int(93,     "Fill Transparency",        minval=70, maxval=98, step=2, group=grp_lines)
+
+grp_tp          = "🎯 Target Levels"
+showPriceTarget = input.bool(true,  "Show KNN Price Targets",  group=grp_tp)
+targetExtBars   = input.int(10,     "Target Extension (Bars)", minval=2, maxval=300,   group=grp_tp)
+targetScalar    = input.float(0.5,  "Conservative Scalar",     minval=0.1, maxval=1.0, step=0.05, group=grp_tp)
+tp1Clr          = input.color(color.rgb(120, 200, 160), "TP1 Color (Conservative)", group=grp_tp)
+tp2Clr          = input.color(color.rgb(180, 160, 255), "TP2 Color (Median)",       group=grp_tp)
+tp3Clr          = input.color(color.rgb(220, 130, 180), "TP3 Color (Aggressive)",   group=grp_tp)
+showTpLabels    = input.bool(true,  "Show TP Labels In Box",   group=grp_tp)
+manualBoxExt    = input.bool(false, "Manual Box Extension Override", group=grp_tp)
+manualExtBars   = input.int(100,    "Manual Extension (Bars)", minval=2, maxval=500, group=grp_tp)
+
+grp_alerts        = "🔔 Probability Alerts"
+enableBullAlert   = input.bool(false, "Enable Bullish CHoCH Alert",          group=grp_alerts)
+bullAlertThresh   = input.float(80,   "Bullish Probability Threshold (%)",   minval=50, maxval=100, step=1, group=grp_alerts)
+enableBearAlert   = input.bool(false, "Enable Bearish CHoCH Alert",          group=grp_alerts)
+bearAlertThresh   = input.float(80,   "Bearish Probability Threshold (%)",   minval=50, maxval=100, step=1, group=grp_alerts)
+
+//Choch types 
+type ChochFeature
+    int   barIndex
+    float volumeDelta
+    float displacementZ
+    float priceVelocity
+    bool  isBullish
+    float outcomeValue
+    float favorableRun
+
+type TargetRecord
+    float price
+    bool  isBull
+    int   tier  // 1=mean 2=median 3=aggressive
+
+var ChochFeature[] database       = array.new<ChochFeature>()
+var TargetRecord[] outstandingTgts = array.new<TargetRecord>()
+
+// Identifying market structure
+swingHigh = ta.pivothigh(high, swingLen, swingLen)
+swingLow  = ta.pivotlow(low,  swingLen, swingLen)
+
+var float lastSwingHigh = na
+var float lastSwingLow  = na
+var int   lastHighIndex = na
+var int   lastLowIndex  = na
+
+if not na(swingHigh)
+    lastSwingHigh := swingHigh
+    lastHighIndex := bar_index - swingLen
+
+if not na(swingLow)
+    lastSwingLow := swingLow
+    lastLowIndex := bar_index - swingLen
+
+float currentVolumeDelta = 0.0
+if volume > 0
+    float candleRange   = math.max(high - low, 1e-6)
+    float buyingVolume  = volume * ((close - low)  / candleRange)
+    float sellingVolume = volume * ((high - close) / candleRange)
+    currentVolumeDelta := (buyingVolume - sellingVolume) / volume
+
+float currentAtr = ta.atr(atrLen)
+
+var int marketTrend = 0
+bool isBullishChoch = false
+bool isBearishChoch = false
+
+if not na(lastSwingHigh) and marketTrend <= 0 and close > lastSwingHigh
+    isBullishChoch := true
+    marketTrend    := 1
+
+if not na(lastSwingLow) and marketTrend >= 0 and close < lastSwingLow
+    isBearishChoch := true
+    marketTrend    := -1
+
+float volDeltaFeature = 0.0
+float displaceFeature = 0.0
+float velocityFeature = 0.0
+
+if isBullishChoch or isBearishChoch
+    int calculationStartBar = isBullishChoch ? lastHighIndex : lastLowIndex
+    int duration            = math.min(math.max(1, bar_index - calculationStartBar), 4990)
+    int safeLookback        = math.min(duration, 50)
+
+    float runningVolDelta = 0.0

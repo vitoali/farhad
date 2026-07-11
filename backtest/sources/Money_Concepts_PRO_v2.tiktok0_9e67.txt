@@ -1,0 +1,700 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © PersonalConcentrat
+// =====================================================================
+//  Smart Money Concepts PRO v2.0  -  Pine Script v6
+//  OB + FVG + BOS/CHoCH + Liquidity + EQH/EQL + Premium/Discount +
+//  Breakers + HTF bias + Volume filter + Confluence entry signals
+// =====================================================================
+ 
+//@version=6
+indicator("Smart Money Concepts PRO v2 [OB+FVG+BOS/CHoCH+Liq+EQH/EQL+P/D+Breakers+HTF]",
+  shorttitle      = "SMC PRO v2",
+  overlay         = true,
+  max_boxes_count = 500,
+  max_lines_count = 500,
+  max_labels_count= 500)
+ 
+// =====================================================================
+//                              INPUTS
+// =====================================================================
+gStruct = "Market Structure"
+swingLen    = input.int(10, "Swing length (pivot lookback)", minval=2, maxval=100, group=gStruct,
+                 tooltip="Larger value = higher-degree structure. 5-10 for scalping, 20-50 for swing trading.")
+showSwings  = input.bool(true,  "Show HH / LL points",       group=gStruct)
+showBOS     = input.bool(true,  "Show BOS",                  group=gStruct)
+showCHoCH   = input.bool(true,  "Show CHoCH",                group=gStruct)
+compactMode = input.bool(false, "Compact mode (no decorations)", group=gStruct,
+                 tooltip="Hides H/L markers and sweep arrows, keeping only key structure (BOS/CHoCH/OB/FVG).")
+showTrendBG = input.bool(false, "Highlight background by trend", group=gStruct)
+bullCol     = input.color(#26a69a, "Bullish structure color", group=gStruct)
+bearCol     = input.color(#ef5350, "Bearish structure color", group=gStruct)
+ 
+gHTF = "HTF bias (higher timeframe)"
+useHtf      = input.bool(true,   "Use HTF trend filter", group=gHTF,
+                 tooltip="Determines the higher-timeframe trend from two EMAs. Used for background shading and to filter confluence signals.")
+htfRes      = input.timeframe("240", "HTF timeframe", group=gHTF,
+                 tooltip="For example: 60, 240, D. Ideally 4-6x larger than the working timeframe.")
+htfFast     = input.int(21, "Fast EMA (HTF)", minval=2, group=gHTF)
+htfSlow     = input.int(50, "Slow EMA (HTF)", minval=3, group=gHTF)
+ 
+gOB = "Order Blocks"
+showOB       = input.bool(true,   "Show Order Blocks",          group=gOB)
+obMaxCount   = input.int(5,       "Max active OBs", minval=1, maxval=20, group=gOB)
+obMitigation = input.string("Wick","Mitigation by",            options=["Wick","Close"], group=gOB,
+                 tooltip="Wick - block is mitigated by a wick touch. Close - by a bar closing beyond the level.")
+obVolFilter  = input.bool(true,   "Only OBs with elevated volume", group=gOB,
+                 tooltip="OB is highlighted brighter if the formation candle volume is above the average x multiplier.")
+volMult      = input.float(1.5,   "Volume multiplier",          minval=1.0, step=0.1, group=gOB,
+                 tooltip="The OB / sweep candle volume must exceed SMA(volume,20) by this factor to count as strong.")
+bullOBCol    = input.color(color.new(#26a69a, 80), "Bullish OB color",  group=gOB)
+bearOBCol    = input.color(color.new(#ef5350, 80), "Bearish OB color",  group=gOB)
+obBorder     = input.bool(true,   "Border around OB",           group=gOB)
+ 
+gBR = "Breaker Blocks"
+showBR       = input.bool(true,   "Show Breaker Blocks", group=gBR,
+                 tooltip="When an OB is broken it becomes a Breaker of the opposite direction (former support becomes resistance and vice versa).")
+brMaxCount   = input.int(5,       "Max active Breakers",   minval=1, maxval=20, group=gBR)
+bullBRCol    = input.color(color.new(#2962ff, 80), "Bullish Breaker color", group=gBR)
+bearBRCol    = input.color(color.new(#ff6d00, 80), "Bearish Breaker color", group=gBR)
+ 
+gFVG = "Fair Value Gaps (imbalances)"
+showFVG     = input.bool(true,  "Show FVG",                       group=gFVG)
+fvgMaxCount = input.int(10,     "Max active FVGs",   minval=1, maxval=30, group=gFVG)
+fvgMinAtr   = input.float(0.25, "Min FVG size (x ATR14)",         minval=0.0, step=0.05, group=gFVG,
+                 tooltip="Noise filter. 0 = no filter. 0.25-0.5 works well on crypto.")
+fvgDisp     = input.bool(true,  "Require displacement (strong candle)", group=gFVG,
+                 tooltip="FVG counts only if the central candle is impulsive: body >= multiplier x ATR14. Filters out weak gaps.")
+fvgDispMult = input.float(0.5,  "Min candle body (x ATR14)",      minval=0.0, step=0.05, group=gFVG)
+bullFVGCol  = input.color(color.new(#4caf50, 80), "Bullish FVG color", group=gFVG)
+bearFVGCol  = input.color(color.new(#ff9800, 80), "Bearish FVG color", group=gFVG)
+ 
+gLiq = "Liquidity Sweeps"
+showLiq     = input.bool(true,  "Show sweep signals", group=gLiq,
+                 tooltip="A candle wicks through a swing but the close returns inside - a classic stop hunt before a reversal.")
+liqVolConf  = input.bool(false, "Only sweeps with elevated volume", group=gLiq,
+                 tooltip="Mark only sweeps where candle volume exceeded SMA(volume,20) x multiplier. Reduces false labels.")
+liqLabel    = input.string("Arrow", "Label type", options=["Arrow","Text"], group=gLiq)
+bullLiqCol  = input.color(#26a69a, "Bullish sweep color (low grab)",  group=gLiq)
+bearLiqCol  = input.color(#ef5350, "Bearish sweep color (high grab)", group=gLiq)
+ 
+gEQ = "Equal Highs / Lows"
+showEQ      = input.bool(true,  "Show EQH/EQL",        group=gEQ,
+                 tooltip="Equal highs/lows within a tolerance - liquidity zones.")
+eqTolAtr    = input.float(0.15, "Tolerance (x ATR14)", minval=0.01, step=0.05, group=gEQ)
+eqCol       = input.color(color.new(#9c27b0, 30), "EQH/EQL line color", group=gEQ)
+ 
+gPD = "Premium / Discount zones"
+showPD      = input.bool(true,  "Show P/D zones",      group=gPD,
+                 tooltip="Auto Fibonacci between the last swing high and low. Premium (above 50%) - for shorts, Discount (below 50%) - for longs.")
+pdExtend    = input.int(30,     "Zone length (bars to the right)", minval=5, maxval=200, group=gPD)
+premiumCol  = input.color(color.new(#ef5350, 92), "Premium zone color",  group=gPD)
+discountCol = input.color(color.new(#26a69a, 92), "Discount zone color", group=gPD)
+eqCol2      = input.color(color.new(#ffc107, 50), "Equilibrium line color", group=gPD)
+ 
+gSig = "Confluence entry signals"
+showSig     = input.bool(true,  "Show LONG / SHORT signals", group=gSig,
+                 tooltip="Signal = retest of a fresh OB in the correct zone (Discount for long / Premium for short) + agreement with the HTF bias.")
+sigNeedHtf  = input.bool(true,  "Require HTF agreement",   group=gSig,
+                 tooltip="Long only when HTF is bullish, short only when bearish. If the HTF filter is off, this condition is ignored.")
+sigNeedZone = input.bool(true,  "Require correct P/D zone", group=gSig,
+                 tooltip="Long - only in Discount, short - only in Premium relative to the equilibrium of the last range.")
+bullSigCol  = input.color(#00e676, "LONG signal color",  group=gSig)
+bearSigCol  = input.color(#ff1744, "SHORT signal color", group=gSig)
+ 
+gAlert = "Alerts"
+aBOS    = input.bool(true, "BOS",              group=gAlert)
+aCHOCH  = input.bool(true, "CHoCH",            group=gAlert)
+aNewOB  = input.bool(true, "New OB",           group=gAlert)
+aTouch  = input.bool(true, "OB touch",         group=gAlert)
+aFVG    = input.bool(true, "New FVG",          group=gAlert)
+aSweep  = input.bool(true, "Liquidity sweep",  group=gAlert)
+aEQ     = input.bool(true, "EQH / EQL",        group=gAlert)
+aBR     = input.bool(true, "New Breaker",      group=gAlert)
+aSig    = input.bool(true, "Confluence signal",group=gAlert)
+ 
+gDash = "Dashboard / info table"
+showPanel = input.bool(true, "Show info table (top-right dashboard)", group=gDash,
+                 tooltip="Turn the top-right summary table on or off. Levels/zones on the chart are unaffected.")
+ 
+// =====================================================================
+//                              STATE
+// =====================================================================
+var float lastPH    = na
+var float lastPL    = na
+var int   lastPHbar = na
+var int   lastPLbar = na
+var float prevPH    = na
+var float prevPL    = na
+var int   prevPHbar = na
+var int   prevPLbar = na
+var bool  phBroken  = true
+var bool  plBroken  = true
+var int   trend     = 0
+var string lastSig  = "-"      // last confluence signal for the dashboard
+ 
+var box[] bullOBs      = array.new<box>()
+var box[] bearOBs      = array.new<box>()
+var box[] bullBreakers = array.new<box>()
+var box[] bearBreakers = array.new<box>()
+var box[] bullFVGs     = array.new<box>()
+var box[] bearFVGs     = array.new<box>()
+ 
+// Premium/Discount objects - reused
+var box  pdBoxPrem = na
+var box  pdBoxDisc = na
+var line pdLineEq  = na
+var line pdLineTop = na
+var line pdLineBot = na
+ 
+atr14  = ta.atr(14)
+volSma = ta.sma(volume, 20)
+strongVolNow = not na(volSma) and volume > volSma * volMult
+ 
+// =====================================================================
+//                              HTF BIAS
+// =====================================================================
+// Non-biased, non-repainting request: take the confirmed value (expr[1])
+// from the higher timeframe. The request.security call is in global scope.
+// Pine v6 note: bool series can no longer be na, so the HTF state is
+// requested as 1/0 and converted back to bool. Same non-repainting logic.
+htfUpRaw = request.security(syminfo.tickerid, htfRes,
+              (ta.ema(close, htfFast) > ta.ema(close, htfSlow))[1] ? 1 : 0,
+              lookahead = barmerge.lookahead_on)
+bool htfUp = nz(htfUpRaw) == 1
+htfBull = useHtf and htfUp
+htfBear = useHtf and not htfUp
+htfBiasTxt = not useHtf ? "OFF" : htfBull ? "BULL" : htfBear ? "BEAR" : "-"
+htfBiasCol = not useHtf ? color.gray : htfBull ? bullCol : htfBear ? bearCol : color.gray
+ 
+// =====================================================================
+//                              SWINGS
+// =====================================================================
+ph = ta.pivothigh(high, swingLen, swingLen)
+pl = ta.pivotlow(low,  swingLen, swingLen)
+ 
+// Flags for plotshape - pivot event on the current bar
+bool didEQH = false
+bool didEQL = false
+bool didH   = false
+bool didL   = false
+ 
+if not na(ph)
+    if showEQ and not na(lastPH) and math.abs(ph - lastPH) <= atr14 * eqTolAtr
+        didEQH := true
+        line.new(lastPHbar, lastPH, bar_index - swingLen, ph, color=eqCol, style=line.style_dotted, width=2)
+        if aEQ
+            alert("EQH: equal highs - liquidity zone above", alert.freq_once_per_bar)
+    else
+        didH := true
+    prevPH    := lastPH
+    prevPHbar := lastPHbar
+    lastPH    := ph
+    lastPHbar := bar_index - swingLen
+    phBroken  := false
+ 
+if not na(pl)
+    if showEQ and not na(lastPL) and math.abs(pl - lastPL) <= atr14 * eqTolAtr
+        didEQL := true
+        line.new(lastPLbar, lastPL, bar_index - swingLen, pl, color=eqCol, style=line.style_dotted, width=2)
+        if aEQ
+            alert("EQL: equal lows - liquidity zone below", alert.freq_once_per_bar)
+    else
+        didL := true
+    prevPL    := lastPL
+    prevPLbar := lastPLbar
+    lastPL    := pl
+    lastPLbar := bar_index - swingLen
+    plBroken  := false
+ 
+// Strictly anchored swing and EQH/EQL markers - they do not overlap
+plotshape(showSwings and not compactMode and didH,
+  title    = "Swing High",
+  style    = shape.circle,
+  location = location.abovebar,
+  color    = color.new(bearCol, 50),
+  size     = size.tiny,
+  offset   = -swingLen)
+plotshape(showSwings and not compactMode and didL,
+  title    = "Swing Low",
+  style    = shape.circle,
+  location = location.belowbar,
+  color    = color.new(bullCol, 50),
+  size     = size.tiny,
+  offset   = -swingLen)
+plotshape(showEQ and not compactMode and didEQH,
+  title    = "EQH",
+  style    = shape.diamond,
+  location = location.abovebar,
+  color    = color.new(eqCol, 20),
+  size     = size.tiny,
+  offset   = -swingLen)
+plotshape(showEQ and not compactMode and didEQL,
+  title    = "EQL",
+  style    = shape.diamond,
+  location = location.belowbar,
+  color    = color.new(eqCol, 20),
+  size     = size.tiny,
+  offset   = -swingLen)
+ 
+// =====================================================================
+//                          LIQUIDITY SWEEPS
+// =====================================================================
+// Sweep above (bearish sweep - buy-side liquidity taken):
+//   high broke lastPH but close returned below lastPH
+bearSweepRaw = showLiq and not na(lastPH) and not phBroken and high > lastPH and close < lastPH
+bullSweepRaw = showLiq and not na(lastPL) and not plBroken and low  < lastPL and close > lastPL
+// Optional volume filter
+bearSweep = bearSweepRaw and (not liqVolConf or strongVolNow)
+bullSweep = bullSweepRaw and (not liqVolConf or strongVolNow)
+ 
+if bearSweep and aSweep
+    alert("Liquidity sweep above (high grab)", alert.freq_once_per_bar)
+if bullSweep and aSweep
+    alert("Liquidity sweep below (low grab)", alert.freq_once_per_bar)
+ 
+// Sweep signals as plotshape - fixed position at the candle
+plotshape(bearSweep and not compactMode,
+  title    = "Sweep High",
+  style    = shape.triangledown,
+  location = location.abovebar,
+  color    = bearLiqCol,
+  size     = size.small)
+plotshape(bullSweep and not compactMode,
+  title    = "Sweep Low",
+  style    = shape.triangleup,
+  location = location.belowbar,
+  color    = bullLiqCol,
+  size     = size.small)
+plotchar(bearSweep and not compactMode and liqLabel == "Text",
+  title    = "Sweep Text Top",
+  char     = "S",
+  location = location.abovebar,
+  color    = bearLiqCol,
+  size     = size.tiny)
+plotchar(bullSweep and not compactMode and liqLabel == "Text",
+  title    = "Sweep Text Bot",
+  char     = "S",
+  location = location.belowbar,
+  color    = bullLiqCol,
+  size     = size.tiny)
+ 
+// =====================================================================
+//                          BOS / CHoCH
+// =====================================================================
+bullEvent = not na(lastPH) and not phBroken and close > lastPH
+bearEvent = not na(lastPL) and not plBroken and close < lastPL
+ 
+isBullCHoCH = bullEvent and trend == -1
+isBullBOS   = bullEvent and trend != -1
+isBearCHoCH = bearEvent and trend ==  1
+isBearBOS   = bearEvent and trend !=  1
+ 
+if bullEvent
+    phBroken := true
+    trend    := 1
+if bearEvent
+    plBroken := true
+    trend    := -1
+ 
+drawStructure(level, fromBar, isBull, isCH) =>
+    col = isBull ? bullCol : bearCol
+    txt = isCH ? " CHoCH" : " BOS"
+    line.new(fromBar, level, bar_index, level, color=col, style=line.style_dashed, width=1)
+    // style_none = text only, no bubble. Hard-anchored to (bar_index, price).
+    label.new(bar_index, level, txt,
+      style     = label.style_none,
+      textcolor = col,
+      size      = size.small)
+ 
+if (isBullBOS and showBOS) or (isBullCHoCH and showCHoCH)
+    drawStructure(lastPH, lastPHbar, true,  isBullCHoCH)
+if (isBearBOS and showBOS) or (isBearCHoCH and showCHoCH)
+    drawStructure(lastPL, lastPLbar, false, isBearCHoCH)
+ 
+if aBOS and (isBullBOS or isBearBOS)
+    alert("BOS: " + (isBullBOS ? "bullish" : "bearish") + " break of structure", alert.freq_once_per_bar)
+if aCHOCH and (isBullCHoCH or isBearCHoCH)
+    alert("CHoCH: change of character to the " + (isBullCHoCH ? "bullish" : "bearish") + " side", alert.freq_once_per_bar)
+ 
+// =====================================================================
+//                          ORDER BLOCKS
+// =====================================================================
+findLastBearOffset(fromBar) =>
+    int result = na
+    if not na(fromBar)
+        int dist = math.min(bar_index - fromBar, 100)
+        for i = 0 to dist
+            if close[i] < open[i]
+                result := i
+                break
+    result
+ 
+findLastBullOffset(fromBar) =>
+    int result = na
+    if not na(fromBar)
+        int dist = math.min(bar_index - fromBar, 100)
+        for i = 0 to dist
+            if close[i] > open[i]
+                result := i
+                break
+    result
+ 
+if showOB and (isBullBOS or isBullCHoCH)
+    off = findLastBearOffset(lastPLbar)
+    if not na(off)
+        bool strongOB = not obVolFilter or (not na(volSma[off]) and volume[off] > volSma[off] * volMult)
+        b = box.new(bar_index - off, high[off], bar_index, low[off],
+          bgcolor      = bullOBCol,
+          border_color = obBorder ? color.new(bullCol, strongOB ? 0 : 50) : color.new(color.black, 100),
+          border_width = strongOB ? 2 : 1,
+          extend       = extend.right)
+        array.push(bullOBs, b)
+        if aNewOB
+            alert("New bullish Order Block" + (strongOB ? " (strong volume)" : ""), alert.freq_once_per_bar)
+        while array.size(bullOBs) > obMaxCount
+            box.delete(array.shift(bullOBs))
+ 
+if showOB and (isBearBOS or isBearCHoCH)
+    off = findLastBullOffset(lastPHbar)
+    if not na(off)
+        bool strongOB = not obVolFilter or (not na(volSma[off]) and volume[off] > volSma[off] * volMult)
+        b = box.new(bar_index - off, high[off], bar_index, low[off],
+          bgcolor      = bearOBCol,
+          border_color = obBorder ? color.new(bearCol, strongOB ? 0 : 50) : color.new(color.black, 100),
+          border_width = strongOB ? 2 : 1,
+          extend       = extend.right)
+        array.push(bearOBs, b)
+        if aNewOB
+            alert("New bearish Order Block" + (strongOB ? " (strong volume)" : ""), alert.freq_once_per_bar)
+        while array.size(bearOBs) > obMaxCount
+            box.delete(array.shift(bearOBs))
+ 
+// =========== Helper: convert OB -> Breaker ===========
+convertToBreaker(b, isBullToBear) =>
+    if showBR
+        topB  = box.get_top(b)
+        botB  = box.get_bottom(b)
+        leftB = box.get_left(b)
+        col   = isBullToBear ? bearBRCol : bullBRCol
+        edge  = isBullToBear ? bearCol   : bullCol
+        br = box.new(leftB, topB, bar_index, botB,
+          bgcolor      = col,
+          border_color = color.new(edge, 30),
+          border_style = line.style_dashed,
+          border_width = 1,
+          extend       = extend.right)
+        if isBullToBear
+            array.push(bearBreakers, br)
+            while array.size(bearBreakers) > brMaxCount
+                box.delete(array.shift(bearBreakers))
+        else
+            array.push(bullBreakers, br)
+            while array.size(bullBreakers) > brMaxCount
+                box.delete(array.shift(bullBreakers))
+        if aBR
+            alert("New " + (isBullToBear ? "bearish" : "bullish") + " Breaker Block", alert.freq_once_per_bar)
+ 
+// OB touch flags on the current bar (for confluence signals)
+bool tapBullOB = false
+bool tapBearOB = false
+ 
+// Touches and mitigation of bullish OBs -> a broken bullish OB = bearish breaker
+if array.size(bullOBs) > 0
+    for i = array.size(bullOBs) - 1 to 0
+        b   = array.get(bullOBs, i)
+        top = box.get_top(b)
+        bot = box.get_bottom(b)
+        bool touched = low <= top and high >= bot and not (low[1] <= top and high[1] >= bot)
+        if touched
+            tapBullOB := true
+            if aTouch
+                alert("Bullish Order Block touch", alert.freq_once_per_bar)
+        bool kill = obMitigation == "Wick" ? low < bot : close < bot
+        if kill
+            array.remove(bullOBs, i)
+            convertToBreaker(b, true)
+            box.delete(b)
+ 
+// Touches and mitigation of bearish OBs -> a broken bearish OB = bullish breaker
+if array.size(bearOBs) > 0
+    for i = array.size(bearOBs) - 1 to 0
+        b   = array.get(bearOBs, i)
+        top = box.get_top(b)
+        bot = box.get_bottom(b)
+        bool touched = low <= top and high >= bot and not (low[1] <= top and high[1] >= bot)
+        if touched
+            tapBearOB := true
+            if aTouch
+                alert("Bearish Order Block touch", alert.freq_once_per_bar)
+        bool kill = obMitigation == "Wick" ? high > top : close > top
+        if kill
+            array.remove(bearOBs, i)
+            convertToBreaker(b, false)
+            box.delete(b)
+ 
+// Breaker mitigation (when the breaker itself is broken - delete it)
+if array.size(bullBreakers) > 0
+    for i = array.size(bullBreakers) - 1 to 0
+        b   = array.get(bullBreakers, i)
+        bot = box.get_bottom(b)
+        if close < bot
+            array.remove(bullBreakers, i)
+            box.delete(b)
+ 
+if array.size(bearBreakers) > 0
+    for i = array.size(bearBreakers) - 1 to 0
+        b   = array.get(bearBreakers, i)
+        top = box.get_top(b)
+        if close > top
+            array.remove(bearBreakers, i)
+            box.delete(b)
+ 
+// =====================================================================
+//                          FAIR VALUE GAPS
+// =====================================================================
+if showFVG and bar_index > 2
+    // Body of the central gap candle (for the displacement filter)
+    float midBody = math.abs(close[1] - open[1])
+    bool  dispOK  = not fvgDisp or midBody >= atr14 * fvgDispMult
+    // Bullish FVG: low[0] > high[2]
+    if low > high[2]
+        float gap = low - high[2]
+        if gap >= atr14 * fvgMinAtr and dispOK
+            b = box.new(bar_index - 2, low, bar_index, high[2],
+              bgcolor     = bullFVGCol,
+              border_color= color.new(color.black, 100),
+              extend      = extend.right)
+            array.push(bullFVGs, b)
+            if aFVG
+                alert("New bullish FVG", alert.freq_once_per_bar)
+            while array.size(bullFVGs) > fvgMaxCount
+                box.delete(array.shift(bullFVGs))
+    // Bearish FVG: high[0] < low[2]
+    if high < low[2]
+        float gap = low[2] - high
+        if gap >= atr14 * fvgMinAtr and dispOK
+            b = box.new(bar_index - 2, low[2], bar_index, high,
+              bgcolor     = bearFVGCol,
+              border_color= color.new(color.black, 100),
+              extend      = extend.right)
+            array.push(bearFVGs, b)
+            if aFVG
+                alert("New bearish FVG", alert.freq_once_per_bar)
+            while array.size(bearFVGs) > fvgMaxCount
+                box.delete(array.shift(bearFVGs))
+ 
+if array.size(bullFVGs) > 0
+    for i = array.size(bullFVGs) - 1 to 0
+        b   = array.get(bullFVGs, i)
+        bot = box.get_bottom(b)
+        if low <= bot
+            array.remove(bullFVGs, i)
+            box.delete(b)
+ 
+if array.size(bearFVGs) > 0
+    for i = array.size(bearFVGs) - 1 to 0
+        b   = array.get(bearFVGs, i)
+        top = box.get_top(b)
+        if high >= top
+            array.remove(bearFVGs, i)
+            box.delete(b)
+ 
+// =====================================================================
+//                          PREMIUM / DISCOUNT ZONES
+// =====================================================================
+// Take the last swing high and swing low, build Fib zones.
+float pdMid = na
+if not na(lastPH) and not na(lastPL)
+    pdMid := math.avg(lastPH, lastPL)
+ 
+if showPD and not na(lastPH) and not na(lastPL)
+    float pdHi = lastPH
+    float pdLo = lastPL
+    int   lft  = math.max(lastPHbar, lastPLbar)
+    int   rgt  = bar_index + pdExtend
+    float eq   = pdMid
+ 
+    // Create once, then update in place
+    if na(pdBoxPrem)
+        pdBoxPrem := box.new(lft, pdHi, rgt, eq,
+          bgcolor      = premiumCol,
+          border_color = color.new(color.black, 100))
+        pdBoxDisc := box.new(lft, eq, rgt, pdLo,
+          bgcolor      = discountCol,
+          border_color = color.new(color.black, 100))
+        pdLineEq  := line.new(lft, eq, rgt, eq, color=eqCol2, style=line.style_dashed, width=1)
+        pdLineTop := line.new(lft, pdHi, rgt, pdHi, color=color.new(bearCol, 40), style=line.style_solid)
+        pdLineBot := line.new(lft, pdLo, rgt, pdLo, color=color.new(bullCol, 40), style=line.style_solid)
+    else
+        box.set_lefttop(pdBoxPrem, lft, pdHi)
+        box.set_rightbottom(pdBoxPrem, rgt, eq)
+        box.set_bgcolor(pdBoxPrem, premiumCol)
+        box.set_lefttop(pdBoxDisc, lft, eq)
+        box.set_rightbottom(pdBoxDisc, rgt, pdLo)
+        box.set_bgcolor(pdBoxDisc, discountCol)
+        line.set_xy1(pdLineEq, lft, eq)
+        line.set_xy2(pdLineEq, rgt, eq)
+        line.set_color(pdLineEq, eqCol2)
+        line.set_xy1(pdLineTop, lft, pdHi)
+        line.set_xy2(pdLineTop, rgt, pdHi)
+        line.set_xy1(pdLineBot, lft, pdLo)
+        line.set_xy2(pdLineBot, rgt, pdLo)
+ 
+// =====================================================================
+//                  CONFLUENCE ENTRY SIGNALS
+// =====================================================================
+// LONG  = touch of a fresh bullish OB
+//         + (opt.) price in Discount (below equilibrium)
+//         + (opt.) bullish HTF bias
+// SHORT = mirror image.
+bool inDiscount = not na(pdMid) and close < pdMid
+bool inPremium  = not na(pdMid) and close > pdMid
+ 
+bool zoneLongOK  = not sigNeedZone or inDiscount
+bool zoneShortOK = not sigNeedZone or inPremium
+bool htfLongOK   = not (sigNeedHtf and useHtf) or htfBull
+bool htfShortOK  = not (sigNeedHtf and useHtf) or htfBear
+ 
+bool longSignal  = showSig and tapBullOB and zoneLongOK  and htfLongOK
+bool shortSignal = showSig and tapBearOB and zoneShortOK and htfShortOK
+ 
+if longSignal
+    lastSig := "LONG"
+    if aSig
+        alert("Confluence LONG: bullish OB retest" +
+          (sigNeedZone ? " in Discount" : "") +
+          (sigNeedHtf and useHtf ? " + HTF Bull" : ""), alert.freq_once_per_bar)
+if shortSignal
+    lastSig := "SHORT"
+    if aSig
+        alert("Confluence SHORT: bearish OB retest" +
+          (sigNeedZone ? " in Premium" : "") +
+          (sigNeedHtf and useHtf ? " + HTF Bear" : ""), alert.freq_once_per_bar)
+ 
+plotshape(longSignal,
+  title    = "LONG signal",
+  style    = shape.labelup,
+  location = location.belowbar,
+  color    = bullSigCol,
+  textcolor= color.white,
+  text     = "LONG",
+  size     = size.small)
+plotshape(shortSignal,
+  title    = "SHORT signal",
+  style    = shape.labeldown,
+  location = location.abovebar,
+  color    = bearSigCol,
+  textcolor= color.white,
+  text     = "SHORT",
+  size     = size.small)
+ 
+// =====================================================================
+//                          TREND BACKGROUND
+// =====================================================================
+trendBg = trend == 1 ? color.new(bullCol, 95) : trend == -1 ? color.new(bearCol, 95) : na
+bgcolor(showTrendBG ? trendBg : na, title="Trend background")
+ 
+// =====================================================================
+//                          INFO PANEL
+// =====================================================================
+var table info = table.new(position.top_right, 2, 8, border_width=1)
+if showPanel and barstate.islast
+    bgc = color.new(color.black, 70)
+    table.cell(info, 0, 0, "Trend (LTF)", text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 0, trend == 1 ? "BULL" : trend == -1 ? "BEAR" : "-",
+      text_color = trend == 1 ? bullCol : trend == -1 ? bearCol : color.gray, bgcolor=bgc)
+    table.cell(info, 0, 1, "Bias (HTF)", text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 1, htfBiasTxt, text_color=htfBiasCol, bgcolor=bgc)
+    table.cell(info, 0, 2, "Bull OB", text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 2, str.tostring(array.size(bullOBs)), text_color=bullCol, bgcolor=bgc)
+    table.cell(info, 0, 3, "Bear OB", text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 3, str.tostring(array.size(bearOBs)), text_color=bearCol, bgcolor=bgc)
+    table.cell(info, 0, 4, "Breakers",text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 4, str.tostring(array.size(bullBreakers) + array.size(bearBreakers)),
+      text_color=color.new(#2962ff, 0), bgcolor=bgc)
+    table.cell(info, 0, 5, "FVG",     text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 5, str.tostring(array.size(bullFVGs) + array.size(bearFVGs)),
+      text_color=color.new(#ff9800, 0), bgcolor=bgc)
+    // Zone: where price is now
+    pdZone = na(pdMid) ? "-" : close > pdMid ? "PREMIUM" : "DISCOUNT"
+    pdColor = pdZone == "PREMIUM" ? bearCol : pdZone == "DISCOUNT" ? bullCol : color.gray
+    table.cell(info, 0, 6, "Zone",    text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 6, pdZone,    text_color=pdColor,     bgcolor=bgc)
+    // Last confluence signal
+    sigColor = lastSig == "LONG" ? bullSigCol : lastSig == "SHORT" ? bearSigCol : color.gray
+    table.cell(info, 0, 7, "Signal",  text_color=color.white, bgcolor=bgc)
+    table.cell(info, 1, 7, lastSig,   text_color=sigColor,    bgcolor=bgc)
+ 
+// =====================================================================
+//                 v3 ADD-ONS  (optional, OFF by default)
+//  Trading sessions background + Smart visibility of Order Block zones.
+//  Detection/logic is unchanged - these affect DISPLAY only.
+// =====================================================================
+ 
+// ---------- Trading sessions (Asia / London / New York) ----------
+gSess        = "Trading sessions"
+showSessions = input.bool(false, "Show session background", group=gSess, tooltip="Shades Asia / London / New York sessions. Intraday timeframes only.")
+sessTz       = input.string("America/New_York", "Session time zone", group=gSess)
+asiaSess     = input.session("1900-0400", "Asia session",     group=gSess)
+londonSess   = input.session("0300-1200", "London session",   group=gSess)
+nySess       = input.session("0930-1600", "New York session", group=gSess)
+asiaCol      = input.color(color.new(#ffeb3b, 90), "Asia color",     group=gSess)
+londonCol    = input.color(color.new(#2962ff, 90), "London color",   group=gSess)
+nyCol        = input.color(color.new(#26a69a, 90), "New York color", group=gSess)
+ 
+inAsia   = showSessions and not na(time(timeframe.period, asiaSess,   sessTz))
+inLondon = showSessions and not na(time(timeframe.period, londonSess, sessTz))
+inNY     = showSessions and not na(time(timeframe.period, nySess,     sessTz))
+bgcolor(inAsia   ? asiaCol   : na, title="Asia session")
+bgcolor(inLondon ? londonCol : na, title="London session")
+bgcolor(inNY     ? nyCol     : na, title="New York session")
+ 
+// ---------- Smart visibility of Order Block zones ----------
+gSV       = "Smart visibility"
+smartView = input.bool(false, "Smart visibility: show only nearest OBs", group=gSV, tooltip="On the last bar, keep only the order blocks closest to price visible and hide the rest, to declutter. Affects display only, not detection.")
+svCount   = input.int(5, "Max nearest OB zones to show", minval=1, maxval=20, group=gSV)
+ 
+f_obVisible(b, vis, isBull) =>
+    if vis
+        box.set_bgcolor(b, isBull ? bullOBCol : bearOBCol)
+        box.set_border_color(b, color.new(isBull ? bullCol : bearCol, 0))
+    else
+        box.set_bgcolor(b, color.new(color.gray, 100))
+        box.set_border_color(b, color.new(color.gray, 100))
+ 
+var bool svWasOn = false
+if smartView and barstate.islast
+    allDist = array.new<float>()
+    if array.size(bullOBs) > 0
+        for i = 0 to array.size(bullOBs) - 1
+            bb = array.get(bullOBs, i)
+            array.push(allDist, math.abs(close - math.avg(box.get_top(bb), box.get_bottom(bb))))
+    if array.size(bearOBs) > 0
+        for i = 0 to array.size(bearOBs) - 1
+            bb = array.get(bearOBs, i)
+            array.push(allDist, math.abs(close - math.avg(box.get_top(bb), box.get_bottom(bb))))
+    float cutoff = na
+    if array.size(allDist) > 0
+        array.sort(allDist, order.ascending)
+        int k = int(math.min(svCount, array.size(allDist))) - 1
+        cutoff := array.get(allDist, k)
+    if array.size(bullOBs) > 0
+        for i = 0 to array.size(bullOBs) - 1
+            bb = array.get(bullOBs, i)
+            d  = math.abs(close - math.avg(box.get_top(bb), box.get_bottom(bb)))
+            f_obVisible(bb, na(cutoff) or d <= cutoff, true)
+    if array.size(bearOBs) > 0
+        for i = 0 to array.size(bearOBs) - 1
+            bb = array.get(bearOBs, i)
+            d  = math.abs(close - math.avg(box.get_top(bb), box.get_bottom(bb)))
+            f_obVisible(bb, na(cutoff) or d <= cutoff, false)
+    svWasOn := true
+else if (not smartView) and svWasOn and barstate.islast
+    if array.size(bullOBs) > 0
+        for i = 0 to array.size(bullOBs) - 1
+            f_obVisible(array.get(bullOBs, i), true, true)
+    if array.size(bearOBs) > 0
+        for i = 0 to array.size(bearOBs) - 1
+            f_obVisible(array.get(bearOBs, i), true, false)
+    svWasOn := false
+ 

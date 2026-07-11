@@ -1,0 +1,162 @@
+//@version=6
+indicator("OrderFlow FVG Matrix MTF", overlay = true,
+     max_boxes_count = 500, max_labels_count = 500, max_lines_count = 100, max_bars_back = 5000)
+
+string G_MTF = "①  Multi-Timeframe"
+bool   i_en1  = input.bool(true, "TF 1", inline = "t1", group = G_MTF)
+string i_tf1  = input.timeframe("60",  "", inline = "t1", group = G_MTF)
+bool   i_en2  = input.bool(true, "TF 2", inline = "t2", group = G_MTF)
+string i_tf2  = input.timeframe("120", "", inline = "t2", group = G_MTF)
+bool   i_en3  = input.bool(true, "TF 3", inline = "t3", group = G_MTF)
+string i_tf3  = input.timeframe("240", "", inline = "t3", group = G_MTF)
+bool   i_bull = input.bool(true, "Bullish", inline = "d", group = G_MTF)
+bool   i_bear = input.bool(true, "Bearish", inline = "d", group = G_MTF)
+int    i_maxZones = input.int(14, "Max Active Zones (total)", minval = 1, maxval = 30, group = G_MTF, tooltip = "Newest N zones across all timeframes are kept.")
+int    i_extendR  = input.int(24, "Zone Extend (bars)", minval = 2, maxval = 120, group = G_MTF)
+
+string G_MRG = "②  Confluence Merge"
+bool   i_merge    = input.bool(true, "Merge Overlapping Zones", group = G_MRG, tooltip = "Any two same-direction zones whose bands overlap are fused into one Confluence FVG tagged with every timeframe involved. Guarantees no overlapping zones on the chart.")
+float  i_mergeATR = input.float(0.30, "Merge Distance (ATR ×)", minval = 0.0, maxval = 3.0, step = 0.05, group = G_MRG, tooltip = "Extra tolerance added to the overlap test so near-touching zones also merge.")
+float  i_confBonus= input.float(0.6, "Confluence Bonus / Extra TF", minval = 0.0, maxval = 2.0, step = 0.1, group = G_MRG, tooltip = "Strength added per additional timeframe stacked into a confluence zone.")
+
+string G_DET = "③  Gap Filter"
+bool   i_useATR   = input.bool(true, "Filter Gap by ATR", group = G_DET)
+float  i_atrMult  = input.float(0.35, "Min Gap (ATR ×)", minval = 0.05, maxval = 3.0, step = 0.05, group = G_DET)
+int    i_atrLen   = input.int(14, "ATR Length", minval = 1, maxval = 200, group = G_DET)
+float  i_minGapPct= input.float(0.0, "Min Gap (% of price, 0 = off)", minval = 0.0, step = 0.05, group = G_DET)
+
+string G_HGT = "④  Universal Zone Height"
+bool   i_norm     = input.bool(true, "Normalize All Zone Heights", group = G_HGT, tooltip = "Force every FVG to one fixed height so none are tall towers. Uses chart ATR so all zones match on screen.")
+string i_normMode = input.string("ATR Based", "Height Method", options = ["ATR Based", "Fixed Percentage"], group = G_HGT)
+float  i_normATR  = input.float(0.60, "Height (ATR ×)", minval = 0.1, maxval = 3.0, step = 0.05, group = G_HGT)
+float  i_normPct  = input.float(0.30, "Height (% of price)", minval = 0.05, maxval = 2.0, step = 0.05, group = G_HGT)
+
+string G_STR = "⑤  Strength Engine (0-10)"
+float  i_minStr = input.float(3.5, "Min Strength To Show", minval = 0.0, maxval = 10.0, step = 0.5, group = G_STR)
+float  i_wSize  = input.float(0.28, "  Weight · Displacement (gap/ATR)", minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wAlign = input.float(0.26, "  Weight · Delta Alignment",        minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wRvol  = input.float(0.18, "  Weight · Relative Volume",        minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wDom   = input.float(0.12, "  Weight · Flow Dominance",         minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wDisp  = input.float(0.10, "  Weight · Middle-Candle Body",     minval = 0, maxval = 1, step = 0.02, group = G_STR)
+float  i_wAbs   = input.float(0.06, "  Weight · Absorption",             minval = 0, maxval = 1, step = 0.02, group = G_STR)
+int    i_rvolLen= input.int(50, "RVOL Baseline (bars)", minval = 5, maxval = 500, group = G_STR)
+
+string G_MIT = "⑥  Mitigation"
+string i_mitType = input.string("50% Fill", "Fill Rule", options = ["Touch", "50% Fill", "Full Fill"], group = G_MIT)
+bool   i_keepMit = input.bool(true, "Keep Filled Zones (dark grey history)", group = G_MIT, tooltip = "Leave mitigated zones on the chart as greyed-out history instead of deleting them.")
+
+string G_VIZ = "⑦  Visuals"
+bool   i_showTag   = input.bool(true, "Show TF / Confluence Badge", group = G_VIZ)
+bool   i_showCells = input.bool(true, "Show Tier Word In Zone", group = G_VIZ)
+bool   i_showBars  = input.bool(true, "Show Bull/Bear Flow Bars", group = G_VIZ)
+bool   i_showStats = input.bool(true, "Show Delta / Volume Labels", group = G_VIZ)
+int    i_barMaxW   = input.int(80, "Flow Bar Max Width (bars)", minval = 20, maxval = 300, group = G_VIZ)
+int    i_barOff    = input.int(4, "Flow Bar Offset (bars)", minval = 1, maxval = 100, group = G_VIZ)
+float  i_barH      = input.float(0.55, "Flow Bar Height (ATR ×)", minval = 0.1, maxval = 3.0, step = 0.05, group = G_VIZ)
+string i_txtSize   = input.string("Small", "Label Text Size", options = ["Tiny", "Small", "Normal", "Large"], group = G_VIZ)
+
+string G_COL = "⑧  Theme (maroon / dark green)"
+color  i_bullZone = input.color(color.rgb(20, 105, 62),  "Bullish Zone", inline = "z", group = G_COL)
+color  i_bearZone = input.color(color.rgb(120, 28, 42),  "Bearish Zone", inline = "z", group = G_COL)
+color  i_bullBar  = input.color(color.rgb(22, 130, 74),  "Bullish Bar",  inline = "b", group = G_COL)
+color  i_bearBar  = input.color(color.rgb(158, 32, 46),  "Bearish Bar",  inline = "b", group = G_COL)
+color  i_mitCol   = input.color(color.rgb(74, 80, 92),   "Filled History", group = G_COL)
+
+string G_DASH = "⑨  Dashboard"
+bool   i_showDash = input.bool(true, "Show Dashboard", group = G_DASH)
+string i_dashPos  = input.string("Top Right", "Position", options = ["Top Right", "Top Left", "Bottom Right", "Bottom Left", "Middle Right"], group = G_DASH)
+string i_dashSize = input.string("Normal", "Text Size", options = ["Tiny", "Small", "Normal"], group = G_DASH)
+
+color C_PANEL = color.rgb(9, 10, 14)
+color C_ALT   = color.rgb(17, 20, 28)
+color C_HDR   = color.rgb(24, 29, 41)
+color C_SUB   = color.rgb(14, 17, 24)
+color C_EDGE  = color.rgb(44, 50, 62)
+color C_TXT   = color.rgb(228, 232, 240)
+color C_LO    = color.rgb(122, 132, 148)
+color C_NEU   = color.rgb(92, 100, 114)
+color C_GOLD  = color.rgb(216, 170, 92)
+color C_GREEN = color.rgb(46, 190, 120)
+color C_RED   = color.rgb(216, 76, 94)
+
+f_clamp(float v, float lo, float hi) => math.max(lo, math.min(hi, v))
+
+f_fmt(float v) =>
+    float a = math.abs(v)
+    string s = v < 0 ? "-" : ""
+    a >= 1e9 ? s + str.tostring(a / 1e9, "#.##") + "B" : a >= 1e6 ? s + str.tostring(a / 1e6, "#.##") + "M" : a >= 1e3 ? s + str.tostring(a / 1e3, "#.##") + "K" : s + str.tostring(a, "#")
+
+f_txt(string s) =>
+    switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        => size.small
+
+f_dpos(string p) =>
+    switch p
+        "Top Left"     => position.top_left
+        "Bottom Right" => position.bottom_right
+        "Bottom Left"  => position.bottom_left
+        "Middle Right" => position.middle_right
+        => position.top_right
+
+f_stars(float s) => s >= 8 ? "★★★★★" : s >= 6.5 ? "★★★★" : s >= 5 ? "★★★" : s >= 3.5 ? "★★" : s >= 2 ? "★" : "·"
+f_tier(float s)  => s >= 8 ? "PEAK" : s >= 6.5 ? "HIGH" : s >= 5 ? "FAIR" : s >= 3.5 ? "SOFT" : "WEAK"
+
+f_tflabel(string tf) =>
+    int s = timeframe.in_seconds(tf)
+    s % 86400 == 0 ? "D" + str.tostring(s / 86400) : s >= 3600 and s % 3600 == 0 ? "H" + str.tostring(s / 3600) : s >= 60 ? "M" + str.tostring(s / 60) : "S" + str.tostring(s)
+
+f_sess() =>
+    int m = hour(time, "GMT") * 60 + minute(time, "GMT")
+    m >= 480 and m < 780 ? "London" : m >= 780 and m < 1320 ? "NY" : m >= 0 and m < 540 ? "Asian" : "Other"
+
+f_buy(float h, float l, float c, float v) => (h - l) > 0 ? v * (c - l) / (h - l) : v * 0.5
+f_abs(float o, float h, float l, float c, float v) =>
+    float rng = h - l
+    rng > 0 ? v * ((h - math.max(o, c)) + (math.min(o, c) - l)) / rng * 0.5 : 0.0
+
+f_strength(bool isBull, float gap, float atrv, float fVol, float fDlt, float fAbs, float avgV, float midBody, float midRng) =>
+    float sizeS  = f_clamp(gap / math.max(atrv * 1.5, 1e-9), 0.0, 1.0)
+    float dir    = isBull ? fDlt : -fDlt
+    float alignS = fVol > 0 ? f_clamp(dir / fVol, 0.0, 1.0) : 0.0
+    float rvolS  = avgV > 0 ? f_clamp(fVol / (avgV * 3.0) / 2.0, 0.0, 1.0) : 0.0
+    float domS   = f_clamp(math.abs(fDlt) / math.max(fVol, 1.0), 0.0, 1.0)
+    float dispS  = midRng > 0 ? f_clamp(math.abs(midBody) / midRng, 0.0, 1.0) : 0.0
+    float absS   = f_clamp(fAbs / math.max(fVol, 1.0) * 2.0, 0.0, 1.0)
+    float wSum   = math.max(i_wSize + i_wAlign + i_wRvol + i_wDom + i_wDisp + i_wAbs, 1e-6)
+    float sc = (sizeS * i_wSize + alignS * i_wAlign + rvolS * i_wRvol + domS * i_wDom + dispS * i_wDisp + absS * i_wAbs) / wSum * 10.0
+    f_clamp(sc, 0.0, 10.0)
+
+string L1 = f_tflabel(i_tf1)
+string L2 = f_tflabel(i_tf2)
+string L3 = f_tflabel(i_tf3)
+
+f_tfset(bool h1, bool h2, bool h3) =>
+    string s = ""
+    if h1
+        s := L1
+    if h2
+        s := s == "" ? L2 : s + "·" + L2
+    if h3
+        s := s == "" ? L3 : s + "·" + L3
+    s == "" ? "—" : s
+
+detect_bull() =>
+    var float a_top = na
+    var float a_bot = na
+    var float a_sc = 0.0
+    var int a_t = na
+    var float a_buy = 0.0
+    var float a_vol = 0.0
+    var float a_dlt = 0.0
+    var float a_abs = 0.0
+    var float a_rv = 0.0
+    float atrv = ta.atr(i_atrLen)[1]
+    float avgV = ta.sma(volume, i_rvolLen)[1]
+    if low[1] > high[3]
+        float gtop = low[1]
+        float gbot = high[3]
+        float gap 

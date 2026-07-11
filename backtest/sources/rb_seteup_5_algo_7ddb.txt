@@ -1,0 +1,109 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © LuxAlgo
+
+//@version=6
+indicator("Retest & Break Setup [LuxAlgo]", "LuxAlgo - R&B Setup", overlay=true, max_lines_count=500, max_labels_count=500)
+
+//---------------------------------------------------------------------------------------------------------------------}
+// Constants
+//---------------------------------------------------------------------------------------------------------------------{
+color DATA              = #DBDBDB
+color HEADERS           = #808080
+color BACKGROUND        = #161616
+color BORDERS           = #2E2E2E
+
+string TOP_RIGHT        = 'Top Right'
+string BOTTOM_RIGHT     = 'Bottom Right'
+string BOTTOM_LEFT      = 'Bottom Left'
+
+string TINY             = 'Tiny'
+string SMALL            = 'Small'
+string NORMAL           = 'Normal'
+string LARGE            = 'Large'
+string HUGE             = 'Huge'
+
+string DASHBOARD_GROUP          = 'Dashboard'
+string dashboardTooltip         = 'Enable or disable the dashboard.'
+string dashboardPositionTooltip = 'Select the dashboard location.'
+string dashboardSizeTooltip     = 'Select the dashboard size.'
+
+//---------------------------------------------------------------------------------------------------------------------}
+// Inputs
+//---------------------------------------------------------------------------------------------------------------------{
+int length  = input.int(5, "Length", group="Pivot Settings")
+int nBars     = input.int(20, "Max Bars for Break (N)", group="Setup Settings", tooltip="Maximum number of bars allowed between the last Retest and the Break.")
+int pBars     = input.int(20, "Max Bars between Retests (P)", group="Setup Settings", tooltip="Maximum number of bars allowed between the Swing and the first Retest, or between consecutive Retests.")
+int kRetests  = input.int(2, "Required Consecutive Retests (K)", group="Setup Settings", minval=1)
+bool showOnlyComplete = input.bool(true, "Only Show Complete Setups", group="Setup Settings")
+
+color bullColor   = input.color(color.new(#089981, 0), "Bullish Setup Color", group="Style")
+color bearColor   = input.color(color.new(#f23645, 0), "Bearish Setup Color", group="Style")
+color invalidColor= input.color(color.new(color.gray, 50), "Invalidated Color", group="Style")
+color textColor   = input.color(color.white, "Label Text Color", group="Style")
+
+bool dashboardInput         = input.bool(true, 'Dashboard', group = DASHBOARD_GROUP, tooltip = dashboardTooltip)
+string dashboardPositionInput = input.string(TOP_RIGHT, 'Position', group = DASHBOARD_GROUP, tooltip = dashboardPositionTooltip, options = [TOP_RIGHT,BOTTOM_RIGHT,BOTTOM_LEFT])
+string dashboardSizeInput   = input.string(SMALL, 'Size', group = DASHBOARD_GROUP, tooltip = dashboardSizeTooltip, options = [TINY,SMALL,NORMAL,LARGE,HUGE])
+
+//---------------------------------------------------------------------------------------------------------------------}
+// Variables
+//---------------------------------------------------------------------------------------------------------------------{
+var string parsedDashboardPosition = switch dashboardPositionInput
+    TOP_RIGHT       => position.top_right
+    BOTTOM_RIGHT    => position.bottom_right
+    BOTTOM_LEFT     => position.bottom_left
+
+var string parsedDashboardSize     = switch dashboardSizeInput
+    TINY            => size.tiny
+    SMALL           => size.small
+    NORMAL          => size.normal
+    LARGE           => size.large
+    HUGE            => size.huge
+
+// Bullish Variables
+var float current_sh = na
+var int   current_sh_bar = na
+var float broken_sh  = na
+var int   broken_sh_bar = na
+var float recent_sh  = na
+var int   last_event_bar_bull = na
+var int   retest_count_bull = 0
+var int   state_bull = 0 
+
+var line  sh_line      = na
+var line  recent_line  = na
+var array<label> retest_labels_bull = array.new_label()
+
+// Bearish Variables
+var float current_sl = na
+var int   current_sl_bar = na
+var float broken_sl  = na
+var int   broken_sl_bar = na
+var float recent_sl  = na
+var int   last_event_bar_bear = na
+var int   retest_count_bear = 0
+var int   state_bear = 0 
+
+var line  sl_line           = na
+var line  recent_line_bear  = na
+var array<label> retest_labels_bear = array.new_label()
+
+// Dashboard Stats
+var int totalBullSetups = 0
+var int completedBullSetups = 0
+var int totalBearSetups = 0
+var int completedBearSetups = 0
+
+type PendingEval
+    int evalBar
+    float breakoutPrice
+    int direction
+
+var array<PendingEval> pendingEvals = array.new<PendingEval>()
+var int evalBull = 0
+var int winBull = 0
+var int evalBear = 0
+var int winBear = 0
+
+//---------------------------------------------------------------------------------------------------------------------}
+// Functions

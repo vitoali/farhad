@@ -1,0 +1,110 @@
+//@version=6
+library("KhaksterEntryLib", overlay=true)
+
+// Khakster Entry Library — فاز ۵: تایم فرکتالی + تریگر FTC/RTP
+// Depends: KhaksterTrexAtrLib, MarketStructureEngine, KhaksterSmartMoneyLib, CandleRecognitionLib
+//
+import dorkadehali/KhaksterTrexAtrLib/1 as trex
+import dorkadehali/MarketStructureEngine/1 as mse
+import dorkadehali/KhaksterSmartMoneyLib/1 as sm
+import dorkadehali/CandleRecognitionLib/1 as cr
+
+export const int ENTRY_NONE = 0
+export const int ENTRY_FTC = 1
+export const int ENTRY_RTP = 2
+
+export type EntrySettings
+    string structureTf
+    string patternTf
+    string triggerTf
+    int minStructureScore
+    float slThMult
+    float tpThMult
+    bool useFtc
+    bool useRtp
+    int maxWatched
+
+export defaultEntrySettings() =>
+    EntrySettings.new("60", "15", "5", 40, 0.5, 3.0, true, true, 32)
+
+// H1 ساختار → M15 پترن → M5 تریگر (فصل ۲ خاکستر)
+export fractalStack(string structureTf) =>
+    [structureTf, trex.patternTf(structureTf), trex.triggerTf(structureTf)]
+
+export h1M5Stack() =>
+    fractalStack("60")
+
+export stackLabel(EntrySettings e) =>
+    trex.tfLabel(e.structureTf) + " / " + trex.tfLabel(e.patternTf) + " / " + trex.tfLabel(e.triggerTf)
+
+export chartIsTriggerTf(EntrySettings e) =>
+    timeframe.isintraday and str.tostring(timeframe.multiplier) == e.triggerTf
+
+export levelEligible(int sig, int sc, int kind, int ftcCred, EntrySettings e) =>
+    sig == 1 and sc >= e.minStructureScore and kind == mse.PIVOT_REVERSE and ftcCred == 1
+
+export priceInZone(float hi, float lo, float zTop, float zBot) =>
+    mse.priceInZone(hi, lo, zTop, zBot)
+
+export priceBreakZone(bool isHigh, float c, float zTop, float zBot) =>
+    mse.priceBreakZone(isHigh, c, zTop, zBot)
+
+// ── به‌روزرسانی وضعیت سطح روی تایم تریگر ───────────────────────────────────
+export markFtcSpent(float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, bool ftcSpent) =>
+    bool spent = ftcSpent
+    if not spent and priceInZone(hi, lo, ftcTop, ftcBot) and not priceInZone(prevHi, prevLo, ftcTop, ftcBot)
+        spent := true
+    spent
+
+export rtpFromBar(bool isHigh, float o, float h, float l, float c) =>
+    mse.rtpZoneFromBar(isHigh, o, h, l, c)
+
+// ── سیگنال ورود روی M5 ───────────────────────────────────────────────────────
+export ftcEntrySignal(bool isHigh, float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, bool ftcCred, int pivotKind, bool broken, bool ftcSpent, bool traded, EntrySettings e) =>
+    e.useFtc and not traded and mse.ftcTouchSignal(isHigh, hi, lo, prevHi, prevLo, ftcTop, ftcBot, ftcCred, pivotKind, broken, ftcSpent)
+
+export rtpEntrySignal(float hi, float lo, float prevHi, float prevLo, float rtpTop, float rtpBot, bool ftcCred, bool broken, bool ftcSpent, bool rtpSet, bool tradedRtp, EntrySettings e) =>
+    bool ok = e.useRtp and not tradedRtp and ftcCred and ftcSpent and rtpSet and not broken
+    ok and priceInZone(hi, lo, rtpTop, rtpBot) and not priceInZone(prevHi, prevLo, rtpTop, rtpBot)
+
+export scanEntry(bool isHigh, float hi, float lo, float prevHi, float prevLo, float ftcTop, float ftcBot, float rtpTop, float rtpBot, bool ftcCred, int pivotKind, bool broken, bool ftcSpent, bool rtpSet, bool tradedFtc, bool tradedRtp, EntrySettings e) =>
+    int sig = ENTRY_NONE
+    if ftcEntrySignal(isHigh, hi, lo, prevHi, prevLo, ftcTop, ftcBot, ftcCred, pivotKind, broken, ftcSpent, tradedFtc, e)
+        sig := ENTRY_FTC
+    else if rtpEntrySignal(hi, lo, prevHi, prevLo, rtpTop, rtpBot, ftcCred, broken, ftcSpent, rtpSet, tradedRtp, e)
+        sig := ENTRY_RTP
+    sig
+
+export entryKindName(int k) =>
+    k == ENTRY_FTC ? "FTC" : k == ENTRY_RTP ? "RTP" : ""
+
+export entrySlTp(bool isHigh, float zoneTop, float zoneBot, float pivotPrice, float thPips, EntrySettings e) =>
+    float pad = mse.trToPrice(thPips * e.slThMult)
+    float tpDist = mse.trToPrice(thPips * e.tpThMult)
+    float sl = isHigh ? zoneTop + pad : zoneBot - pad
+    float tp = isHigh ? pivotPrice - tpDist : pivotPrice + tpDist
+    [sl, tp]
+
+// MTF: الگوی کندل + SM روی همان TF (برای request.security)
+// خروجی: longSig, shortSig, smCntL, smCntS, bullPid, bearPid, h, l, c, thPips
+export mtfCandleSmPack(cr.Settings crS, sm.SmartMoneySettings smS, mse.MseSettings mseS, string tf) =>
+    bool[] crFlags = cr.patternFlags(crS)
+    bool bull = cr.anyBullishPattern(crFlags)
+    bool bear = cr.anyBearishPattern(crFlags)
+    [bOk, bCnt, _, _, _] = sm.confluencePackAtBar(false, smS)
+    [sOk, sCnt, _, _, _] = sm.confluencePackAtBar(true, smS)
+    int len = trex.lenForTf(tf, mseS.atr)
+    float boost = trex.thBoostForLen(len, mseS.atr)
+    [_, thP] = mse.metricsLocal(len, boost, mseS)
+    int bPid = cr.firstBullishPattern(crFlags)
+    int sPid = cr.firstBearishPattern(crFlags)
+    int lSig = bull and bOk == 1 ? 1 : 0
+    int sSig = bear and sOk == 1 ? 1 : 0
+    [lSig, sSig, bCnt, sCnt, bPid, sPid, high, low, close, thP]
+
+// Pack سطح از MSE → برای استراتژی
+export unpackBearLevel(int sig, float zTop, float zBot, float price, int bTime, int ftcT, float ftcB, int fc, int sc, int kind, float th) =>
+    [sig, zTop, zBot, price, bTime, 1, ftcT, ftcB, fc, sc, kind, th]
+
+export unpackBullLevel(int sig, float zTop, float zBot, float price, int bTime, int ftcT, float ftcB, int fc, int sc, int kind, float th) =>
+    [sig, zTop, zBot, price, bTime, 0, ftcT, ftcB, fc, sc, kind, th]

@@ -1,0 +1,94 @@
+//@version=6
+//#region PREAMBLE
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+//  Copyright © 2022-present Iason Nikolas | jason5480
+//  The "Template Trailing Strategy (Backtester)" Pine Script™ code is licensed under Attribution-NonCommercial-ShareAlike
+//  4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+//  
+//  BY: Credit must be given to the creator.
+//  NC: Only noncommercial use of your work is permitted. Noncommercial means not primarily intended for or directed
+//      towards commercial advantage or monetary compensation.
+//  SA: Adaptations must be shared under the same terms.
+//  
+//  This license requires that reusers give credit to the creator. It allows reusers to distribute, remix, adapt, and
+//  build upon the material in any medium or format, for noncommercial purposes only. If others modify or adapt the
+//  material, they must license the modified material under identical terms.
+//  
+//  Description
+//  --------------------------------------------------------------------------------------------------------------------
+//  This script is designed to be used as a template for building new strategies. The framework provides you with a
+//  configurable implementation of the entry, exit, stop loss and take profit (trailing) logic. The proposed way to use
+//  that script is in combination with a customized signal indicator where you implemented your own logic of start and
+//  end deal conditions. See the other existing signal indicators in my profile like "Click Signal Indicator" for more.
+//  Another way to utilize this script (not recommended) is to copy it and replace the startLongDeal, startShortDeal,
+//  endLongDeal, endShortDeal, and optionally if you use limit or stop-limit orders for entry/exit the cnlStartLongDeal,
+//  cnlStartShortDeal, cnlEndtLongDeal, cnlEndtShortDeal fields of the dealConditions UDT in the STRATEGY 1 module
+//  according to your needs! However, doing that way you will have to re-implement your changes every time I release
+//  a new update if you want to have those new changes I made in your script. Last but not least, if you want to release
+//  the modified version you should share it under compatible terms as the ShareAlike property of the license describe.
+//  
+//  --------------------------------------------------------------------------------------------------------------------
+//  Disclaimer:
+//    1. I am not licensed financial advisors or broker-dealer. I do not tell you when or what to buy or sell.
+//       I developed this software which enables you execute manual or automated trades using TradingView.
+//       The software allows you to set the criteria you want for entering and exiting trades.
+//    2. Do not trade with money you cannot afford to lose.
+//    3. I do not guarantee consistent profits or that anyone can make money with no effort.
+//       And I am not selling the holy grail.
+//    4. Every system can have winning and losing streaks.
+//    5. Money management plays a large role in the results of your trading. For example: lot size, account size,
+//       broker leverage, and broker margin call rules all affect on results. Also, your Take Profit and Stop Loss
+//       settings for individual pair trades and for overall account equity have a major impact on results.
+//       If you are new to trading and do not understand these items, then I recommend you seek educational materials
+//       to further your knowledge.
+//    
+//  YOU NEED TO FIND AND USE THE TRADING SYSTEM THAT WORKS BEST FOR YOU AND YOUR TRADING TOLERANCE.
+//  I HAVE PROVIDED NOTHING MORE THAN A TOOL WITH OPTIONS FOR YOU TO TRADE WITH THIS PROGRAM ON TRADINGVIEW.
+//  
+//  I accept defect (bug) reports! If you found one, let me know by sending me a private message on TradingView.
+//  If you encounter any problems, I will be happy if you share them with me and find a solution together.
+//  --------------------------------------------------------------------------------------------------------------------
+//#endregion ===========================================================================================================
+//#region SETUP
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+//@strategy_alert_message {{strategy.order.alert_message}}
+strategy(title = 'Template Trailing Strategy (Backtester)',
+         shorttitle = 'TTSv53',
+         pyramiding = 0,
+         backtest_fill_limits_assumption = 1,
+         default_qty_type = strategy.percent_of_equity,
+         default_qty_value = 10,
+         initial_capital = 100000,
+         slippage = 3,
+         commission_type = strategy.commission.percent,
+         commission_value = 0.1,
+         close_entries_rule = 'ANY',
+         margin_long = 0,
+         margin_short = 0,
+         max_lines_count = 500,
+         max_labels_count = 500,
+         fill_orders_on_standard_ohlc = true,
+         behind_chart = false)
+
+// INPUT ===============================================================================================================
+const int NUM_OF_MODS = 14
+int modCount = 0
+
+//#endregion ===========================================================================================================
+//#region 📆 FILTERS
+// ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+// Description: Module responsible for filtering out long and short open signals that do not meet user defined rules
+// Dependencies: NONE
+// Results: timeFilterApproval
+
+import jason5480/chrono_utils/8 as chr
+
+// INPUT ===============================================================================================================
+const string GROUP_FILTERS = '📆 Filters'
+var referenceTimezone = input.enum(defval = chr.Timezone.Exchange, title = 'Timezones Ref->Chart', inline = 'Timezone', group = GROUP_FILTERS, display = display.data_window).to_string()
+fromEnabled = input.bool(defval = false, title = 'From      ', inline = 'From Date', group = GROUP_FILTERS, display = display.data_window)
+toEnabled = input.bool(defval = false, title = 'To       ', inline = 'To Date', group = GROUP_FILTERS, display = display.data_window)
+var dateTimeWindow = chr.DateTimeWindow.new().init(
+  fromDateTime = fromEnabled ? input.time(defval = timestamp('01 Jan 2024 00:00'), title = '​', inline = 'From Date', group = GROUP_FILTERS, display = display.data_window, active = fromEnabled) : na,
+  toDateTime = toEnabled ? input.time(defval = timestamp('01 Jan 2025 00:00'), title = '​​', inline = 'To Date', group = GROUP_FILTERS, display = display.data_window, active = toEnabled) : na,
+  r

@@ -1,0 +1,591 @@
+// ============================================================
+// PremK | PUT & CALL VP Levels
+// ============================================================
+//@version=6
+indicator("PK", overlay=true,
+     max_bars_back=1000, max_lines_count=500,
+     max_labels_count=500, max_boxes_count=500)
+
+length = input.int(5, "How many previous days?", minval=1, maxval=200)
+       
+    // Detect first candle of the day
+isNewDay = ta.change(time("D"))
+
+// Store opening candle values
+var float oHigh = na
+var float oLow  = na
+var float oClose = na
+var float oOpen = na
+
+if bool (isNewDay)
+    oHigh  := high
+    oLow   := low
+    oClose := close
+    oOpen := open
+
+ph = request.security(syminfo.tickerid, "D", high[1],  lookahead=barmerge.lookahead_on)
+pl = request.security(syminfo.tickerid, "D", low[1],   lookahead=barmerge.lookahead_on)
+pc = request.security(syminfo.tickerid, "D", close[1], lookahead=barmerge.lookahead_on)
+po = request.security(syminfo.tickerid, "D", open[1], lookahead=barmerge.lookahead_on)
+
+avgClose = ta.sma(pc, length)
+avgOHL = (oHigh + oLow) / 2
+avgPHL= (ph + pl) / 2
+avgIOHPL=(oHigh + pl) /2
+
+plot(ph,title="PreHigh", color=color.rgb(41, 5, 249), linewidth=2, style=plot.style_linebr)
+plot(pl, title="Prelow", color=color.rgb(5, 111, 242), linewidth=2, style=plot.style_linebr)
+plot(pc, title="PreClose", color=color.rgb(253, 5, 59), linewidth=2, style=plot.style_linebr)
+plot(oOpen, title="DayOpen", color=color.rgb(69, 253, 3), linewidth=1, style=plot.style_linebr)
+plot(oHigh, title="OpenHigh", color=color.rgb(250, 248, 248), linewidth=1, style=plot.style_linebr)
+plot(oLow, title="OpenLow", color=color.rgb(250, 249, 249), linewidth=1, style=plot.style_linebr)
+plot(avgOHL, title="OHL", color=color.rgb(248, 178, 2), linewidth=1, style=plot.style_linebr)
+plot(avgPHL, title="PHL", color=color.rgb(237, 249, 5), linewidth=1, style=plot.style_linebr)
+plot(avgIOHPL, title="IOHPL", color=color.rgb(5, 208, 249), linewidth=1, style=plot.style_linebr)
+
+// ══════════════════════════════════════════════════════════════
+
+//-----------End of Script-----------
+// INPUT GROUPS (for cleaner settings UI)
+// ------------------------------------------
+grpStrike = "Strike Settings"
+grpLine   = "Line Settings"
+grpLabel  = "Label Settings"
+
+
+// ------------------------------------------
+// STRIKE SETTINGS
+// ------------------------------------------
+step       = input.float(10.0, 'Step (points)', minval = 1, step = 50, group = grpStrike)
+levelsSide = input.int(50, 'Levels per side', minval = 1, maxval = 150, group = grpStrike)
+strikeMode = input.string( 'Strike Price Range', 'Strike Mode',options = ['Strike Price Range', 'Exact Strike Price'], group = grpStrike)
+
+// ------------------------------------------
+// LINE SETTINGS
+// ------------------------------------------
+lineWidth    = input.int(1, 'Line width', minval = 1, maxval = 5, group = grpLine)
+lineColor    = input.color(color.new(#d505fa, 40), 'Line color', group = grpLine)
+lineStyleOpt = input.string('Dotted', 'Line style', options = ['Solid', 'Dashed', 'Dotted'], group = grpLine)
+extOpt       = input.string('Both', 'Extend', options = ['Both', 'Right', 'Left', 'None'], group = grpLine)
+
+// ------------------------------------------
+// LABEL SETTINGS
+// ------------------------------------------
+showLabels   = input.bool(true, 'Show labels', group = grpLabel)
+barsRight    = input.int(10, 'Labels Distance', minval = 1, group = grpLabel)
+labelSizeOpt = input.string('Normal', 'Label size', options = ['Tiny', 'Small', 'Normal', 'Large', 'Huge'], group = grpLabel)
+
+// NEW: Label style controls
+labelTextColor = input.color(color.white, 'Label text color', group = grpLabel)
+labelBgColor   = input.color(color.new(color.black, 60), 'Label background color', group = grpLabel)
+
+// ------------------------------------------
+// ENUM HELPERS
+// ------------------------------------------
+f_getExtend(_opt) =>
+    _opt == 'Both' ? extend.both : _opt == 'Right' ? extend.right : _opt == 'Left' ? extend.left : extend.none
+
+f_getLineStyle(_opt) =>
+    _opt == 'Solid' ? line.style_solid : _opt == 'Dashed' ? line.style_dashed : line.style_dotted
+
+f_getLabelSize(_opt) =>
+    _opt == 'Tiny' ? size.tiny :
+     _opt == 'Small' ? size.small :
+     _opt == 'Large' ? size.large :
+     _opt == 'Huge' ? size.huge :
+     size.normal
+
+extEnum       = f_getExtend(extOpt)
+lineStyleEnum = f_getLineStyle(lineStyleOpt)
+labelSizeEnum = f_getLabelSize(labelSizeOpt)
+
+// ------------------------------------------
+// CORE MATH
+// ------------------------------------------
+base = strikeMode == 'Strike Price Range' ? (math.round(close / step) * step + step / 2.0) : (math.round(close / step) * step + step)
+total = levelsSide * 2 + 1
+
+// ------------------------------------------
+// STORAGE ARRAYS
+// ------------------------------------------
+var array<line>  lines  = array.new_line()
+var array<label> labels = array.new_label()
+
+// ------------------------------------------
+// STYLE APPLY (lines)
+// ------------------------------------------
+f_styleLine(l) =>
+    line.set_color(l, lineColor)
+    line.set_width(l, lineWidth)
+    line.set_extend(l, extEnum)
+    line.set_style(l, lineStyleEnum)
+
+// ------------------------------------------
+// LABEL HELPERS
+// ------------------------------------------
+f_hideLabel(lb) =>
+    label.set_text(lb, "")
+    label.set_y(lb, na)
+
+// Common label properties applied every update so they react to input changes
+f_applyLabelCommon(lb, _x) =>
+    label.set_x(lb, _x)
+    label.set_size(lb, labelSizeEnum)
+    label.set_textcolor(lb, labelTextColor)   // NEW
+    label.set_color(lb, labelBgColor)         // NEW (background)
+
+// ------------------------------------------
+// CLEAR / REBUILD
+// ------------------------------------------
+f_clearAll() =>
+    lnSz = array.size(lines)
+    if lnSz > 0
+        for i = 0 to lnSz - 1
+            l = array.get(lines, i)
+            if not na(l)
+                line.delete(l)
+
+    lbSz = array.size(labels)
+    if lbSz > 0
+        for j = 0 to lbSz - 1
+            lb = array.get(labels, j)
+            if not na(lb)
+                label.delete(lb)
+
+    array.clear(lines)
+    array.clear(labels)
+
+f_rebuild() =>
+    f_clearAll()
+
+    for idx = -levelsSide to levelsSide
+        y = base + idx * step
+
+        l = line.new(bar_index - 1, y, bar_index, y)
+        f_styleLine(l)
+        array.push(lines, l)
+
+        // Create label with defaults; dynamic colors are applied on update.
+        lb = label.new(
+            na, na, "",
+            style     = label.style_label_center,
+            textcolor = labelTextColor,  // NEW
+            color     = labelBgColor,    // NEW
+            size      = labelSizeEnum)
+        array.push(labels, lb)
+// ------------------------------------------
+// INIT
+// ------------------------------------------
+if barstate.isfirst or array.size(lines) != total or array.size(labels) != total
+    f_rebuild()
+
+// ------------------------------------------
+// UPDATE (LAST BAR ONLY)
+// ------------------------------------------
+if barstate.islast
+    lnSz = array.size(lines)
+    lbSz = array.size(labels)
+
+    if lnSz != total or lbSz != total
+        f_rebuild()
+    else
+        lastIdx = last_bar_index
+        futureX = lastIdx + barsRight
+
+        for i = 0 to total - 1
+            idx = i - levelsSide
+            y   = base + idx * step
+
+            // Update line
+            l = array.get(lines, i)
+            line.set_xy1(l, bar_index - 1, y)
+            line.set_xy2(l, bar_index,     y)
+            f_styleLine(l)
+
+            // Update label
+            lb = array.get(labels, i)
+
+            if not showLabels
+                f_hideLabel(lb)
+            else
+                f_applyLabelCommon(lb, futureX)
+
+                if strikeMode == 'Strike Price Range'
+                    // Label centered BETWEEN this line and next line
+                    if i < total - 1
+                        nextIdx = (i + 1) - levelsSide
+                        nextY   = base + nextIdx * step
+                        midY    = (y + nextY) / 2.0
+
+                        label.set_y(lb, midY)
+                        label.set_text(lb, str.tostring(midY))
+                    else
+                        // No next line => hide last label
+                        f_hideLabel(lb)
+                else
+                    // Exact strike: label ON the line
+                    label.set_y(lb, y)
+                    label.set_text(lb, str.tostring(y))
+//__________________________________________________________________________
+
+lookback_ma     = input.int(9, title="Moving Average Lookback")
+
+// Moving Average to find trend
+ma_trend = ta.sma(close, lookback_ma)
+
+// Plot MA of the Nifty index
+plot(ma_trend, title="Trend MA", color=color.blue, linewidth=2)
+
+
+// Trigger alerts when price crosses the Moving Average (Trend Shift)
+if ta.crossover(close, ma_trend)
+    alert("Nifty crossed above MA. Trend is turning bullish.", alert.freq_once_per_bar_close)
+if ta.crossunder(close, ma_trend)
+    alert("Nifty crossed below MA. Trend is turning bearish.", alert.freq_once_per_bar_close)
+
+//
+
+bodyFactor = input.float(0.5, "Body Size")
+// Wick size as % of body
+wickFactor = input.float(0.01, "Wick Size", minval=0.01, maxval=1.0)
+
+mid  = (open + close) / 2
+body = math.abs(close - open) * bodyFactor
+
+o = close >= open ? mid - body / 2 : mid + body / 2
+c = close >= open ? mid + body / 2 : mid - body / 2
+
+bull = close >= open
+
+plotcandle(open=o, high=high, low=low, close=c, color=color.new(color.white, 100), wickcolor=bull ? color.lime : color.red, bordercolor=bull ? color.lime : color.red)
+
+buySignal  = bull and (low + high)/2 > high[1]
+sellSignal = not bull and (low + high)/2 < low[1]
+
+plotshape(buySignal, style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.small)
+
+plotshape(sellSignal, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)
+
+// Volume Analysis
+volAvg = ta.sma(volume,20)
+
+highVol      = volume > volAvg * 1.5
+ultraHighVol = volume > volAvg * 2.5
+
+buyPressure  = bull and highVol
+sellPressure = not bull and highVol
+
+
+// ══════════════════════════════════════════════════════════════
+// INPUTS
+// ══════════════════════════════════════════════════════════════
+i_rows     = input.int   (14,   "Profile Rows",               minval=5,  maxval=100, group="Volume Profile")
+i_histW    = input.int   (7,   "Histogram Max Width (bars)",  minval=1,  maxval=100, group="Volume Profile")
+i_showHist = input.bool  (true, "Show Histogram",              group="Volume Profile")
+
+i_putLen   = input.int   (600,  "PUT Lookback Bars",           minval=10, group="PUT Levels")
+i_putVA    = input.float (99, "PUT Value Area %",            minval=50, maxval=99, group="PUT Levels")
+i_showPut  = input.bool  (true, "Show PUT Levels",             group="PUT Levels")
+i_putVAH   = input.color (color.rgb(250, 3, 217),            "PUT VAH Color", group="PUT Levels")
+i_putPOC   = input.color (color.rgb(250, 3, 217),          "PUT POC Color", group="PUT Levels")
+i_putVAL   = input.color (color.rgb(250, 3, 217),          "PUT VAL Color", group="PUT Levels")
+
+i_callLen  = input.int   (300,   "CALL Lookback Bars",          minval=10, group="CALL Levels")
+i_callVA   = input.float (99, "CALL Value Area %",           minval=50, maxval=99, group="CALL Levels")
+i_showCall = input.bool  (true, "Show CALL Levels",            group="CALL Levels")
+i_callVAH  = input.color (color.rgb(4, 255, 230),         "CALL VAH Color",group="CALL Levels")
+i_callPOC  = input.color (color.rgb(4, 255, 230),       "CALL POC Color",group="CALL Levels")
+i_callVAL  = input.color (color.rgb(4, 255, 230),         "CALL VAL Color",group="CALL Levels")
+
+i_extend   = input.bool  (true,    "Extend Lines Right", group="Style")
+i_lblSize  = input.string("small", "Label Size",         group="Style",
+             options=["tiny","small","normal","large","huge"])
+
+// ══════════════════════════════════════════════════════════════
+// LABEL SIZE
+// ══════════════════════════════════════════════════════════════
+f_lsize() =>
+    switch i_lblSize
+        "tiny"   => size.tiny
+        "small"  => size.small
+        "large"  => size.large
+        "huge"   => size.huge
+        =>          size.normal
+
+// ══════════════════════════════════════════════════════════════
+// PERSISTENT OBJECTS
+// ══════════════════════════════════════════════════════════════
+var float vah_p = na, var float poc_p = na, var float val_p = na
+var float vah_c = na, var float poc_c = na, var float val_c = na
+
+var line  l_pvah = na, var line  l_ppoc = na, var line  l_pval = na
+var line  l_cvah = na, var line  l_cpoc = na, var line  l_cval = na
+var label b_pvah = na, var label b_ppoc = na, var label b_pval = na
+var label b_cvah = na, var label b_cpoc = na, var label b_cval = na
+
+var box[] bxs_put  = array.new_box()
+var box[] bxs_call = array.new_box()
+
+// ══════════════════════════════════════════════════════════════
+// MAIN — last bar only
+// ══════════════════════════════════════════════════════════════
+if barstate.islast
+
+    // ─────────────────────────────────────────────────────────
+    // ① PUT VOLUME PROFILE
+    // ─────────────────────────────────────────────────────────
+    float p_ph = high, float p_pl = low
+    for i = 1 to i_putLen - 1
+        p_ph := math.max(p_ph, high[i])
+        p_pl := math.min(p_pl, low [i])
+    float p_rng = p_ph - p_pl
+
+    float p_vah = na, float p_poc = na, float p_val = na
+    int   p_pocRow = 0, int p_upRow = 0, int p_dnRow = 0
+
+    if p_rng > 0
+        float p_step = p_rng / i_rows
+        float[] p_vol = array.new_float(i_rows, 0.0)
+
+        for i = 0 to i_putLen - 1
+            float bh = high  [i]
+            float bl = low   [i]
+            float bv = volume[i]
+            float br = bh - bl
+            if br <= 0.0
+                br := p_step
+            for r = 0 to i_rows - 1
+                float rl = p_pl + r * p_step
+                float rh = rl + p_step
+                float ol = math.max(bl, rl)
+                float oh = math.min(bh, rh)
+                if oh > ol
+                    array.set(p_vol, r, array.get(p_vol, r) + bv * (oh - ol) / br)
+
+        float p_maxV = array.max(p_vol)
+        for r = 0 to i_rows - 1
+            if array.get(p_vol, r) >= p_maxV
+                p_pocRow := r
+
+        float p_vaVol = array.get(p_vol, p_pocRow)
+        float p_tgt   = array.sum(p_vol) * i_putVA / 100.0
+        p_upRow := p_pocRow
+        p_dnRow := p_pocRow
+        if p_vaVol < p_tgt and (p_upRow < i_rows - 1 or p_dnRow > 0)
+            float upA = p_upRow < i_rows - 1 ? array.get(p_vol, p_upRow + 1) : 0.0
+            float dnA = p_dnRow > 0          ? array.get(p_vol, p_dnRow - 1) : 0.0
+            if upA >= dnA
+                if p_upRow < i_rows - 1
+                    p_upRow += 1
+                    p_vaVol += array.get(p_vol, p_upRow)
+            else
+                if p_dnRow > 0
+                    p_dnRow -= 1
+                    p_vaVol += array.get(p_vol, p_dnRow)
+
+        p_poc := p_pl + p_pocRow * p_step + p_step * 0.5
+        p_vah := p_pl + p_upRow  * p_step + p_step
+        p_val := p_pl + p_dnRow  * p_step
+
+        // Draw PUT histogram
+        for bx in bxs_put
+            box.delete(bx)
+        array.clear(bxs_put)
+
+        if i_showHist
+            int p_histLeft = bar_index - i_putLen + 1
+            for r = 0 to i_rows - 1
+                float rv  = array.get(p_vol, r)
+                float rl  = p_pl + r * p_step
+                float rh  = rl + p_step
+                int   bw  = math.max(1, math.round(rv / p_maxV * i_histW))
+                bool  inVA   = r >= p_dnRow and r <= p_upRow
+                int   transp = r == p_pocRow ? 0 : inVA ? 40 : 70
+                array.push(bxs_put, box.new(
+                     left         = p_histLeft,
+                     top          = rh,
+                     right        = p_histLeft + bw,
+                     bottom       = rl,
+                     bgcolor      = color.new(color.red, transp),
+                     border_color = color.new(color.red, 80),
+                     border_width = 1))
+
+        vah_p := p_vah
+        poc_p := p_poc
+        val_p := p_val
+
+    // ─────────────────────────────────────────────────────────
+    // ② CALL VOLUME PROFILE
+    // ─────────────────────────────────────────────────────────
+    float c_ph = high, float c_pl = low
+    for i = 1 to i_callLen - 1
+        c_ph := math.max(c_ph, high[i])
+        c_pl := math.min(c_pl, low [i])
+    float c_rng = c_ph - c_pl
+
+    float c_vah = na, float c_poc = na, float c_val = na
+    int   c_pocRow = 0, int c_upRow = 0, int c_dnRow = 0
+
+    if c_rng > 0
+        float c_step = c_rng / i_rows
+        float[] c_vol = array.new_float(i_rows, 0.0)
+
+        for i = 0 to i_callLen - 1
+            float bh = high  [i]
+            float bl = low   [i]
+            float bv = volume[i]
+            float br = bh - bl
+            if br <= 0.0
+                br := c_step
+            for r = 0 to i_rows - 1
+                float rl = c_pl + r * c_step
+                float rh = rl + c_step
+                float ol = math.max(bl, rl)
+                float oh = math.min(bh, rh)
+                if oh > ol
+                    array.set(c_vol, r, array.get(c_vol, r) + bv * (oh - ol) / br)
+
+        float c_maxV = array.max(c_vol)
+        for r = 0 to i_rows - 1
+            if array.get(c_vol, r) >= c_maxV
+                c_pocRow := r
+
+        float c_vaVol = array.get(c_vol, c_pocRow)
+        float c_tgt   = array.sum(c_vol) * i_callVA / 100.0
+        c_upRow := c_pocRow
+        c_dnRow := c_pocRow
+        if c_vaVol < c_tgt and (c_upRow < i_rows - 1 or c_dnRow > 0)
+            float upA = c_upRow < i_rows - 1 ? array.get(c_vol, c_upRow + 1) : 0.0
+            float dnA = c_dnRow > 0          ? array.get(c_vol, c_dnRow - 1) : 0.0
+            if upA >= dnA
+                if c_upRow < i_rows - 1
+                    c_upRow += 1
+                    c_vaVol += array.get(c_vol, c_upRow)
+            else
+                if c_dnRow > 0
+                    c_dnRow -= 1
+                    c_vaVol += array.get(c_vol, c_dnRow)
+
+        c_poc := c_pl + c_pocRow * c_step + c_step * 0.5
+        c_vah := c_pl + c_upRow  * c_step + c_step
+        c_val := c_pl + c_dnRow  * c_step
+
+        // Draw CALL histogram
+        for bx in bxs_call
+            box.delete(bx)
+        array.clear(bxs_call)
+
+        if i_showHist
+            int c_histLeft = bar_index - i_callLen + 1
+            for r = 0 to i_rows - 1
+                float rv  = array.get(c_vol, r)
+                float rl  = c_pl + r * c_step
+                float rh  = rl + c_step
+                int   bw  = math.max(1, math.round(rv / c_maxV * i_histW))
+                bool  inVA   = r >= c_dnRow and r <= c_upRow
+                int   transp = r == c_pocRow ? 0 : inVA ? 40 : 70
+                array.push(bxs_call, box.new(
+                     left         = c_histLeft,
+                     top          = rh,
+                     right        = c_histLeft + bw,
+                     bottom       = rl,
+                     bgcolor      = color.new(color.teal, transp),
+                     border_color = color.new(color.teal, 80),
+                     border_width = 1))
+
+        vah_c := c_vah
+        poc_c := c_poc
+        val_c := c_val
+
+    // ─────────────────────────────────────────────────────────
+    // ③ LINES & LABELS
+    // ─────────────────────────────────────────────────────────
+    if not na(l_pvah)
+        line.delete(l_pvah)
+    if not na(l_ppoc)
+        line.delete(l_ppoc)
+    if not na(l_pval)
+        line.delete(l_pval)
+    if not na(l_cvah)
+        line.delete(l_cvah)
+    if not na(l_cpoc)
+        line.delete(l_cpoc)
+    if not na(l_cval)
+        line.delete(l_cval)
+    if not na(b_pvah)
+        label.delete(b_pvah)
+    if not na(b_ppoc)
+        label.delete(b_ppoc)
+    if not na(b_pval)
+        label.delete(b_pval)
+    if not na(b_cvah)
+        label.delete(b_cvah)
+    if not na(b_cpoc)
+        label.delete(b_cpoc)
+    if not na(b_cval)
+        label.delete(b_cval)
+
+    int pLL  = bar_index - i_putLen  + 1
+    int cLL  = bar_index - i_callLen + 1
+    int lR   = bar_index + 10
+    // Labels: right edge of each histogram
+    int pLX  = pLL + i_histW + 1
+    int cLX  = cLL + i_histW + 1
+
+    if i_showPut and not na(vah_p)
+        l_pvah := line.new(pLL, vah_p, lR, vah_p, color=i_putVAH, width=2,
+             extend=i_extend ? extend.right : extend.none)
+        b_pvah := label.new(pLX, vah_p,
+             "PUT VAH  DN SELLER EXIT : " + str.tostring(vah_p, "#.00"),
+             color=i_putVAH, textcolor=color.white,
+             style=label.style_label_right, size=f_lsize())
+
+        l_ppoc := line.new(pLL, poc_p, lR, poc_p, color=i_putPOC, width=2,
+             style=line.style_dashed,
+             extend=i_extend ? extend.right : extend.none)
+        b_ppoc := label.new(pLX, poc_p,
+             "PUT POC : " + str.tostring(poc_p, "#.00"),
+             color=i_putPOC, textcolor=color.white,
+             style=label.style_label_right, size=f_lsize())
+
+        l_pval := line.new(pLL, val_p, lR, val_p, color=i_putVAL, width=2,
+             extend=i_extend ? extend.right : extend.none)
+        b_pval := label.new(pLX, val_p,
+             "PUT VAL  BUYER EXIT : " + str.tostring(val_p, "#.00"),
+             color=i_putVAL, textcolor=color.white,
+             style=label.style_label_right, size=f_lsize())
+
+    if i_showCall and not na(vah_c)
+        l_cvah := line.new(cLL, vah_c, lR, vah_c, color=i_callVAH, width=2,
+             extend=i_extend ? extend.right : extend.none)
+        b_cvah := label.new(cLX, vah_c,
+             "CALL VAH  BUYER EXIT : " + str.tostring(vah_c, "#.00"),
+             color=i_callVAH, textcolor=color.white,
+             style=label.style_label_right, size=f_lsize())
+
+        l_cpoc := line.new(cLL, poc_c, lR, poc_c, color=i_callPOC, width=2,
+             style=line.style_dashed,
+             extend=i_extend ? extend.right : extend.none)
+        b_cpoc := label.new(cLX, poc_c,
+             "CALL POC : " + str.tostring(poc_c, "#.00"),
+             color=i_callPOC, textcolor=color.black,
+             style=label.style_label_right, size=f_lsize())
+
+        l_cval := line.new(cLL, val_c, lR, val_c, color=i_callVAL, width=2,
+             extend=i_extend ? extend.right : extend.none)
+        b_cval := label.new(cLX, val_c,
+             "CALL VAL  DN SELLER EXIT : " + str.tostring(val_c, "#.00"),
+             color=i_callVAL, textcolor=color.white,
+             style=label.style_label_right, size=f_lsize())
+
+// ══════════════════════════════════════════════════════════════
+// DATA WINDOW
+// ══════════════════════════════════════════════════════════════
+plot(vah_p, "PUT VAH",  color=i_putVAH,  display=display.data_window)
+plot(poc_p, "PUT POC",  color=i_putPOC,  display=display.data_window)
+plot(val_p, "PUT VAL",  color=i_putVAL,  display=display.data_window)
+plot(vah_c, "CALL VAH", color=i_callVAH, display=display.data_window)
+plot(poc_c, "CALL POC", color=i_callPOC, display=display.data_window)
+plot(val_c, "CALL VAL", color=i_callVAL, display=display.data_window)
+
+//-----------End of Script-----------

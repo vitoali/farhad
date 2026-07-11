@@ -1,0 +1,162 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © LuxAlgo
+ 
+//@version=5
+indicator("ICT Immediate Rebalance Toolkit [LuxAlgo]", "LuxAlgo - ICT Immediate Rebalance Toolkit", overlay = true,  max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500, max_bars_back = 3000)
+//---------------------------------------------------------------------------------------------------------------------}
+//Settings
+//---------------------------------------------------------------------------------------------------------------------{
+disp  = display.all - display.status_line
+
+irGR  = 'Immediate Rebalances'
+irSH  = input.bool(true, 'Immediate Rebalances', group = irGR)
+irBC  = input.color(color.new(#5b9cf6, 1), '  Bullish Immediate Rebalance', group = irGR)
+irSC  = input.color(color.new(#ffb74d, 1), '  Bearish Immediate Rebalance', group = irGR)
+irL75 = input.color(color.new(#b2b5be, 1), '  Wicks 75%', inline = 'IR' , group = irGR)
+irL50 = input.color(color.new(#d1d4dc, 1), '50%', inline = 'IR' , group = irGR)
+irL25 = input.color(color.new(#b2b5be, 1), '25%', inline = 'IR' , group = irGR)
+itCTT = 'Specifies the number of bars required to confirm the validation of the detected immediate rebalance.\n\n' +
+         'It\'s important to highlight that both failed and successful immediate rebalances, when considered within a context, are significant signatures in trading.'
+irCFR = input.int(2, '  Confirmation (Bars)', minval = 1, maxval = 5, group = irGR, tooltip = itCTT, display = disp)
+irSZ  = input.string('Normal', '  Immediate Rebalance Icon', options = ['Small', 'Normal', 'Large'], group = irGR, display = disp)
+
+liqGR = 'Buyside/Sellside Liquidity'
+liqSH = input(true, 'Buyside/Sellside Liquidity', group = liqGR)
+liqTT = 'This option is to identify liquidity levels from higher timeframes. If a timeframe lower than the chart\'s timeframe is selected, calculations will be based on the chart\'s timeframe.'
+liqTF = input.string('Chart', '  Timeframe', options=['Chart', '5 Minutes', '15 Minutes', '1 Hour', '4 Hours', '1 Day'], group = liqGR, display = disp, tooltip = liqTT)
+liqLN = input.int(7, title = '  Detection Length', minval = 3, maxval = 13, group = liqGR, display = disp)
+liqMR = 10 / input.float (6.9, '  Margin', minval = 4, maxval = 9, step = 0.1, group = liqGR, display = disp)
+liqBC = input.color(#089981, '  Buyside Liquidity', group = liqGR)
+liqSC = input.color(#f23645, '  Sellside Liquidity',  group = liqGR)
+liqVL = input.int(3, '  Visible Liquidity Levels', minval = 1, maxval = 50, group = liqGR, display = disp)
+
+obbGR  = 'Order Blocks & Breaker Blocks'
+obSH   = input.bool(true, 'Order Blocks', group = obbGR)
+bbSH   = input.bool(false, 'Breaker Blocks', group = obbGR)
+obbLN  = input.int(7, '  Swing Detection Length', minval = 3, group = obbGR, display = disp)
+obbMT  = input.string('Closing Price', '  Mitigation Price', options = ['Closing Price', 'Wick'], group = obbGR, display = disp)
+obbMP  = obbMT == 'Closing Price'
+obbUB  = input(false, 'Use Candle Body in Detection', group = obbGR)
+obbR   = input.bool(false, 'Remove Mitigated Order & Breaker Blocks', group = obbGR)
+obCb   = input(color.new(#2157f3, 90), '  Order Blocks  : Bullish'   , inline = 'OBC', group = obbGR)
+obCa   = input(color.new(#ff5d00, 90), 'Bearish'   , inline = 'OBC', group = obbGR)
+bbCb   = input(color.new(#ff1100, 90), '  Breaker Blocks : Bullish', inline = 'BBC', group = obbGR)
+bbCa   = input(color.new(#0cb51a, 90), 'Bearish', inline = 'BBC', group = obbGR)
+obbVL  = input.int(1, '  Visible Order & Breaker Blocks', minval = 1, maxval = 50, group = obbGR, display = disp)
+obbTX  = input.bool(true, 'Order & Breaker Blocks Labels', inline = 'SZ', group = obbGR)
+obbLSZ = input.string('Small', '', options = ['Tiny', 'Small', 'Normal'], inline = 'SZ', group = obbGR, display = disp)
+
+lqvGR = 'Liquidity Voids'
+lqvSH = input.bool (false, 'Liquidity Voids', group = lqvGR)
+lqvTT = 'The script showcases liquidity voids that exceed a predetermined length calculated by multiplying the fixed-average true range (ATR) value by the option\'s value.\n\n' + 
+           'The option value set to 0 means no filtering is applied.\n\n' + 
+           'Remark: No filtering will be implemented for the initial 144 candles based on the fixed-length ATR, as the ATR value won\'t be available during this period.'
+lqvTH = input.float(.9, '  Liquidity Voids Width Filter', minval = 0, step = .1, tooltip = lqvTT, group = lqvGR, display = disp)
+lqvGP = input.bool (false, 'Ignore Price Gaps', group = lqvGR)
+lqvRM = input.bool (false, 'Remove Mitigated Liquidity Voids', group = lqvGR)
+lqvBC = input.color (color.new(#4caf50, 87), '  Bullish Liquidity Voids', group = lqvGR)
+lqvSC = input.color (color.new(#f23645, 87), '  Bearish Liquidity Voids', group = lqvGR)
+lqvMC = input.color (color.new(#5d606b, 87), '  Mitigated Liquidity Voids', group = lqvGR)
+lqvTX = input.bool (false, 'Liquidity Void Labels', group = lqvGR)
+
+mcGR      = 'Macros'
+//ldnST   = input.bool(false , 'London Daylight Saving Time (DST)', group = mcGR, tooltip = 'London : Daylight Saving Time (DST)\n - DST Start : Last Sunday in March at 1:00 UTC\n - DST End   : Last Sunday in October at 1:00 UTC')
+m02330300 = input.bool(false, '02:33 AM 03:00 - LONDON ', inline = 'LND2', group = mcGR)
+mcLDNC2   = input.color(color.new(#9c27b0, 89), '', inline = 'LND2', group = mcGR)
+
+m04030430 = input.bool(false, '04:03 AM 04:30 - LONDON ', inline = 'LND4', group = mcGR)
+mcLDNC4   = input.color(color.new(#9c27b0, 89), '', inline = 'LND4', group = mcGR)
+
+m08500910 = input.bool(false, '08:50 AM 09:10 - NY AM  ', inline = 'NYA8', group = mcGR)
+mcNYAMC8  = input.color(color.new(#00bcd4, 89), '', inline = 'NYA8', group = mcGR)
+
+m09501010 = input.bool(false, '09:50 AM 10:10 - NY AM  ', inline = 'NYA9', group = mcGR)
+mcNYAMC9  = input.color(color.new(#00bcd4, 89), '', inline = 'NYA9', group = mcGR)
+
+m10501110 = input.bool(false, '10:50 AM 11:10 - NY AM  ', inline = 'NYA10', group = mcGR)
+mcNYAMC10 = input.color(color.new(#00bcd4, 89), '', inline = 'NYA10', group = mcGR)
+
+m11501210 = input.bool(false, '11:50 AM 12:10 - NY LAUNCH', inline = 'NYL', group = mcGR)
+mcNYLC    = input.color(color.new(#ff5d00, 89), '', inline = 'NYL', group = mcGR)
+
+m13101340 = input.bool(false, '13:10 PM 13:40 - NY PM  ', inline = 'NYP13', group = mcGR)
+mcNYPMC13 = input.color(color.new(#2157f3, 89), '', inline = 'NYP13', group = mcGR)
+
+m15151545 = input.bool(false, '15:15 PM 15:45 - NY PM  ', inline = 'NYP15', group = mcGR)
+mcNYPMC15 = input.color(color.new(#2157f3, 89), '', inline = 'NYP15', group = mcGR)
+
+//nyST      = input.bool(false , 'New York Daylight Saving Time (DST)', group = mcGR, tooltip = 'New York : Daylight Saving Time (DST)\n - DST Start : Second Sunday in March at 2:00\n - DST End   : First Sunday in November at 2:00')
+
+mcTB   = input(true,   'Macro Top/Bottom Lines', inline = 'LN', group = mcGR)
+extTT  = 'In this context, "extend" refers to the action of projecting or elongating the visual objects beyond the boundaries of the macros.'
+mcLE   = input(true, 'Extend', inline = 'LN', group = mcGR, tooltip = extTT)
+mcML   = input(false, 'Macro Mean Line',  group = mcGR)
+mcLB   = input(true,  'Macro Labels', inline = 'ST', group = mcGR)
+mcLSZ  = input.string('Small', '', options = ['Tiny', 'Small', 'Normal'], inline = 'ST', group = mcGR, display = disp)
+
+//---------------------------------------------------------------------------------------------------------------------}
+// User Defined Types
+//---------------------------------------------------------------------------------------------------------------------{
+// @type        bar properties with their values 
+//
+// @field o     (float) open price of the bar
+// @field h     (float) high price of the bar
+// @field l     (float) low price of the bar
+// @field c     (float) close price of the bar
+// @field i     (int) index of the bar
+
+type BAR
+    float o = open
+    float h = high
+    float l = low
+    float c = close
+    int   i = bar_index
+    int   t = time
+
+type IR
+    line    ln
+    line    ln25
+    line    ln50
+    line    ln75
+    label   lbE
+    int     idx
+
+// @type        used to store pivot high/low data 
+//
+// @field d     (array<int>) The array where the trend direction is to be maintained
+// @field x     (array<int>) The array where the bar index value of pivot high/low is to be maintained
+// @field y     (array<float>) The array where the price value of pivot high/low is to be maintained
+
+type ZZ 
+    int   [] d
+    int   [] x 
+    float [] y 
+
+// @type        liquidity object definition 
+//
+// @field bx    (box) box maitaing the liquity level margin extreme levels
+// @field bxt   (box) box maitaing the labels
+// @field brL   (bool) mainains broken level status
+// @field ln    (line) maitaing the liquity level line
+// @field lne   (line) maitaing the liquity extended level line
+
+type LIQ
+    box   bx
+    box   bxt
+    bool  brL
+    line  ln
+    line  lne
+
+type MACRO
+    line  lnT
+    line  lnM
+    line  lnB
+    label lb
+
+type OB
+    float top  = na
+    float btm  = na
+    int   obI  = bar_index
+    line  lnCE
+    line  lnTOP
+    line  ln

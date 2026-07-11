@@ -1,0 +1,109 @@
+// © AlphaX — FORGE v1.0
+// Pattern Forge Engine — auto chart-pattern detection with measured targets.
+// Evolved from classical pivot-pattern logic: HTF bias, confluence scoring, chop gate,
+// quality-ranked pattern selection. AlphaX branded — styled after ANCHOR / PIVOT.
+
+//@version=6
+indicator("[ A L P H A X ] FORGE", shorttitle="AlphaX FORGE",
+  overlay=true, max_lines_count=500, max_labels_count=500, max_boxes_count=500, max_bars_back=1000)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PATTERN ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+grpGen = "Pattern Engine"
+cooldown       = input.int(5, "Pattern Cooldown (bars)", minval=1, group=grpGen)
+symTol         = input.float(10.0, "Symmetry Tolerance (%)", minval=1.0, step=0.5, group=grpGen) / 100
+lvlTol         = input.float(3.0, "Level Tolerance (%)", minval=0.1, step=0.1, group=grpGen) / 100
+minSizePct     = input.float(0.5, "Min Pattern Size (% of Price)", minval=0.1, group=grpGen) / 100
+minAtrMult     = input.float(1.0, "Min Pattern Size (xATR)", minval=0.1, step=0.1, group=grpGen)
+atrLen         = input.int(14, "ATR Length", minval=2, maxval=100, group=grpGen)
+
+grpPat = "Pattern Types"
+showDtTop      = input.bool(true, "Double Top", group=grpPat)
+showDtBot      = input.bool(true, "Double Bottom", group=grpPat)
+showTtTop      = input.bool(true, "Triple Top", group=grpPat)
+showTtBot      = input.bool(true, "Triple Bottom", group=grpPat)
+showHsStd      = input.bool(true, "Head & Shoulders", group=grpPat)
+showHsInv      = input.bool(true, "Inverted H&S", group=grpPat)
+showFlagBull   = input.bool(true, "Bullish Flag", group=grpPat)
+showFlagBear   = input.bool(true, "Bearish Flag", group=grpPat)
+showPennantBull= input.bool(true, "Bullish Pennant", group=grpPat)
+showPennantBear= input.bool(true, "Bearish Pennant", group=grpPat)
+showWedgeRise  = input.bool(true, "Rising Wedge", group=grpPat)
+showWedgeFall  = input.bool(true, "Falling Wedge", group=grpPat)
+showTriGen     = input.bool(true, "Triangles", group=grpPat)
+showRectGen    = input.bool(true, "Rectangle", group=grpPat)
+showCupStd     = input.bool(true, "Cup & Handle", group=grpPat)
+showCupInv     = input.bool(true, "Inverted Cup & Handle", group=grpPat)
+
+grpPiv = "Pivot Engine"
+lbLeft         = input.int(10, "Pivot Lookback Left", minval=1, group=grpPiv)
+lbRight        = input.int(10, "Pivot Lookback Right", minval=1, group=grpPiv)
+maxPivHist     = input.int(500, "Max Pivots Stored", minval=5, maxval=1000, group=grpPiv)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  BREAKOUT & QUALITY FILTERS
+// ═══════════════════════════════════════════════════════════════════════════════
+grpFlt = "Breakout Filters"
+reqCloseBrk    = input.bool(false, "Require Close Outside Neckline", group=grpFlt)
+reqBodyBrk     = input.bool(false, "Require Full Body Breakout", group=grpFlt)
+useAtrBrk      = input.bool(true, "Use ATR Breakout Threshold", group=grpFlt)
+breakAtr       = input.float(1.0, "Breakout Threshold (xATR)", minval=0.1, step=0.1, group=grpFlt)
+breakPct       = input.float(0.3, "Breakout Threshold (%)", minval=0.0, step=0.1, group=grpFlt) / 100
+brkConfirmBars = input.int(1, "Confirmation Bars", minval=1, group=grpFlt)
+showIgnoreConf = input.bool(false, "Show Unconfirmed Patterns", group=grpFlt)
+minBrkBar      = input.int(1, "Scan Lookback Bars", minval=1, group=grpFlt)
+reqVol         = input.bool(false, "Require Volume Spike", group=grpFlt)
+volMult        = input.float(1.2, "Volume Multiplier", minval=1.0, step=0.1, group=grpFlt)
+volLen         = input.int(20, "Volume SMA Length", group=grpFlt)
+minRR          = input.float(1.5, "Min Risk:Reward", minval=0.1, step=0.1, group=grpFlt)
+slippageTicks  = input.float(1.0, "Slippage (Ticks)", minval=0.0, step=0.1, group=grpFlt)
+commissionPct  = input.float(0.0001, "Commission (%)", minval=0.0, step=0.0001, group=grpFlt)
+
+grpAlpha = "AlphaX Quality Layer"
+minConf        = input.int(5, "Min Confluence Score (of 10)", minval=3, maxval=10, group=grpAlpha,
+  tooltip="Patterns below this score are hidden. Score blends R:R, HTF, volume, chop, pivot depth.")
+useHtf         = input.bool(true, "HTF Bias Layer", group=grpAlpha)
+htfTf          = input.timeframe("60", "HTF Timeframe", group=grpAlpha)
+htfFast        = input.int(21, "HTF Fast EMA", minval=5, maxval=100, group=grpAlpha)
+htfSlow        = input.int(55, "HTF Slow EMA", minval=10, maxval=200, group=grpAlpha)
+requireHtf     = input.bool(false, "Hard Block Counter-HTF Patterns", group=grpAlpha)
+useChop        = input.bool(true, "Block Extreme Chop", group=grpAlpha)
+chopLen        = input.int(14, "Choppiness Length", minval=5, maxval=50, group=grpAlpha)
+chopMax        = input.float(62.0, "Chop Block Above", minval=50, maxval=80, step=0.5, group=grpAlpha)
+useSession     = input.bool(false, "Session Filter", group=grpAlpha)
+sessStart      = input.session("0700-2000", "Active Session", group=grpAlpha)
+rankByQuality  = input.bool(true, "Pick Highest-Score Pattern", group=grpAlpha,
+  tooltip="When multiple patterns fire, show the best confluence setup — not just first in list.")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  TARGETS & DISPLAY
+// ═══════════════════════════════════════════════════════════════════════════════
+grpVis = "Targets & Display"
+showTgt        = input.bool(false, "Show Entry / SL / TP1 / TP2", group=grpVis)
+tp1Pct         = input.float(50.0, "TP1 (% of Entry → TP2)", minval=10.0, maxval=90.0, step=5.0, group=grpVis,
+  tooltip="Easy partial target — default 50% of the full measured move (TP2).") / 100
+stopBuffer     = input.float(0.5, "Stop Loss ATR Buffer", minval=0.0, step=0.1, group=grpVis)
+useSlPctTgt    = input.bool(true, "SL as % of Target Distance", group=grpVis)
+slPctTgt       = input.float(25.0, "SL % of Target Dist", minval=1.0, maxval=100.0, step=0.5, group=grpVis) / 100
+extendLines    = input.bool(false, "Extend Pattern Lines", group=grpVis)
+fillTransp     = input.int(88, "Pattern Fill Transparency", minval=50, maxval=99, group=grpVis)
+showGrade      = input.bool(true, "Show Grade on Label (A/B/C)", group=grpVis)
+rrDynEn        = input.bool(false, "Dynamic R:R Target", group=grpVis)
+rrDynMult      = input.float(2.0, "Dynamic R:R Multiplier", minval=0.1, step=0.1, group=grpVis)
+showDash       = input.bool(true, "Show Dashboard", group=grpVis)
+dashPos        = input.string("Top Right", "Dashboard Position",
+  options=["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group=grpVis)
+showPatternHistory = input.bool(false, "Show Full Pattern History", group=grpVis,
+  tooltip="ON: keep all detected patterns on chart. OFF: keep only the latest pattern (current behavior).")
+
+grpColors = "Colors (AlphaX Palette)"
+colBull        = input.color(#c8e624, "Bull / Pattern", group=grpColors)
+colBullBr      = input.color(#d4f03a, "Bull Bright / Entry", group=grpColors)
+colBear        = input.color(#ff1744, "Bear / Pattern", group=grpColors)
+colBearBr      = input.color(#ff5252, "Bear Bright", group=grpColors)
+colNeutral     = input.color(#555555, "Neutral", group=grpColors)
+colPending     = input.color(#ff9800, "Pending / Alert", group=grpColors)
+colSlLine      = input.color(#ff1744, "Stop Line", group=grpColors)
+colTp1Line     = input.color(#9ccc65, "TP1 Line (partial)", group=grpColors)
+colTpLine      = input.color(#c8e624, "TP2 Line (full target)", group=grpColors)

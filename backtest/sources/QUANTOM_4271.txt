@@ -1,0 +1,162 @@
+// © MarkitTick
+//@version=6
+indicator("Quantum Imbalance Trap [MarkitTick]", overlay=true, max_lines_count=500, max_boxes_count=200, max_labels_count=300)
+
+// ── Inputs ──────────────────────────────────────────────────────────────────
+string GRP_QIT   = "Signal Detection"
+string GRP_SMC   = "Smart Money Concepts"
+string GRP_OF    = "Order Flow"
+string GRP_RISK  = "Risk Management"
+string GRP_ALERT = "Alerts & Sessions"
+string GRP_DASH  = "Dashboard"
+string GRP_VIS   = "Visual Style"
+int    imb_len    = input.int(10,    "Imbalance Lookback (Bars)",    minval=3,   maxval=50,   group=GRP_QIT)
+int    atr_len    = input.int(14,    "ATR Period",                   minval=5,   maxval=50,   group=GRP_QIT)
+float  imb_thresh = input.float(0.55,"Body-to-Range Threshold",      minval=0.2, maxval=0.95, step=0.05, group=GRP_QIT)
+float  vol_mult   = input.float(1.2, "Volume Spike Multiplier",      minval=0.5, maxval=4.0,  step=0.1,  group=GRP_QIT)
+bool   use_div    = input.bool(false, "RSI Divergence Confirmation", group=GRP_QIT)
+bool   use_liq_sweep = input.bool(false, "Require Liquidity Sweep",  group=GRP_SMC)
+bool   use_mtf_align = input.bool(false, "Higher Timeframe Alignment", group=GRP_OF)
+string htf_tf        = input.timeframe("60", "Higher Timeframe",      group=GRP_OF)
+bool   use_ext_box   = input.bool(false, "Dynamic Re-entry Zone",    group=GRP_OF)
+float  sl_atr     = input.float(1.5, "Stop Loss ATR Multiplier",     minval=0.5, maxval=5.0,  step=0.1,  group=GRP_RISK)
+float  tp1_r      = input.float(1.5, "Take Profit 1 (R-Multiple)",   minval=0.5, maxval=5.0,  step=0.1,  group=GRP_RISK)
+float  tp2_r      = input.float(2.5, "Take Profit 2 (R-Multiple)",   minval=1.0, maxval=8.0,  step=0.1,  group=GRP_RISK)
+float  tp3_r      = input.float(3.5, "Take Profit 3 (R-Multiple)",   minval=2.0, maxval=12.0, step=0.1,  group=GRP_RISK)
+bool   alrt_bull  = input.bool(true,  "Bullish Signal Alert",        group=GRP_ALERT)
+bool   alrt_bear  = input.bool(true,  "Bearish Signal Alert",        group=GRP_ALERT)
+bool   use_session = input.bool(false, "Enable Session Filter",      group=GRP_ALERT)
+bool   sess_london = input.bool(false,  "London Open (07:00–10:30 UTC)", group=GRP_ALERT)
+bool   sess_ny     = input.bool(false,  "New York Open (12:30–15:00 UTC)", group=GRP_ALERT)
+bool   show_zone  = input.bool(true,  "Show Entry Zone",             group=GRP_DASH)
+bool   show_label = input.bool(true,  "Show Price Labels",           group=GRP_DASH)
+color  dash_bg    = input.color(color.rgb(5,   20,  10,  5),  "Background Color", group=GRP_DASH)
+color  dash_txt   = input.color(color.rgb(235, 225, 190, 0),  "Text Color",       group=GRP_DASH)
+color  bull_col   = input.color(color.rgb(0,   191, 255, 0),  "Bullish Color",    group=GRP_VIS)
+color  bear_col   = input.color(color.rgb(255, 140, 0,   0),  "Bearish Color",    group=GRP_VIS)
+color  sl_col     = input.color(color.rgb(220, 0,   180, 0),  "Stop Loss Color",  group=GRP_VIS)
+color  tp1_col    = input.color(color.rgb(255, 230, 0,   0),  "Take Profit 1 Color", group=GRP_VIS)
+color  tp2_col    = input.color(color.rgb(180, 255, 50,  0),  "Take Profit 2 Color", group=GRP_VIS)
+color  tp3_col    = input.color(color.rgb(255, 100, 200, 0),  "Take Profit 3 Color", group=GRP_VIS)
+color  zone_col   = input.color(color.rgb(0,   230, 255, 80), "Entry Zone Color", group=GRP_VIS)
+
+// ── Core Calculations ───────────────────────────────────────────────────────
+string clean_ticker = syminfo.prefix + ":" + syminfo.ticker
+float atr_val  = ta.atr(atr_len)
+float vol_avg  = ta.sma(volume, imb_len)
+float body     = math.abs(close - open)
+float rng      = high - low
+float body_rat = rng > 0.0 ? body / rng : 0.0
+float vol_rat  = vol_avg > 0.0 ? volume / vol_avg : 1.0
+bool  bull_body = close > open
+bool  bear_body = close < open
+float mom_fast  = ta.sma(close, 5)
+float mom_slow  = ta.sma(close, imb_len * 2)
+bool  bull_trend = mom_fast > mom_slow
+bool  bear_trend = mom_fast < mom_slow
+color neutral_col = color.rgb(175,160,120)
+
+// ── Imbalance & Signal Detection ────────────────────────────────────────────
+bool  vol_spike  = vol_rat >= vol_mult
+bool  imb_bull   = bull_body and body_rat >= imb_thresh and vol_spike and bull_trend
+bool  imb_bear   = bear_body and body_rat >= imb_thresh and vol_spike and bear_trend
+bool  prev_bull  = imb_bull[1]
+bool  prev_bear  = imb_bear[1]
+bool  sig_bull_raw = imb_bull[1] and not imb_bull[2]
+bool  sig_bear_raw = imb_bear[1] and not imb_bear[2]
+float swing_lo_ref   = ta.lowest(low, imb_len)[4]
+float swing_hi_ref   = ta.highest(high, imb_len)[4]
+bool  liq_swept_bull = math.min(low[1], low[2], low[3]) < swing_lo_ref and close[1] > swing_lo_ref
+bool  liq_swept_bear = math.max(high[1], high[2], high[3]) > swing_hi_ref and close[1] < swing_hi_ref
+bool  liq_ok_bull    = not use_liq_sweep or liq_swept_bull
+bool  liq_ok_bear    = not use_liq_sweep or liq_swept_bear
+bool  in_london = not na(time(timeframe.period, "0700-1030:1234567", "UTC")[1])
+bool  in_ny     = not na(time(timeframe.period, "1230-1500:1234567", "UTC")[1])
+bool  sess_ok   = not use_session or ((sess_london and in_london) or (sess_ny and in_ny))
+float htf_close_raw = request.security(syminfo.tickerid, htf_tf, close[1],             lookahead=barmerge.lookahead_on)
+float htf_ma_raw    = request.security(syminfo.tickerid, htf_tf, ta.sma(close, 20)[1], lookahead=barmerge.lookahead_on)
+bool  htf_bull  = htf_close_raw > htf_ma_raw
+bool  htf_bear  = htf_close_raw < htf_ma_raw
+string htf_trend_str = htf_bull ? "▲ Bull" : htf_bear ? "▼ Bear" : "◆ Neut"
+color  htf_trend_col = htf_bull ? bull_col : htf_bear ? bear_col : neutral_col
+float rsi_val = ta.rsi(close, 14)
+bool  bull_div = low[1] < low[1 + imb_len] and rsi_val[1] > rsi_val[1 + imb_len]
+bool  bear_div = high[1] > high[1 + imb_len] and rsi_val[1] < rsi_val[1 + imb_len]
+bool  div_ok_bull  = not use_div      or bull_div
+bool  div_ok_bear  = not use_div      or bear_div
+bool  htf_ok_bull  = not use_mtf_align or htf_bull
+bool  htf_ok_bear  = not use_mtf_align or htf_bear
+
+bool  sig_bull = sig_bull_raw and liq_ok_bull and sess_ok and div_ok_bull and htf_ok_bull
+bool  sig_bear = sig_bear_raw and liq_ok_bear and sess_ok and div_ok_bear and htf_ok_bear
+
+// ── Persistent State ────────────────────────────────────────────────────────
+var float entry_bull   = na
+var float sl_bull      = na
+var float tp1_bull     = na
+var float tp2_bull     = na
+var float tp3_bull     = na
+var float zone_hi_b    = na
+var float zone_lo_b    = na
+var float entry_bear   = na
+var float sl_bear      = na
+var float tp1_bear     = na
+var float tp2_bear     = na
+var float tp3_bear     = na
+var float zone_hi_bear = na
+var float zone_lo_bear = na
+var bool  bull_active  = false
+var bool  bear_active  = false
+var line  ln_entry_b   = na
+var line  ln_sl_b      = na
+var line  ln_tp1_b     = na
+var line  ln_tp2_b     = na
+var line  ln_tp3_b     = na
+var line  ln_entry_s   = na
+var line  ln_sl_s      = na
+var line  ln_tp1_s     = na
+var line  ln_tp2_s     = na
+var line  ln_tp3_s     = na
+var box   bx_zone_b    = na
+var box   bx_zone_s    = na
+var label lb_sig_b     = na
+var label lb_entry_b   = na
+var label lb_sl_b      = na
+var label lb_tp1_b     = na
+var label lb_tp2_b     = na
+var label lb_tp3_b     = na
+var label lb_sig_s     = na
+var label lb_entry_s   = na
+var label lb_sl_s      = na
+var label lb_tp1_s     = na
+var label lb_tp2_s     = na
+var label lb_tp3_s     = na
+
+// ── Drawing Logic ───────────────────────────────────────────────────────────
+int ext = bar_index + imb_len * 5
+if use_ext_box
+    if bull_active and not na(sl_bull) and low <= sl_bull
+        bull_active := false
+    if bear_active and not na(sl_bear) and high >= sl_bear
+        bear_active := false
+    if bull_active and not na(bx_zone_b)
+        box.set_right(bx_zone_b, bar_index + imb_len * 5)
+    if bear_active and not na(bx_zone_s)
+        box.set_right(bx_zone_s, bar_index + imb_len * 5)
+if sig_bull
+    entry_bull  := close[1]
+    sl_bull     := close[1] - sl_atr * atr_val[1]
+    float rb     = entry_bull - sl_bull
+    tp1_bull    := entry_bull + tp1_r * rb
+    tp2_bull    := entry_bull + tp2_r * rb
+    tp3_bull    := entry_bull + tp3_r * rb
+    zone_hi_b   := entry_bull + atr_val[1] * 0.35
+    zone_lo_b   := entry_bull - atr_val[1] * 0.35
+    bull_active := true
+    bear_active := false
+    line.delete(ln_entry_b)
+    line.delete(ln_sl_b)
+    line.delete(ln_tp1_b)
+    line.delete(ln_tp2_b)
+    line.delete(ln_tp3_b)
+    box.dele

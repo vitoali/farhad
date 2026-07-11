@@ -1,0 +1,2604 @@
+//@version=6
+indicator(title="[Quadapt] Machine Learning Trader", shorttitle="[Quadapt] ML Trader", overlay=true, max_lines_count=500, max_labels_count=500, max_bars_back=2000)
+
+//---------------------------------------------------------------------------------------------------------------------
+// Dual Length Trading Signal Settings
+//---------------------------------------------------------------------------------------------------------------------
+len1 = input.int(120, title="Primary Length", minval=1, group="Dual Length Settings")
+len2 = input.int(70, title="Secondary Length", minval=1, group="Dual Length Settings")
+enable_dual_length = input.bool(true, title="Enable Dual Length Analysis", group="Dual Length Settings")
+signal_consensus = input.string("Independent", title="Signal Mode", options=["Independent", "Consensus", "Primary Priority"], group="Dual Length Settings")
+
+show_signals = input.bool(true, title="Show Buy/Sell Signals", group="Trading Signal Display")
+show_bar_colors = input.bool(true, title="Show Bar Colors", group="Trading Signal Display")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Advanced Fibonacci TP Settings
+//---------------------------------------------------------------------------------------------------------------------
+show_fib_tp = input.bool(true, title="Show Advanced Fibonacci TPs", group="Advanced Fibonacci TP")
+fib_method = input.string('Swing-Based', title="TP Calculation Method", options=['Dynamic ATR', 'Swing-Based', 'Adaptive Swing', 'Heuristic'], group="Advanced Fibonacci TP")
+fib_lookback = input.int(50, title="Swing Lookback Period", minval=10, maxval=200, group="Advanced Fibonacci TP")
+fib_atr_period = input.int(20, title="ATR Period", minval=5, maxval=100, group="Advanced Fibonacci TP")
+enable_confluence = input.bool(true, title="Enable Confluence Zones", group="Advanced Fibonacci TP")
+show_confluence_points = input.bool(true, title="Show Confluence Points", group="Advanced Fibonacci TP")
+max_tp_levels = input.int(4, title="Max TP Levels", minval=2, maxval=6, group="Advanced Fibonacci TP")
+tp_spacing_multiplier = input.float(1.5, title="TP Spacing Multiplier", minval=1.0, maxval=3.0, step=0.1, group="Advanced Fibonacci TP")
+enable_order_block_exception = input.bool(true, title="Enable Order Block Exception", group="Advanced Fibonacci TP")
+ob_proximity_distance = input.float(2.0, title="Order Block Proximity (ATR)", minval=0.5, maxval=5.0, step=0.1, group="Advanced Fibonacci TP")
+bullish_fib_color = input.color(#00ff88, "Bullish TP Color", group="Advanced Fibonacci TP")
+bearish_fib_color = input.color(#ff4444, "Bearish TP Color", group="Advanced Fibonacci TP")
+confluence_color = input.color(#ffaa00, "Confluence Zone Color", group="Advanced Fibonacci TP")
+signal_validation_tolerance = input.float(3.5, title="Signal Validation Tolerance (ATR)", minval=0.5, maxval=10.0, step=0.1, group="Advanced Fibonacci TP")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Enhanced Stop Loss Settings
+//---------------------------------------------------------------------------------------------------------------------
+show_stop_loss = input.bool(true, title="Show Stop Loss", group="Stop Loss Settings")
+sl_method = input.string("Swing-based", title="SL Method", options=["ATR-based", "Swing-based", "Order Block", "Percentage"], group="Stop Loss Settings")
+sl_atr_multiplier = input.float(2.0, title="SL ATR Multiplier", minval=1.0, maxval=5.0, step=0.1, group="Stop Loss Settings")
+sl_percentage = input.float(2.0, title="SL Percentage", minval=0.5, maxval=10.0, step=0.1, group="Stop Loss Settings")
+sl_swing_buffer = input.float(0.5, title="Swing SL Buffer (ATR)", minval=0.1, maxval=2.0, step=0.1, group="Stop Loss Settings")
+sl_color = input.color(#ff0000, "Stop Loss Color", group="Stop Loss Settings")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Table Settings
+//---------------------------------------------------------------------------------------------------------------------
+show_trend_table = input.bool(true, title="Show Trend Table", group="Tables")
+trend_table_position = input.string("Top Right", title="Trend Table Position", options=["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group="Tables")
+show_tp_table = input.bool(true, title="Show TP/SL Table", group="Tables")
+tp_table_position = input.string("Bottom Right", title="TP Table Position", options=["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group="Tables")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Automation / Webhook Settings
+//---------------------------------------------------------------------------------------------------------------------
+enable_webhook_alerts = input.bool(false, title="Enable Webhook Trade Alerts", group="Automation / Webhook")
+webhook_secret = input.string("", title="Webhook Secret", group="Automation / Webhook")
+webhook_account_tag = input.string("eightcap-mt5", title="Account / Bridge Tag", group="Automation / Webhook")
+webhook_risk_percent = input.float(0.5, title="Risk Percent", minval=0.01, maxval=10.0, step=0.01, group="Automation / Webhook")
+webhook_order_type = input.string("market", title="Order Type", options=["market", "pending"], group="Automation / Webhook")
+send_webhook_on_bar_close = input.bool(true, title="Send Only On Bar Close", group="Automation / Webhook")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Timeframe Settings
+//---------------------------------------------------------------------------------------------------------------------
+mlma_timeframe = input.timeframe("", title="MLMA Timeframe", group="Timeframe Settings")
+tp_timeframe = input.timeframe("", title="Swing Reference TF Highlight", group="Timeframe Settings")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Performance Settings
+//---------------------------------------------------------------------------------------------------------------------
+fast_load_mode = input.bool(true, title="Fast Load Mode", group="Performance")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Market Exhaustion Setting
+//---------------------------------------------------------------------------------------------------------------------
+show_exhaustion = input.bool(true, title="Show Market Exhaustion", group="Market Exhaustion")
+exhaustion_length = input.int(10, title="Exhaustion Length", minval=5, maxval=50, group="Market Exhaustion")
+exhaustion_threshold = input.float(90.0, title="Exhaustion Threshold", minval=50.0, maxval=95.0, group="Market Exhaustion")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Shared Regression Settings
+//---------------------------------------------------------------------------------------------------------------------
+window = input.int(200, minval = 10, maxval = 500, title = "Window Size", group = "Regression Settings")
+forecast = input.int(0, minval = 0, maxval = 50, title = "Forecast Steps", group = "Regression Settings")
+mult = input.float(2, 'Multiplicative Factor', minval = 0, step = 0.1, group = "Regression Settings")
+src = input.source(close, 'Source', group = "Regression Settings")
+regressor_type = input.string("SVR", "Regressor Type", options = ["GPR", "KRR", "KPCR", "SVR", "Kernel Smoothing", "Adaptive RQ"], group = "Regression Settings")
+
+//---------------------------------------------------------------------------------------------------------------------
+// MLMA Kernel Configuration
+//---------------------------------------------------------------------------------------------------------------------
+mlma_kernel_type = input.string("Periodic", "MLMA Kernel", options = ["RBF", "Linear", "Polynomial", "Sigmoid", "Laplacian", "Matérn", "Periodic", "Trigo"], group = "MLMA Kernel")
+enableMlmaMultiKernel = input.bool(false, title = "Enable MLMA Multi-Kernel", group = "MLMA Kernel")
+mlma_kernel1_type = input.string("Linear", "MLMA Primary Kernel", options = ["RBF", "Linear", "Polynomial", "Sigmoid", "Laplacian", "Matérn", "Periodic", "Trigo"], group = "MLMA Kernel")
+mlma_kernel2_type = input.string("Periodic", "MLMA Secondary Kernel", options = ["RBF", "Linear", "Polynomial", "Sigmoid", "Laplacian", "Matérn", "Periodic", "Trigo"], group = "MLMA Kernel")
+mlma_kernel1_weight = input.float(0.7, "MLMA Primary Weight", minval = 0.0, maxval = 1.0, step = 0.1, group = "MLMA Kernel")
+mlma_kernel2_weight = input.float(0.3, "MLMA Secondary Weight", minval = 0.0, maxval = 1.0, step = 0.1, group = "MLMA Kernel")
+mlmaMultiKernelMethod = input.string("Additive", "MLMA Combination", options = ["Additive", "Multiplicative"], group = "MLMA Kernel")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Order Block Kernel Configuration
+//---------------------------------------------------------------------------------------------------------------------
+ob_kernel_type = input.string("Sigmoid", "Order Block Kernel", options = ["RBF", "Linear", "Polynomial", "Sigmoid", "Laplacian", "Matérn", "Periodic", "Trigo"], group = "Order Block Kernel")
+enableObMultiKernel = input.bool(true, title = "Enable OB Multi-Kernel", group = "Order Block Kernel")
+ob_kernel1_type = input.string("Trigo", "OB Primary Kernel", options = ["RBF", "Linear", "Polynomial", "Sigmoid", "Laplacian", "Matérn", "Periodic", "Trigo"], group = "Order Block Kernel")
+ob_kernel2_type = input.string("Polynomial", "OB Secondary Kernel", options = ["RBF", "Linear", "Polynomial", "Sigmoid", "Laplacian", "Matérn", "Periodic", "Trigo"], group = "Order Block Kernel")
+ob_kernel1_weight = input.float(0.8, "OB Primary Weight", minval = 0.0, maxval = 1.0, step = 0.1, group = "Order Block Kernel")
+ob_kernel2_weight = input.float(0.2, "OB Secondary Weight", minval = 0.0, maxval = 1.0, step = 0.1, group = "Order Block Kernel")
+obMultiKernelMethod = input.string("Additive", "OB Combination", options = ["Additive", "Multiplicative"], group = "Order Block Kernel")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Shared Kernel Parameters
+//---------------------------------------------------------------------------------------------------------------------
+rbf_lengthscale = input.float(1.0, "RBF Length Scale", minval = 0.1, maxval = 10.0, step = 0.1, group = "Kernel Parameters")
+poly_degree = input.int(3, "Polynomial Degree", minval = 1, maxval = 10, group = "Kernel Parameters")
+poly_gamma = input.float(1.0, "Polynomial Gamma", minval = 0.001, maxval = 10.0, step = 0.001, group = "Kernel Parameters")
+poly_coef0 = input.float(1.0, "Polynomial Coef0", minval = 0.0, maxval = 10.0, step = 0.1, group = "Kernel Parameters")
+sigmoid_gamma = input.float(0.01, "Sigmoid Gamma", minval = 0.001, maxval = 1.0, step = 0.001, group = "Kernel Parameters")
+sigmoid_coef0 = input.float(0.0, "Sigmoid Coef0", minval = -10.0, maxval = 10.0, step = 0.1, group = "Kernel Parameters")
+laplacian_gamma = input.float(1.0, "Laplacian Gamma", minval = 0.001, maxval = 10.0, step = 0.001, group = "Kernel Parameters")
+matern_length_scale = input.float(1.0, "Matérn Length Scale", minval = 0.1, maxval = 10.0, step = 0.1, group = "Kernel Parameters")
+matern_nu = input.float(1.5, "Matérn Nu", options = [0.5, 1.5, 2.5], group = "Kernel Parameters")
+periodic_length_scale = input.float(1.0, "Periodic Length Scale", minval = 0.1, maxval = 10.0, step = 0.1, group = "Kernel Parameters")
+periodic_period = input.float(1.0, "Period", minval = 1.0, maxval = 100.0, step = 1.0, group = "Kernel Parameters")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Regression Parameters
+//---------------------------------------------------------------------------------------------------------------------
+sigma = input.float(0.01, "Noise Level (σ²)", minval = 0.001, maxval = 1.0, step = 0.001, group = "GPR Parameters")
+lambda_krr = input.float(0.01, "Regularization (λ)", minval = 0.001, maxval = 10.0, step = 0.001, group = "KRR Parameters")
+n_components = input.int(10, "Number of Components", minval = 1, maxval = 50, group = "KPCR Parameters")
+kpcr_regularization = input.float(0.001, "KPCR Regularization", minval = 0.0001, maxval = 1.0, step = 0.0001, group = "KPCR Parameters")
+C_svr = input.float(1.0, "C Parameter", minval = 0.1, maxval = 100.0, step = 0.1, group = "SVR Parameters")
+epsilon_svr = input.float(0.1, "Epsilon (ε)", minval = 0.01, maxval = 1.0, step = 0.01, group = "SVR Parameters")
+bandwidth = input.float(10.0, "Bandwidth", minval = 1.0, maxval = 50.0, step = 1.0, group = "Kernel Smoothing Parameters")
+rq_alpha = input.float(1.0, "RQ Alpha", minval = 0.1, maxval = 10.0, step = 0.1, group = "Adaptive RQ Parameters")
+rq_bandwidth = input.float(8.0, "RQ Bandwidth", minval = 1.0, maxval = 100.0, step = 1.0, group = "Adaptive RQ Parameters")
+rq_volatility_adapt = input.bool(true, "Adapt RQ Bandwidth to Volatility", group = "Adaptive RQ Parameters")
+
+//---------------------------------------------------------------------------------------------------------------------
+// MLMA Style Settings
+//---------------------------------------------------------------------------------------------------------------------
+bullCss = input(#00ffbb, 'MLMA Bullish Line', inline = 'ma', group = 'MLMA Style')
+bearCss = input(#ff1100, 'MLMA Bearish Line', inline = 'ma', group = 'MLMA Style')
+enableGradient = input.bool(true, title = "Enable Gradient Effect", group = 'MLMA Style')
+cloudIntensity = input.float(0.3, title = "Cloud Intensity", minval = 0.1, maxval = 1.0, step = 0.05, group = 'MLMA Style')
+enableProximityEffect = input.bool(true, title = "Enable Proximity Effect", group = 'MLMA Style')
+showCloudFills = input.bool(true, title = "Show Cloud Fills", group = 'MLMA Style')
+
+green = input.color(#00ffbb, "Bullish Color", group = "Appearance")
+red = input.color(#ff1100, "Bearish Color", group = "Appearance")
+primary_color = input.color(#0066ff, "Primary Length Color", group = "Appearance")
+secondary_color = input.color(#ff6600, "Secondary Length Color", group = "Appearance")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Order Block Settings
+//---------------------------------------------------------------------------------------------------------------------
+volatilityMethod = input.string("Order Block ATR", "Volatility Method", options = ["Order Block ATR", "Classic ATR", "Price Range"], group = "Order Block Detection")
+volatilityLength = input.int(6, title = "Volatility Length", group = "Order Block Detection", minval = 5, maxval = 100)
+smoothLength = input.int(9, title = "Smooth Length", group = "Order Block Detection", minval = 1, maxval = 50)
+multiplier = input.float(1.2, title = "Volatility Multiplier", group = "Order Block Detection", minval = 1.1, maxval = 3.0, step = 0.1)
+
+enableTrendFilter = input.bool(true, title = "Enable Trend Filter", group = "Order Block Filters")
+enableVolumeFilter = input.bool(false, title = "Enable Volume Filter", group = "Order Block Filters")
+volumeThreshold = input.float(1.2, title = "Volume Threshold", group = "Order Block Filters", minval = 1.0, maxval = 5.0, step = 0.1)
+enableMomentumFilter = input.bool(true, title = "Enable Momentum Filter", group = "Order Block Filters")
+momentumPeriod = input.int(10, title = "Momentum Period", group = "Order Block Filters", minval = 5, maxval = 30)
+
+minBlockSeparation = input.int(2, title = "Min Bars Between Blocks", group = "Order Block Controls", minval = 1, maxval = 20)
+maxBlocksPerDirection = input.int(2, title = "Max Blocks Per Direction", group = "Order Block Controls", minval = 1, maxval = 10)
+consolidationFilter = input.bool(true, title = "Filter During Consolidation", group = "Order Block Controls")
+consolidationThreshold = input.float(1.8, title = "Consolidation Threshold", group = "Order Block Controls", minval = 0.5, maxval = 2.0, step = 0.1)
+obRegimeAtrPeriod = input.int(20, title = "OB Regime ATR Period", group = "Order Block Controls", minval = 5, maxval = 100)
+enable_ob_intelligence = input.bool(true, title = "Enable OB Intelligence Scoring", group = "Order Block Controls")
+min_ob_quality_score = input.float(60.0, title = "Min OB Quality Score", group = "Order Block Controls", minval = 20.0, maxval = 95.0, step = 1.0)
+strong_ob_quality_score = input.float(78.0, title = "Strong OB Quality Score", group = "Order Block Controls", minval = 50.0, maxval = 100.0, step = 1.0)
+
+showLastBlocks = input.int(2, title = "Show Last X Blocks", group = "Order Block Display", minval = 1, maxval = 15)
+show_current_tf_ob = input.bool(true, title="Show Current TF Order Blocks", group="Order Block Display")
+mitigationMethod = input.string("Close", title = "Mitigation Method", options = ["Close", "Wick"], group = "Order Block Display")
+showVolume = input.bool(true, title = "Show Volume Info", group = "Order Block Display")
+showVolumePercentage = input.bool(true, title = "Show Volume Percentage", group = "Order Block Display")
+showObQuality = input.bool(true, title = "Show OB Quality", group = "Order Block Display")
+fadeWeakOrderBlocks = input.bool(true, title = "Fade Weak Order Blocks", group = "Order Block Display")
+showRetestSignals = input.bool(true, title = "Show Retest Signals (R)", group = "Order Block Display")
+showRetestPercentage = input.bool(false, title = "Show Retest Percentage", group = "Order Block Display")
+showStrongRetest = input.bool(true, title = "Show Strong Retest", group = "Order Block Display")
+showWeakRetest = input.bool(true, title = "Show Weak Retest", group = "Order Block Display")
+retestMode = input.string("Hybrid", title = "Retest Mode", options = ["Volume-Based", "Trend-Aligned", "Hybrid"], group = "Order Block Display")
+retestTolerance = input.float(0.5, title = "Retest Tolerance (ATR)", minval = 0.1, maxval = 5.0, step = 0.1, group = "Order Block Display")
+retestMinBars = input.int(5, title = "Min Bars Between Retests", minval = 1, maxval = 20, group = "Order Block Display")
+retestPriceMovement = input.float(1.0, title = "Price Movement Away (ATR)", minval = 0.5, maxval = 10.0, step = 0.1, group = "Order Block Display")
+retestLookbackBars = input.int(50, title = "Retest Departure Lookback", minval = 10, maxval = 100, group = "Order Block Display")
+retestResetDistance = input.float(1.5, title = "Reset Distance (ATR)", minval = 1.0, maxval = 10.0, step = 0.1, group = "Order Block Display")
+retestMaxCount = input.int(2, title = "Max Retests Per Block", minval = 1, maxval = 10, group = "Order Block Display")
+retestStrengthThreshold = input.float(40.0, title = "Min Block Strength", minval = 10.0, maxval = 100.0, step = 1.0, group = "Order Block Display")
+retestVolumeThreshold = input.float(0.8, title = "Min Volume Ratio", minval = 0.1, maxval = 5.0, step = 0.1, group = "Order Block Display")
+proximity_atr = input.float(0.8, title = "Proximity ATR Multiplier", minval = 0.1, maxval = 3.0, step = 0.1, group = "Order Block Display")
+
+// Trend-Aligned Retest Parameters
+retestMlmaWeight = input.float(0.30, title = "MLMA Trend Weight", minval = 0.1, maxval = 0.8, step = 0.05, group = "Order Block Display")
+retestVolatilityWeight = input.float(0.20, title = "Volatility Weight", minval = 0.1, maxval = 0.5, step = 0.05, group = "Order Block Display")
+retestStrengthWeight = input.float(0.25, title = "Block Strength Weight", minval = 0.1, maxval = 0.5, step = 0.05, group = "Order Block Display")
+retestVolumeWeight = input.float(0.25, title = "Volume Weight", minval = 0.1, maxval = 0.5, step = 0.05, group = "Order Block Display")
+retestTrendAlignment = input.bool(true, title = "Require Trend Alignment", group = "Order Block Display")
+retestVolatilityRegime = input.bool(true, title = "Adapt to Volatility Regime", group = "Order Block Display")
+
+upColor = input.color(color.new(#0e00ce, 50), title = "Bullish Block Color", group = "Order Block Display")
+downColor = input.color(color.new(#ce0250, 50), title = "Bearish Block Color", group = "Order Block Display")
+textSize = input.string("Tiny", title = "Text Size", options = ["Tiny", "Small", "Normal", "Large"], group = "Order Block Display")
+
+textSizeLabel = switch textSize
+    "Tiny" => size.tiny
+    "Small" => size.small
+    "Normal" => size.normal
+    "Large" => size.large
+    => size.tiny
+
+//---------------------------------------------------------------------------------------------------------------------
+// Plotting Control Settings
+//---------------------------------------------------------------------------------------------------------------------
+// Master Plotting Control
+enable_all_plotting = input.bool(true, title="Enable All Plotting", group="Plotting Controls")
+
+// MLMA and Core Indicator Plots
+show_mlma_line = input.bool(false, title="Show MLMA Line", group="Plotting Controls")
+show_mlma_signals = input.bool(false, title="Show MLMA Signal Points", group="Plotting Controls")
+show_mlma_cloud = input.bool(true, title="Show MLMA Cloud", group="Plotting Controls")
+show_mlma_upper_lower = input.bool(false, title="Show MLMA Upper/Lower Bands", group="Plotting Controls")
+
+// Trading Signal Plots
+show_primary_envelopes = input.bool(false, title="Show Primary Envelopes", group="Plotting Controls")
+show_secondary_envelopes = input.bool(false, title="Show Secondary Envelopes", group="Plotting Controls")
+show_wedge_patterns = input.bool(false, title="Show Wedge Patterns", group="Plotting Controls")
+show_range_contraction = input.bool(true, title="Show Range Contraction", group="Plotting Controls")
+
+// Fibonacci TP Visualization
+show_entry_reference = input.bool(false, title="Show Entry Reference Line", group="Plotting Controls")
+show_swing_references = input.bool(false, title="Show Swing References", group="Plotting Controls")
+show_confluence_lines = input.bool(true, title="Show Confluence Lines", group="Plotting Controls")
+
+// Background and Zones
+show_wedge_background = input.bool(false, title="Show Wedge Background", group="Plotting Controls")
+
+// Order Block Visualization
+show_order_block_boxes = input.bool(true, title="Show Order Block Boxes", group="Plotting Controls")
+show_order_block_labels = input.bool(true, title="Show Order Block Labels", group="Plotting Controls")
+
+// Retest Signals
+show_retest_signals = input.bool(true, title="Show Retest Signals", group="Plotting Controls")
+
+// Trading Signal Labels
+show_trading_signal_labels = input.bool(true, title="Show Trading Signal Labels", group="Plotting Controls")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Advanced Signal Filtering System Settings
+//---------------------------------------------------------------------------------------------------------------------
+// 1. Adaptive Clustering Prevention
+enable_adaptive_clustering = input.bool(true, title="Enable Adaptive Clustering Prevention", group="Advanced Signal Filtering")
+clustering_time_window = input.int(20, title="Clustering Time Window (bars)", minval=10, maxval=100, group="Advanced Signal Filtering")
+clustering_price_window = input.float(0.5, title="Clustering Price Window (ATR)", minval=0.5, maxval=5.0, step=0.1, group="Advanced Signal Filtering")
+clustering_decay_factor = input.float(0.85, title="Clustering Decay Factor", minval=0.5, maxval=0.95, step=0.01, group="Advanced Signal Filtering")
+max_clustered_signals = input.int(2, title="Max Clustered Signals", minval=1, maxval=10, group="Advanced Signal Filtering")
+
+// 2. Regime-Aware Threshold Adjustment
+enable_regime_adaptation = input.bool(true, title="Enable Regime-Aware Adaptation", group="Advanced Signal Filtering")
+regime_lookback = input.int(100, title="Regime Detection Lookback", minval=50, maxval=500, group="Advanced Signal Filtering")
+bayesian_learning_rate = input.float(0.1, title="Bayesian Learning Rate", minval=0.01, maxval=0.5, step=0.01, group="Advanced Signal Filtering")
+confidence_interval_level = input.float(0.8, title="Confidence Interval Level", minval=0.8, maxval=0.99, step=0.01, group="Advanced Signal Filtering")
+volatility_regime_threshold = input.float(3, title="Volatility Regime Threshold", minval=1.0, maxval=3.0, step=0.1, group="Advanced Signal Filtering")
+
+// Signal Quality Thresholds
+min_signal_confidence = input.float(70.0, title="Minimum Signal Confidence", minval=50.0, maxval=95.0, step=1.0, group="Advanced Signal Filtering")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Signal Quality Engine
+//---------------------------------------------------------------------------------------------------------------------
+enable_signal_quality_engine = input.bool(true, title="Enable Signal Quality Engine", group="Signal Quality Engine")
+min_trade_quality_score = input.float(50.0, title="Minimum Trade Quality Score", minval=50.0, maxval=95.0, step=1.0, group="Signal Quality Engine")
+strict_no_trade_filter = input.bool(true, title="Strict No-Trade Regime Filter", group="Signal Quality Engine")
+show_rejected_quality_signals = input.bool(false, title="Show Rejected Quality Signals", group="Signal Quality Engine")
+show_signal_quality_on_labels = input.bool(true, title="Show Quality Score On Signal Labels", group="Signal Quality Engine")
+loss_streak_penalty = input.float(8.0, title="Loss Streak Score Penalty", minval=0.0, maxval=25.0, step=1.0, group="Signal Quality Engine")
+
+//---------------------------------------------------------------------------------------------------------------------
+// Advanced Signal Filtering System Arrays and Variables
+//---------------------------------------------------------------------------------------------------------------------
+var array<float> signal_timestamps = array.new<float>()
+var array<float> signal_prices = array.new<float>()
+var array<float> signal_confidences = array.new<float>()
+var array<float> regime_thresholds = array.new<float>()
+var array<float> historical_performance = array.new<float>()
+
+// Critical variables that need to be available to all functions
+var float atr_val = na
+var float atr_dynamic = na
+var float avg_atr = na
+var float avg_volume = na
+var int os_final = 0
+var int quality_loss_streak = 0
+var bool quality_trade_outcome_recorded = true
+
+safe_denominator(value) =>
+    math.max(math.abs(nz(value, syminfo.mintick)), syminfo.mintick)
+
+normalize_price_distance(distance, reference_price) =>
+    distance / safe_denominator(reference_price)
+
+restore_price_distance(normalized_distance, reference_price) =>
+    normalized_distance * safe_denominator(reference_price)
+
+clamp_score(value) =>
+    math.max(0.0, math.min(100.0, value))
+
+//---------------------------------------------------------------------------------------------------------------------
+// Advanced Signal Filtering System Functions
+//---------------------------------------------------------------------------------------------------------------------
+// 1. Adaptive Clustering Prevention
+is_signal_clustered(current_time, current_price, current_confidence) =>
+    bool clustered = false
+    
+    if enable_adaptive_clustering and array.size(signal_timestamps) > 0
+        // Calculate adaptive time and price windows based on volatility
+        // Use atr_val as fallback if atr_dynamic is not yet available
+        current_atr = safe_denominator(na(atr_dynamic) ? atr_val : atr_dynamic)
+        current_avg_atr = safe_denominator(na(avg_atr) ? atr_val : avg_atr)
+        volatility_factor = current_atr / current_avg_atr
+        adaptive_time_window = clustering_time_window * math.max(0.5, math.min(2.0, volatility_factor))
+        adaptive_price_window = clustering_price_window * current_atr * volatility_factor
+        
+        // Check for clustering using exponential decay
+        int cluster_count = 0
+        for i = 0 to array.size(signal_timestamps) - 1
+            time_diff = current_time - array.get(signal_timestamps, i)
+            price_diff = math.abs(current_price - array.get(signal_prices, i))
+            confidence_diff = math.abs(current_confidence - array.get(signal_confidences, i))
+            
+            // Apply exponential decay to thresholds
+            decay_factor = math.pow(clustering_decay_factor, time_diff / adaptive_time_window)
+            decayed_time_threshold = adaptive_time_window * decay_factor
+            decayed_price_threshold = adaptive_price_window * decay_factor
+            
+            if time_diff <= decayed_time_threshold and price_diff <= decayed_price_threshold
+                cluster_count += 1
+        
+        // Check if this creates too many clustered signals
+        if cluster_count >= max_clustered_signals
+            clustered := true
+    
+    clustered
+
+update_signal_history(current_time, current_price, current_confidence) =>
+    if enable_adaptive_clustering
+        // Add new signal to history
+        array.push(signal_timestamps, current_time)
+        array.push(signal_prices, current_price)
+        array.push(signal_confidences, current_confidence)
+        
+        // Remove old signals beyond lookback period
+        max_lookback = clustering_time_window * 3
+        while array.size(signal_timestamps) > 0 and (current_time - array.get(signal_timestamps, 0)) > max_lookback
+            array.shift(signal_timestamps)
+            array.shift(signal_prices)
+            array.shift(signal_confidences)
+
+// 2. Regime-Aware Threshold Adjustment with Bayesian Learning
+var float current_regime = 2.0  // 1=trending, 2=ranging
+
+detect_market_regime() =>
+    float regime = 2.0  // Default to ranging
+    
+    if enable_regime_adaptation
+        // Calculate trend strength using multiple indicators
+        current_atr = safe_denominator(na(atr_dynamic) ? atr_val : atr_dynamic)
+        current_avg_atr = safe_denominator(na(avg_atr) ? atr_val : avg_atr)
+        current_avg_volume = safe_denominator(na(avg_volume) ? volume : avg_volume)
+        
+        price_trend = ta.change(close, regime_lookback)
+        volatility_trend = ta.change(current_atr, regime_lookback / 2)
+        volume_trend = ta.change(volume, regime_lookback / 4)
+        
+        // Normalize trends by ATR
+        normalized_price_trend = price_trend / current_atr
+        normalized_volatility_trend = volatility_trend / current_avg_atr
+        normalized_volume_trend = volume_trend / current_avg_volume
+        
+        // Regime classification
+        trend_strength = math.abs(normalized_price_trend) + math.abs(normalized_volatility_trend) + math.abs(normalized_volume_trend)
+        
+        if trend_strength > volatility_regime_threshold
+            regime := 1.0  // Trending
+        else
+            regime := 2.0  // Ranging
+        
+
+    
+    regime
+
+update_bayesian_thresholds(signal_confidence, signal_success) =>
+    if enable_regime_adaptation
+        array.push(historical_performance, signal_success ? 1.0 : 0.0)
+        if array.size(historical_performance) > regime_lookback
+            array.shift(historical_performance)
+
+        // Bayesian updating of thresholds based on performance
+        learning_rate = bayesian_learning_rate
+        current_threshold = array.size(regime_thresholds) > 0 ? array.get(regime_thresholds, array.size(regime_thresholds) - 1) : min_signal_confidence
+        performance_bias = signal_success ? signal_confidence : 100.0 - signal_confidence
+        
+        // Update threshold based on signal success
+        float new_threshold = 0.0
+        if signal_success
+            // Successful signal: increase threshold slightly
+            new_threshold := current_threshold + (learning_rate * (performance_bias - current_threshold) * 0.1)
+        else
+            // Failed signal: decrease threshold
+            new_threshold := current_threshold - (learning_rate * performance_bias * 0.2)
+        
+        // Apply bounds
+        new_threshold := math.max(50.0, math.min(95.0, new_threshold))
+        
+        // Store updated threshold
+        array.push(regime_thresholds, new_threshold)
+        
+        // Keep only recent history
+        if array.size(regime_thresholds) > regime_lookback
+            array.shift(regime_thresholds)
+
+calculate_adaptive_confidence_threshold() =>
+    float threshold = min_signal_confidence
+    
+    if enable_regime_adaptation
+        // Adjust threshold based on market regime and historical performance
+        regime_factor = current_regime == 1 ? 1.2 : 0.9  // Higher threshold for trending markets
+        
+        if array.size(regime_thresholds) > 0
+            // Calculate confidence interval
+            recent_thresholds = array.slice(regime_thresholds, math.max(0, array.size(regime_thresholds) - 20))
+            mean_threshold = array.avg(recent_thresholds)
+            std_threshold = array.stdev(recent_thresholds)
+            
+            // Apply confidence interval (using normal distribution approximation)
+            // For 95% confidence level, use 1.96 standard deviations
+            confidence_multiplier = confidence_interval_level >= 0.95 ? 1.96 : 
+                                   confidence_interval_level >= 0.90 ? 1.65 : 
+                                   confidence_interval_level >= 0.80 ? 1.28 : 1.0
+            confidence_interval = std_threshold * confidence_multiplier
+            threshold := mean_threshold + confidence_interval
+        
+        // Apply regime adjustment
+        threshold := threshold * regime_factor
+        threshold := math.max(50.0, math.min(95.0, threshold))
+    
+    threshold
+
+// Final Advanced Signal Filtering
+is_advanced_signal_valid(block, block_type, base_confidence) =>
+    bool valid = true
+    float final_confidence = base_confidence
+    
+    // 1. Clustering Prevention
+    if enable_adaptive_clustering
+        clustered = is_signal_clustered(bar_index, close, base_confidence)
+        if clustered
+            valid := false
+    
+    // 2. Regime-Aware Thresholds
+    if valid and enable_regime_adaptation
+        adaptive_threshold = calculate_adaptive_confidence_threshold()
+        if final_confidence < adaptive_threshold
+            valid := false
+    
+    // Update signal history if valid
+    if valid
+        update_signal_history(bar_index, close, final_confidence)
+    
+    [valid, final_confidence]
+
+//---------------------------------------------------------------------------------------------------------------------
+// Pre-calculate common values
+//---------------------------------------------------------------------------------------------------------------------
+// Volume analysis variables
+var float volume_surge_threshold = na
+var float volume_decline_threshold = na
+
+// Market context variables
+var int market_regime = 0  // 0=unknown, 1=trending, 2=ranging
+
+// Update volume and volatility baselines every bar.
+avg_volume := nz(ta.sma(volume, 20), volume)
+volume_surge_threshold := avg_volume * 1.5
+volume_decline_threshold := avg_volume * 0.8
+atr_val := ta.atr(fib_atr_period)
+atr_dynamic := safe_denominator(atr_val)
+
+// Update market context
+current_atr = atr_dynamic
+avg_atr := safe_denominator(nz(ta.sma(current_atr, 20), current_atr))
+
+// Market regime detection
+market_regime := ta.change(close, 10) > avg_atr * 0.5 ? 1 : 
+                 ta.change(close, 10) < -avg_atr * 0.5 ? 1 : 2
+
+rsi_14 = ta.rsi(close, 14)
+rsi_exhaustion = ta.rsi(close, exhaustion_length)
+sma_20 = ta.sma(close, 20)
+sma_10 = ta.sma(close, 10)
+sma_10_delayed = ta.sma(close[5], 10)
+volume_ma = ta.sma(nz(volume), exhaustion_length)
+
+//---------------------------------------------------------------------------------------------------------------------
+// Kernel Functions
+//---------------------------------------------------------------------------------------------------------------------
+rbf_kernel(x1, x2) => 
+    diff = (x1 - x2) / window
+    math.exp(-math.pow(diff, 2) / (2.0 * math.pow(rbf_lengthscale, 2)))
+
+linear_kernel(x1, x2) => 
+    (x1 * x2) / (window * window)
+
+polynomial_kernel(x1, x2) => 
+    norm_x1 = x1 / window
+    norm_x2 = x2 / window
+    base = poly_gamma * norm_x1 * norm_x2 + poly_coef0
+    math.pow(math.max(0.001, base), poly_degree)
+
+sigmoid_kernel(x1, x2) => 
+    norm_x1 = x1 / window
+    norm_x2 = x2 / window
+    val = sigmoid_gamma * norm_x1 * norm_x2 + sigmoid_coef0
+    val := math.max(-10, math.min(10, val))
+    (math.exp(2 * val) - 1) / (math.exp(2 * val) + 1)
+
+laplacian_kernel(x1, x2) => 
+    normalized_distance = math.abs(x1 - x2) / window
+    math.exp(-laplacian_gamma * normalized_distance)
+
+matern_kernel(x1, x2) => 
+    r = math.abs(x1 - x2) / (matern_length_scale * window)
+    if matern_nu == 0.5
+        math.exp(-r)
+    else if matern_nu == 1.5
+        (1 + math.sqrt(3) * r) * math.exp(-math.sqrt(3) * r)
+    else
+        (1 + math.sqrt(5) * r + (5 * r * r) / 3) * math.exp(-math.sqrt(5) * r)
+
+periodic_kernel(x1, x2) => 
+    normalized_distance = math.abs(x1 - x2) / window
+    sin_term = math.sin(math.pi * normalized_distance * window / periodic_period)
+    math.exp(-(periodic_length_scale * periodic_length_scale / 2) * sin_term * sin_term)
+
+trigo_kernel(x1, x2) =>
+    base_ds1 = x1 - x2
+    normalized_base = base_ds1 / window
+    synth_ds1 = math.sin(0.68 * math.pow(normalized_base, 2) + 0.79 * normalized_base + normalized_base) * math.cos(0.68 * math.pow(normalized_base, 2) + 0.79 * normalized_base + normalized_base)
+    math.exp(-math.abs(synth_ds1))
+
+//---------------------------------------------------------------------------------------------------------------------
+// Kernel Selection Functions
+//---------------------------------------------------------------------------------------------------------------------
+compute_single_kernel(x1, x2, kernelType) =>
+    switch kernelType
+        "RBF" => rbf_kernel(x1, x2)
+        "Linear" => linear_kernel(x1, x2)
+        "Polynomial" => polynomial_kernel(x1, x2)
+        "Sigmoid" => sigmoid_kernel(x1, x2)
+        "Laplacian" => laplacian_kernel(x1, x2)
+        "Matérn" => matern_kernel(x1, x2)
+        "Periodic" => periodic_kernel(x1, x2)
+        "Trigo" => trigo_kernel(x1, x2)
+        => rbf_kernel(x1, x2)
+
+safe_kernel_base(kernel_value) =>
+    math.max(nz(kernel_value, 0.0), 0.0)
+
+safe_multiplicative_kernel(k1, k2, w1, w2) =>
+    math.pow(safe_kernel_base(k1), w1) * math.pow(safe_kernel_base(k2), w2)
+
+compute_mlma_kernel(x1, x2) =>
+    if enableMlmaMultiKernel
+        k1 = compute_single_kernel(x1, x2, mlma_kernel1_type)
+        k2 = compute_single_kernel(x1, x2, mlma_kernel2_type)
+        total_weight = mlma_kernel1_weight + mlma_kernel2_weight
+        w1 = total_weight > 0 ? mlma_kernel1_weight / total_weight : 0.5
+        w2 = total_weight > 0 ? mlma_kernel2_weight / total_weight : 0.5
+        if mlmaMultiKernelMethod == "Additive"
+            w1 * k1 + w2 * k2
+        else
+            safe_multiplicative_kernel(k1, k2, w1, w2)
+    else
+        compute_single_kernel(x1, x2, mlma_kernel_type)
+
+compute_ob_kernel(x1, x2) =>
+    if enableObMultiKernel
+        k1 = compute_single_kernel(x1, x2, ob_kernel1_type)
+        k2 = compute_single_kernel(x1, x2, ob_kernel2_type)
+        total_weight = ob_kernel1_weight + ob_kernel2_weight
+        w1 = total_weight > 0 ? ob_kernel1_weight / total_weight : 0.5
+        w2 = total_weight > 0 ? ob_kernel2_weight / total_weight : 0.5
+        if obMultiKernelMethod == "Additive"
+            w1 * k1 + w2 * k2
+        else
+            safe_multiplicative_kernel(k1, k2, w1, w2)
+    else
+        compute_single_kernel(x1, x2, ob_kernel_type)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Matrix Building Functions
+//---------------------------------------------------------------------------------------------------------------------
+build_mlma_kernel_matrix(X1, X2) =>
+    rows = X1.size()
+    cols = X2.size()
+    K = matrix.new<float>(rows, cols, 0.0)
+    for i = 0 to rows - 1
+        x1 = X1.get(i)
+        for j = 0 to cols - 1
+            x2 = X2.get(j)
+            k_val = compute_mlma_kernel(x1, x2)
+            K.set(i, j, k_val)
+    K
+
+build_ob_kernel_matrix(X1, X2) =>
+    rows = X1.size()
+    cols = X2.size()
+    K = matrix.new<float>(rows, cols, 0.0)
+    for i = 0 to rows - 1
+        x1 = X1.get(i)
+        for j = 0 to cols - 1
+            x2 = X2.get(j)
+            k_val = compute_ob_kernel(x1, x2)
+            K.set(i, j, k_val)
+    K
+
+//---------------------------------------------------------------------------------------------------------------------
+//Shared Regression Functions
+//---------------------------------------------------------------------------------------------------------------------
+gpr_predict(K_train, K_test) =>
+    n = K_train.rows()
+    I = matrix.new<float>(n, n, 0.0)
+    for i = 0 to n - 1
+        I.set(i, i, 1.0)
+    noise_matrix = I.mult(sigma * sigma)
+    K_noise = K_train.sum(noise_matrix)
+    K_inv = K_noise.pinv()
+    weights = K_test.transpose().mult(K_inv)
+    weights.row(window + forecast - 1)
+
+krr_predict(K_train, K_test) =>
+    n = K_train.rows()
+    I = matrix.new<float>(n, n, 0.0)
+    for i = 0 to n - 1
+        I.set(i, i, 1.0)
+    reg_matrix = I.mult(lambda_krr)
+    K_reg = K_train.sum(reg_matrix)
+    K_inv = K_reg.pinv()
+    weights = K_test.transpose().mult(K_inv)
+    weights.row(window + forecast - 1)
+
+kpcr_predict(K_train, K_test) =>
+    n = K_train.rows()
+    I = matrix.new<float>(n, n, 0.0)
+    for i = 0 to n - 1
+        I.set(i, i, 1.0)
+    component_count = math.max(1, math.min(window, n_components))
+    effective_kpcr_regularization = kpcr_regularization * (window / component_count)
+    reg_matrix = I.mult(effective_kpcr_regularization)
+    K_reg = K_train.sum(reg_matrix)
+    K_inv = K_reg.pinv()
+    weights = K_test.transpose().mult(K_inv)
+    weights.row(window + forecast - 1)
+
+svr_predict(K_train, K_test) =>
+    n = K_train.rows()
+    I = matrix.new<float>(n, n, 0.0)
+    for i = 0 to n - 1
+        I.set(i, i, 1.0)
+    effective_svr_regularization = (1.0 / C_svr) + epsilon_svr
+    reg_matrix = I.mult(effective_svr_regularization)
+    K_reg = K_train.sum(reg_matrix)
+    K_inv = K_reg.pinv()
+    weights = K_test.transpose().mult(K_inv)
+    weights.row(window + forecast - 1)
+
+kernel_smoothing_predict(K_test) =>
+    test_row = K_test.transpose().row(window + forecast - 1)
+    total_weight = 0.0
+    for i = 0 to test_row.size() - 1
+        bandwidth_weight = math.exp(-math.pow((window + forecast - 1 - i) / safe_denominator(bandwidth), 2) / 2.0)
+        total_weight += math.max(test_row.get(i), 0.0) * bandwidth_weight
+    normalized_weights = array.new<float>(0)
+    if total_weight > 0
+        for i = 0 to test_row.size() - 1
+            bandwidth_weight = math.exp(-math.pow((window + forecast - 1 - i) / safe_denominator(bandwidth), 2) / 2.0)
+            normalized_weights.push((math.max(test_row.get(i), 0.0) * bandwidth_weight) / total_weight)
+    else
+        equal_weight = 1.0 / test_row.size()
+        for i = 0 to test_row.size() - 1
+            normalized_weights.push(equal_weight)
+    normalized_weights
+
+adaptive_rq_predict(rq_src, length, forecast_steps) =>
+    float weighted_sum = 0.0
+    float total_weight = 0.0
+    current_atr_rq = safe_denominator(ta.atr(fib_atr_period))
+    avg_atr_rq = safe_denominator(ta.sma(current_atr_rq, length))
+    volatility_factor = rq_volatility_adapt ? math.max(0.5, math.min(2.0, current_atr_rq / avg_atr_rq)) : 1.0
+    effective_bandwidth = math.max(1.0, rq_bandwidth * volatility_factor)
+    target_index = length - 1 + forecast_steps
+    
+    for i = 0 to length - 1
+        distance = math.abs(target_index - i)
+        weight = math.pow(1.0 + (distance * distance) / (2.0 * rq_alpha * effective_bandwidth * effective_bandwidth), -rq_alpha)
+        weighted_sum += weight * rq_src[length - 1 - i]
+        total_weight += weight
+    
+    total_weight > 0 ? weighted_sum / total_weight : rq_src
+
+apply_regression(K_train, K_test) =>
+    switch regressor_type
+        "GPR" => gpr_predict(K_train, K_test)
+        "KRR" => krr_predict(K_train, K_test)
+        "KPCR" => kpcr_predict(K_train, K_test)
+        "SVR" => svr_predict(K_train, K_test)
+        "Kernel Smoothing" => kernel_smoothing_predict(K_test)
+        "Adaptive RQ" => kernel_smoothing_predict(K_test)
+        => gpr_predict(K_train, K_test)
+
+//---------------------------------------------------------------------------------------------------------------------
+//MLMA Computation
+//---------------------------------------------------------------------------------------------------------------------
+var array<float> mlma_prediction_weights = na
+
+if barstate.isfirst and regressor_type != "Adaptive RQ"
+    xtrain = array.new<int>(0)
+    xtest = array.new<int>(0)
+    for i = 0 to window - 1
+        xtrain.push(i)
+    for i = 0 to window + forecast - 1
+        xtest.push(i)
+    K_train_mlma = build_mlma_kernel_matrix(xtrain, xtrain)
+    K_test_mlma = build_mlma_kernel_matrix(xtrain, xtest)
+    mlma_prediction_weights := apply_regression(K_train_mlma, K_test_mlma)
+
+var os = 0
+mean = ta.sma(src, window)
+
+float mlma_out = na
+if regressor_type == "Adaptive RQ" and bar_index >= window
+    mlma_out := adaptive_rq_predict(src, window, forecast)
+else if bar_index >= window and not na(mlma_prediction_weights)
+    dotprod = 0.0
+    for i = 0 to window - 1
+        if i < mlma_prediction_weights.size()
+            weight = mlma_prediction_weights.get(i)
+            value = src[window - 1 - i] - mean
+            dotprod += weight * value
+    mlma_out := dotprod + mean
+
+mae = ta.sma(math.abs(src - mlma_out), window) * mult
+mlma_upper = mlma_out + mae
+mlma_lower = mlma_out - mae
+
+if close > mlma_upper and mlma_out > mlma_out[1]
+    os := 1
+else if close < mlma_lower and mlma_out < mlma_out[1]
+    os := 0
+
+//---------------------------------------------------------------------------------------------------------------------
+//Multi-Timeframe Data
+//---------------------------------------------------------------------------------------------------------------------
+mlma_out_mtf = mlma_timeframe == "" ? mlma_out : request.security(syminfo.tickerid, mlma_timeframe, mlma_out[1], lookahead=barmerge.lookahead_off)
+mlma_upper_mtf = mlma_timeframe == "" ? mlma_upper : request.security(syminfo.tickerid, mlma_timeframe, mlma_upper[1], lookahead=barmerge.lookahead_off)
+mlma_lower_mtf = mlma_timeframe == "" ? mlma_lower : request.security(syminfo.tickerid, mlma_timeframe, mlma_lower[1], lookahead=barmerge.lookahead_off)
+os_mtf = mlma_timeframe == "" ? os : request.security(syminfo.tickerid, mlma_timeframe, os[1], lookahead=barmerge.lookahead_off)
+
+mlma_out_final = mlma_timeframe == "" ? mlma_out : mlma_out_mtf
+mlma_upper_final = mlma_timeframe == "" ? mlma_upper : mlma_upper_mtf
+mlma_lower_final = mlma_timeframe == "" ? mlma_lower : mlma_lower_mtf
+os_final := mlma_timeframe == "" ? os : os_mtf
+
+//---------------------------------------------------------------------------------------------------------------------
+//Trading Signal Envelope Calculations for Primary Length
+//---------------------------------------------------------------------------------------------------------------------
+ema_close1 = ta.ema(close, len1)
+a1 = close - ema_close1
+base_ds1 = math.abs(a1)
+normalized_base_ds1 = normalize_price_distance(base_ds1, ema_close1)
+synth_ds1 = math.sin(0.68 * math.pow(normalized_base_ds1, 2) + 0.79 * normalized_base_ds1 + normalized_base_ds1) * math.cos(0.68 * math.pow(normalized_base_ds1, 2) + 0.79 * normalized_base_ds1 + normalized_base_ds1)
+b1 = restore_price_distance(synth_ds1 < 0 ? synth_ds1 * -1 : synth_ds1, ema_close1)
+d1 = ta.ema(b1, len1)
+
+upper1 = ema_close1 + d1
+lower1 = ema_close1 - d1
+
+max_val1 = math.max(upper1, close)
+smooth1 = ta.ema(max_val1, len1)
+min_val1 = math.min(close, lower1)
+smooth21 = ta.ema(min_val1, len1)
+
+rising_period1 = math.max(1, int(len1 / 5))
+rising1 = ta.rising(smooth21, rising_period1)
+falling1 = ta.falling(smooth1, rising_period1)
+wedge_condition1 = rising1 and falling1
+
+range_val1 = smooth1 - smooth21
+falling_range1 = ta.falling(range_val1, len1)
+prev_falling1 = falling_range1[1]
+falling_ended1 = prev_falling1 and not falling_range1
+
+buy_signal1 = falling_ended1 and close > smooth21 and not wedge_condition1
+sell_signal1 = falling_ended1 and close < smooth1 and not wedge_condition1
+
+strong_buy1 = buy_signal1 and close > ema_close1 and rsi_14 < 70
+strong_sell1 = sell_signal1 and close < ema_close1 and rsi_14 > 30
+
+range_size1 = smooth1 - smooth21
+close_position1 = range_size1 > 0 ? (close - smooth21) / range_size1 : 0.5
+sma_slope = sma_10 - sma_10_delayed
+
+//---------------------------------------------------------------------------------------------------------------------
+//Trading Signal Envelope Calculations for Secondary Length
+//---------------------------------------------------------------------------------------------------------------------
+ema_close2_raw = ta.ema(close, len2)
+ema_close2 = enable_dual_length ? ema_close2_raw : 0.0
+a2 = close - ema_close2_raw
+base_ds2 = math.abs(a2)
+normalized_base_ds2 = enable_dual_length ? normalize_price_distance(base_ds2, ema_close2_raw) : 0.0
+synth_ds2 = enable_dual_length ? math.sin(0.68 * math.pow(normalized_base_ds2, 2) + 0.79 * normalized_base_ds2 + normalized_base_ds2) * math.cos(0.68 * math.pow(normalized_base_ds2, 2) + 0.79 * normalized_base_ds2 + normalized_base_ds2) : 0.0
+b2 = enable_dual_length ? restore_price_distance(synth_ds2 < 0 ? synth_ds2 * -1 : synth_ds2, ema_close2_raw) : 0.0
+d2_raw = ta.ema(b2, len2)
+d2 = enable_dual_length ? d2_raw : 0.0
+
+upper2 = enable_dual_length ? ema_close2 + d2 : 0.0
+lower2 = enable_dual_length ? ema_close2 - d2 : 0.0
+
+max_val2 = math.max(upper2, close)
+smooth2_raw = ta.ema(max_val2, len2)
+smooth2 = enable_dual_length ? smooth2_raw : 0.0
+min_val2 = math.min(close, lower2)
+smooth22_raw = ta.ema(min_val2, len2)
+smooth22 = enable_dual_length ? smooth22_raw : 0.0
+
+rising_period2 = enable_dual_length ? math.max(1, int(len2 / 5)) : 1
+rising2_raw = ta.rising(smooth22_raw, rising_period2)
+falling2_raw = ta.falling(smooth2_raw, rising_period2)
+rising2 = enable_dual_length ? rising2_raw : false
+falling2 = enable_dual_length ? falling2_raw : false
+wedge_condition2 = enable_dual_length ? (rising2 and falling2) : false
+
+range_val2_raw = smooth2_raw - smooth22_raw
+range_val2 = enable_dual_length ? range_val2_raw : 0.0
+falling_range2_raw = ta.falling(range_val2_raw, len2)
+falling_range2 = enable_dual_length ? falling_range2_raw : false
+
+prev_falling2 = enable_dual_length ? falling_range2[1] : false
+falling_ended2 = enable_dual_length ? (prev_falling2 and not falling_range2) : false
+
+buy_signal2 = enable_dual_length ? (falling_ended2 and close > smooth22 and not wedge_condition2) : false
+sell_signal2 = enable_dual_length ? (falling_ended2 and close < smooth2 and not wedge_condition2) : false
+
+strong_buy2 = enable_dual_length ? (buy_signal2 and close > ema_close2 and rsi_14 < 70) : false
+strong_sell2 = enable_dual_length ? (sell_signal2 and close < ema_close2 and rsi_14 > 30) : false
+
+range_size2 = enable_dual_length ? smooth2 - smooth22 : 0.0
+close_position2 = enable_dual_length ? (range_size2 > 0 ? (close - smooth22) / range_size2 : 0.5) : 0.5
+
+//---------------------------------------------------------------------------------------------------------------------
+//Signal State Tracking
+//---------------------------------------------------------------------------------------------------------------------
+var last_strong_signal1 = 0
+var last_regular_signal1 = 0
+var last_strong_signal2 = 0
+var last_regular_signal2 = 0
+
+if strong_buy1
+    last_strong_signal1 := 1
+else if strong_sell1
+    last_strong_signal1 := -1
+
+if buy_signal1
+    last_regular_signal1 := 1
+else if sell_signal1
+    last_regular_signal1 := -1
+
+if enable_dual_length
+    if strong_buy2
+        last_strong_signal2 := 1
+    else if strong_sell2
+        last_strong_signal2 := -1
+
+    if buy_signal2
+        last_regular_signal2 := 1
+    else if sell_signal2
+        last_regular_signal2 := -1
+
+final_strong_buy = false
+final_strong_sell = false
+final_buy = false
+final_sell = false
+
+switch signal_consensus
+    "Independent" =>
+        final_strong_buy := strong_buy1 or (enable_dual_length and strong_buy2)
+        final_strong_sell := strong_sell1 or (enable_dual_length and strong_sell2)
+        final_buy := buy_signal1 or (enable_dual_length and buy_signal2)
+        final_sell := sell_signal1 or (enable_dual_length and sell_signal2)
+    "Consensus" =>
+        if enable_dual_length
+            final_strong_buy := strong_buy1 and strong_buy2
+            final_strong_sell := strong_sell1 and strong_sell2
+            final_buy := buy_signal1 and buy_signal2
+            final_sell := sell_signal1 and sell_signal2
+        else
+            final_strong_buy := strong_buy1
+            final_strong_sell := strong_sell1
+            final_buy := buy_signal1
+            final_sell := sell_signal1
+    "Primary Priority" =>
+        final_strong_buy := strong_buy1
+        final_strong_sell := strong_sell1
+        final_buy := buy_signal1
+        final_sell := sell_signal1
+
+is_both_buy_signal = enable_dual_length and signal_consensus == "Independent" and (strong_buy1 or buy_signal1) and (strong_buy2 or buy_signal2)
+is_both_sell_signal = enable_dual_length and signal_consensus == "Independent" and (strong_sell1 or sell_signal1) and (strong_sell2 or sell_signal2)
+is_both_signal = is_both_buy_signal or is_both_sell_signal
+
+//---------------------------------------------------------------------------------------------------------------------
+//Multi-Timeframe Signal Detection (After final signals are calculated)
+//---------------------------------------------------------------------------------------------------------------------
+// Get MTF MLMA trends only
+mlma_15m_trend = request.security(syminfo.tickerid, "15", os[1], lookahead=barmerge.lookahead_off)
+mlma_30m_trend = request.security(syminfo.tickerid, "30", os[1], lookahead=barmerge.lookahead_off)
+mlma_1h_trend = request.security(syminfo.tickerid, "60", os[1], lookahead=barmerge.lookahead_off)
+mlma_4h_trend = request.security(syminfo.tickerid, "240", os[1], lookahead=barmerge.lookahead_off)
+mlma_1d_trend = request.security(syminfo.tickerid, "1D", os[1], lookahead=barmerge.lookahead_off)
+mlma_1w_trend = request.security(syminfo.tickerid, "1W", os[1], lookahead=barmerge.lookahead_off)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Market Exhaustion Calculation
+//---------------------------------------------------------------------------------------------------------------------
+calculate_exhaustion() =>
+    volume_ratio = nz(volume) / safe_denominator(volume_ma)
+    price_velocity = ta.change(close, 1)
+    price_acceleration = ta.change(price_velocity, 1)
+    volume_ma_falling = ta.falling(volume_ma, 3)
+    exhaustion_highest = ta.highest(close, exhaustion_length * 2)[1]
+    exhaustion_lowest = ta.lowest(close, exhaustion_length * 2)[1]
+    
+    bull_exhaustion = false
+    bear_exhaustion = false
+    
+    if close > sma_20
+        high_rsi = rsi_exhaustion > exhaustion_threshold
+        declining_momentum = price_acceleration < 0 and price_velocity > 0
+        volume_decline = volume_ratio < 0.8 and volume_ma_falling
+        price_extension = close > exhaustion_highest
+        bull_exhaustion := high_rsi and (declining_momentum or volume_decline) and price_extension
+    
+    if close < sma_20
+        low_rsi = rsi_exhaustion < (100 - exhaustion_threshold)
+        declining_selling = price_acceleration > 0 and price_velocity < 0
+        volume_decline_bear = volume_ratio < 0.8 and volume_ma_falling
+        price_extension_bear = close < exhaustion_lowest
+        bear_exhaustion := low_rsi and (declining_selling or volume_decline_bear) and price_extension_bear
+    
+    bull_exhaustion ? 1 : bear_exhaustion ? -1 : 0
+
+exhaustion_signal = calculate_exhaustion()
+
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced Stop Loss Calculation System
+//---------------------------------------------------------------------------------------------------------------------
+calculate_stop_loss(entry_price, is_bullish_position, swing_ref) =>
+    sl_price = 0.0
+    
+    switch sl_method
+        "ATR-based" =>
+            sl_distance = atr_val * sl_atr_multiplier
+            sl_price := is_bullish_position ? entry_price - sl_distance : entry_price + sl_distance
+        
+        "Swing-based" =>
+            if not na(swing_ref)
+                buffer = atr_val * sl_swing_buffer
+                sl_price := is_bullish_position ? swing_ref - buffer : swing_ref + buffer
+            else
+                // Fallback to ATR method
+                sl_distance = atr_val * sl_atr_multiplier
+                sl_price := is_bullish_position ? entry_price - sl_distance : entry_price + sl_distance
+        
+        "Order Block" =>
+            sl_price := na
+        
+        "Percentage" =>
+            percentage_distance = entry_price * (sl_percentage / 100)
+            sl_price := is_bullish_position ? entry_price - percentage_distance : entry_price + percentage_distance
+    
+    sl_price
+
+//---------------------------------------------------------------------------------------------------------------------
+//Advanced Fibonacci TP System Variables
+//---------------------------------------------------------------------------------------------------------------------
+fib_extension_levels = array.from(1.272, 1.414, 1.618, 2.0, 2.618, 3.618, 4.236)
+
+var array<line> active_tp_lines = array.new<line>()
+var array<label> active_tp_labels = array.new<label>()
+var array<float> active_tp_prices = array.new<float>()
+var array<bool> active_tp_hits = array.new<bool>()
+var array<line> active_confluence_lines = array.new<line>()
+var array<box> active_confluence_zones = array.new<box>()
+var array<label> active_confluence_labels = array.new<label>()
+var active_sl_line = line(na)
+var active_sl_label = label(na)
+var float entry_price = na
+var float swing_low = na
+var float swing_high = na
+var float stop_loss_price = na
+var int signal_bar = na
+var int signal_time = na
+var string active_signal_id = ""
+var bool is_bullish_position = false
+var bool tp_calculated = false
+var float active_trade_quality_score = na
+var string active_trade_status = "Idle"
+var bool active_sl_hit = false
+
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced Swing Detection Functions
+//---------------------------------------------------------------------------------------------------------------------
+detect_swing_high(lookback) =>
+    float swing_h = na
+    for i = 1 to lookback
+        if high[i] > high[i-1] and high[i] > high[i+1]
+            valid_swing = true
+            if i < lookback - 1
+                for j = 0 to math.min(5, lookback - i - 1)
+                    if high[i] <= high[i+j+1]
+                        valid_swing := false
+                        break
+            if valid_swing and (na(swing_h) or high[i] > swing_h)
+                swing_h := high[i]
+    swing_h
+
+detect_swing_low(lookback) =>
+    float swing_l = na
+    for i = 1 to lookback
+        if low[i] < low[i-1] and low[i] < low[i+1]
+            valid_swing = true
+            if i < lookback - 1
+                for j = 0 to math.min(5, lookback - i - 1)
+                    if low[i] >= low[i+j+1]
+                        valid_swing := false
+                        break
+            if valid_swing and (na(swing_l) or low[i] < swing_l)
+                swing_l := low[i]
+    swing_l
+
+//---------------------------------------------------------------------------------------------------------------------
+//Advanced TP Calculation Functions
+//---------------------------------------------------------------------------------------------------------------------
+calculate_tp_transparency(tp_distance, atr_val) =>
+    distance_ratio = tp_distance / (safe_denominator(atr_val) * 3)
+    if distance_ratio < 1.0
+        80
+    else if distance_ratio < 2.0
+        50
+    else if distance_ratio < 4.0
+        30
+    else
+        10
+
+is_signal_in_correct_mlma_cloud(signal_type, price, mlma_val, mlma_upper, mlma_lower) =>
+    bool in_correct_cloud = false
+    if signal_type == 1
+        in_correct_cloud := price >= mlma_lower and mlma_val > mlma_val[1]
+    else if signal_type == -1
+        in_correct_cloud := price <= mlma_upper and mlma_val < mlma_val[1]
+    in_correct_cloud
+
+//---------------------------------------------------------------------------------------------------------------------
+//Order Block Volatility Detection
+//---------------------------------------------------------------------------------------------------------------------
+var array<float> ob_prediction_weights = na
+
+if barstate.isfirst and not fast_load_mode and regressor_type != "Adaptive RQ"
+    xtrain_ob = array.new<int>(0)
+    xtest_ob = array.new<int>(0)
+    for i = 0 to window - 1
+        xtrain_ob.push(i)
+    for i = 0 to window + forecast - 1
+        xtest_ob.push(i)
+    K_train_ob = build_ob_kernel_matrix(xtrain_ob, xtrain_ob)
+    K_test_ob = build_ob_kernel_matrix(xtrain_ob, xtest_ob)
+    ob_prediction_weights := apply_regression(K_train_ob, K_test_ob)
+
+float ob_volatility_base = na
+if fast_load_mode
+    ob_baseline = na(mlma_out) ? ta.ema(close, volatilityLength) : mlma_out
+    ob_volatility_base := math.abs(close - ob_baseline)
+else if regressor_type == "Adaptive RQ" and bar_index >= window
+    ob_ml_out = adaptive_rq_predict(close, window, forecast)
+    ob_volatility_base := math.abs(close - ob_ml_out)
+else if bar_index >= window and not na(ob_prediction_weights)
+    ob_mean = ta.sma(close, window)
+    dotprod_ob = 0.0
+    for i = 0 to window - 1
+        if i < ob_prediction_weights.size()
+            weight = ob_prediction_weights.get(i)
+            value = close[window - 1 - i] - ob_mean
+            dotprod_ob += weight * value
+    ob_ml_out = dotprod_ob + ob_mean
+    ob_volatility_base := math.abs(close - ob_ml_out)
+ob_volatility_sma = ta.sma(ob_volatility_base, volatilityLength)
+classic_ob_atr = ta.atr(volatilityLength)
+
+volatilityMeasure = switch volatilityMethod
+    "Order Block ATR" => na(ob_volatility_base) ? classic_ob_atr : ob_volatility_sma
+    "Classic ATR" => classic_ob_atr
+    "Price Range" => high - low
+    => classic_ob_atr
+
+smoothVolatility = ta.sma(volatilityMeasure, smoothLength)
+
+ob_regime_base = math.abs(close - close[10]) / safe_denominator(ta.atr(obRegimeAtrPeriod))
+isConsolidating = consolidationFilter and ob_regime_base < consolidationThreshold
+
+rsi = ta.rsi(close, momentumPeriod)
+momentumFilter = not enableMomentumFilter or (rsi > 30 and rsi < 70)
+
+volumeAvg = ta.sma(volume, 20)
+volumeConfirm = not enableVolumeFilter or volume > volumeAvg * volumeThreshold
+
+trendAlignment = not enableTrendFilter or not na(mlma_out)
+
+bullVolCondition = volatilityMeasure[1] > smoothVolatility[1] * multiplier and close[1] > open[1] and not isConsolidating and momentumFilter[1] and volumeConfirm[1] and trendAlignment and (enableTrendFilter ? close[1] > mlma_out[1] : true)
+
+bearVolCondition = volatilityMeasure[1] > smoothVolatility[1] * multiplier and close[1] < open[1] and not isConsolidating and momentumFilter[1] and volumeConfirm[1] and trendAlignment and (enableTrendFilter ? close[1] < mlma_out[1] : true)
+
+ob_prior_structure_high = ta.highest(high[2], 10)
+ob_prior_structure_low = ta.lowest(low[2], 10)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Order Block Management Types and Variables
+//---------------------------------------------------------------------------------------------------------------------
+type volatilityBlock 
+    int barStart
+    float top
+    float bottom
+    float vol
+    box block
+    string blockType
+    float bullishStr
+    float bearishStr
+    box bullishBox
+    box bearishBox
+    label volumeLabel
+    int creationIndex
+    float quality
+    string state
+    int retests
+    float mitigationPct
+
+var array<volatilityBlock> bullishVolatilityArray = array.new<volatilityBlock>()
+var array<volatilityBlock> bearishVolatilityArray = array.new<volatilityBlock>()
+var int lastBullishBlock = 0
+var int lastBearishBlock = 0
+
+calculate_order_block_stop_loss(entry, is_bullish_trade) =>
+    float ob_sl = na
+    buffer = safe_denominator(atr_val) * sl_swing_buffer
+    if is_bullish_trade and bullishVolatilityArray.size() > 0
+        scan_count = math.min(3, bullishVolatilityArray.size())
+        for j = 0 to scan_count - 1
+            block = array.get(bullishVolatilityArray, bullishVolatilityArray.size() - 1 - j)
+            if entry >= block.bottom and entry <= block.top + atr_dynamic * ob_proximity_distance
+                candidate = block.bottom - buffer
+                ob_sl := na(ob_sl) ? candidate : math.max(ob_sl, candidate)
+    else if not is_bullish_trade and bearishVolatilityArray.size() > 0
+        scan_count = math.min(3, bearishVolatilityArray.size())
+        for j = 0 to scan_count - 1
+            block = array.get(bearishVolatilityArray, bearishVolatilityArray.size() - 1 - j)
+            if entry <= block.top and entry >= block.bottom - atr_dynamic * ob_proximity_distance
+                candidate = block.top + buffer
+                ob_sl := na(ob_sl) ? candidate : math.min(ob_sl, candidate)
+    ob_sl
+
+//---------------------------------------------------------------------------------------------------------------------
+//Order Block Helper Functions
+//---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced TP Management Functions
+//---------------------------------------------------------------------------------------------------------------------
+level_projection_bars = 50
+confluence_projection_bars = 40
+
+projected_visual_time(projection_bars) =>
+    visual_time_step = math.max(nz(time - time[1], 1), 1)
+    time + visual_time_step * projection_bars
+
+clear_confluence_visuals() =>
+    if array.size(active_confluence_lines) > 0
+        for i = 0 to array.size(active_confluence_lines) - 1
+            line.delete(array.get(active_confluence_lines, i))
+        array.clear(active_confluence_lines)
+    
+    if array.size(active_confluence_zones) > 0
+        for i = 0 to array.size(active_confluence_zones) - 1
+            box.delete(array.get(active_confluence_zones, i))
+        array.clear(active_confluence_zones)
+    
+    if array.size(active_confluence_labels) > 0
+        for i = 0 to array.size(active_confluence_labels) - 1
+            label.delete(array.get(active_confluence_labels, i))
+        array.clear(active_confluence_labels)
+
+clear_active_tps() =>
+    if array.size(active_tp_lines) > 0
+        for i = 0 to array.size(active_tp_lines) - 1
+            line.delete(array.get(active_tp_lines, i))
+        array.clear(active_tp_lines)
+    
+    if array.size(active_tp_labels) > 0
+        for i = 0 to array.size(active_tp_labels) - 1
+            label.delete(array.get(active_tp_labels, i))
+        array.clear(active_tp_labels)
+    
+    array.clear(active_tp_prices)
+    array.clear(active_tp_hits)
+    clear_confluence_visuals()
+    
+
+calculate_adaptive_tp_levels(is_bull, entry, swing_ref, current_atr) =>
+    tp_levels = array.new<float>()
+    
+    base_distance = switch fib_method
+        "Dynamic ATR" => current_atr * 2
+        "Swing-Based" => math.abs(entry - swing_ref)
+        "Adaptive Swing" => math.max(current_atr * 1.5, math.abs(entry - swing_ref) * 0.8)
+        "Heuristic" => current_atr * 2.5
+        => current_atr * 2
+    
+    spacing_factor = tp_spacing_multiplier
+    for i = 0 to math.min(max_tp_levels - 1, array.size(fib_extension_levels) - 1)
+        fib_level = array.get(fib_extension_levels, i)
+        distance_multiplier = math.pow(spacing_factor, i) * fib_level
+        tp_distance = base_distance * distance_multiplier
+        tp_price = is_bull ? entry + tp_distance : entry - tp_distance
+        
+        array.push(tp_levels, tp_price)
+    
+    tp_levels
+
+draw_enhanced_tp_levels(tp_levels, is_bull, signal_bar_time) =>
+    tp_color = is_bull ? bullish_fib_color : bearish_fib_color
+    tp_left_time = na(signal_bar_time) ? time : signal_bar_time
+    tp_right_time = projected_visual_time(level_projection_bars)
+    
+    if array.size(tp_levels) > 0
+        for i = 0 to array.size(tp_levels) - 1
+            tp_price = array.get(tp_levels, i)
+            tp_distance = math.abs(tp_price - entry_price)
+            transparency = calculate_tp_transparency(tp_distance, atr_dynamic)
+            
+            distance_atr = tp_distance / safe_denominator(atr_dynamic)
+            
+            tp_line = line.new(tp_left_time, tp_price, tp_right_time, tp_price, color=tp_color, style=line.style_solid, width=1, extend=extend.none, xloc=xloc.bar_time)
+            array.push(active_tp_lines, tp_line)
+            
+            fib_level = array.get(fib_extension_levels, i)
+            label_text = "TP" + str.tostring(i + 1) + " (" + str.tostring(fib_level, "#.##") + ") [" + str.tostring(distance_atr, "#.#") + "ATR]"
+            label_size = transparency < 30 ? size.small : size.tiny
+            tp_label = label.new(tp_right_time, tp_price, label_text, color=color.new(tp_color, math.min(80, transparency + 20)), textcolor=color.white, style=label.style_label_left, size=label_size, xloc=xloc.bar_time)
+            array.push(active_tp_labels, tp_label)
+            array.push(active_tp_prices, tp_price)
+            array.push(active_tp_hits, false)
+
+update_active_trade_visuals() =>
+    right_edge_time = projected_visual_time(level_projection_bars)
+    
+    if array.size(active_tp_lines) > 0
+        for i = 0 to array.size(active_tp_lines) - 1
+            tp_line = array.get(active_tp_lines, i)
+            line.set_x2(tp_line, right_edge_time)
+    
+    if array.size(active_tp_labels) > 0
+        for i = 0 to array.size(active_tp_labels) - 1
+            tp_label = array.get(active_tp_labels, i)
+            tp_price = i < array.size(active_tp_prices) ? array.get(active_tp_prices, i) : na
+            if not na(tp_price)
+                label.set_xy(tp_label, right_edge_time, tp_price)
+    
+    if not na(active_sl_line) and not na(stop_loss_price)
+        line.set_x2(active_sl_line, right_edge_time)
+    
+    if not na(active_sl_label) and not na(stop_loss_price)
+        label.set_xy(active_sl_label, right_edge_time, stop_loss_price)
+    
+check_tp_hits(current_price, is_bull) =>
+    bool tp_hit = false
+    if array.size(active_tp_prices) > 0
+        for i = 0 to array.size(active_tp_prices) - 1
+            tp_price = array.get(active_tp_prices, i)
+            if is_bull and current_price >= tp_price
+                tp_hit := true
+                break
+            else if not is_bull and current_price <= tp_price
+                tp_hit := true
+                break
+    tp_hit
+
+update_tp_hit_status(current_price, is_bull) =>
+    bool any_new_hit = false
+    if array.size(active_tp_prices) > 0
+        for i = 0 to array.size(active_tp_prices) - 1
+            tp_price = array.get(active_tp_prices, i)
+            already_hit = i < array.size(active_tp_hits) ? array.get(active_tp_hits, i) : false
+            hit_now = is_bull ? current_price >= tp_price : current_price <= tp_price
+            if not already_hit and hit_now
+                if i < array.size(active_tp_hits)
+                    array.set(active_tp_hits, i, true)
+                else
+                    array.push(active_tp_hits, true)
+                any_new_hit := true
+    any_new_hit
+
+all_active_tps_hit() =>
+    bool all_hit = array.size(active_tp_prices) > 0
+    if all_hit
+        for i = 0 to array.size(active_tp_prices) - 1
+            tp_hit = i < array.size(active_tp_hits) ? array.get(active_tp_hits, i) : false
+            if not tp_hit
+                all_hit := false
+                break
+    all_hit
+
+any_active_tp_hit() =>
+    bool any_hit = false
+    if array.size(active_tp_hits) > 0
+        for i = 0 to array.size(active_tp_hits) - 1
+            if array.get(active_tp_hits, i)
+                any_hit := true
+                break
+    any_hit
+
+has_open_trade_to_replace() =>
+    tp_calculated and not quality_trade_outcome_recorded and active_trade_status != "Completed" and active_trade_status != "Stopped" and active_trade_status != "Partial Stop"
+
+build_signal_id(signal_side) =>
+    syminfo.tickerid + "|" + timeframe.period + "|" + str.tostring(time) + "|" + signal_side
+
+//---------------------------------------------------------------------------------------------------------------------
+//New TP Logic Functions
+//---------------------------------------------------------------------------------------------------------------------
+is_mlma_buy_signal() =>
+    os_final == 1
+
+is_mlma_sell_signal() =>
+    os_final == 0
+
+is_within_buy_order_block(price) =>
+    bool near_buy_ob = false
+    tolerance = atr_dynamic * signal_validation_tolerance
+    if bullishVolatilityArray.size() > 0
+        for i = math.max(0, bullishVolatilityArray.size() - 3) to bullishVolatilityArray.size() - 1
+            block = array.get(bullishVolatilityArray, i)
+            if (price >= block.bottom and price <= block.top) or (price > block.top and price <= block.top + tolerance)
+                near_buy_ob := true
+                break
+    near_buy_ob
+
+is_within_sell_order_block(price) =>
+    bool near_sell_ob = false
+    tolerance = atr_dynamic * signal_validation_tolerance
+    if bearishVolatilityArray.size() > 0
+        for i = math.max(0, bearishVolatilityArray.size() - 3) to bearishVolatilityArray.size() - 1
+            block = array.get(bearishVolatilityArray, i)
+            if (price >= block.bottom and price <= block.top) or (price < block.bottom and price >= block.bottom - tolerance)
+                near_sell_ob := true
+                break
+    near_sell_ob
+
+should_calculate_tp_new_logic(signal_type, current_price) =>
+    bool should_calc = false
+    
+    if signal_type == 1
+        mlma_buy = is_mlma_buy_signal()
+        near_buy_ob = is_within_buy_order_block(current_price)
+        should_calc := mlma_buy or (not mlma_buy and near_buy_ob)
+        
+    else if signal_type == -1
+        mlma_sell = is_mlma_sell_signal()
+        near_sell_ob = is_within_sell_order_block(current_price)
+        should_calc := mlma_sell or (not mlma_sell and near_sell_ob)
+    
+    should_calc
+
+get_supportive_ob_quality(direction, price) =>
+    float best_quality = 0.0
+    tolerance = atr_dynamic * proximity_atr
+    if direction == 1 and bullishVolatilityArray.size() > 0
+        scan_count = math.min(3, bullishVolatilityArray.size())
+        for j = 0 to scan_count - 1
+            block = array.get(bullishVolatilityArray, bullishVolatilityArray.size() - 1 - j)
+            inside_block = price >= block.bottom and price <= block.top
+            near_block = math.abs(price - block.bottom) <= tolerance or math.abs(price - block.top) <= tolerance
+            if inside_block or near_block
+                best_quality := math.max(best_quality, enable_ob_intelligence ? block.quality : 70.0)
+    else if direction == -1 and bearishVolatilityArray.size() > 0
+        scan_count = math.min(3, bearishVolatilityArray.size())
+        for j = 0 to scan_count - 1
+            block = array.get(bearishVolatilityArray, bearishVolatilityArray.size() - 1 - j)
+            inside_block = price >= block.bottom and price <= block.top
+            near_block = math.abs(price - block.bottom) <= tolerance or math.abs(price - block.top) <= tolerance
+            if inside_block or near_block
+                best_quality := math.max(best_quality, enable_ob_intelligence ? block.quality : 70.0)
+    best_quality
+
+get_opposing_ob_pressure(direction, price) =>
+    float strongest_pressure = 0.0
+    tolerance = atr_dynamic * proximity_atr
+    if direction == 1 and bearishVolatilityArray.size() > 0
+        scan_count = math.min(3, bearishVolatilityArray.size())
+        for j = 0 to scan_count - 1
+            block = array.get(bearishVolatilityArray, bearishVolatilityArray.size() - 1 - j)
+            overhead_supply = price <= block.top and price >= block.bottom - tolerance
+            if overhead_supply
+                strongest_pressure := math.max(strongest_pressure, enable_ob_intelligence ? block.quality : 70.0)
+    else if direction == -1 and bullishVolatilityArray.size() > 0
+        scan_count = math.min(3, bullishVolatilityArray.size())
+        for j = 0 to scan_count - 1
+            block = array.get(bullishVolatilityArray, bullishVolatilityArray.size() - 1 - j)
+            downside_demand = price >= block.bottom and price <= block.top + tolerance
+            if downside_demand
+                strongest_pressure := math.max(strongest_pressure, enable_ob_intelligence ? block.quality : 70.0)
+    strongest_pressure
+
+calculate_ob_context_quality_score(direction) =>
+    supportive_quality = get_supportive_ob_quality(direction, close)
+    opposing_pressure = get_opposing_ob_pressure(direction, close)
+    base_score = supportive_quality > 0 ? 55.0 + supportive_quality * 0.35 : 50.0
+    context_score = base_score - opposing_pressure * 0.45
+    clamp_score(context_score)
+
+//---------------------------------------------------------------------------------------------------------------------
+// Signal Quality Engine
+//---------------------------------------------------------------------------------------------------------------------
+is_trend_aligned(direction, trend_value) =>
+    direction == 1 ? trend_value == 1 : trend_value == 0
+
+calculate_mtf_alignment_score(direction) =>
+    aligned_count = 0
+    aligned_count += is_trend_aligned(direction, os_final) ? 1 : 0
+    aligned_count += is_trend_aligned(direction, mlma_15m_trend) ? 1 : 0
+    aligned_count += is_trend_aligned(direction, mlma_30m_trend) ? 1 : 0
+    aligned_count += is_trend_aligned(direction, mlma_1h_trend) ? 1 : 0
+    aligned_count += is_trend_aligned(direction, mlma_4h_trend) ? 1 : 0
+    aligned_count += is_trend_aligned(direction, mlma_1d_trend) ? 1 : 0
+    aligned_count += is_trend_aligned(direction, mlma_1w_trend) ? 1 : 0
+    (aligned_count / 7.0) * 100.0
+
+calculate_mlma_context_score(direction) =>
+    trend_ok = is_trend_aligned(direction, os_final)
+    slope_ok = direction == 1 ? mlma_out_final > mlma_out_final[1] : mlma_out_final < mlma_out_final[1]
+    price_ok = direction == 1 ? close > mlma_out_final : close < mlma_out_final
+    cloud_ok = should_calculate_tp_new_logic(direction, close)
+    near_ob = direction == 1 ? is_within_buy_order_block(close) : is_within_sell_order_block(close)
+    base_score = (trend_ok ? 35.0 : 0.0) + (slope_ok ? 25.0 : 0.0) + (price_ok ? 20.0 : 0.0) + (cloud_ok ? 15.0 : 0.0) + (near_ob ? 5.0 : 0.0)
+    clamp_score(base_score)
+
+calculate_volume_quality_score() =>
+    volume_ratio = nz(volume) / safe_denominator(volume_ma)
+    volume_score = volume_ratio >= 1.5 ? 100.0 : volume_ratio >= 1.1 ? 85.0 : volume_ratio >= 0.8 ? 60.0 : 35.0
+    clamp_score(volume_score)
+
+calculate_volatility_quality_score() =>
+    volatility_ratio = safe_denominator(atr_dynamic) / safe_denominator(avg_atr)
+    volatility_score = volatility_ratio < 0.55 ? 25.0 : volatility_ratio < 0.8 ? 60.0 : volatility_ratio <= 2.2 ? 90.0 : 55.0
+    clamp_score(volatility_score)
+
+calculate_momentum_quality_score(direction) =>
+    candle_range = safe_denominator(high - low)
+    candle_body_ratio = math.abs(close - open) / candle_range
+    rsi_ok = direction == 1 ? rsi_14 > 50 and rsi_14 < 72 : rsi_14 < 50 and rsi_14 > 28
+    candle_ok = direction == 1 ? close > open : close < open
+    slope_ok = direction == 1 ? sma_slope > 0 : sma_slope < 0
+    momentum_score = (rsi_ok ? 35.0 : 10.0) + (candle_ok ? 25.0 : 5.0) + (slope_ok ? 25.0 : 5.0) + (candle_body_ratio > 0.45 ? 15.0 : 5.0)
+    clamp_score(momentum_score)
+
+calculate_signal_quality_score(direction) =>
+    mtf_score = calculate_mtf_alignment_score(direction)
+    context_score = calculate_mlma_context_score(direction)
+    volume_score = calculate_volume_quality_score()
+    volatility_score = calculate_volatility_quality_score()
+    momentum_score = calculate_momentum_quality_score(direction)
+    ob_context_score = enable_ob_intelligence ? calculate_ob_context_quality_score(direction) : 70.0
+    streak_penalty = math.min(35.0, quality_loss_streak * loss_streak_penalty)
+    raw_score = (context_score * 0.27) + (mtf_score * 0.22) + (momentum_score * 0.18) + (volatility_score * 0.13) + (volume_score * 0.08) + (ob_context_score * 0.12) - streak_penalty
+    clamp_score(raw_score)
+
+is_no_trade_regime(direction) =>
+    atr_base = safe_denominator(atr_dynamic)
+    cloud_width_atr = math.abs(mlma_upper_final - mlma_lower_final) / atr_base
+    mlma_slope_atr = math.abs(mlma_out_final - mlma_out_final[3]) / atr_base
+    volatility_ratio = safe_denominator(atr_dynamic) / safe_denominator(avg_atr)
+    too_choppy = strict_no_trade_filter and (isConsolidating or wedge_condition1 or (enable_dual_length and wedge_condition2) or (market_regime == 2 and mlma_slope_atr < 0.15))
+    too_compressed = strict_no_trade_filter and volatility_ratio < 0.55
+    trend_conflict = strict_no_trade_filter and not is_trend_aligned(direction, os_final)
+    trapped_inside_cloud = strict_no_trade_filter and cloud_width_atr < 0.8 and close > mlma_lower_final and close < mlma_upper_final
+    too_choppy or too_compressed or trend_conflict or trapped_inside_cloud
+
+//---------------------------------------------------------------------------------------------------------------------
+//Volume Calculation Functions
+//---------------------------------------------------------------------------------------------------------------------
+calcVolumePercentages(blocks, showLast) =>
+    float totalVolume = 0.0
+    percentages = array.new<float>()
+    for i = 0 to math.min(showLast - 1, blocks.size() - 1)
+        if blocks.size() > 0
+            block = blocks.get(blocks.size() - 1 - i)
+            totalVolume += block.vol
+    for i = 0 to math.min(showLast - 1, blocks.size() - 1)
+        if blocks.size() > 0
+            block = blocks.get(blocks.size() - 1 - i)
+            percentage = totalVolume > 0 ? (block.vol / totalVolume) * 100 : 0
+            percentages.push(percentage)
+    [totalVolume, percentages]
+
+//---------------------------------------------------------------------------------------------------------------------
+//Order Block Management Functions
+//---------------------------------------------------------------------------------------------------------------------
+calculateStrengths(openn, highh, loww, closee, volumee) =>
+    bullishStrength = (closee - loww) * volumee
+    bearishStrength = (highh - closee) * volumee
+    [bullishStrength, bearishStrength]
+
+calculate_ob_quality(block_top, block_bottom, block_volume, bullish_strength, bearish_strength, block_type) =>
+    block_size = math.max(block_top - block_bottom, syminfo.mintick)
+    volume_ratio = block_volume / safe_denominator(avg_volume)
+    volume_score = math.min(100.0, volume_ratio * 45.0)
+    size_atr_ratio = block_size / safe_denominator(atr_dynamic)
+    size_score = size_atr_ratio < 0.25 ? 35.0 : size_atr_ratio <= 1.8 ? 90.0 : math.max(35.0, 100.0 - ((size_atr_ratio - 1.8) * 22.0))
+    total_strength = safe_denominator(bullish_strength + bearish_strength)
+    pressure_score = block_type == "bullish" ? (bullish_strength / total_strength) * 100.0 : (bearish_strength / total_strength) * 100.0
+    displacement_score = block_type == "bullish" ? math.min(100.0, math.max(0.0, (close - block_top) / safe_denominator(atr_dynamic)) * 55.0) : math.min(100.0, math.max(0.0, (block_bottom - close) / safe_denominator(atr_dynamic)) * 55.0)
+    structure_score = block_type == "bullish" ? (close > ob_prior_structure_high ? 100.0 : close > block_top ? 65.0 : 25.0) : (close < ob_prior_structure_low ? 100.0 : close < block_bottom ? 65.0 : 25.0)
+    trend_score = block_type == "bullish" ? (os_final == 1 ? 100.0 : 35.0) : (os_final == 0 ? 100.0 : 35.0)
+    quality_score = (displacement_score * 0.25) + (trend_score * 0.20) + (volume_score * 0.18) + (pressure_score * 0.17) + (structure_score * 0.12) + (size_score * 0.08)
+    clamp_score(quality_score)
+
+isOverlapping(newBlock, existingArray) =>
+    bool flag = false
+    if existingArray.size() > 0
+        for i = 0 to existingArray.size() - 1
+            existingBlock = array.get(existingArray, i)
+            if newBlock.bottom <= existingBlock.top and newBlock.top >= existingBlock.bottom
+                flag := true
+                break
+    flag
+
+formatVolume(vol) =>
+    if vol >= 1000000
+        str.tostring(vol / 1000000, "#.#") + "M"
+    else if vol >= 1000
+        str.tostring(vol / 1000, "#.#") + "K"
+    else
+        str.tostring(vol, "#")
+
+getVolumePercentageForBlock(blocks, blockIndex, showLast) =>
+    [totalVol, percentages] = calcVolumePercentages(blocks, showLast)
+    float blockPercentage = 0.0
+    reverseIndex = blocks.size() - 1 - blockIndex
+    if reverseIndex >= 0 and reverseIndex < percentages.size()
+        blockPercentage := percentages.get(reverseIndex)
+    blockPercentage
+
+drawBox(volatilityBlock volBlock, allBlocks) =>
+    if enable_all_plotting and show_order_block_boxes
+        ob_opacity = enable_ob_intelligence and fadeWeakOrderBlocks ? (volBlock.quality >= strong_ob_quality_score ? 42 : volBlock.quality >= min_ob_quality_score ? 62 : 84) : 80
+        bull_opacity = enable_ob_intelligence and fadeWeakOrderBlocks ? (volBlock.quality >= strong_ob_quality_score ? 35 : volBlock.quality >= min_ob_quality_score ? 55 : 82) : 50
+        bear_opacity = enable_ob_intelligence and fadeWeakOrderBlocks ? (volBlock.quality >= strong_ob_quality_score ? 35 : volBlock.quality >= min_ob_quality_score ? 55 : 82) : 50
+        border_color = enable_ob_intelligence and volBlock.quality >= strong_ob_quality_score ? color.new(color.white, 35) : na
+        volBlock.block := box.new(left = volBlock.barStart, right = time, top = volBlock.top, bottom = volBlock.bottom, bgcolor = color.new(color.gray, ob_opacity), border_color = border_color, xloc = xloc.bar_time)
+        volBlock.bullishBox := box.new(left = volBlock.barStart, right = time, top = volBlock.top, bottom = volBlock.bottom + ((volBlock.top - volBlock.bottom) / 2), bgcolor = color.new(upColor, bull_opacity), border_color = na, xloc = xloc.bar_time)
+        volBlock.bearishBox := box.new(left = volBlock.barStart, right = time, top = volBlock.bottom + ((volBlock.top - volBlock.bottom) / 2), bottom = volBlock.bottom, bgcolor = color.new(downColor, bear_opacity), border_color = na, xloc = xloc.bar_time)
+    
+    if enable_all_plotting and show_order_block_labels and showVolume
+        volumeText = formatVolume(volBlock.vol)
+        blockIndex = allBlocks.size() - 1
+        volumePercentage = getVolumePercentageForBlock(allBlocks, blockIndex, showLastBlocks)
+        volumePart = showVolumePercentage ? volumeText + " | " + str.tostring(volumePercentage, "#.#") + "%" : volumeText
+        statePart = volBlock.retests > 0 ? " R" + str.tostring(volBlock.retests) : " " + volBlock.state
+        qualityPart = enable_ob_intelligence and showObQuality ? " | Q" + str.tostring(math.round(volBlock.quality)) + statePart : ""
+        labelText = volumePart + qualityPart
+        labelX = math.round(time - (time - volBlock.barStart) * 0.05)
+        labelY = volBlock.bottom + (volBlock.top - volBlock.bottom) * 0.5
+        volBlock.volumeLabel := label.new(x = labelX, y = labelY, text = labelText, color = color.new(color.white, 100), textcolor = color.new(color.white, 0), style = label.style_none, xloc = xloc.bar_time, size = textSizeLabel)
+
+updateVolumeLabel(volBlock, blocks, blockIndex) =>
+    if showVolume and not na(volBlock.volumeLabel)
+        volumeText = formatVolume(volBlock.vol)
+        volumePercentage = getVolumePercentageForBlock(blocks, blockIndex, showLastBlocks)
+        volumePart = showVolumePercentage ? volumeText + " | " + str.tostring(volumePercentage, "#.#") + "%" : volumeText
+        statePart = volBlock.retests > 0 ? " R" + str.tostring(volBlock.retests) : " " + volBlock.state
+        qualityPart = enable_ob_intelligence and showObQuality ? " | Q" + str.tostring(math.round(volBlock.quality)) + statePart : ""
+        labelText = volumePart + qualityPart
+        label.set_text(volBlock.volumeLabel, labelText)
+        newLabelX = math.round(time - (time - volBlock.barStart) * 0.05)
+        newLabelY = volBlock.bottom + (volBlock.top - volBlock.bottom) * 0.5
+        label.set_xy(volBlock.volumeLabel, newLabelX, newLabelY)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Signal tracking variables
+//---------------------------------------------------------------------------------------------------------------------
+raw_final_strong_buy = final_strong_buy
+raw_final_strong_sell = final_strong_sell
+raw_final_buy = final_buy
+raw_final_sell = final_sell
+raw_current_buy_signal = raw_final_strong_buy or raw_final_buy
+raw_current_sell_signal = raw_final_strong_sell or raw_final_sell
+
+buy_quality_score = raw_current_buy_signal ? calculate_signal_quality_score(1) : na
+sell_quality_score = raw_current_sell_signal ? calculate_signal_quality_score(-1) : na
+buy_no_trade_regime = raw_current_buy_signal and is_no_trade_regime(1)
+sell_no_trade_regime = raw_current_sell_signal and is_no_trade_regime(-1)
+quality_buy_valid = not enable_signal_quality_engine or not raw_current_buy_signal or (not buy_no_trade_regime and buy_quality_score >= min_trade_quality_score)
+quality_sell_valid = not enable_signal_quality_engine or not raw_current_sell_signal or (not sell_no_trade_regime and sell_quality_score >= min_trade_quality_score)
+rejected_buy_quality_signal = enable_signal_quality_engine and raw_current_buy_signal and not quality_buy_valid
+rejected_sell_quality_signal = enable_signal_quality_engine and raw_current_sell_signal and not quality_sell_valid
+
+final_strong_buy := raw_final_strong_buy and quality_buy_valid
+final_buy := raw_final_buy and quality_buy_valid
+final_strong_sell := raw_final_strong_sell and quality_sell_valid
+final_sell := raw_final_sell and quality_sell_valid
+is_both_buy_signal := is_both_buy_signal and quality_buy_valid
+is_both_sell_signal := is_both_sell_signal and quality_sell_valid
+is_both_signal := is_both_buy_signal or is_both_sell_signal
+
+//---------------------------------------------------------------------------------------------------------------------
+//Table Creation Functions
+//---------------------------------------------------------------------------------------------------------------------
+get_table_position(position_str) =>
+    switch position_str
+        "Top Left" => position.top_left
+        "Top Right" => position.top_right
+        "Bottom Left" => position.bottom_left
+        "Bottom Right" => position.bottom_right
+        => position.top_right
+
+create_trend_table() =>
+    if show_trend_table
+        table_pos = get_table_position(trend_table_position)
+        trend_table = table.new(table_pos, 8, 2, bgcolor=color.new(color.purple, 90), border_width=1)
+        header_bg = color.new(color.gray, 35)
+        trend_label_bg = color.new(color.gray, 45)
+        bull_cell_color = color.new(color.blue, 45)
+        bear_cell_color = color.new(color.red, 45)
+        
+        // Headers
+        table.cell(trend_table, 0, 0, "Timeframe", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 1, 0, "Current", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 2, 0, "15m", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 3, 0, "30m", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 4, 0, "1H", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 5, 0, "4H", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 6, 0, "1D", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(trend_table, 7, 0, "1W", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        
+        // MLMA Trends
+        current_trend = os_final == 1 ? "Bullish" : "Bearish"
+        trend_15m = mlma_15m_trend == 1 ? "Bullish" : "Bearish"
+        trend_30m = mlma_30m_trend == 1 ? "Bullish" : "Bearish"
+        trend_1h = mlma_1h_trend == 1 ? "Bullish" : "Bearish"
+        trend_4h = mlma_4h_trend == 1 ? "Bullish" : "Bearish"
+        trend_1d = mlma_1d_trend == 1 ? "Bullish" : "Bearish"
+        trend_1w = mlma_1w_trend == 1 ? "Bullish" : "Bearish"
+        
+        table.cell(trend_table, 0, 1, "Trend", text_color=color.white, bgcolor=trend_label_bg, text_size=size.tiny)
+        table.cell(trend_table, 1, 1, current_trend, text_color=color.white, bgcolor=os_final == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+        table.cell(trend_table, 2, 1, trend_15m, text_color=color.white, bgcolor=mlma_15m_trend == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+        table.cell(trend_table, 3, 1, trend_30m, text_color=color.white, bgcolor=mlma_30m_trend == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+        table.cell(trend_table, 4, 1, trend_1h, text_color=color.white, bgcolor=mlma_1h_trend == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+        table.cell(trend_table, 5, 1, trend_4h, text_color=color.white, bgcolor=mlma_4h_trend == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+        table.cell(trend_table, 6, 1, trend_1d, text_color=color.white, bgcolor=mlma_1d_trend == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+        table.cell(trend_table, 7, 1, trend_1w, text_color=color.white, bgcolor=mlma_1w_trend == 1 ? bull_cell_color : bear_cell_color, text_size=size.tiny)
+
+create_tp_table() =>
+    if show_tp_table and (tp_calculated or array.size(active_tp_prices) > 0)
+        table_pos = get_table_position(tp_table_position)
+        tp_table = table.new(table_pos, 3, max_tp_levels + 4, bgcolor=color.new(color.purple, 90), border_width=1)
+        header_bg = color.new(color.gray, 35)
+        entry_row_bg = is_bullish_position ? color.new(color.blue, 45) : color.new(color.red, 45)
+        tp_row_bg = is_bullish_position ? color.new(color.blue, 78) : color.new(color.red, 78)
+        tp_level_bg = is_bullish_position ? color.new(color.blue, 45) : color.new(color.red, 45)
+        trade_status_bg = active_trade_status == "Stopped" ? color.new(color.red, 20) : active_trade_status == "Partial Stop" ? color.new(color.orange, 20) : active_trade_status == "Completed" ? color.new(color.green, 20) : active_trade_status == "TP Hit" ? color.new(color.green, 45) : entry_row_bg
+        pending_bg = color.new(color.gray, 70)
+        hit_bg = color.new(color.green, 25)
+        sl_row_bg = color.new(sl_color, 35)
+        sl_status_bg = active_sl_hit ? color.new(color.red, 10) : color.new(sl_color, 45)
+        
+        // Headers
+        table.cell(tp_table, 0, 0, "Level", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(tp_table, 1, 0, "Price", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        table.cell(tp_table, 2, 0, "Status", text_color=color.white, bgcolor=header_bg, text_size=size.tiny)
+        
+        // Trade Status Row
+        trade_label = is_bullish_position ? "BUY" : "SELL"
+        quality_text = not na(active_trade_quality_score) ? " Q" + str.tostring(math.round(active_trade_quality_score)) : ""
+        table.cell(tp_table, 0, 1, "Trade", text_color=color.white, bgcolor=trade_status_bg, text_size=size.tiny)
+        table.cell(tp_table, 1, 1, trade_label, text_color=color.white, bgcolor=trade_status_bg, text_size=size.tiny)
+        table.cell(tp_table, 2, 1, active_trade_status + quality_text, text_color=color.white, bgcolor=trade_status_bg, text_size=size.tiny)
+        
+        // Entry Row
+        entry_price_text = not na(entry_price) ? str.tostring(entry_price, "#.####") : "N/A"
+        table.cell(tp_table, 0, 2, "Entry", text_color=color.white, bgcolor=entry_row_bg, text_size=size.tiny)
+        table.cell(tp_table, 1, 2, entry_price_text, text_color=color.white, bgcolor=entry_row_bg, text_size=size.tiny)
+        table.cell(tp_table, 2, 2, "Filled", text_color=color.white, bgcolor=entry_row_bg, text_size=size.tiny)
+        
+        // TP Levels - Use stored calculated data
+        for i = 0 to math.min(array.size(active_tp_prices) - 1, max_tp_levels - 1)
+            tp_price = array.get(active_tp_prices, i)
+            tp_hit = i < array.size(active_tp_hits) ? array.get(active_tp_hits, i) : false
+            tp_status = tp_hit ? "Hit" : active_sl_hit ? "Closed" : "Pending"
+            tp_status_bg = tp_hit ? hit_bg : active_sl_hit ? color.new(color.gray, 55) : pending_bg
+            
+            table.cell(tp_table, 0, i + 3, "TP" + str.tostring(i + 1), text_color=color.white, bgcolor=tp_hit ? hit_bg : tp_level_bg, text_size=size.tiny)
+            table.cell(tp_table, 1, i + 3, str.tostring(tp_price, "#.####"), text_color=color.white, bgcolor=tp_hit ? hit_bg : tp_row_bg, text_size=size.tiny)
+            table.cell(tp_table, 2, i + 3, tp_status, text_color=color.white, bgcolor=tp_status_bg, text_size=size.tiny)
+            
+        // Stop Loss Row
+        if show_stop_loss and not na(stop_loss_price)
+            sl_status = active_sl_hit ? "Hit" : all_active_tps_hit() ? "Closed" : "Pending"
+            table.cell(tp_table, 0, max_tp_levels + 3, "SL", text_color=color.white, bgcolor=sl_status_bg, text_size=size.tiny)
+            table.cell(tp_table, 1, max_tp_levels + 3, str.tostring(stop_loss_price, "#.####"), text_color=color.white, bgcolor=sl_status_bg, text_size=size.tiny)
+            table.cell(tp_table, 2, max_tp_levels + 3, sl_status, text_color=color.white, bgcolor=sl_status_bg, text_size=size.tiny)
+
+
+
+//---------------------------------------------------------------------------------------------------------------------
+// Automation / Webhook Payload Functions
+//---------------------------------------------------------------------------------------------------------------------
+format_json_string(value) =>
+    '"' + str.replace_all(value, '"', "") + '"'
+
+format_json_number(value) =>
+    na(value) ? "null" : str.tostring(value, format.mintick)
+
+get_active_tp_price(index) =>
+    index < array.size(active_tp_prices) ? array.get(active_tp_prices, index) : na
+
+build_webhook_payload(event_type, action, quality_score) =>
+    tp1 = get_active_tp_price(0)
+    tp2 = get_active_tp_price(1)
+    tp3 = get_active_tp_price(2)
+    tp4 = get_active_tp_price(3)
+    payload = "{"
+    payload += '"secret":' + format_json_string(webhook_secret) + ","
+    payload += '"source":"ML Trader v2.1.0",'
+    payload += '"account_tag":' + format_json_string(webhook_account_tag) + ","
+    payload += '"event":' + format_json_string(event_type) + ","
+    payload += '"action":' + format_json_string(action) + ","
+    payload += '"symbol":' + format_json_string(syminfo.ticker) + ","
+    payload += '"tickerid":' + format_json_string(syminfo.tickerid) + ","
+    payload += '"timeframe":' + format_json_string(timeframe.period) + ","
+    payload += '"bar_time":' + str.tostring(time) + ","
+    payload += '"bar_index":' + str.tostring(bar_index) + ","
+    payload += '"signal_id":' + format_json_string(active_signal_id) + ","
+    payload += '"order_type":' + format_json_string(webhook_order_type) + ","
+    payload += '"risk_percent":' + str.tostring(webhook_risk_percent, "#.##") + ","
+    payload += '"price":' + format_json_number(close) + ","
+    payload += '"entry":' + format_json_number(entry_price) + ","
+    payload += '"stop_loss":' + format_json_number(stop_loss_price) + ","
+    payload += '"tp1":' + format_json_number(tp1) + ","
+    payload += '"tp2":' + format_json_number(tp2) + ","
+    payload += '"tp3":' + format_json_number(tp3) + ","
+    payload += '"tp4":' + format_json_number(tp4) + ","
+    payload += '"quality":' + (na(quality_score) ? "null" : str.tostring(math.round(quality_score))) + ","
+    payload += '"position_side":' + format_json_string(is_bullish_position ? "long" : "short")
+    payload += "}"
+    payload
+
+send_webhook_payload(event_type, action, quality_score) =>
+    if enable_webhook_alerts
+        payload = build_webhook_payload(event_type, action, quality_score)
+        if send_webhook_on_bar_close
+            alert(payload, alert.freq_once_per_bar_close)
+        else
+            alert(payload, alert.freq_once_per_bar)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Main TP Logic Integration
+//---------------------------------------------------------------------------------------------------------------------
+current_buy_signal = final_strong_buy or final_buy
+current_sell_signal = final_strong_sell or final_sell
+signal_execution_ready = not enable_webhook_alerts or not send_webhook_on_bar_close or barstate.isconfirmed
+
+if show_fib_tp
+    if current_buy_signal and not current_buy_signal[1] and signal_execution_ready
+        signal_type = 1
+        if should_calculate_tp_new_logic(signal_type, close) or not tp_calculated
+            detected_swing_low = detect_swing_low(fib_lookback)
+            
+            if not na(detected_swing_low)
+                if has_open_trade_to_replace()
+                    send_webhook_payload("SIGNAL_REPLACED", "CANCEL_REPLACE", active_trade_quality_score)
+                clear_active_tps()
+                entry_price := close
+                swing_low := detected_swing_low
+                signal_bar := bar_index
+                signal_time := time
+                active_signal_id := build_signal_id("BUY")
+                is_bullish_position := true
+                tp_calculated := true
+                quality_trade_outcome_recorded := false
+                active_trade_quality_score := buy_quality_score
+                active_trade_status := "Active"
+                active_sl_hit := false
+                
+                // Calculate stop loss
+                stop_loss_price := calculate_stop_loss(entry_price, true, swing_low)
+                if sl_method == "Order Block"
+                    stop_loss_price := calculate_order_block_stop_loss(entry_price, true)
+                if na(stop_loss_price) or stop_loss_price <= 0
+                    fallback_sl_distance = atr_dynamic * sl_atr_multiplier
+                    stop_loss_price := is_bullish_position ? entry_price - fallback_sl_distance : entry_price + fallback_sl_distance
+                
+                tp_levels = calculate_adaptive_tp_levels(true, entry_price, swing_low, atr_dynamic)
+                draw_enhanced_tp_levels(tp_levels, true, signal_time)
+                
+                // Draw stop loss for bullish position
+                if show_stop_loss and not na(stop_loss_price)
+                    if not na(active_sl_line)
+                        line.delete(active_sl_line)
+                    if not na(active_sl_label)
+                        label.delete(active_sl_label)
+                    
+                    sl_left_time = na(signal_time) ? time : signal_time
+                    sl_right_time = projected_visual_time(level_projection_bars)
+                    active_sl_line := line.new(sl_left_time, stop_loss_price, sl_right_time, stop_loss_price, color=sl_color, style=line.style_dashed, width=2, extend=extend.none, xloc=xloc.bar_time)
+                    
+                    sl_distance = math.abs(stop_loss_price - entry_price)
+                    distance_atr = sl_distance / safe_denominator(atr_dynamic)
+                    sl_label_text = "SL [" + str.tostring(distance_atr, "#.#") + "ATR]"
+                    active_sl_label := label.new(sl_right_time, stop_loss_price, sl_label_text, color=color.new(sl_color, 20), textcolor=color.white, style=label.style_label_left, size=size.tiny, xloc=xloc.bar_time)
+                
+                send_webhook_payload("ENTRY", "BUY", buy_quality_score)
+    
+    if current_sell_signal and not current_sell_signal[1] and signal_execution_ready
+        signal_type = -1
+        if should_calculate_tp_new_logic(signal_type, close) or not tp_calculated
+            detected_swing_high = detect_swing_high(fib_lookback)
+            
+            if not na(detected_swing_high)
+                if has_open_trade_to_replace()
+                    send_webhook_payload("SIGNAL_REPLACED", "CANCEL_REPLACE", active_trade_quality_score)
+                clear_active_tps()
+                entry_price := close
+                swing_high := detected_swing_high
+                signal_bar := bar_index
+                signal_time := time
+                active_signal_id := build_signal_id("SELL")
+                is_bullish_position := false
+                tp_calculated := true
+                quality_trade_outcome_recorded := false
+                active_trade_quality_score := sell_quality_score
+                active_trade_status := "Active"
+                active_sl_hit := false
+                
+                // Calculate stop loss
+                stop_loss_price := calculate_stop_loss(entry_price, false, swing_high)
+                if sl_method == "Order Block"
+                    stop_loss_price := calculate_order_block_stop_loss(entry_price, false)
+                if na(stop_loss_price) or stop_loss_price <= 0
+                    fallback_sl_distance = atr_dynamic * sl_atr_multiplier
+                    stop_loss_price := is_bullish_position ? entry_price - fallback_sl_distance : entry_price + fallback_sl_distance
+                
+                tp_levels = calculate_adaptive_tp_levels(false, entry_price, swing_high, atr_dynamic)
+                draw_enhanced_tp_levels(tp_levels, false, signal_time)
+                
+                // Draw stop loss for bearish position
+                if show_stop_loss and not na(stop_loss_price)
+                    if not na(active_sl_line)
+                        line.delete(active_sl_line)
+                    if not na(active_sl_label)
+                        label.delete(active_sl_label)
+                    
+                    sl_left_time = na(signal_time) ? time : signal_time
+                    sl_right_time = projected_visual_time(level_projection_bars)
+                    active_sl_line := line.new(sl_left_time, stop_loss_price, sl_right_time, stop_loss_price, color=sl_color, style=line.style_dashed, width=2, extend=extend.none, xloc=xloc.bar_time)
+                    
+                    sl_distance = math.abs(stop_loss_price - entry_price)
+                    distance_atr = sl_distance / safe_denominator(atr_dynamic)
+                    sl_label_text = "SL [" + str.tostring(distance_atr, "#.#") + "ATR]"
+                    active_sl_label := label.new(sl_right_time, stop_loss_price, sl_label_text, color=color.new(sl_color, 20), textcolor=color.white, style=label.style_label_left, size=size.tiny, xloc=xloc.bar_time)
+                
+                send_webhook_payload("ENTRY", "SELL", sell_quality_score)
+        
+if tp_calculated
+    update_active_trade_visuals()
+    
+    if active_trade_status != "Completed" and not quality_trade_outcome_recorded and not na(entry_price) and not na(signal_bar) and bar_index > signal_bar
+        sl_hit = show_stop_loss and not na(stop_loss_price) and (is_bullish_position ? low <= stop_loss_price : high >= stop_loss_price)
+        
+        if sl_hit
+            active_sl_hit := true
+            active_trade_status := any_active_tp_hit() ? "Partial Stop" : "Stopped"
+            send_webhook_payload("SL_HIT", "CLOSE", active_trade_quality_score)
+            quality_loss_streak += 1
+            quality_trade_outcome_recorded := true
+        else
+            tp_hit = update_tp_hit_status(is_bullish_position ? high : low, is_bullish_position)
+            trade_completed = all_active_tps_hit()
+            if tp_hit
+                active_trade_status := trade_completed ? "Completed" : "TP Hit"
+                send_webhook_payload("TP_HIT", trade_completed ? "CLOSE" : "PARTIAL_CLOSE", active_trade_quality_score)
+                quality_loss_streak := 0
+                quality_trade_outcome_recorded := trade_completed
+
+//---------------------------------------------------------------------------------------------------------------------
+//Order Block Processing
+//---------------------------------------------------------------------------------------------------------------------
+if show_current_tf_ob and bullVolCondition and bar_index - lastBullishBlock >= minBlockSeparation and bullishVolatilityArray.size() < maxBlocksPerDirection
+    [bullishStrength, bearishStrength] = calculateStrengths(open[1], high[1], low[1], close[1], volume[1])
+    bullQuality = calculate_ob_quality(high[1], low[1], volume[1], bullishStrength, bearishStrength, "bullish")
+    newBull = volatilityBlock.new(time[1], high[1], low[1], volume[1], na, "bull", bullishStrength, bearishStrength, na, na, na, bar_index - 1, bullQuality, "Fresh", 0, 0.0)
+    if (not enable_ob_intelligence or bullQuality >= min_ob_quality_score) and not isOverlapping(newBull, bullishVolatilityArray)
+        bullishVolatilityArray.push(newBull)
+        lastBullishBlock := bar_index
+        drawBox(newBull, bullishVolatilityArray)
+
+if show_current_tf_ob and bearVolCondition and bar_index - lastBearishBlock >= minBlockSeparation and bearishVolatilityArray.size() < maxBlocksPerDirection
+    [bullishStrength, bearishStrength] = calculateStrengths(open[1], high[1], low[1], close[1], volume[1])
+    bearQuality = calculate_ob_quality(high[1], low[1], volume[1], bullishStrength, bearishStrength, "bearish")
+    newBear = volatilityBlock.new(time[1], high[1], low[1], volume[1], na, "bear", bullishStrength, bearishStrength, na, na, na, bar_index - 1, bearQuality, "Fresh", 0, 0.0)
+    if (not enable_ob_intelligence or bearQuality >= min_ob_quality_score) and not isOverlapping(newBear, bearishVolatilityArray)
+        bearishVolatilityArray.push(newBear)
+        lastBearishBlock := bar_index
+        drawBox(newBear, bearishVolatilityArray)
+
+// Update current timeframe order blocks
+if show_current_tf_ob and bullishVolatilityArray.size() > 0
+    int counter = 0
+    mitigationVal = mitigationMethod == "Close" ? close : low
+    for i = bullishVolatilityArray.size() - 1 to 0
+        volBlock = array.get(bullishVolatilityArray, i)
+        if counter < showLastBlocks
+            if mitigationVal < volBlock.bottom
+                box.delete(volBlock.block)
+                box.delete(volBlock.bullishBox)
+                box.delete(volBlock.bearishBox)
+                if not na(volBlock.volumeLabel)
+                    label.delete(volBlock.volumeLabel)
+                bullishVolatilityArray.remove(i)
+                break
+            volBlock.block.set_right(time)
+            totalStr = volBlock.bullishStr + volBlock.bearishStr
+            if totalStr > 0
+                bullishBoxWidth = (volBlock.bullishStr / totalStr) * (time - volBlock.barStart)
+                bearishBoxWidth = (volBlock.bearishStr / totalStr) * (time - volBlock.barStart)
+                volBlock.bullishBox.set_right(math.round(volBlock.barStart + bullishBoxWidth))
+                volBlock.bearishBox.set_right(math.round(volBlock.barStart + bearishBoxWidth))
+            block_range = safe_denominator(volBlock.top - volBlock.bottom)
+            touch_depth = mitigationVal < volBlock.top ? ((volBlock.top - math.max(mitigationVal, volBlock.bottom)) / block_range) * 100.0 : 0.0
+            volBlock.mitigationPct := math.max(volBlock.mitigationPct, math.min(100.0, touch_depth))
+            if volBlock.retests > 0
+                volBlock.state := "Reacted"
+            else
+                volBlock.state := volBlock.mitigationPct > 0 ? "Touched" : "Fresh"
+            array.set(bullishVolatilityArray, i, volBlock)
+            updateVolumeLabel(volBlock, bullishVolatilityArray, i)
+            counter := counter + 1
+        else 
+            box.delete(volBlock.block)
+            box.delete(volBlock.bullishBox)
+            box.delete(volBlock.bearishBox)
+            if not na(volBlock.volumeLabel)
+                label.delete(volBlock.volumeLabel)
+            bullishVolatilityArray.remove(i)
+
+if show_current_tf_ob and bearishVolatilityArray.size() > 0
+    int counter = 0
+    mitigationVal = mitigationMethod == "Close" ? close : high
+    for i = bearishVolatilityArray.size() - 1 to 0
+        volBlock = array.get(bearishVolatilityArray, i)
+        if counter < showLastBlocks
+            if mitigationVal > volBlock.top
+                box.delete(volBlock.block)
+                box.delete(volBlock.bullishBox)
+                box.delete(volBlock.bearishBox)
+                if not na(volBlock.volumeLabel)
+                    label.delete(volBlock.volumeLabel)
+                bearishVolatilityArray.remove(i)
+                break
+            volBlock.block.set_right(time)
+            totalStr = volBlock.bullishStr + volBlock.bearishStr
+            if totalStr > 0
+                bullishBoxWidth = (volBlock.bullishStr / totalStr) * (time - volBlock.barStart)
+                bearishBoxWidth = (volBlock.bearishStr / totalStr) * (time - volBlock.barStart)
+                volBlock.bullishBox.set_right(math.round(volBlock.barStart + bullishBoxWidth))
+                volBlock.bearishBox.set_right(math.round(volBlock.barStart + bearishBoxWidth))
+            block_range = safe_denominator(volBlock.top - volBlock.bottom)
+            touch_depth = mitigationVal > volBlock.bottom ? ((math.min(mitigationVal, volBlock.top) - volBlock.bottom) / block_range) * 100.0 : 0.0
+            volBlock.mitigationPct := math.max(volBlock.mitigationPct, math.min(100.0, touch_depth))
+            if volBlock.retests > 0
+                volBlock.state := "Reacted"
+            else
+                volBlock.state := volBlock.mitigationPct > 0 ? "Touched" : "Fresh"
+            array.set(bearishVolatilityArray, i, volBlock)
+            updateVolumeLabel(volBlock, bearishVolatilityArray, i)
+            counter := counter + 1
+        else 
+            box.delete(volBlock.block)
+            box.delete(volBlock.bullishBox)
+            box.delete(volBlock.bearishBox)
+            if not na(volBlock.volumeLabel)
+                label.delete(volBlock.volumeLabel)
+            bearishVolatilityArray.remove(i)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Advanced Order Block Retest Detection with Volume Analysis
+//---------------------------------------------------------------------------------------------------------------------
+// Directional retest state tracking
+var array<bool> bull_block_being_tested = array.new<bool>()
+var array<int> bull_last_touch_bar = array.new<int>()
+var array<bool> bear_block_being_tested = array.new<bool>()
+var array<int> bear_last_touch_bar = array.new<int>()
+
+initialize_directional_retest_state(testing_array, touch_bar_array) =>
+    if array.size(testing_array) < 5 or array.size(touch_bar_array) < 5 or barstate.isfirst
+        array.clear(testing_array)
+        array.clear(touch_bar_array)
+        for i = 0 to 4
+            array.push(testing_array, false)
+            array.push(touch_bar_array, 0)
+
+
+
+// Order Block Strength Scoring System (0-100)
+calculate_block_strength(block, block_age, block_type) =>
+    float strength_score = 0.0
+    
+    // Volume component (40% weight)
+    volume_percentile = block.vol / safe_denominator(avg_volume)
+    volume_score = math.min(100, volume_percentile * 50)
+    
+    // Size component (25% weight)
+    block_size = block.top - block.bottom
+    size_atr_ratio = block_size / safe_denominator(atr_dynamic)
+    size_score = math.min(100, size_atr_ratio * 50)
+    
+    // Age component (20% weight)
+    age_score = math.max(0, 100 - (block_age * 2))
+    
+    // Momentum component (15% weight)
+    total_strength = safe_denominator(block.bullishStr + block.bearishStr)
+    momentum_score = block_type == "bullish" ? (block.bullishStr / total_strength) * 100 : (block.bearishStr / total_strength) * 100
+    
+    // Weighted calculation
+    strength_score := (volume_score * 0.4) + (size_score * 0.25) + (age_score * 0.2) + (momentum_score * 0.15)
+    strength_score
+
+volume_confirmation_score(block_type) =>
+    float score = 0.0
+    
+    // Volume increase requirement
+    volume_increase = volume > avg_volume * 1.2
+    
+    // Volume trend analysis
+    volume_trend = ta.rising(volume, 3)
+    
+    // Volume-price relationship
+    price_volume_aligned = block_type == "bullish" ? 
+                          (close > close[1] and volume > volume[1]) or (close < close[1] and volume < volume[1]) :
+                          (close < close[1] and volume > volume[1]) or (close > close[1] and volume < volume[1])
+    
+    if volume_increase and volume_trend
+        score := 80.0
+    else if volume_increase
+        score := 60.0
+    else if price_volume_aligned
+        score := 40.0
+    else
+        score := 20.0
+    
+    score
+
+// Enhanced MLMA Trend Alignment Scoring
+mlma_trend_score(block_type) =>
+    float score = 0.0
+    
+    // Check if MLMA trend aligns with retest direction
+    trend_aligned = block_type == "bullish" ? os_final == 1 : os_final == 0
+    
+    if trend_aligned
+        // Perfect trend alignment
+        score := 100.0
+    else
+        // Counter-trend retest - lower score but still possible
+        score := 30.0
+    
+    // Bonus for MLMA cloud context
+    if block_type == "bullish"
+        if close >= mlma_lower_final and close <= mlma_upper_final
+            score := score + 10.0  // Within MLMA cloud
+    else
+        if close >= mlma_lower_final and close <= mlma_upper_final
+            score := score + 10.0  // Within MLMA cloud
+    
+    math.min(100.0, score)
+
+// Volatility Regime Scoring
+volatility_regime_score() =>
+    float score = 0.0
+    
+    // Calculate volatility ratio
+    volatility_ratio = safe_denominator(atr_dynamic) / safe_denominator(avg_atr)
+    
+    // Score based on volatility regime
+    if volatility_ratio > 1.5
+        // High volatility - good for momentum trades
+        score := 80.0
+    else if volatility_ratio < 0.5
+        // Low volatility - good for range trades
+        score := 60.0
+    else
+        // Normal volatility - balanced
+        score := 70.0
+    
+    score
+
+has_clean_retest_departure(block, block_type, block_age) =>
+    bool moved_away = false
+    bars_to_scan = math.min(retestLookbackBars, block_age)
+    if block_age >= retestMinBars and bars_to_scan > 1
+        for j = 1 to bars_to_scan
+            if j <= bar_index
+                if block_type == "bullish"
+                    if high[j] >= block.top + atr_dynamic * retestPriceMovement and close[j] > block.top
+                        moved_away := true
+                        break
+                else
+                    if low[j] <= block.bottom - atr_dynamic * retestPriceMovement and close[j] < block.bottom
+                        moved_away := true
+                        break
+    moved_away
+
+// Enhanced Retest Confidence Calculation
+calculate_enhanced_retest_confidence(block, block_type, block_index) =>
+    float confidence_score = 0.0
+    
+    // Calculate individual component scores
+    volume_score = volume_confirmation_score(block_type)
+    mlma_score = mlma_trend_score(block_type)
+    volatility_score = volatility_regime_score()
+    block_age = bar_index - block.creationIndex
+    strength_score = enable_ob_intelligence ? block.quality : calculate_block_strength(block, block_age, block_type)
+    
+    // Apply weights based on retest mode
+    if retestMode == "Volume-Based"
+        // Traditional volume-based scoring
+        confidence_score := (volume_score * 0.4) + (strength_score * 0.6)
+    else if retestMode == "Trend-Aligned"
+        // MLMA and volatility focused
+        confidence_score := (mlma_score * retestMlmaWeight) + 
+                           (volatility_score * retestVolatilityWeight) + 
+                           (strength_score * retestStrengthWeight) + 
+                           (volume_score * retestVolumeWeight)
+    else  // Hybrid mode
+        // Balanced approach
+        confidence_score := (mlma_score * 0.25) + 
+                           (volatility_score * 0.20) + 
+                           (strength_score * 0.30) + 
+                           (volume_score * 0.25)
+    
+    retest_penalty = enable_ob_intelligence ? math.min(25.0, block.retests * 8.0) : 0.0
+    math.max(0.0, math.min(100.0, confidence_score - retest_penalty))
+
+// Intelligent Retest Detection Function
+is_intelligent_retest(block, block_index, block_type, block_being_tested_array, last_touch_bar_array) =>
+    bool valid_retest = false
+    float confidence_score = 0.0
+    
+    tolerance = atr_dynamic * retestTolerance
+    block_age = bar_index - block.creationIndex
+    touching_block = high >= block.bottom - tolerance and low <= block.top + tolerance
+    block_not_broken = block_type == "bullish" ? close >= block.bottom - tolerance : close <= block.top + tolerance
+    
+    if touching_block and block_not_broken
+        // Check if this is a new retest (not currently being tested)
+        currently_testing = array.get(block_being_tested_array, block_index)
+        last_touch = array.get(last_touch_bar_array, block_index)
+        
+        clean_departure = has_clean_retest_departure(block, block_type, block_age)
+        enough_bars_since_touch = last_touch == 0 or bar_index - last_touch > retestMinBars
+        
+        if currently_testing
+            // Already testing this block - don't show another signal
+            valid_retest := false
+        
+        // Additional filters for quality based on retest mode
+        volume_ok = volume > avg_volume * retestVolumeThreshold  // User-controlled volume threshold
+        strength_ok = enable_ob_intelligence ? block.quality > retestStrengthThreshold : calculate_block_strength(block, block_age, block_type) > retestStrengthThreshold
+        retest_count_ok = block.retests < retestMaxCount  // User-controlled max retests per block
+        block_range = safe_denominator(block.top - block.bottom)
+        reaction_ok = block_type == "bullish" ? close >= block.bottom and close >= low + block_range * 0.15 : close <= block.top and close <= high - block_range * 0.15
+        
+        // Trend alignment filter for Trend-Aligned mode
+        trend_ok = true
+        if retestMode == "Trend-Aligned" and retestTrendAlignment
+            trend_ok = block_type == "bullish" ? os_final == 1 : os_final == 0
+        
+        // Volatility regime filter
+        volatility_ok = true
+        if retestMode == "Trend-Aligned" and retestVolatilityRegime
+            volatility_ratio = safe_denominator(atr_dynamic) / safe_denominator(avg_atr)
+            volatility_ok = volatility_ratio > 0.3 and volatility_ratio < 3.0  // Reasonable volatility range
+        
+        if (not currently_testing and clean_departure and enough_bars_since_touch) and volume_ok and strength_ok and retest_count_ok and trend_ok and volatility_ok and reaction_ok
+            // Calculate enhanced confidence score
+            confidence_score := calculate_enhanced_retest_confidence(block, block_type, block_index)
+            
+            // Apply advanced signal filtering
+            [advanced_valid, advanced_confidence] = is_advanced_signal_valid(block, block_type, confidence_score)
+            
+            if advanced_valid
+                valid_retest := true
+                confidence_score := advanced_confidence
+                
+                // Update testing state - mark as currently being tested
+                array.set(block_being_tested_array, block_index, true)
+                array.set(last_touch_bar_array, block_index, bar_index)
+    
+    [valid_retest, confidence_score]
+
+initialize_directional_retest_state(bull_block_being_tested, bull_last_touch_bar)
+initialize_directional_retest_state(bear_block_being_tested, bear_last_touch_bar)
+
+// Main retest detection logic
+retest_detected = false
+retest_block_type = ""
+retest_color = color.white
+retest_confidence = 0.0
+
+// Initialize and update advanced signal filtering system
+if barstate.isfirst
+    // Initialize arrays for advanced filtering
+    array.clear(signal_timestamps)
+    array.clear(signal_prices)
+    array.clear(signal_confidences)
+    array.clear(historical_performance)
+    array.clear(regime_thresholds)
+
+// Detect current market regime
+current_market_regime = detect_market_regime()
+current_regime := current_market_regime
+
+// Check bullish order blocks for retests
+if show_current_tf_ob and bullishVolatilityArray.size() > 0
+    for i = 0 to math.min(4, bullishVolatilityArray.size() - 1)
+        bull_actual_index = bullishVolatilityArray.size() - 1 - i
+        block = array.get(bullishVolatilityArray, bull_actual_index)
+        
+        [valid_retest, confidence] = is_intelligent_retest(block, i, "bullish", bull_block_being_tested, bull_last_touch_bar)
+        
+        if valid_retest and confidence > retest_confidence
+            retest_detected := true
+            retest_block_type := "bullish"
+            retest_color := upColor
+            retest_confidence := confidence
+            
+            // Update tracking
+            block.retests := block.retests + 1
+            block.state := "Reacted"
+            array.set(bullishVolatilityArray, bull_actual_index, block)
+            break
+
+// Check bearish order blocks for retests
+if show_current_tf_ob and bearishVolatilityArray.size() > 0 and not retest_detected
+    for i = 0 to math.min(4, bearishVolatilityArray.size() - 1)
+        bear_actual_index = bearishVolatilityArray.size() - 1 - i
+        block = array.get(bearishVolatilityArray, bear_actual_index)
+        
+        [valid_retest, confidence] = is_intelligent_retest(block, i, "bearish", bear_block_being_tested, bear_last_touch_bar)
+        
+        if valid_retest and confidence > retest_confidence
+            retest_detected := true
+            retest_block_type := "bearish"
+            retest_color := downColor
+            retest_confidence := confidence
+            
+            // Update tracking
+            block.retests := block.retests + 1
+            block.state := "Reacted"
+            array.set(bearishVolatilityArray, bear_actual_index, block)
+            break
+
+// Reset retest states when price moves far away
+if not retest_detected
+    for i = 0 to 4
+        if array.size(bullishVolatilityArray) > i
+            block = array.get(bullishVolatilityArray, bullishVolatilityArray.size() - 1 - i)
+            if close > block.top + atr_dynamic * retestResetDistance
+                array.set(bull_block_being_tested, i, false)
+        
+        if array.size(bearishVolatilityArray) > i
+            block = array.get(bearishVolatilityArray, bearishVolatilityArray.size() - 1 - i)
+            if close < block.bottom - atr_dynamic * retestResetDistance
+                array.set(bear_block_being_tested, i, false)
+
+// Performance tracking for Bayesian threshold updates
+if retest_detected and enable_regime_adaptation
+    // Track signal performance (simplified: assume success if price moves in expected direction)
+    signal_success = false
+    if retest_block_type == "bullish"
+        signal_success = close > close[1] and close > close[5]  // Price moves up over 5 bars
+    else if retest_block_type == "bearish"
+        signal_success = close < close[1] and close < close[5]  // Price moves down over 5 bars
+    
+    // Update Bayesian thresholds
+    update_bayesian_thresholds(retest_confidence, signal_success)
+
+// Display advanced "R" retest signal with confidence
+if retest_detected and show_current_tf_ob and showRetestSignals
+    // Determine if strong or weak retest
+    is_strong_retest = retest_confidence > 70
+    
+    // Check if this retest type should be displayed
+    should_show_strong = is_strong_retest and showStrongRetest
+    should_show_weak = not is_strong_retest and showWeakRetest
+    
+    if enable_all_plotting and show_retest_signals and (should_show_strong or should_show_weak)
+        // Declare all variables first
+        label_position = retest_block_type == "bullish" ? low : high
+        label_style = retest_block_type == "bullish" ? label.style_label_up : label.style_label_down
+        label_yloc = retest_block_type == "bullish" ? yloc.belowbar : yloc.abovebar
+        
+        // Base colors for bullish/bearish
+        bullish_strong_color = color.new(color.blue, 30)
+        bullish_regular_color = color.new(#0493CF, 25)
+        bearish_strong_color = color.new(color.maroon, 0)
+        bearish_regular_color = color.new(#ff4444, 20)
+        
+        // Calculate confidence color based on strength and direction
+        confidence_color = if is_strong_retest
+            if retest_block_type == "bullish"
+                bullish_strong_color // Strong bullish
+            else
+                bearish_strong_color  // Strong bearish
+        else
+            if retest_block_type == "bullish"
+                bullish_regular_color  // Weak bullish
+            else
+                bearish_regular_color  // Weak bearish
+        
+        // Build label text
+        label_text = "R"
+        
+        // Add percentage if enabled
+        if showRetestPercentage
+            label_text := label_text + " " + str.tostring(math.round(retest_confidence)) + "%"
+        
+        // No S/W indicators - just "R" for all retests
+        
+        label.new(bar_index, label_position, label_text, 
+                  yloc=label_yloc, 
+                  color=confidence_color, 
+                  style=label_style, 
+                  size=size.tiny, 
+                  textcolor=color.white)
+        
+
+    
+    // End of nested if statement for retest display
+
+
+
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced MLMA Visualization
+//---------------------------------------------------------------------------------------------------------------------
+getProximityOpacity(price, mlmaValue, bandValue) =>
+    if not enableProximityEffect
+        cloudIntensity
+    else
+        bandDistance = math.abs(bandValue - mlmaValue)
+        priceDistance = math.abs(price - mlmaValue)
+        if bandDistance > 0
+            proximityFactor = 1 - (priceDistance / bandDistance)
+            proximityFactor := math.max(0.2, math.min(1.0, proximityFactor))
+            cloudIntensity * proximityFactor
+        else
+            cloudIntensity
+
+getTrendColors(trendDirection, baseColor, price, mlmaValue, bandValue) =>
+    opacity = getProximityOpacity(price, mlmaValue, bandValue)
+    opacityPercent = math.round(opacity * 100)
+    if enableGradient
+        primaryColor = color.new(baseColor, 100 - opacityPercent)
+        secondaryColor = color.new(baseColor, 100 - math.round(opacityPercent * 0.6))
+        trendDirection == 1 ? primaryColor : secondaryColor
+    else
+        color.new(baseColor, 100 - opacityPercent)
+
+trendDirection = os_final == 1 ? 1 : -1
+currentTrendColor = trendDirection == 1 ? bullCss : bearCss
+
+plot_mlma = plot(enable_all_plotting and show_mlma_line ? mlma_out_final : na, 'MLMA', color = currentTrendColor, linewidth = 2)
+plot(enable_all_plotting and show_mlma_signals and os_final != os_final[1] ? mlma_out_final : na, 'MLMA Signal', currentTrendColor, 4, plot.style_circles)
+
+upper_plot = plot(enable_all_plotting and show_mlma_upper_lower ? mlma_upper_final : na, 'MLMA Upper', color = color.new(currentTrendColor, 85), linewidth = 1, style = plot.style_line)
+lower_plot = plot(enable_all_plotting and show_mlma_upper_lower ? mlma_lower_final : na, 'MLMA Lower', color = color.new(currentTrendColor, 85), linewidth = 1, style = plot.style_line)
+
+// MLMA Cloud - Plot independently using separate plot objects
+upper_plot_cloud = plot(enable_all_plotting and show_mlma_cloud ? mlma_upper_final : na, 'MLMA Upper Cloud', color = color.new(color.white, 100), linewidth = 1, style = plot.style_line, display = display.none)
+lower_plot_cloud = plot(enable_all_plotting and show_mlma_cloud ? mlma_lower_final : na, 'MLMA Lower Cloud', color = color.new(color.white, 100), linewidth = 1, style = plot.style_line, display = display.none)
+
+price_plot = plot(close, 'Price Reference', color = color.new(color.white, 100), display = display.none)
+
+bullPrimary = getTrendColors(1, #4CAF50, close, mlma_out_final, mlma_lower_final)
+bearPrimary = getTrendColors(-1, #FF7043, close, mlma_out_final, mlma_upper_final)
+
+// Cloud colors - independent of band visibility
+bullishSupportColor = (trendDirection == 1 and close > mlma_lower_final and showCloudFills and show_mlma_cloud) ? bullPrimary : color.new(color.white, 100)
+bearishResistanceColor = (trendDirection == -1 and close < mlma_upper_final and showCloudFills and show_mlma_cloud) ? bearPrimary : color.new(color.white, 100)
+
+// Cloud fills using separate cloud plot objects
+fill(price_plot, lower_plot_cloud, color = bullishSupportColor, title = "Bullish Support Cloud")
+fill(upper_plot_cloud, price_plot, color = bearishResistanceColor, title = "Bearish Resistance Cloud")
+
+//---------------------------------------------------------------------------------------------------------------------
+//Trading Signal Plots
+//---------------------------------------------------------------------------------------------------------------------
+plot(enable_all_plotting and show_primary_envelopes ? smooth1 : na, color=color.new(primary_color, 0), title="Primary Upper Envelope", linewidth=2)
+plot(enable_all_plotting and show_primary_envelopes ? smooth21 : na, color=color.new(primary_color, 0), title="Primary Lower Envelope", linewidth=2)
+
+plot(enable_all_plotting and show_secondary_envelopes and enable_dual_length ? smooth2 : na, color=color.new(secondary_color, 0), title="Secondary Upper Envelope", linewidth=1)
+plot(enable_all_plotting and show_secondary_envelopes and enable_dual_length ? smooth22 : na, color=color.new(secondary_color, 0), title="Secondary Lower Envelope", linewidth=1)
+
+plot(enable_all_plotting and show_wedge_patterns and wedge_condition1 ? smooth1 : na, style=plot.style_linebr, linewidth=3, color=color.new(color.purple, 0), title="Primary Upper Wedge")
+plot(enable_all_plotting and show_wedge_patterns and wedge_condition1 ? smooth21 : na, style=plot.style_linebr, linewidth=3, color=color.new(color.purple, 0), title="Primary Lower Wedge")
+plot(enable_all_plotting and show_range_contraction and falling_range1 ? close : na, style=plot.style_linebr, linewidth=3, color=color.new(color.yellow, 0), title="Primary Range Contraction")
+
+plot(enable_all_plotting and show_wedge_patterns and enable_dual_length and wedge_condition2 ? smooth2 : na, style=plot.style_linebr, linewidth=2, color=color.new(color.purple, 50), title="Secondary Upper Wedge")
+plot(enable_all_plotting and show_wedge_patterns and enable_dual_length and wedge_condition2 ? smooth22 : na, style=plot.style_linebr, linewidth=2, color=color.new(color.purple, 50), title="Secondary Lower Wedge")
+plot(enable_all_plotting and show_range_contraction and enable_dual_length and falling_range2 ? close : na, style=plot.style_linebr, linewidth=2, color=color.new(color.yellow, 50), title="Secondary Range Contraction")
+
+//---------------------------------------------------------------------------------------------------------------------
+//Bar Coloring Based on ML MA
+//---------------------------------------------------------------------------------------------------------------------
+ml_bar_color = trendDirection == 1 ? green : red
+barcolor(show_bar_colors ? ml_bar_color : na, title="ML MA Trend Bar Colors")
+
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced Signal Display and Labels
+//---------------------------------------------------------------------------------------------------------------------
+get_signal_suffix(is_buy_signal) =>
+    suffix = ""
+    if enable_dual_length and signal_consensus == "Independent"
+        if is_buy_signal
+            if (strong_buy1 or buy_signal1) and (strong_buy2 or buy_signal2)
+                suffix := ""
+            else if strong_buy1 or buy_signal1
+                suffix := " (L" + str.tostring(len1) + ")"
+            else if strong_buy2 or buy_signal2
+                suffix := " (L" + str.tostring(len2) + ")"
+        else
+            if (strong_sell1 or sell_signal1) and (strong_sell2 or sell_signal2)
+                suffix := ""
+            else if strong_sell1 or sell_signal1
+                suffix := " (L" + str.tostring(len1) + ")"
+            else if strong_sell2 or sell_signal2
+                suffix := " (L" + str.tostring(len2) + ")"
+    else if enable_dual_length and signal_consensus == "Consensus"
+        suffix := " (CONSENSUS)"
+    else if enable_dual_length and signal_consensus == "Primary Priority"
+        suffix := " (L" + str.tostring(len1) + ")"
+    suffix
+
+buy_quality_label = show_signal_quality_on_labels and not na(buy_quality_score) ? " Q" + str.tostring(math.round(buy_quality_score)) : ""
+sell_quality_label = show_signal_quality_on_labels and not na(sell_quality_score) ? " Q" + str.tostring(math.round(sell_quality_score)) : ""
+
+// Compact BOTH markers for overlapping primary/secondary signals
+plotshape(enable_all_plotting and is_both_buy_signal, title="BOTH Buy Signal Marker", style=shape.diamond, location=location.belowbar, color=color.new(color.purple, 0), size=size.tiny)
+plotshape(enable_all_plotting and is_both_sell_signal, title="BOTH Sell Signal Marker", style=shape.diamond, location=location.abovebar, color=color.new(color.purple, 0), size=size.tiny)
+plotshape(enable_all_plotting and show_rejected_quality_signals and rejected_buy_quality_signal, title="Rejected Buy Quality Signal", text="NO", style=shape.xcross, location=location.belowbar, color=color.new(color.gray, 0), textcolor=color.white, size=size.tiny)
+plotshape(enable_all_plotting and show_rejected_quality_signals and rejected_sell_quality_signal, title="Rejected Sell Quality Signal", text="NO", style=shape.xcross, location=location.abovebar, color=color.new(color.gray, 0), textcolor=color.white, size=size.tiny)
+
+// Enhanced Trading Signal Labels with validation
+if enable_all_plotting and show_trading_signal_labels and show_signals and final_strong_buy
+    label_text = "▲+" + get_signal_suffix(false) + buy_quality_label
+    label_color = should_calculate_tp_new_logic(1, close) ? color.new(color.blue, 30) : color.new(#0493CF, 55)
+    label.new(bar_index, low, label_text, yloc=yloc.belowbar, color=label_color, style=label.style_label_up, size=size.tiny, textcolor=color.white)
+
+if enable_all_plotting and show_trading_signal_labels and show_signals and final_buy and not final_strong_buy
+    label_text = "▲" + get_signal_suffix(false) + buy_quality_label
+    label_color = should_calculate_tp_new_logic(1, close) ? color.new(#0493CF, 20) : color.new(#0493CF, 65)
+    label.new(bar_index, low, label_text, yloc=yloc.belowbar, color=label_color, style=label.style_label_up, size=size.tiny, textcolor=color.white)
+
+if enable_all_plotting and show_trading_signal_labels and show_signals and final_strong_sell
+    label_text = "▼+" + get_signal_suffix(true) + sell_quality_label
+    label_color = should_calculate_tp_new_logic(-1, close) ? color.new(color.maroon, 0) : color.new(#7f1d1d, 55)
+    label.new(bar_index, high, label_text, yloc=yloc.abovebar, color=label_color, style=label.style_label_down, size=size.tiny, textcolor=color.white)
+
+if enable_all_plotting and show_trading_signal_labels and show_signals and final_sell and not final_strong_sell
+    label_text = "▼" + get_signal_suffix(true) + sell_quality_label
+    label_color = should_calculate_tp_new_logic(-1, close) ? color.new(color.red, 20) : color.new(#ff4444, 65)
+    label.new(bar_index, high, label_text, yloc=yloc.abovebar, color=label_color, style=label.style_label_down, size=size.tiny, textcolor=color.white)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Market Exhaustion Display
+//---------------------------------------------------------------------------------------------------------------------
+if enable_all_plotting and show_exhaustion
+    if exhaustion_signal == 1
+        label.new(bar_index, high, "⊙", yloc=yloc.abovebar, color=color.new(color.orange, 50), style=label.style_label_down, size=size.tiny, textcolor=color.white)
+    if exhaustion_signal == -1
+        label.new(bar_index, low, "⊙", yloc=yloc.belowbar, color=color.new(color.orange, 50), style=label.style_label_up, size=size.tiny, textcolor=color.white)
+
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced Fibonacci TP Visualization
+//---------------------------------------------------------------------------------------------------------------------
+// Plot entry price reference
+plot(enable_all_plotting and show_entry_reference and tp_calculated and not na(entry_price) ? entry_price : na, color=color.new(color.blue, 50), linewidth=2, style=plot.style_line, title="Entry Reference")
+
+// Plot swing reference with timeframe info
+swing_ref_color = tp_timeframe == "" ? color.green : color.orange
+plot(enable_all_plotting and show_swing_references and tp_calculated and is_bullish_position and not na(swing_low) ? swing_low : na, color=color.new(swing_ref_color, 70), linewidth=1, style=plot.style_circles, title="Swing Low Reference")
+
+plot(enable_all_plotting and show_swing_references and tp_calculated and not is_bullish_position and not na(swing_high) ? swing_high : na, color=color.new(swing_ref_color, 70), linewidth=1, style=plot.style_circles, title="Swing High Reference")
+
+//---------------------------------------------------------------------------------------------------------------------
+//Confluence Visualization (Zones and Points)
+//---------------------------------------------------------------------------------------------------------------------
+confluence_ready = barstate.islast and enable_all_plotting and show_confluence_lines and enable_confluence and tp_calculated and array.size(active_tp_prices) > 0
+
+if confluence_ready
+    clear_confluence_visuals()
+    
+    confluence_levels = math.min(array.size(active_tp_prices), max_tp_levels)
+    confluence_atr = nz(atr_dynamic, nz(atr_val, syminfo.mintick * 20))
+    zone_half_height = math.max(confluence_atr * 0.15, syminfo.mintick * 10)
+    confluence_bar_time_step = math.max(nz(time - time[1], 1), 1)
+    confluence_left_time = na(signal_time) ? time : signal_time
+    confluence_right_time = time + confluence_bar_time_step * confluence_projection_bars
+    
+    for i = 0 to confluence_levels - 1
+        confluence_price = array.get(active_tp_prices, i)
+        zone_top = confluence_price + zone_half_height
+        zone_bottom = confluence_price - zone_half_height
+        
+        zone_box = box.new(left=confluence_left_time, right=confluence_right_time, top=zone_top, bottom=zone_bottom, bgcolor=color.new(confluence_color, 88), border_color=color.new(confluence_color, 45), xloc=xloc.bar_time)
+        array.push(active_confluence_zones, zone_box)
+        
+        confluence_line = line.new(confluence_left_time, confluence_price, confluence_right_time, confluence_price, color=color.new(confluence_color, 10), style=line.style_solid, width=2, extend=extend.none, xloc=xloc.bar_time)
+        array.push(active_confluence_lines, confluence_line)
+        
+        if show_confluence_points
+            point_label = label.new(confluence_right_time, confluence_price, "C" + str.tostring(i + 1), color=color.new(confluence_color, 10), textcolor=color.white, style=label.style_label_left, size=size.tiny, xloc=xloc.bar_time)
+            array.push(active_confluence_labels, point_label)
+else if barstate.islast
+    clear_confluence_visuals()
+
+//---------------------------------------------------------------------------------------------------------------------
+//Table Updates
+//---------------------------------------------------------------------------------------------------------------------
+if barstate.islast
+    create_trend_table()
+    create_tp_table()
+
+
+
+//---------------------------------------------------------------------------------------------------------------------
+//Background Zones
+//---------------------------------------------------------------------------------------------------------------------
+// Wedge zones
+wedge_background = enable_all_plotting and show_wedge_background and (wedge_condition1 or (enable_dual_length and wedge_condition2))
+bgcolor(wedge_background ? color.new(color.purple, 95) : na, title="Enhanced Wedge Zone")
+
+//---------------------------------------------------------------------------------------------------------------------
+//Enhanced Alerts
+//---------------------------------------------------------------------------------------------------------------------
+alertcondition(final_strong_buy, title="ML Strong Buy Signal", message="Machine Learning Strong Buy Signal Detected")
+alertcondition(final_strong_sell, title="ML Strong Sell Signal", message="Machine Learning Strong Sell Signal Detected")
+alertcondition(final_buy, title="ML Buy Signal", message="Machine Learning Buy Signal Detected")
+alertcondition(final_sell, title="ML Sell Signal", message="Machine Learning Sell Signal Detected")
+alertcondition(rejected_buy_quality_signal, title="Rejected Buy Quality Signal", message="Buy signal rejected by Signal Quality Engine")
+alertcondition(rejected_sell_quality_signal, title="Rejected Sell Quality Signal", message="Sell signal rejected by Signal Quality Engine")
+alertcondition(wedge_background, title="Wedge Pattern", message="Wedge Pattern Detected")
+alertcondition(is_both_signal, title="BOTH Signal", message="BOTH Length Signal Detected")
+alertcondition(bullVolCondition, title="Bullish Order Block", message="Bullish Order Block Detected")
+alertcondition(bearVolCondition, title="Bearish Order Block", message="Bearish Order Block Detected")
+alertcondition(exhaustion_signal == 1, title="Bullish Exhaustion", message="Bullish Market Exhaustion Detected")
+alertcondition(exhaustion_signal == -1, title="Bearish Exhaustion", message="Bearish Market Exhaustion Detected")
+alertcondition(current_buy_signal and should_calculate_tp_new_logic(1, close), title="Enhanced Fib TP - Valid Buy Signal", message="Enhanced Fibonacci TP levels calculated for VALID BUY signal")
+alertcondition(current_sell_signal and should_calculate_tp_new_logic(-1, close), title="Enhanced Fib TP - Valid Sell Signal", message="Enhanced Fibonacci TP levels calculated for VALID SELL signal")
+alertcondition(current_buy_signal and not should_calculate_tp_new_logic(1, close), title="Invalid Buy Signal", message="Buy signal detected but not in valid MLMA cloud context")
+alertcondition(current_sell_signal and not should_calculate_tp_new_logic(-1, close), title="Invalid Sell Signal", message="Sell signal detected but not in valid MLMA cloud context")
+alertcondition(tp_calculated and check_tp_hits(close, is_bullish_position), title="Fibonacci TP Hit", message="Fibonacci Take Profit level reached")
+
+// New enhanced alerts
+alertcondition(tp_calculated and not na(entry_price), title="TP/SL Levels Set", message="Take Profit and Stop Loss levels have been calculated")
+alertcondition(retest_detected and showRetestSignals, title="Order Block Retest", message="Order Block Retest (R) Signal Detected")
+
+// Advanced Signal Filtering Alerts
+alertcondition(enable_adaptive_clustering and array.size(signal_timestamps) >= max_clustered_signals, title="Signal Clustering Detected", message="Maximum clustered signals reached - clustering prevention active")
+alertcondition(enable_regime_adaptation and current_regime != current_regime[1], title="Market Regime Change", message="Market regime changed - thresholds adjusted")
+alertcondition(enable_adaptive_clustering and enable_regime_adaptation, title="Advanced Filtering Active", message="Adaptive clustering and regime-aware filtering are active")
+

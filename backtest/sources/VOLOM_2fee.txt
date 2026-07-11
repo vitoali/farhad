@@ -1,0 +1,94 @@
+// This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International  
+// https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © Zeiierman {
+//@version=6
+indicator('Multi-Distribution Volume Profile (Zeiierman)', overlay = true, max_boxes_count = 500, max_bars_back = 5000)
+//}
+// ~~ Tooltips {
+var string t1  = "How each bar's volume is distributed across price levels (uniform, body/wick based, or statistical shapes)."
+var string t2  = "Number of historical bars to include when building the volume profile, counted back from the current bar."
+var string t3  = "Number of price levels (rows) used in the profile. Higher = smoother but heavier, lower = coarser."
+var string t4  = "Side of the chart where the profile is drawn (right/left as horizontal map or top/bottom as vertical map)."
+var string t5  = "Horizontal offset in bars from the last bar to where the profile is anchored. Ignored in Top/Bottom modes."
+var string t6  = "If enabled, row colors are faded using the selected metric instead of a flat, uniform color."
+var string t7  = "Metric that controls the fade/opacity of each row (volume, hits, freshness, volatility, reversals, voids, etc.)."
+var string t8  = "Per-bar decay factor for the Freshness metric. Closer to 1.000 keeps older activity visible for longer."
+var string t9  = "Relative thickness of the profile on the time axis, as a percentage of the lookback window."
+var string t10 = "Percentage of total volume used to define the central band (value area) around the POC (e.g., 68% ≈ 1σ)."
+var string t11 = "Fill color used for bullish rows that lie inside the central profile band (value area)."
+var string t12 = "Fill color used for bearish rows that lie inside the central profile band (value area)."
+var string t13 = "Base body color for bullish volume outside the central band. Gradient is applied on top if enabled."
+var string t14 = "Base body color for bearish volume outside the central band. Gradient is applied on top if enabled."
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}
+
+// ~~ Inputs {
+profileMode = input.string('Gaussian Center', 'Profile Build Mode', options = ['Range Uniform', 
+ 'Range Body Only', 'Range Wick Only', 'Midpoint Only', 'Close Price Only', 'Open Price Only', 
+ 'HL2 Center Weighted', 'Body Center Weighted', 'Recent-Weighted Volume', 'Volume Squared (Hard)', 
+ 'Up Bars Only', 'Down Bars Only', 'Linear', 'Triangular Center', 'Exponential to High', 
+ 'Cosine Centered', 'PERT', 'Gaussian Center', 'Lognormal (Right-Skew)', 'Cauchy (Heavy Tails)', 
+ 'Laplace (Sharp Center)', 'Pareto (Tail-heavy)', 'Weibull (Shape Bias)', 'Logistic (S-Curve)', 
+ 'Gumbel (Extreme Value)', 'Gamma (Right-Skew)', 'Beta (Flexible Shape)', 'Chi-Square (Right-Tail)', 
+ 'Student-t (Fat Tails)', 'F-Shape (Variance Tail)'], 
+ group = "Profile", inline="profile", tooltip=t1)
+
+barsLookbackIn = input.int(240, 'Bars Included', minval = 50, maxval = 4000, step = 20, group = "Profile", inline="profile", tooltip=t1+ "\n\n" +t2)
+levelsIn       = input.int(250, 'Price Levels', minval = 8, maxval = 250, step = 8, group = "Profile", inline="", tooltip=t3)
+
+sideChoice     = input.string('Right Side', 'Anchor Side', options = ['Right Side', 'Left Side', 'Bottom', 'Top'], group = "Profile Layout", inline="anchor", tooltip=t4)
+edgeOffsetBars = input.int(100, 'Offset (bars)', minval = 0, maxval = 150, group = "Profile Layout", inline="anchor", tooltip=t4+ "\n\n" +t5)
+
+useGradient = input.bool(true, 'Apply Gradient', group = "Style & Colors", inline="gradient", tooltip=t6)
+fadeMode    = input.string('Freshness', 'Fade Metric', options = ['Volume', 'Price Hits', 'Blended (Vol+Hits)', 
+'Freshness', 'Volatility Impact', 'Dwell Time', 'Reversal Density', 'Compression', 'Liquidity Void'], group = "Style & Colors", inline="gradient", tooltip=t7)
+freshDecay  = input.float(0.99, 'Decay', minval = 0.90, maxval = 0.999, step = 0.001, group = "Style & Colors", inline="gradient",active=fadeMode=="Freshness", tooltip=t6+ "\n\n" +t7+ "\n\n" +t8)
+thicknessPctIn  = input.float(40.0, 'Profile Thickness', minval = 5, maxval = 250, step = 1, group = "Style & Colors", inline="thickness", tooltip=t9) / 100.0
+centerBandPctIn = input.float(68.0, 'Center of Profile (%)', minval = 10, maxval = 95, step = 1, group = "Style & Colors", inline="Central", tooltip=t10)  / 100.0
+
+colBandUp = input.color(color.new(#1e88e5, 25), 'Bullish', group = "Style & Colors", inline="col", tooltip=t11)
+colBandDn = input.color(color.new(#ffb300, 25), 'Bearish', group = "Style & Colors", inline="col", tooltip=t11+ "\n\n" +t12)
+colBodyUp = input.color(color.new(#616161, 50), 'Bullish', group = "Style & Colors", inline="col1", tooltip=t13)
+colBodyDn = input.color(color.new(#cfd8dc, 55), 'Bearish', group = "Style & Colors", inline="col1", tooltip=t13+ "\n\n" +t14)
+
+anchorRight  = sideChoice == 'Right Side'
+anchorLeft   = sideChoice == 'Left Side'
+anchorBottom = sideChoice == 'Bottom'
+anchorTop    = sideChoice == 'Top'
+extendRight  = anchorRight
+extendLeft   = anchorLeft 
+
+showMap = true
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}
+
+// ~~ State {
+var float profLow = na
+var float profHigh = na
+var int profStartIdx = na
+
+// boxes for drawing
+var array<box> boxes = array.new_box()
+
+// per-row data
+var array<float> volTotal = array.new_float()
+var array<float> volUp = array.new_float()
+var array<float> volDn = array.new_float()
+var array<int> rowHits = array.new_int()
+var array<int> reversalHits = array.new_int()
+var array<float> rowVolatility = array.new_float()
+var array<float> dwellTime = array.new_float()
+var array<float> recencyScore = array.new_float()
+var array<float> compressionSc = array.new_float()
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~}
+
+// ~~ Helper {
+f_reset_arrays(rows) =>
+    if volTotal.size() != rows
+        volTotal.clear()
+        volUp.clear()
+        volDn.clear()
+        rowHits.clear()
+        reversalHits.clear()
+        rowVolatility.clear()
+        dwellTime.clear()
+        recencyScore.clear()
+   

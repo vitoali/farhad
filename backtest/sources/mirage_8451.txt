@@ -1,0 +1,110 @@
+//@version=6
+// ══════════════════════════════════════════════════════════
+// MIRAGE LIQUIDITY SWEEP PRO [WillyAlgoTrader]
+// ══════════════════════════════════════════════════════════
+// Author:  Willy | WillyAlgoTrader
+// Version: 1.3.1
+
+indicator(
+     title            = "Mirage Liquidity Sweep Pro [WillyAlgoTrader]",
+     shorttitle       = "Mirage LSP",
+     overlay          = true,
+     max_lines_count  = 500,
+     max_labels_count = 500,
+     max_boxes_count  = 500,
+     max_bars_back    = 5000)
+
+// ══════════════════════════════════════════════════════════
+// 1. CONSTANTS
+// ══════════════════════════════════════════════════════════
+GRP_MAIN    = "⚙️ Main Settings"
+GRP_CONFIRM = "🧩 Confirmation"
+GRP_FILTER  = "🔍 Filters"
+GRP_RISK    = "🛡️ Risk Management"
+GRP_LIQ     = "💧 Liquidity"
+GRP_VISUAL  = "🎨 Visual"
+GRP_DASH    = "📊 Dashboard"
+GRP_ALERT   = "🔔 Alerts"
+GRP_COLORS  = "🎨 Colors"
+
+INDICATOR_VERSION = "v1.3.1"
+MAX_STORED        = 25    // bounded swing memory
+MAX_SIG_LABELS    = 50    // bounded score labels
+LINE_FORWARD_BARS = 20
+LINE_UPDATE_BARS  = 5
+LABEL_OFFSET_BARS = 1
+BE_DIM_TRANSP     = 70
+FORM_LEN          = 10    // recent-form strip length
+MAX_EQ_MARKS      = 16    // bounded EQH/EQL drawings
+
+// ══════════════════════════════════════════════════════════
+// 2. INPUTS
+// ══════════════════════════════════════════════════════════
+
+// ── Main ────────────────────────────────────────────────────
+swingLenInput     = input.int(21, "Swing Length", minval = 3, maxval = 100, group = GRP_MAIN,
+     tooltip = "Pivot lookback for major swings to sweep.\n• Higher = bigger/cleaner liquidity pools\n• Lower = more frequent, smaller sweeps\n• Recommended: 10-25")
+lookbackBarsInput = input.int(80, "Max Sweep Distance (bars)", minval = 5, maxval = 500, group = GRP_MAIN,
+     tooltip = "A swing can only be swept within this many bars of forming.")
+minScoreInput     = input.int(50, "Min Sweep Score", minval = 0, maxval = 100, group = GRP_MAIN,
+     tooltip = "Minimum 0-100 quality score for a sweep to qualify.\n• Higher = fewer, stronger sweeps\n• ~45-60 balanced, 65+ strict")
+
+// ── Confirmation ────────────────────────────────────────────
+requireConfirmInput = input.bool(true, "Require CHoCH Confirmation", group = GRP_CONFIRM,
+     tooltip = "OFF: signal fires on the sweep bar (responsive).\nON: sweep becomes a setup; signal fires only after price breaks recent market structure (CHoCH).")
+minorLenInput       = input.int(8, "Structure Pivot Length", minval = 2, maxval = 30, group = GRP_CONFIRM,
+     tooltip = "Pivot length for the minor structure used to confirm CHoCH after a sweep.")
+confirmWindowInput  = input.int(13, "Confirmation Window (bars)", minval = 1, maxval = 100, group = GRP_CONFIRM,
+     tooltip = "Max bars to wait for a CHoCH after a sweep before the setup expires.")
+
+// ── Filters ─────────────────────────────────────────────────
+useVolumeInput  = input.bool(true, "Use Volume Filter", group = GRP_FILTER,
+     tooltip = "Reward sweeps on above-average volume. Auto-bypassed on volume-less feeds.")
+volLenInput     = input.int(21, "Volume MA Length", minval = 2, maxval = 200, group = GRP_FILTER,
+     tooltip = "Length of the volume moving average baseline.")
+volMultInput    = input.float(1.5, "Volume Spike (×MA)", minval = 1.1, maxval = 5.0, step = 0.1, group = GRP_FILTER,
+     tooltip = "Volume multiple of its MA that counts as a full-strength spike.")
+useHtfInput     = input.bool(true, "Use HTF Bias (score)", group = GRP_FILTER,
+     tooltip = "Reward sweeps aligned with the higher-timeframe EMA trend (soft, +10% of score).")
+htfTfInput      = input.timeframe("240", "HTF Timeframe", group = GRP_FILTER,
+     tooltip = "Higher timeframe for trend bias. Empty = current TF.")
+htfEmaLenInput  = input.int(50, "HTF EMA Length", minval = 5, maxval = 400, group = GRP_FILTER,
+     tooltip = "EMA length on the HTF (close above = bullish bias).")
+
+// ── Risk Management ─────────────────────────────────────────
+riskPresetInput = input.string("Balanced", "Risk Preset",
+     options = ["Conservative", "Balanced", "Aggressive", "Scalping", "Custom"], group = GRP_RISK,
+     tooltip = "Quick presets (SL buffer ×ATR beyond wick / TP1 / TP2 / TP3 in R):\n• Conservative: 0.5 / 1R / 2R / 4R\n• Balanced: 0.25 / 1R / 2R / 3R\n• Aggressive: 0.15 / 1.5R / 2.5R / 4R\n• Scalping: 0.1 / 0.8R / 1.5R / 2R\n• Custom: manual inputs below")
+atrLenRiskInput = input.int(14, "ATR Length", minval = 5, maxval = 50, group = GRP_RISK,
+     tooltip = "ATR period for the stop buffer and minimum-distance guard.")
+slBufferInput   = input.float(0.25, "SL Buffer ×ATR (Custom)", minval = 0.0, maxval = 3.0, step = 0.05, group = GRP_RISK,
+     tooltip = "Extra room beyond the sweep wick for the stop. Used when preset = Custom.")
+tp1MultInput    = input.float(1.0, "TP1 ×Risk (Custom)", minval = 0.5, maxval = 5.0,  step = 0.1, group = GRP_RISK,
+     tooltip = "TP1 as multiple of risk. 1.0 = 1:1 R:R.")
+tp2MultInput    = input.float(2.0, "TP2 ×Risk (Custom)", minval = 1.0, maxval = 10.0, step = 0.1, group = GRP_RISK)
+tp3MultInput    = input.float(3.0, "TP3 ×Risk (Custom)", minval = 1.5, maxval = 15.0, step = 0.1, group = GRP_RISK)
+
+useBreakEvenInput = input.bool(true, "Break-Even After TP1", group = GRP_RISK,
+     tooltip = "When TP1 is touched, move SL to entry. From the next bar, a wick to entry closes at break-even. (TP1 still counts as a WIN.)")
+
+showSlTpInput        = input.bool(true, "Show SL/TP Lines",  group = GRP_RISK)
+showSlTpLabelsInput  = input.bool(true, "Show SL/TP Labels", group = GRP_RISK)
+showPctOnLabelsInput = input.bool(true, "Show % Distance on Labels", group = GRP_RISK,
+     tooltip = "Append % distance from entry to SL/TP labels, e.g. 'SL 1.2300 (-0.36%)'.")
+entryLineStyleInput  = input.string("Dotted", "Entry Line Style", options = ["Solid", "Dashed", "Dotted"], group = GRP_RISK,
+     tooltip = "Entry is a reference, not an action level — keep it subtle.")
+slLineStyleInput     = input.string("Solid", "SL Line Style", options = ["Solid", "Dashed", "Dotted"], group = GRP_RISK)
+tpLineStyleInput     = input.string("Dashed", "TP Line Style", options = ["Solid", "Dashed", "Dotted"], group = GRP_RISK,
+     tooltip = "Style for TP1/TP2/TP3. On hit, a TP line turns solid teal.")
+
+// ── Liquidity ───────────────────────────────────────────────
+showLiquidityInput = input.bool(true, "Show Resting Liquidity (BSL/SSL)", group = GRP_LIQ,
+     tooltip = "Mark un-swept swing highs as Buy-Side Liquidity (BSL) and un-swept swing lows as Sell-Side Liquidity (SSL). A level disappears once it is swept.")
+maxLiqInput        = input.int(6, "Max Liquidity Levels / Side", minval = 1, maxval = 25, group = GRP_LIQ,
+     tooltip = "Show only the N most recent un-swept levels per side (keeps the chart clean).")
+liqExtendInput     = input.int(10, "Liquidity Line Extend (bars)", minval = 0, maxval = 100, group = GRP_LIQ,
+     tooltip = "How far past the current bar to project resting-liquidity lines.")
+showLiqLabelsInput = input.bool(true, "Show BSL/SSL Labels", group = GRP_LIQ,
+     tooltip = "Tag each resting-liquidity line BSL / SSL.")
+showEqualsInput    = input.bool(true, "Show Equal Highs/Lows (EQH/EQL)", group = GRP_LIQ,
+     tooltip = "Connect consecu

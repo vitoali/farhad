@@ -1,0 +1,20 @@
+//@version=4
+study(title="Average True Range Stop Loss Finder", shorttitle="ATR", overlay=true)
+length = input(title="Length", defval=14, minval=1)
+smoothing = input(title="Smoothing", defval="RMA", options=["RMA", "SMA", "EMA", "WMA"])
+m = input(1.5, "Multiplier")
+src1 = input(high)
+src2 = input(low)
+pline = input(true, "Show Price Lines")
+col1 = input(color.blue, "ATR Text Color")
+col2 = input(color.teal, "Low Text Color",inline ="1")
+col3 = input(color.red, "High Text Color",inline ="2")
+
+collong = input(color.teal, "Low Line Color",inline ="1")
+colshort = input(color.red, "High Line Color",inline ="2")
+
+ma_function(source, length) =>
+	if smoothing == "RMA"
+		rma(source, length)
+	else
+		if smoothing == "SMA
