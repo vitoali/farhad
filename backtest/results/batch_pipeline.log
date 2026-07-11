@@ -1,0 +1,58 @@
+$HYPE-USD: possibly delisted; no price data found  (period=31d)
+$BEAT-USD: possibly delisted; no price data found  (period=31d)
+Complete source files: 88
+  BTCUSDT 15m: 1440 bars [okx]
+  BTCUSDT 1h: 744 bars [okx]
+  BTCUSDT 4h: 186 bars [okx]
+    all sources failed: binance: 451 Client Error:  for url: https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&startTime=1781112632687&endTime=1783791032687&limit=1000; bybit: 403 Client Error: Forbidden for url: https://api.bybit.com/v5/market/kline?category=linear&symbol=BTCUSDT&interval=D&end=1783791032718&limit=1000; okx: empty
+  BTCUSDT 1d: 0 bars [none]
+  HYPEUSDT 15m: 1440 bars [okx]
+  HYPEUSDT 1h: 744 bars [okx]
+  HYPEUSDT 4h: 186 bars [okx]
+    all sources failed: binance: 451 Client Error:  for url: https://api.binance.com/api/v3/klines?symbol=HYPEUSDT&interval=1d&startTime=1781112634336&endTime=1783791034336&limit=1000; bybit: 403 Client Error: Forbidden for url: https://api.bybit.com/v5/market/kline?category=linear&symbol=HYPEUSDT&interval=D&end=1783791034360&limit=1000; okx: empty
+  HYPEUSDT 1d: 0 bars [none]
+  BEATUSDT 15m: 2976 bars [kucoin]
+  BEATUSDT 1h: 744 bars [kucoin]
+  BEATUSDT 4h: 186 bars [kucoin]
+    all sources failed: binance: 451 Client Error:  for url: https://api.binance.com/api/v3/klines?symbol=BEATUSDT&interval=1d&startTime=1781112635850&endTime=1783791035850&limit=1000; bybit: 403 Client Error: Forbidden for url: https://api.bybit.com/v5/market/kline?category=linear&symbol=BEATUSDT&interval=D&end=1783791035876&limit=1000; okx: empty
+  BEATUSDT 1d: 0 bars [none]
+  EURUSD 15m: 2109 bars [yfinance]
+  EURUSD 1h: 529 bars [yfinance]
+  EURUSD 4h: 133 bars [yfinance]
+  EURUSD 1d: 22 bars [yfinance]
+  XAUUSD 15m: 1907 bars [yfinance]
+  XAUUSD 1h: 476 bars [yfinance]
+  XAUUSD 4h: 127 bars [yfinance]
+  XAUUSD 1d: 20 bars [yfinance]
+Saved /workspace/backtest/results/backtest_batch_all.json
+Journal updated: added #[20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+
+=== Summary ===
+  rsi_advanced           avg_PF=2.964 best=BTCUSDT 4h PF=8.27 WR=66.67%
+  supply_demand          avg_PF=1.695 best=XAUUSD 1h PF=2.856 WR=40.0%
+  ifvg                   avg_PF=1.632 best=XAUUSD 15m PF=3.596 WR=57.14%
+  smart_money_structure  avg_PF=1.477 best=HYPEUSDT 4h PF=6.745 WR=66.67%
+  strong_pullback        avg_PF=1.413 best=HYPEUSDT 4h PF=2.0 WR=66.67%
+  forge                  avg_PF=1.351 best=BEATUSDT 15m PF=1.733 WR=63.41%
+  quadapt                avg_PF=1.23 best=BEATUSDT 15m PF=4.154 WR=81.82%
+  bj_bot                 avg_PF=1.158 best=BEATUSDT 4h PF=2.769 WR=75.0%
+  breaker_blocks         avg_PF=1.039 best=XAUUSD 4h PF=2.434 WR=50.0%
+  ranked_ob              avg_PF=1.019 best=EURUSD 15m PF=1.311 WR=38.58%
+  smc_pro_alt            avg_PF=1.019 best=EURUSD 15m PF=1.311 WR=38.58%
+  power_ob               avg_PF=1.015 best=XAUUSD 4h PF=1.78 WR=41.67%
+  matrix_fvg             avg_PF=0.988 best=BTCUSDT 4h PF=1.303 WR=46.67%
+  cardwell_rsi           avg_PF=0.982 best=HYPEUSDT 1h PF=2.167 WR=68.42%
+  stop_hunt              avg_PF=0.933 best=BEATUSDT 1h PF=1.515 WR=57.14%
+  chandelier_exit        avg_PF=0.758 best=BTCUSDT 4h PF=3.772 WR=75.0%
+  qqe                    avg_PF=0.732 best=BEATUSDT 4h PF=2.769 WR=75.0%
+  ml_rsi                 avg_PF=0.642 best=HYPEUSDT 15m PF=1.808 WR=58.33%
+  fib_fib                avg_PF=0.598 best=HYPEUSDT 1h PF=1.116 WR=53.85%
+  alpha_trend            avg_PF=0.592 best=BEATUSDT 15m PF=2.448 WR=61.54%
+  macd_mtf               avg_PF=0.538 best=BEATUSDT 1h PF=1.551 WR=58.93%
+  smc_pro                avg_PF=0.493 best=BTCUSDT 15m PF=1.0 WR=50.0%
+  supertrend             avg_PF=0.467 best=BEATUSDT 15m PF=1.56 WR=56.31%
+  put_call_vp            avg_PF=0.465 best=HYPEUSDT 1h PF=1.194 WR=42.61%
+  zero_lag               avg_PF=0.421 best=BTCUSDT 1h PF=0.967 WR=33.33%
+  lorentzian             avg_PF=0.404 best=BEATUSDT 15m PF=0.864 WR=46.88%
+  fvg_retest             insufficient
+  trendline_breakout     insufficient

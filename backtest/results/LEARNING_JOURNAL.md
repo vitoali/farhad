@@ -613,3 +613,355 @@ SL = 25% فاصله entry→target (پیش‌فرض)
 **بک‌تست شده:** `results/backtest_priority_zone.json`, `results/backtest_sd_sp.json`
 
 ---
+
+---
+
+## #20 Cardwell RSI Navigator
+
+**فایل:** `Cardwell_RSI_Trade_Navigator__MarkitTick_1c8f.txt` | **کلید:** `cardwell_rsi`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **44.8%** | میانگین PF: **0.982**
+- بهترین: HYPEUSDT 1h PF=2.167 WR=68.42%
+- ضعیف‌ترین: EURUSD 4h PF=0.26
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| HYPEUSDT | 1h | 19 | 68.42 | 2.167 |
+| BTCUSDT | 1h | 21 | 57.14 | 1.45 |
+| BEATUSDT | 15m | 96 | 57.29 | 1.408 |
+| XAUUSD | 1h | 20 | 45.0 | 1.321 |
+| HYPEUSDT | 4h | 3 | 66.67 | 1.198 |
+
+### نگه داریم / حذف / بهبود
+- **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #21 FVG Retest Engine
+
+**فایل:** `fvg_return_faf7.txt` | **کلید:** `fvg_retest`
+
+### وضعیت
+- نمونه کافی برای بک‌تست نداشت (کمتر از ۳ معامله در اکثر ترکیب‌ها)
+- تحلیل استاتیک در `results/analyses/`
+
+
+---
+
+## #22 Stop Hunt Radar
+
+**فایل:** `sop_hunt_9b71.txt` | **کلید:** `stop_hunt`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **40.5%** | میانگین PF: **0.933**
+- بهترین: BEATUSDT 1h PF=1.515 WR=57.14%
+- ضعیف‌ترین: BEATUSDT 4h PF=0.501
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 1h | 49 | 57.14 | 1.515 |
+| XAUUSD | 1h | 32 | 46.88 | 1.342 |
+| HYPEUSDT | 1h | 56 | 46.43 | 1.206 |
+| XAUUSD | 4h | 4 | 50.0 | 1.205 |
+| EURUSD | 1h | 33 | 48.48 | 1.018 |
+
+### نگه داریم / حذف / بهبود
+- **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #23 Smart Money Structure
+
+**فایل:** `Smart_Money_Structure__GainzAlgo_4e52.txt` | **کلید:** `smart_money_structure`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **55.9%** | میانگین PF: **1.477**
+- بهترین: HYPEUSDT 4h PF=6.745 WR=66.67%
+- ضعیف‌ترین: HYPEUSDT 1h PF=0.618
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| HYPEUSDT | 4h | 3 | 66.67 | 6.745 |
+| XAUUSD | 15m | 66 | 63.64 | 1.109 |
+| XAUUSD | 1h | 14 | 57.14 | 0.912 |
+| BTCUSDT | 1h | 31 | 51.61 | 0.906 |
+| BEATUSDT | 1h | 23 | 47.83 | 0.789 |
+
+### نگه داریم / حذف / بهبود
+- **نگه** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #24 SMC PRO Confluence
+
+**فایل:** `Smart_Money_Concepts_PRO_979a.txt` | **کلید:** `smc_pro_alt`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **40.9%** | میانگین PF: **1.019**
+- بهترین: EURUSD 15m PF=1.311 WR=38.58%
+- ضعیف‌ترین: XAUUSD 1h PF=0.822
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| EURUSD | 15m | 1003 | 38.58 | 1.311 |
+| EURUSD | 4h | 51 | 47.06 | 1.298 |
+| EURUSD | 1h | 228 | 44.74 | 1.294 |
+| XAUUSD | 15m | 983 | 42.22 | 1.06 |
+| BEATUSDT | 15m | 1522 | 39.55 | 1.048 |
+
+### نگه داریم / حذف / بهبود
+- **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #25 OrderFlow FVG Matrix
+
+**فایل:** `matrix_d1c3.txt` | **کلید:** `matrix_fvg`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **45.6%** | میانگین PF: **0.988**
+- بهترین: BTCUSDT 4h PF=1.303 WR=46.67%
+- ضعیف‌ترین: HYPEUSDT 15m PF=0.719
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BTCUSDT | 4h | 15 | 46.67 | 1.303 |
+| HYPEUSDT | 4h | 20 | 45.0 | 1.188 |
+| BEATUSDT | 1h | 137 | 51.09 | 1.182 |
+| BEATUSDT | 15m | 807 | 48.95 | 1.085 |
+| HYPEUSDT | 1h | 86 | 47.67 | 1.045 |
+
+### نگه داریم / حذف / بهبود
+- **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #26 PUT/CALL VP Levels
+
+**فایل:** `PUT___CALL_VP_Levels_90f8.txt` | **کلید:** `put_call_vp`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **32.7%** | میانگین PF: **0.465**
+- بهترین: HYPEUSDT 1h PF=1.194 WR=42.61%
+- ضعیف‌ترین: XAUUSD 1h PF=0.048
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| HYPEUSDT | 1h | 115 | 42.61 | 1.194 |
+| BEATUSDT | 1h | 168 | 48.21 | 0.917 |
+| BTCUSDT | 4h | 24 | 41.67 | 0.894 |
+| BEATUSDT | 15m | 590 | 44.07 | 0.888 |
+| BEATUSDT | 4h | 49 | 40.82 | 0.629 |
+
+### نگه داریم / حذف / بهبود
+- **ضعیف** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #27 Ranked Order Blocks
+
+**فایل:** `Ranked_Order_Block_Zones__Zeiierman_9c77.txt` | **کلید:** `ranked_ob`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **40.9%** | میانگین PF: **1.019**
+- بهترین: EURUSD 15m PF=1.311 WR=38.58%
+- ضعیف‌ترین: XAUUSD 1h PF=0.822
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| EURUSD | 15m | 1003 | 38.58 | 1.311 |
+| EURUSD | 4h | 51 | 47.06 | 1.298 |
+| EURUSD | 1h | 228 | 44.74 | 1.294 |
+| XAUUSD | 15m | 983 | 42.22 | 1.06 |
+| BEATUSDT | 15m | 1522 | 39.55 | 1.048 |
+
+### نگه داریم / حذف / بهبود
+- **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #28 QQE Signals
+
+**فایل:** `QQE_KHOOB_1aba.txt` | **کلید:** `qqe`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **36.1%** | میانگین PF: **0.732**
+- بهترین: BEATUSDT 4h PF=2.769 WR=75.0%
+- ضعیف‌ترین: XAUUSD 1h PF=0.046
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 4h | 8 | 75.0 | 2.769 |
+| BTCUSDT | 4h | 6 | 50.0 | 1.832 |
+| BEATUSDT | 15m | 134 | 48.51 | 1.385 |
+| BEATUSDT | 1h | 44 | 52.27 | 1.306 |
+| HYPEUSDT | 15m | 64 | 28.12 | 0.933 |
+
+### نگه داریم / حذف / بهبود
+- **ضعیف** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #29 MACD MTF
+
+**فایل:** `MACD_30e7.txt` | **کلید:** `macd_mtf`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **33.2%** | میانگین PF: **0.538**
+- بهترین: BEATUSDT 1h PF=1.551 WR=58.93%
+- ضعیف‌ترین: XAUUSD 4h PF=0.0
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BEATUSDT | 1h | 56 | 58.93 | 1.551 |
+| BTCUSDT | 4h | 13 | 38.46 | 1.16 |
+| BEATUSDT | 15m | 231 | 45.02 | 1.08 |
+| HYPEUSDT | 4h | 14 | 50.0 | 1.024 |
+| BEATUSDT | 4h | 13 | 46.15 | 0.874 |
+
+### نگه داریم / حذف / بهبود
+- **ضعیف** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #30 Power Order Blocks
+
+**فایل:** `power_order_bloc_151a.txt` | **کلید:** `power_ob`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **38.1%** | میانگین PF: **1.015**
+- بهترین: XAUUSD 4h PF=1.78 WR=41.67%
+- ضعیف‌ترین: XAUUSD 1h PF=0.565
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| XAUUSD | 4h | 12 | 41.67 | 1.78 |
+| EURUSD | 15m | 614 | 39.58 | 1.292 |
+| EURUSD | 1h | 114 | 38.6 | 1.208 |
+| BTCUSDT | 4h | 32 | 40.62 | 1.146 |
+| XAUUSD | 15m | 594 | 38.72 | 1.035 |
+
+### نگه داریم / حذف / بهبود
+- **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #31 SR Breaks LuxAlgo
+
+**فایل:** `Support_and_Resistance_Levels_with_Breaks_9115.txt` | **کلید:** `sr_breaks`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **54.5%** | میانگین PF: **1.441**
+- بهترین: XAUUSD 15m PF=3.534 WR=57.14%
+- ضعیف‌ترین: XAUUSD 1h PF=0.431
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| XAUUSD | 15m | 21 | 57.14 | 3.534 |
+| HYPEUSDT | 15m | 9 | 55.56 | 2.194 |
+| BEATUSDT | 15m | 18 | 66.67 | 1.774 |
+| BEATUSDT | 1h | 5 | 60.0 | 1.5 |
+| BTCUSDT | 1h | 8 | 50.0 | 0.821 |
+
+### نگه داریم / حذف / بهبود
+- **نگه** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+---
+
+## #32 Liquidity Pools LuxAlgo
+
+**فایل:** `LIQUDITY_PPOOL_ce94.txt` | **کلید:** `liquidity_pool`
+
+### خلاصه بک‌تست (~۳۱ روز)
+- میانگین WR: **34.1%** | میانگین PF: **0.865**
+- بهترین: BTCUSDT 1h PF=1.038 WR=38.0%
+- ضعیف‌ترین: BEATUSDT 4h PF=0.652
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BTCUSDT | 1h | 200 | 38.0 | 1.038 |
+| BEATUSDT | 15m | 651 | 35.94 | 0.974 |
+| EURUSD | 15m | 365 | 34.25 | 0.958 |
+| XAUUSD | 4h | 8 | 37.5 | 0.926 |
+| HYPEUSDT | 4h | 31 | 32.26 | 0.922 |
+
+### نگه داریم / حذف / بهبود
+- **ضعیف** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
+
+
+
+---
+
+## فهرست استاتیک (بدون پورت Python)
+
+اندیکاتورهای زیر تحلیل استاتیک شدند. اکثراً visualization-only یا نیاز به پورت دستی دارند.
+
+| # | فایل | نام | دسته | بک‌تست | یادداشت |
+|---|------|-----|------|--------|--------|
+| 41 | `3_3fa8.txt` | PMax Explorer | other/uncategorized | partial_manual | visualization / manual port |
+| 42 | `4_4040.txt` | TrendMaster Pro 2.3 with Alerts | zone/fibonacci | partial_zone | سیگنال بدون barstate.isconfirmed… |
+| 43 | `ATR_SL_FINDER_977b.txt` | Average True Range Stop Loss Finder | other/uncategorized | partial_manual | visualization / manual port |
+| 44 | `AUTO_FIBO_ca53.txt` | FibFib | other/uncategorized | none_display_only | visualization / manual port |
+| 45 | `BREAKOUT_PROBIPILITY_1c91.txt` | Breakout Probability (Expo) | other/uncategorized | partial_manual | visualization / manual port |
+| 46 | `Buyside___Sellside_Liquidity_631a.txt` | Buyside & Sellside Liquidity [LuxAl | zone/smc | partial_manual | visualization / manual port |
+| 47 | `CANDLE_d8b6.txt` | Candlestick Patterns Identified, up | other/uncategorized | partial_manual | visualization / manual port |
+| 48 | `CM_Ultimate_MA_MTF_202b.txt` | CM_Ultimate_MA_MTF | other/uncategorized | none_display_only | visualization / manual port |
+| 49 | `Divergence_for_Many_Indicators_2408.txt` | Divergence for Many Indicators v4 | other/uncategorized | partial_manual | visualization / manual port |
+| 50 | `Divergence_for_many_indicator_2b36.txt` | Divergence for many indicator v3 | other/uncategorized | partial_manual | visualization / manual port |
+| 51 | `FVG___IFVG_ICT_a586.txt` | FVG & IFVG ICT [TradingFinder] Inve | zone/fvg_ob | partial_manual | visualization / manual port |
+| 52 | `Fair_Value_Gap_f587.txt` | Fair Value Gap [LuxAlgo] | zone/fvg_ob | none_display_only | ریسک lookahead در request.security… |
+| 53 | `FxPipFinder_Engagement_Zone_41e2.txt` | FxPipFinder Engagement Zone | zone/order_block | partial_manual | visualization / manual port |
+| 54 | `HISTORICAL_POPTRN_8ffc.txt` | Historical Pattern Projection [Mark | other/uncategorized | partial_manual | visualization / manual port |
+| 55 | `Liquidity_Shift_Detection_eaf8.txt` | Liquidity Shift Detection [LSD] (Ze | zone/smc | partial_manual | visualization / manual port |
+| 56 | `MACHIN_a826.txt` | Machine Learning Pivot Points (KNN) | ml/ml_regression | partial_core_only | visualization / manual port |
+| 57 | `M_Pivot_Points_M_3e8d.txt` | CM_Pivot Points_M-W-D_4H_1H_Filtere | other/uncategorized | none_display_only | visualization / manual port |
+| 58 | `New_Text_Document_ee2a.txt` | ICT Immediate Rebalance Toolkit [Lu | zone/order_block | partial_manual | visualization / manual port |
+| 59 | `Order-Flow_Detection_d054.txt` | OrderFlow Absorption Matrix | zone/order_block | partial_manual | ریسک lookahead در request.security… |
+| 60 | `Pivot_Points_High_Low___Missed__f352.txt` | Pivot Points High Low & Missed Reve | other/uncategorized | partial_manual | visualization / manual port |
+| 61 | `QUANTOM_4271.txt` | Quantum Imbalance Trap [MarkitTick] | zone/order_block | partial_manual | ریسک lookahead در request.security… |
+| 62 | `Reversal_Signals__TIKTOK_6ff8.txt` | Reversal Signals [LuxAlgo] | other/uncategorized | partial_manual | visualization / manual port |
+| 63 | `SMART_MONEY_11c2.txt` | Smart Money Concepts [LuxAlgo] | zone/fvg_ob | partial_manual | ریسک lookahead در request.security… |
+| 64 | `SQZMOM_LB_5806.txt` |  | other/uncategorized | none_display_only | visualization / manual port |
+| 65 | `STRATGY_b6e6.txt` |  | other/uncategorized | partial_manual | سیگنال بدون barstate.isconfirmed… |
+| 66 | `SUPER_TREND_4ed2.txt` | Supertrend Parameter Sensitivity 3D | other/uncategorized | partial_manual | visualization / manual port |
+| 67 | `Smart_Money_Renko_Matri_bb35.txt` | Smart Money Renko Matrix [MarkitTic | zone/order_block | partial_manual | ریسک lookahead در request.security… |
+| 68 | `Smart_Trader__Episode_03__by_Ata_Sabanc_7446.txt` | Smart Trader, Episode 03, by Ata Sa | zone/order_block | partial_manual | visualization / manual port |
+| 69 | `Smart_Trend_Flow_Pro__MarkitTick_613c.txt` | Smart Trend Flow Pro [MarkitTick] | other/uncategorized | partial_manual | visualization / manual port |
+| 70 | `Support_Resistance_Interactiv_01cf.txt` | Support Resistance Interactive | other/uncategorized | partial_manual | visualization / manual port |
+| 71 | `Support_and_Resistance_Signals__bc86.txt` | Support and Resistance Signals MTF  | zone/smc | partial_manual | visualization / manual port |
+| 72 | `Swing_HighsLows___Candle_Patterns__143a.txt` | Swing Highs/Lows & Candle Patterns  | other/uncategorized | partial_manual | visualization / manual port |
+| 73 | `TREND_007c.txt` | CM_SlingShotSystem | other/uncategorized | partial_manual | visualization / manual port |
+| 74 | `Trendlines_with_Breaks_960f.txt` | Trendlines with Breaks [LuxAlgo] | other/uncategorized | none_display_only | visualization / manual port |
+| 75 | `UP_TEND_949b.txt` | CM_Ultimate_MA_MTF_V2 | other/uncategorized | none_display_only | visualization / manual port |
+| 76 | `WIN_LOS_fc44.txt` | Monte Carlo CT [SS] | zone/order_block | partial_manual | visualization / manual port |
+| 77 | `atomatic_multi_pattern__9980.txt` | [ A L P H A X ] FORGE | pattern/chart_pattern | partial_pattern | visualization / manual port |
+| 78 | `auto_pattern_detector_bf37.txt` | Auto Pattern Detector Targets [Mark | pattern/chart_pattern | partial_pattern | visualization / manual port |
+| 79 | `cardvel_f64f.txt` | Cardwell Range Analyze [MarkitTick] | other/uncategorized | partial_manual | ریسک lookahead در request.security… |
+| 80 | `entrylib_5e01.txt` |  | other/uncategorized | partial_manual | ریسک lookahead در request.security… |
+| 81 | `forge_v1.pine` | [ A L P H A X ] FORGE | pattern/chart_pattern | partial_pattern | visualization / manual port |
+| 82 | `machin_f3c0.txt` | Machine Learning Smart Money Concep | ml/ml_regression | partial_core_only | visualization / manual port |
+| 83 | `mirage_8451.txt` | Mirage Liquidity Sweep Pro [WillyAl | zone/smc | partial_manual | visualization / manual port |
+| 84 | `multi_divergence_3058.txt` | Multi-Divergence Strategy | GainzAl | zone/order_block | partial_manual | visualization / manual port |
+| 85 | `qt_cx_7542.txt` | cd_new_QT_Cx | zone/fvg_ob | partial_manual | visualization / manual port |
+| 86 | `quadapt_ml_trader.pine` | [Quadapt] Machine Learning Trader | zone/order_block | partial_zone | visualization / manual port |
+| 87 | `quadpad_9f11.txt` | [Quadapt] Machine Learning Trader | zone/order_block | partial_zone | visualization / manual port |
+| 88 | `smart_0f3d.txt` |  | zone/smc | partial_manual | visualization / manual port |
+| 89 | `smart_ichimoko_d12e.txt` | Smart Ichimoku | GainzAlgo | zone/order_block | partial_manual | visualization / manual port |
+| 90 | `smart_mony_fibo_67b7.txt` | Smart Money Fibonacci OTE Engine [C | zone/fibonacci | partial_zone | visualization / manual port |
+| 91 | `strong_reversal_02f0.txt` | Strong Reversal Signals | zone/smc | partial_manual | visualization / manual port |
+| 92 | `whale_liquidy_zone_181a.txt` | Whale Liquidity and Absorption Prof | zone/smc | partial_manual | ریسک lookahead در request.security… |
+
+
+_آخرین به‌روزرسانی استاتیک: 2026-07-11 17:33 UTC_

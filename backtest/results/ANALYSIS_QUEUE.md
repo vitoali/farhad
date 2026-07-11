@@ -1,72 +1,51 @@
 # صف تحلیل اندیکاتورها
 
-آخرین به‌روزرسانی: 2026-07-11
+آخرین به‌روزرسانی: 2026-07-11 (batch خودکار)
 
 ## وضعیت کلی
 
 | وضعیت | تعداد |
 |--------|-------|
-| تحلیل‌شده قبلی (چت) | 6 |
-| بک‌تست Python | 19 | ✅ (#1–#17, #18–#19) |
-| تحلیل استاتیک batch | ~75 |
-| ناقص (منتظر آپلود) | 12 |
-| **هدف نهایی** | ~60 |
+| فایل‌های کامل در sources | 88 |
+| فایل‌های ناقص | 13 |
+| **بک‌تست Python (پورت شده)** | **32 کلید** (#1–#32) |
+| تحلیل استاتیک batch | 88 |
+| ثبت در processed_registry | 80+ |
 
-## بک‌تست شده (#1–#15)
+## بک‌تست شده — کلیدهای Python
 
-| # | اندیکاتور | فایل | وضعیت |
+| # | اندیکاتور | کلید | وضعیت |
 |---|-----------|------|--------|
-| 1 | UT Bot v2 | chat | ✅ |
-| 2 | AlphaTrend | `AlphaTrend_b53f.txt` | ✅ |
-| 3 | Bj Bot | `2_297c.txt` | ✅ |
-| 4 | AlphaX FORGE | `forg_6b2d.txt` | ✅ |
-| 5 | FibFib | `fib_fib.pine` | ✅ |
-| 6 | Quadapt ML | `quadpad_47cd.txt` | ✅ |
-| 7 | SuperTrend | `SUPER_TREND_ccf2.txt` | ✅ |
-| 8 | Chandelier Exit | `Chandelier_Exit_a3e4.txt` | ✅ |
-| 9 | Lorentzian ML | `Machine_Learning_Lorentzian_9f8e.txt` | ✅ (ساده‌شده) |
-| 10 | IFVG Engine | `IFVG_ENGINE_6b53.txt` | ✅ zone native |
-| 11 | Breaker Blocks | `Breaker_Blocks_with_Signals__LuxAlgo_103c.txt` | ✅ simplified |
-| 12 | SMC PRO v2 | `Money_Concepts_PRO_v2.tiktok0_9e67.txt` | ✅ confluence |
-| 13 | Zero Lag | `Zero_Lag_Trend_Signals_TIKTOK_8b12.txt` | ✅ |
-| 14 | Trendline Breakout | `Trendline_Breakouts_With__df18.txt` | ✅ (low sample) |
-| 15 | RSI Advanced | `rsi_advanced_868b.txt` | ✅ |
-| 17 | ML RSI Zeiierman | `machin_rsi_313b.txt` | ✅ |
-| 18 | Supply/Demand Flux | `supply_demand_72be.txt` | ✅ zone native |
-| 19 | Strong Pullback | `strong_pulback_7019.txt` | ✅ native SL/TP 1R |
-| 16 | Monster Trex | `monster_e007.txt` | ⏳ blocked (ext libs) |
+| 1–9 | UT Bot … Lorentzian | ut_bot … lorentzian | ✅ |
+| 10–15 | IFVG … RSI Advanced | ifvg … rsi_advanced | ✅ |
+| 16 | Monster Trex | monster | ⏳ blocked |
+| 17–19 | ML RSI … Strong Pullback | ml_rsi … strong_pullback | ✅ |
+| 20–32 | Cardwell … Liquidity Pools | cardwell_rsi … liquidity_pool | ✅ |
 
-## اولویت بعدی برای پورت Python
+## بهترین PF میانگین (batch ~31 روز)
 
-1. `fvg_return_faf7.txt` — FVG Retest Entry Engine
-2. `sop_hunt_9b71.txt` — Stop Hunt Radar
-3. `matrix_d1c3.txt` — OrderFlow FVG Matrix MTF
-4. `Ranked_Order_Block_Zones__Zeiierman_9c77.txt`
-5. `LIQUDITY_PPOOL_ce94.txt`
+| کلید | avg PF | بهترین |
+|------|--------|--------|
+| rsi_advanced | 2.96 | BTC 4h PF=8.27 |
+| supply_demand | 1.70 | XAU 1h PF=2.86 |
+| ifvg | 1.63 | XAU 15m PF=3.60 |
+| smart_money_structure | 1.48 | HYPE 4h PF=6.75 |
+| strong_pullback | 1.41 | EURUSD 15m PF=1.90 |
+| fvg_retest | ~1.2+ | BTC 15m PF=1.75 |
 
-## فایل‌های ناقص (منتظر آپلود شما)
+## فایل‌های ناقص (منتظر آپلود)
 
-- `CT_Concepts__LuxAlgo__d0c0.txt`
-- `ELYOT_dcd0.txt`
-- `FVGGGG_f0e2.txt`
-- `FVG_743a.txt`
-- `Market_Structure_with_Inducements___Sweeps_244c.txt`
-- `Support_and_Resistance_7693.txt`
-- `VOLOM_2fee.txt`
-- `dynamic_trend_8e17.txt`
-- `high_volom_pivoty_suport_778c.txt`
-- `machin_learning_rsi_217a.txt`
-- `rb_seteup_5_algo_7ddb.txt`
-- `volon_trend_order_block_72a5.txt`
+- CT_Concepts, ELYOT, FVG_743a, FVGGGG, Market_Structure, Support_and_Resistance_7693
+- VOLOM, dynamic_trend, high_volom_pivoty, rb_seteup, volon_trend_order_block
+- strong_reversal_02f0 (قطع شده ~110 خط)
 
 ## دستور اجرا
 
 ```bash
-# تحلیل + بک‌تست یک فایل
-python3 process_indicator.py SUPER_TREND_ccf2.txt
-
-# تحلیل استاتیک N فایل بعدی
-python3 process_indicator.py dummy --next 10 --skip-backtest
+cd backtest
+python3 batch_pipeline.py          # بک‌تست همه پورت‌ها
+python3 static_journal_all.py      # ثبت استاتیک بقیه
+python3 process_indicator.py FILE  # تک‌فایل
 ```
 
-تحلیل‌های جزئی در `results/analyses/` ذخیره می‌شوند.
+نتایج: `results/backtest_batch_all.json` | ژورنال: `results/LEARNING_JOURNAL.md`

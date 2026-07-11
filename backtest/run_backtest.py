@@ -12,6 +12,21 @@ from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulat
 from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
 from ml_indicators import ml_rsi_signals
+from extra_indicators import (
+    cardwell_rsi_signals,
+    fvg_retest_signals,
+    macd_mtf_signals,
+    matrix_fvg_signals,
+    power_ob_signals,
+    put_call_vp_signals,
+    qqe_signals,
+    ranked_ob_signals,
+    smart_money_structure_signals,
+    smc_pro_alt_signals,
+    stop_hunt_signals,
+    sr_breaks_signals,
+    liquidity_pool_signals,
+)
 from zone_engine import extract_zone_signals_from_df, simulate_zone_native
 from zone_indicators import (
     breaker_blocks_signals,
@@ -46,7 +61,13 @@ SYMBOL_MARKET = {
 }
 TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 
-ZONE_NATIVE = {"ifvg", "breaker_blocks", "smc_pro", "trendline_breakout", "supply_demand", "strong_pullback"}
+ZONE_NATIVE = {
+    "ifvg", "breaker_blocks", "smc_pro", "trendline_breakout",
+    "supply_demand", "strong_pullback", "fvg_retest", "stop_hunt",
+    "smart_money_structure", "smc_pro_alt", "matrix_fvg", "ranked_ob", "power_ob",
+    "cardwell_rsi",
+    "liquidity_pool",
+}
 
 
 def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) -> BacktestResult:
@@ -62,6 +83,24 @@ def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) ->
         sig = supply_demand_signals(df)
     elif name == "strong_pullback":
         sig = strong_pullback_signals(df)
+    elif name == "fvg_retest":
+        sig = fvg_retest_signals(df)
+    elif name == "stop_hunt":
+        sig = stop_hunt_signals(df)
+    elif name == "smart_money_structure":
+        sig = smart_money_structure_signals(df)
+    elif name == "smc_pro_alt":
+        sig = smc_pro_alt_signals(df)
+    elif name == "matrix_fvg":
+        sig = matrix_fvg_signals(df)
+    elif name == "ranked_ob":
+        sig = ranked_ob_signals(df)
+    elif name == "power_ob":
+        sig = power_ob_signals(df)
+    elif name == "cardwell_rsi":
+        sig = cardwell_rsi_signals(df)
+    elif name == "liquidity_pool":
+        sig = liquidity_pool_signals(df)
     else:
         raise ValueError(name)
     zlist = extract_zone_signals_from_df(sig)
@@ -208,6 +247,25 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         sig = ml_rsi_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
 
+    if name == "put_call_vp":
+        sig = put_call_vp_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "sr_breaks":
+        sig = sr_breaks_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "qqe":
+        sig = qqe_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "macd_mtf":
+        sig = macd_mtf_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "monster":
+        return BacktestResult(name, symbol, tf, market, notes=["blocked: external pine libraries"])
+
     raise ValueError(name)
 
 
@@ -264,6 +322,9 @@ def main():
         "supertrend", "chandelier_exit", "lorentzian",
         "ifvg", "breaker_blocks", "smc_pro", "zero_lag", "trendline_breakout", "rsi_advanced", "ml_rsi",
         "supply_demand", "strong_pullback",
+        "cardwell_rsi", "fvg_retest", "stop_hunt", "smart_money_structure",
+        "smc_pro_alt", "matrix_fvg", "put_call_vp", "ranked_ob", "qqe", "macd_mtf", "power_ob",
+        "sr_breaks", "liquidity_pool",
     ]
     all_results: list[dict] = []
 

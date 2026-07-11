@@ -43,6 +43,21 @@ PORT_MAP: dict[str, str] = {
     "machin_learning_rsi_217a.txt": "ml_rsi",
     "supply_demand_72be.txt": "supply_demand",
     "strong_pulback_7019.txt": "strong_pullback",
+    "Cardwell_RSI_Trade_Navigator__MarkitTick_1c8f.txt": "cardwell_rsi",
+    "fvg_return_faf7.txt": "fvg_retest",
+    "fvg_1bce.txt": "fvg_retest",
+    "sop_hunt_9b71.txt": "stop_hunt",
+    "STOP_HUNT_e28b.txt": "stop_hunt",
+    "Smart_Money_Structure__GainzAlgo_4e52.txt": "smart_money_structure",
+    "Smart_Money_Concepts_PRO_979a.txt": "smc_pro_alt",
+    "matrix_d1c3.txt": "matrix_fvg",
+    "ORDER_5f08.txt": "matrix_fvg",
+    "PUT___CALL_VP_Levels_90f8.txt": "put_call_vp",
+    "Ranked_Order_Block_Zones__Zeiierman_9c77.txt": "ranked_ob",
+    "QQE_KHOOB_1aba.txt": "qqe",
+    "MACD_30e7.txt": "macd_mtf",
+    "power_order_bloc_151a.txt": "power_ob",
+    "suply_demand_zone_f0e7.txt": "supply_demand",
 }
 
 KNOWN_DONE = {
@@ -64,6 +79,17 @@ KNOWN_DONE = {
     "ml_rsi": 17,
     "supply_demand": 18,
     "strong_pullback": 19,
+    "cardwell_rsi": 20,
+    "fvg_retest": 21,
+    "stop_hunt": 22,
+    "smart_money_structure": 23,
+    "smc_pro_alt": 24,
+    "matrix_fvg": 25,
+    "put_call_vp": 26,
+    "ranked_ob": 27,
+    "qqe": 28,
+    "macd_mtf": 29,
+    "power_ob": 30,
 }
 
 
