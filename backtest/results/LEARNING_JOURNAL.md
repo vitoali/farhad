@@ -1409,3 +1409,46 @@ _آخرین به‌روزرسانی استاتیک: 2026-07-11 17:33 UTC_
 ### نگه داریم / حذف / بهبود
 - **فیلتر/ترکیب** — بر اساس PF میانگین روی نمونه‌های ≥۳ معامله
 
+
+---
+
+## #53 Farhad Combo Strategy
+
+**فایل:** `farhad_strategy.py` + `indicators/Farhad_Combo_Strategy.pine` | **کلید:** `farhad_loose` / `farhad_standard` / `farhad_strict`
+
+### معماری
+
+```
+ورود:     Bj Bot EMA21/50 cross
+فیلتر 1:  UT Bot — close بالای/زیر TSL
+فیلتر 2:  AlphaTrend — مومنتوم هم‌جهت
+فیلتر 3:  Zero-Lag trend (فقط strict)
+فیلتر 4:  Zone confluence — IFVG + Supply/Demand + RSI Advanced + Liquidity Shift
+SL/TP:    Bj Bot structural (swing ± ATR × RiskM, R:R=1)
+```
+
+### مقایسه بک‌تست (~۳۱ روز) — Bj structural exit
+
+| حالت | میانگین PF | PF روی 1h/4h | معاملات | بهترین |
+|------|-----------|--------------|---------|--------|
+| Bj Bot (baseline) | **1.196** | **1.547** | 155 | BEAT 4h PF=2.1 |
+| farhad_loose | 0.993 | 1.282 | 141 | BTC 4h PF=1.68 |
+| farhad_standard | 1.012 | 1.272 | 71 | **XAU 15m PF=2.56** |
+| farhad_strict | 0.677 | 0.595 | 10 | نمونه خیلی کم |
+
+### نتایج برجسته (standard)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| XAUUSD | 15m | 10 | 70.0 | **2.559** |
+| XAUUSD | 1h | 3 | 66.7 | 1.901 |
+| HYPEUSDT | 1h | 3 | 66.7 | 1.770 |
+| BTCUSDT | 1h | 3 | 100.0 | — |
+
+### نگه داریم / حذف / بهبود
+- **نگه:** `farhad_standard` — کیفیت بالا، معاملات کمتر (۷۱ vs ۱۵۵)
+- **TF پیشنهادی:** 1h و 4h
+- **XAUUSD:** بهترین نماد برای standard mode
+- **بهبود:** loosen zone filter روی کریپتو، HTF alignment
+- **Pine:** `backtest/indicators/Farhad_Combo_Strategy.pine` آماده TradingView
+
