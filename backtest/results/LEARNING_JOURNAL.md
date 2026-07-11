@@ -515,6 +515,82 @@ SL = 25% فاصله entry→target (پیش‌فرض)
 
 ---
 
+## #18 Supply and Demand Zones (Flux Charts)
+
+**فایل:** `supply_demand_72be.txt` | **نوع:** Zone retest (bullRetest / bearRetest)
+
+### منطق
+- Swing pivot (30) → zone با padding wick میانگین ۵ کندل
+- Retest: supply rejection (high≥bottom, close<bottom) / demand bounce
+- Pending flip برای breakout ناموفق
+- SL زیر/بالای zone + TP 2R
+
+### نتایج (~۳۱ روز، zone-native SL/TP)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| BTCUSDT | 1h | 54 | 59.3 | **2.49** |
+| HYPEUSDT | 15m | 230 | 56.1 | **1.74** |
+| BEATUSDT | 15m | 482 | 47.5 | **1.47** |
+| EURUSD | 15m | 251 | 49.0 | **1.85** |
+| XAUUSD | 1h | 10 | 40.0 | **2.86** |
+
+### نقاط قوت
+- **BTC 1h PF=2.49** — retest logic قوی روی TF بالاتر
+- **HYPE/BEAT 15m PF>1.4** با نمونه زیاد
+- **فارکس EURUSD 15m PF=1.85** با zone-native SL
+- سیگنال زیاد — مناسب فیلتر confluence
+
+### نقاط ضعف
+- 15m BTC PF≈1 — نویز زیاد
+- 4h نمونه کم (pivot=30 سنگین)
+- بدون فیلتر HTF/trend — همه retestها معامله می‌شوند
+
+### نگه داریم / حذف / بهبود
+- **نگه:** BTC/HYPE 1h + EURUSD 15m
+- **بهبود:** فیلتر trend + rankBy Strongest
+- **ترکیب:** confluence با IFVG / Breaker Blocks
+
+---
+
+## #19 Strong Pullback Signals
+
+**فایل:** `strong_pulback_7019.txt` | **نوع:** Breakout → limit pullback با SL ساختاری
+
+### منطق
+- EMA 34/144 trend + breakout از swing 20-bar
+- Limit fill روی pullback EMA − 0.4 ATR
+- HTF EMA 4h/50 alignment + cooldown 10 bar
+- SL: swing extreme ± 0.3 ATR (capped 0.5–2.5 ATR) | TP1: 1R
+
+### نتایج (~۳۱ روز، native SL/TP 1R)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| EURUSD | 15m | 29 | 65.5 | **1.90** |
+| BEATUSDT | 1h | 12 | 66.7 | **2.00** |
+| BTCUSDT | 1h | 12 | 58.3 | **1.40** |
+| HYPEUSDT | 4h | 3 | 66.7 | **2.00** |
+| XAUUSD | 15m | 24 | 58.3 | **1.40** |
+
+### نقاط قوت
+- **فارکس EURUSD 15m PF=1.9** — HTF filter مؤثر
+- **BEAT 1h PF=2.0** با WR 67%
+- SL ساختاری + cap ATR — منطق Bj-like
+- سیگنال کم ولی کیفیت بالاتر از trend-chasers
+
+### نقاط ضعف
+- BTC 15m PF=0.91 — pullback limit در رنج
+- نمونه کم روی 4h
+- Multi-TP (TP2/TP3) ساده‌شده به TP1 فقط
+
+### نگه داریم / حذف / بهبود
+- **نگه:** EURUSD/BEAT 1h — **بهترین pullback تا اینجا**
+- **بهبود:** score filter onlyStrong
+- **ترکیب:** entry pullback + Bj Bot structure confirmation
+
+---
+
 ## #16 Monster Trex Vol — BLOCKED
 
 **فایل:** `monster_e007.txt` | **وضعیت:** نیاز به کتابخانه‌های Pine خارجی
@@ -530,10 +606,10 @@ SL = 25% فاصله entry→target (پیش‌فرض)
 | مرحله | تعداد | وضعیت |
 |--------|-------|--------|
 | تحلیل استاتیک | 75 | ✅ |
-| بک‌تست Python | **15** (#1–#15) | ✅ |
+| بک‌تست Python | **19** (#1–#15, #17–#19) | ✅ |
 | monster (کتابخانه خارجی) | 1 | ⏳ blocked |
 | باقی‌مانده zone/trend | ~37 | در صف |
 
-**بک‌تست شده:** `results/backtest_priority_zone.json`
+**بک‌تست شده:** `results/backtest_priority_zone.json`, `results/backtest_sd_sp.json`
 
 ---

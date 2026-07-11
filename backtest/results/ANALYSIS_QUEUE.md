@@ -7,7 +7,7 @@
 | وضعیت | تعداد |
 |--------|-------|
 | تحلیل‌شده قبلی (چت) | 6 |
-| بک‌تست Python | 17 | ✅ (#1–#17) |
+| بک‌تست Python | 19 | ✅ (#1–#17, #18–#19) |
 | تحلیل استاتیک batch | ~75 |
 | ناقص (منتظر آپلود) | 12 |
 | **هدف نهایی** | ~60 |
@@ -32,15 +32,17 @@
 | 14 | Trendline Breakout | `Trendline_Breakouts_With__df18.txt` | ✅ (low sample) |
 | 15 | RSI Advanced | `rsi_advanced_868b.txt` | ✅ |
 | 17 | ML RSI Zeiierman | `machin_rsi_313b.txt` | ✅ |
+| 18 | Supply/Demand Flux | `supply_demand_72be.txt` | ✅ zone native |
+| 19 | Strong Pullback | `strong_pulback_7019.txt` | ✅ native SL/TP 1R |
 | 16 | Monster Trex | `monster_e007.txt` | ⏳ blocked (ext libs) |
 
 ## اولویت بعدی برای پورت Python
 
-1. `Ranked_Order_Block_Zones__Zeiierman_9c77.txt`
-2. `suply_demand_zone_f0e7.txt`
-3. `LIQUDITY_PPOOL_ce94.txt`
-4. `Smart_Money_Structure__GainzAlgo_4e52.txt`
-5. `Cardwell_RSI_Trade_Navigator__MarkitTick_1c8f.txt`
+1. `fvg_return_faf7.txt` — FVG Retest Entry Engine
+2. `sop_hunt_9b71.txt` — Stop Hunt Radar
+3. `matrix_d1c3.txt` — OrderFlow FVG Matrix MTF
+4. `Ranked_Order_Block_Zones__Zeiierman_9c77.txt`
+5. `LIQUDITY_PPOOL_ce94.txt`
 
 ## فایل‌های ناقص (منتظر آپلود شما)
 

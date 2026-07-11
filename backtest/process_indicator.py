@@ -41,6 +41,8 @@ PORT_MAP: dict[str, str] = {
     "rsi_advanced_868b.txt": "rsi_advanced",
     "machin_rsi_313b.txt": "ml_rsi",
     "machin_learning_rsi_217a.txt": "ml_rsi",
+    "supply_demand_72be.txt": "supply_demand",
+    "strong_pulback_7019.txt": "strong_pullback",
 }
 
 KNOWN_DONE = {
@@ -60,6 +62,8 @@ KNOWN_DONE = {
     "trendline_breakout": 14,
     "rsi_advanced": 15,
     "ml_rsi": 17,
+    "supply_demand": 18,
+    "strong_pullback": 19,
 }
 
 

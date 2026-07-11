@@ -18,6 +18,8 @@ from zone_indicators import (
     ifvg_signals,
     rsi_advanced_signals,
     smc_pro_signals,
+    strong_pullback_signals,
+    supply_demand_signals,
     trendline_breakout_signals,
     zero_lag_signals,
 )
@@ -44,7 +46,7 @@ SYMBOL_MARKET = {
 }
 TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 
-ZONE_NATIVE = {"ifvg", "breaker_blocks", "smc_pro", "trendline_breakout"}
+ZONE_NATIVE = {"ifvg", "breaker_blocks", "smc_pro", "trendline_breakout", "supply_demand", "strong_pullback"}
 
 
 def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) -> BacktestResult:
@@ -56,6 +58,10 @@ def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) ->
         sig = smc_pro_signals(df)
     elif name == "trendline_breakout":
         sig = trendline_breakout_signals(df)
+    elif name == "supply_demand":
+        sig = supply_demand_signals(df)
+    elif name == "strong_pullback":
+        sig = strong_pullback_signals(df)
     else:
         raise ValueError(name)
     zlist = extract_zone_signals_from_df(sig)
@@ -257,6 +263,7 @@ def main():
         "ut_bot", "alpha_trend", "bj_bot", "forge", "fib_fib", "quadapt",
         "supertrend", "chandelier_exit", "lorentzian",
         "ifvg", "breaker_blocks", "smc_pro", "zero_lag", "trendline_breakout", "rsi_advanced", "ml_rsi",
+        "supply_demand", "strong_pullback",
     ]
     all_results: list[dict] = []
 

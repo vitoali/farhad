@@ -493,3 +493,358 @@ def rsi_advanced_signals(
     out["buy"] = buy
     out["sell"] = sell
     return out
+
+
+# ---------------------------------------------------------------------------
+# #18 Supply and Demand Zones (Flux Charts)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _SDZone:
+    id: int
+    top: float
+    bottom: float
+    created_bar: int
+    is_supply: bool
+    active: bool = True
+    pending_flip: bool = False
+    last_retest_bar: int = -999
+    retests: int = 0
+
+
+def _sd_zone_bounds(
+    highs: np.ndarray,
+    lows: np.ndarray,
+    opens: np.ndarray,
+    closes: np.ndarray,
+    bars_back: int,
+    i: int,
+    is_supply: bool,
+    wick_avg_bars: int = 5,
+) -> tuple[float, float]:
+    pivot_h = highs[i - bars_back]
+    pivot_l = lows[i - bars_back]
+    sum_wick = 0.0
+    for k in range(wick_avg_bars):
+        idx = i - bars_back + k
+        h, l = highs[idx], lows[idx]
+        o, c = opens[idx], closes[idx]
+        sum_wick += (h - max(o, c)) if is_supply else (min(o, c) - l)
+    avg_wick = sum_wick / wick_avg_bars
+    if is_supply:
+        top, bot = pivot_h, pivot_h - avg_wick
+    else:
+        top, bot = pivot_l + avg_wick, pivot_l
+    return top, bot
+
+
+def _sd_has_overlap(new_top: float, new_bot: float, zones: list[_SDZone], bar_index: int, lookback: int) -> bool:
+    for z in zones:
+        if z.active and bar_index - z.created_bar <= lookback:
+            if new_bot <= z.top and new_top >= z.bottom:
+                return True
+    return False
+
+
+def _sd_update_zones(
+    zones: list[_SDZone],
+    bar_index: int,
+    close: float,
+    high: float,
+    low: float,
+    lookback: int,
+    cooldown: int,
+) -> tuple[bool, bool]:
+    """Returns (bull_retest, bear_retest) for this bar."""
+    bull_retest = bear_retest = False
+    for z in zones:
+        if z.active and bar_index - z.created_bar > lookback:
+            z.active = False
+        if not z.active:
+            continue
+        broke_through = (z.is_supply and close > z.top) or (not z.is_supply and close < z.bottom)
+        broke_back = (z.is_supply and close < z.bottom) or (not z.is_supply and close > z.top)
+        pending_handled = False
+        flipped = False
+        if z.pending_flip and broke_through:
+            z.is_supply = not z.is_supply
+            z.pending_flip = False
+            pending_handled = True
+            flipped = True
+        if z.pending_flip and broke_back:
+            z.retests += 1
+            z.last_retest_bar = bar_index
+            if z.is_supply:
+                bear_retest = True
+            else:
+                bull_retest = True
+            z.pending_flip = False
+            pending_handled = True
+        if not pending_handled and not z.pending_flip and broke_through:
+            z.pending_flip = True
+        if (
+            z.active
+            and not flipped
+            and not z.pending_flip
+            and not pending_handled
+            and bar_index > z.created_bar
+            and bar_index - z.last_retest_bar >= cooldown
+        ):
+            reacted = False
+            if z.is_supply:
+                if high >= z.bottom and close < z.bottom:
+                    reacted = True
+            else:
+                if low <= z.top and close > z.top:
+                    reacted = True
+            if reacted:
+                z.retests += 1
+                z.last_retest_bar = bar_index
+                if z.is_supply:
+                    bear_retest = True
+                else:
+                    bull_retest = True
+    return bull_retest, bear_retest
+
+
+def supply_demand_signals(
+    df: pd.DataFrame,
+    pivot_len: int = 30,
+    lookback_bars: int = 2000,
+    cooldown_bars: int = 3,
+    sl_atr_mult: float = 0.15,
+    tp_rr: float = 2.0,
+) -> pd.DataFrame:
+    """Flux supply/demand zone retest alerts with zone-native SL/TP."""
+    out = df.copy()
+    n = len(out)
+    highs = out["high"].values
+    lows = out["low"].values
+    opens = out["open"].values
+    closes = out["close"].values
+    atr_v = atr_wilder(out, 14).values
+
+    ph = pivot_high(out["high"], pivot_len, pivot_len).values
+    pl = pivot_low(out["low"], pivot_len, pivot_len).values
+
+    supply: list[_SDZone] = []
+    demand: list[_SDZone] = []
+    zone_id = 0
+    max_zones = 500
+
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    sl_p = np.full(n, np.nan)
+    tp_p = np.full(n, np.nan)
+
+    for i in range(pivot_len * 2, n):
+        if not np.isnan(ph[i]):
+            bars_back = pivot_len
+            top, bot = _sd_zone_bounds(highs, lows, opens, closes, bars_back, i, True)
+            if top > bot and not _sd_has_overlap(top, bot, supply + demand, i, lookback_bars):
+                supply.append(_SDZone(zone_id, top, bot, i - pivot_len, True))
+                zone_id += 1
+                if len(supply) > max_zones:
+                    supply.pop(0)
+        if not np.isnan(pl[i]):
+            bars_back = pivot_len
+            top, bot = _sd_zone_bounds(highs, lows, opens, closes, bars_back, i, False)
+            if top > bot and not _sd_has_overlap(top, bot, supply + demand, i, lookback_bars):
+                demand.append(_SDZone(zone_id, top, bot, i - pivot_len, False))
+                zone_id += 1
+                if len(demand) > max_zones:
+                    demand.pop(0)
+
+        bull_r, bear_r = False, False
+        for zones in (supply, demand):
+            br, sr = _sd_update_zones(zones, i, closes[i], highs[i], lows[i], lookback_bars, cooldown_bars)
+            bull_r = bull_r or br
+            bear_r = bear_r or sr
+
+        safe_atr = atr_v[i] if not np.isnan(atr_v[i]) and atr_v[i] > 0 else closes[i] * 0.005
+        if bull_r:
+            # Demand bounce — SL below zone, TP at RR
+            z = min((z for z in demand if z.active), key=lambda z: abs((z.top + z.bottom) / 2 - closes[i]), default=None)
+            entry = closes[i]
+            sl = (z.bottom - safe_atr * sl_atr_mult) if z else entry - safe_atr
+            risk = max(entry - sl, safe_atr * 0.25)
+            buy[i] = True
+            sl_p[i] = sl
+            tp_p[i] = entry + risk * tp_rr
+        if bear_r:
+            z = min((z for z in supply if z.active), key=lambda z: abs((z.top + z.bottom) / 2 - closes[i]), default=None)
+            entry = closes[i]
+            sl = (z.top + safe_atr * sl_atr_mult) if z else entry + safe_atr
+            risk = max(sl - entry, safe_atr * 0.25)
+            sell[i] = True
+            sl_p[i] = sl
+            tp_p[i] = entry - risk * tp_rr
+
+    out["buy"] = buy
+    out["sell"] = sell
+    out["sl_price"] = sl_p
+    out["tp_price"] = tp_p
+    return out
+
+
+# ---------------------------------------------------------------------------
+# #19 Strong Pullback Signals
+# ---------------------------------------------------------------------------
+
+def _htf_ema_series(df: pd.DataFrame, tf_minutes: int = 240, ema_len: int = 50) -> pd.Series:
+    """Approximate Pine request.security HTF EMA (prior bar, no lookahead)."""
+    if "timestamp" in df.columns:
+        idx = pd.to_datetime(df["timestamp"])
+    else:
+        idx = df.index
+    tmp = df.copy()
+    tmp.index = idx
+    try:
+        rs = tmp["close"].resample(f"{tf_minutes}min").last().dropna()
+    except Exception:
+        factor = max(1, tf_minutes // 15)
+        rs = tmp["close"].iloc[::factor]
+    htf = ema(rs, ema_len).shift(1)
+    aligned = htf.reindex(tmp.index, method="ffill")
+    return pd.Series(aligned.values, index=df.index)
+
+
+def strong_pullback_signals(
+    df: pd.DataFrame,
+    fast_len: int = 34,
+    slow_len: int = 144,
+    pull_len: int = 21,
+    slope_look: int = 5,
+    break_look: int = 20,
+    min_wait_bars: int = 2,
+    max_hunt_bars: int = 40,
+    min_break_body: float = 0.20,
+    use_cooldown: bool = True,
+    cooldown_bars: int = 10,
+    entry_depth: float = 0.40,
+    require_close: bool = False,
+    atr_len: int = 14,
+    sl_buf_atr: float = 0.30,
+    max_risk_atr: float = 2.5,
+    min_risk_atr: float = 0.5,
+    tp1_r: float = 1.0,
+    use_htf: bool = True,
+    htf_ema_len: int = 50,
+    only_strong: bool = False,
+    strong_thr: float = 5.0,
+) -> pd.DataFrame:
+    """Strong Pullback limit-fill entries with structural ATR-capped SL and 1R TP."""
+    out = df.copy()
+    n = len(out)
+    closes = out["close"].values
+    highs = out["high"].values
+    lows = out["low"].values
+    opens = out["open"].values
+    vols = out["volume"].values if "volume" in out.columns else np.ones(n)
+
+    fast = ema(out["close"], fast_len).values
+    slow = ema(out["close"], slow_len).values
+    pull = ema(out["close"], pull_len).values
+    atr_v = atr_wilder(out, atr_len).values
+    rsi_v = rsi(out["close"], 14).values
+    vol_sma = sma(out["volume"], 20).values if "volume" in out.columns else np.ones(n)
+    htf = _htf_ema_series(out, 240, htf_ema_len).values
+
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    entry_p = np.full(n, np.nan)
+    sl_p = np.full(n, np.nan)
+    tp_p = np.full(n, np.nan)
+
+    armed = False
+    adir = 0
+    arm_bar = -1
+    swing_ext = 0.0
+    last_sig_bar = -999
+    open_bar = -1
+    open_is_long = False
+    open_sl = open_tp = 0.0
+
+    for i in range(max(slope_look, break_look) + 1, n):
+        a = atr_v[i] if not np.isnan(atr_v[i]) and atr_v[i] > 0 else 1e-8
+        body = abs(closes[i] - opens[i])
+        bull_trend = fast[i] > slow[i] and closes[i] > slow[i] and fast[i] > fast[i - slope_look]
+        bear_trend = fast[i] < slow[i] and closes[i] < slow[i] and fast[i] < fast[i - slope_look]
+        hi_before = np.max(highs[i - break_look : i])
+        lo_before = np.min(lows[i - break_look : i])
+        break_ok = body >= a * min_break_body
+        bull_break = bull_trend and closes[i] > hi_before and closes[i] > opens[i] and break_ok
+        bear_break = bear_trend and closes[i] < lo_before and closes[i] < opens[i] and break_ok
+
+        trade_active = open_bar >= 0
+        cooldown_ok = (not use_cooldown) or (i - last_sig_bar >= cooldown_bars)
+        if (bull_break or bear_break) and not armed and cooldown_ok and not trade_active:
+            armed = True
+            adir = 1 if bull_break else -1
+            arm_bar = i
+            swing_ext = lows[i] if adir == 1 else highs[i]
+
+        if armed:
+            swing_ext = min(swing_ext, lows[i]) if adir == 1 else max(swing_ext, highs[i])
+        age = i - arm_bar if armed else 0
+        expire = armed and age > max_hunt_bars
+        flip = armed and ((adir == 1 and not bull_trend) or (adir == -1 and not bear_trend))
+        limit_px = pull[i] - entry_depth * a * adir if adir != 0 else np.nan
+        fill_now = armed and age >= min_wait_bars and (lows[i] <= limit_px if adir == 1 else highs[i] >= limit_px)
+        fill_px = min(opens[i], limit_px) if adir == 1 else max(opens[i], limit_px)
+
+        htf_ok = (not use_htf) or np.isnan(htf[i]) or (closes[i] > htf[i] if adir == 1 else closes[i] < htf[i])
+        trend_ok = closes[i] > slow[i] if adir == 1 else closes[i] < slow[i]
+        close_ok = (not require_close) or (closes[i] > opens[i] if adir == 1 else closes[i] < opens[i])
+        can_open = not trade_active and not np.isnan(atr_v[i]) and armed
+
+        if fill_now and can_open and htf_ok and trend_ok and close_ok:
+            sep = min(abs(fast[i] - slow[i]) / (a * 2.5), 1.0)
+            dep = min(entry_depth / 0.6, 1.0)
+            mom = (
+                min(max((rsi_v[i] - 50.0) / 30.0, 0.0), 1.0)
+                if adir == 1
+                else min(max((50.0 - rsi_v[i]) / 30.0, 0.0), 1.0)
+            )
+            vol_f = min(vols[i] / vol_sma[i], 1.0) if vol_sma[i] > 0 else 0.0
+            htf_f = 1.0 if htf_ok else 0.0
+            raw = (htf_f * 0.30 + 1.0 * 0.12 + sep * 0.22 + dep * 0.16 + mom * 0.10 + vol_f * 0.10) / 1.0
+            score = min(max(raw * 10.0, 0.0), 10.0)
+            take = (not only_strong) or score >= strong_thr
+            if take:
+                is_long = adir == 1
+                raw_stop = swing_ext - a * sl_buf_atr if is_long else swing_ext + a * sl_buf_atr
+                risk0 = abs(fill_px - raw_stop)
+                risk = min(max(risk0, a * min_risk_atr), a * max_risk_atr)
+                stopv = fill_px - risk if is_long else fill_px + risk
+                t1 = fill_px + risk * tp1_r if is_long else fill_px - risk * tp1_r
+                if is_long:
+                    buy[i] = True
+                else:
+                    sell[i] = True
+                entry_p[i] = fill_px
+                sl_p[i] = stopv
+                tp_p[i] = t1
+                last_sig_bar = i
+                open_bar = i
+                open_is_long = is_long
+                open_sl, open_tp = stopv, t1
+
+        if armed and (fill_now or expire or flip):
+            armed = False
+            adir = 0
+
+        if open_bar >= 0 and i > open_bar:
+            if open_is_long:
+                if lows[i] <= open_sl or highs[i] >= open_tp:
+                    open_bar = -1
+            else:
+                if highs[i] >= open_sl or lows[i] <= open_tp:
+                    open_bar = -1
+
+    out["buy"] = buy
+    out["sell"] = sell
+    out["entry_price"] = entry_p
+    out["sl_price"] = sl_p
+    out["tp_price"] = tp_p
+    return out

@@ -176,15 +176,17 @@ def extract_zone_signals_from_df(df: pd.DataFrame) -> list[ZoneSignal]:
     """Build ZoneSignal list from buy/sell + optional sl_price/tp_price columns."""
     signals: list[ZoneSignal] = []
     closes = df["close"].values
+    has_entry = "entry_price" in df.columns
     for i in range(len(df)):
         if "buy" in df.columns and df["buy"].iloc[i]:
             sl = df["sl_price"].iloc[i] if "sl_price" in df.columns else np.nan
             tp = df["tp_price"].iloc[i] if "tp_price" in df.columns else np.nan
+            ent = df["entry_price"].iloc[i] if has_entry and not np.isnan(df["entry_price"].iloc[i]) else closes[i]
             signals.append(
                 ZoneSignal(
                     i,
                     "long",
-                    closes[i],
+                    float(ent),
                     None if np.isnan(sl) else float(sl),
                     None if np.isnan(tp) else float(tp),
                 )
@@ -192,11 +194,12 @@ def extract_zone_signals_from_df(df: pd.DataFrame) -> list[ZoneSignal]:
         if "sell" in df.columns and df["sell"].iloc[i]:
             sl = df["sl_price"].iloc[i] if "sl_price" in df.columns else np.nan
             tp = df["tp_price"].iloc[i] if "tp_price" in df.columns else np.nan
+            ent = df["entry_price"].iloc[i] if has_entry and not np.isnan(df["entry_price"].iloc[i]) else closes[i]
             signals.append(
                 ZoneSignal(
                     i,
                     "short",
-                    closes[i],
+                    float(ent),
                     None if np.isnan(sl) else float(sl),
                     None if np.isnan(tp) else float(tp),
                 )
