@@ -1,20 +1,19 @@
 # دفتر یادگیری بک‌تست — اندیکاتورها
 
-دوره: ~۳۱ روز گذشته | منبع داده: Yahoo Finance (BTC-USD, EURUSD, XAUUSD)
+دوره: ~۳۱ روز گذشته
 
-## محدودیت داده
+## منبع داده
 
-- **BTC:** Yahoo Finance (BTC-USD) ✅
-- **HYPE/BEAT:** در yfinance موجود نبود؛ API صرافی‌ها در این محیط مسدود
-- **EURUSD / XAUUSD:** Yahoo Finance ✅
+- **اول بایننس** → OKX / KuCoin / Gate / Bybit → Yahoo
+- BTC/HYPE: OKX | BEAT: KuCoin | EUR/XAU: Yahoo
 
 ## مدل ریسک در بک‌تست
 
 | بازار | SL | TP | هزینه |
 |-------|----|----|-------|
-| کریپتو | 1% | 2% | ~0.1% RT |
-| فارکس | 3 pip / $3 gold | RR 1:1 | ~1 pip RT |
-| Bj Bot | swing+ATR native | R:R=1 | — |
+| **کریپتو** | **5%** | **5%** (RR 1:1) | ~0.1% RT |
+| فارکس | 3 pip | RR 1:1 | ~1 pip |
+| Bj Bot (فارکس) | swing+ATR native | R:R=1 | — |
 
 ---
 

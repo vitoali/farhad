@@ -20,7 +20,7 @@ python run_backtest.py
 
 ## مدل ریسک
 
-- **کریپتو:** SL **5%**، TP **10%** (RR 2:1)، کارمزد+اسلیپیج ~0.1% round-trip
+- **کریپتو:** SL **5%**، TP **5%** (RR 1:1)، کارمزد+اسلیپیج ~0.1% round-trip
 - **فارکس:** SL 3 pip، TP RR 1:1، اسپرد ~1 pip
 - **Bj Bot (فارکس):** خروج native (swing+ATR stop، R:R=1)
 - **FORGE (کریپتو):** SL/TP ثابت 5%/10% | **FORGE (فارکس):** SL/TP الگو

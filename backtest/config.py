@@ -1,8 +1,8 @@
 """Backtest risk and cost defaults."""
 
-# Crypto (ارز دیجیتال) — per user: SL 5%
+# Crypto (ارز دیجیتال) — SL 5% / TP 5% (RR 1:1)
 CRYPTO_SL_PCT = 0.05
-CRYPTO_TP_PCT = 0.10  # RR 2:1 vs 5% SL (TP 2%/4% scaled from original framework)
+CRYPTO_TP_PCT = 0.05
 
 # Forex
 FOREX_SL_PIPS = 3.0
