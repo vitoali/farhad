@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Run 1-month offline backtests for indicators #1-#3."""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pandas as pd
+
+from engine import BacktestResult, aggregate, simulate_bj_native, simulate_fixed_sl_tp
+from fetch_data import SYMBOLS, fetch_all
+from indicators import alpha_trend_signals, bj_bot_signals, ut_bot_signals
+
+RESULTS_DIR = Path(__file__).parent / "results"
+RESULTS_DIR.mkdir(exist_ok=True)
+
+SYMBOL_MARKET = {
+    "BTCUSDT": "crypto",
+    "HYPEUSDT": "crypto",
+    "BEATUSDT": "crypto",
+    "EURUSD": "forex",
+    "XAUUSD": "forex",
+}
+TIMEFRAMES = ["15m", "1h", "4h", "1d"]
+
+
+def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) -> BacktestResult:
+    if len(df) < 50:
+        return BacktestResult(name, symbol, tf, market, notes=["insufficient data"])
+
+    if name == "ut_bot":
+        sig = ut_bot_signals(df)
+        trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=0.01, tp_pct=0.02)
+        if market == "forex":
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=3, tp_rr=1.0)
+        return aggregate(trades, name, symbol, tf, market)
+
+    if name == "alpha_trend":
+        # crypto often has volume; forex use RSI mode
+        novol = market == "forex" or symbol == "BEATUSDT"
+        sig = alpha_trend_signals(df, novolumedata=novol)
+        if market == "crypto":
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pct=0.01, tp_pct=0.02)
+        else:
+            trades = simulate_fixed_sl_tp(sig, sig["buy"], sig["sell"], market, sl_pips=3, tp_rr=1.0)
+        return aggregate(trades, name, symbol, tf, market)
+
+    if name == "bj_bot":
+        sig = bj_bot_signals(df)
+        trades = simulate_bj_native(sig)
+        return aggregate(trades, name, symbol, tf, market)
+
+    raise ValueError(name)
+
+
+def result_to_dict(r: BacktestResult) -> dict:
+    return {
+        "indicator": r.indicator,
+        "symbol": r.symbol,
+        "timeframe": r.timeframe,
+        "market": r.market,
+        "total_trades": r.total_trades,
+        "win_rate": round(r.win_rate, 2),
+        "profit_factor": round(r.profit_factor, 3) if r.profit_factor != float("inf") else 999,
+        "avg_r": round(r.avg_r, 3),
+        "max_drawdown_r": round(r.max_drawdown_pct, 3),
+        "notes": r.notes,
+    }
+
+
+def summarize_learning(results: list[dict]) -> dict:
+    """Extract cross-cutting strengths/weaknesses per indicator."""
+    by_ind: dict[str, list[dict]] = {}
+    for r in results:
+        by_ind.setdefault(r["indicator"], []).append(r)
+
+    learning = {}
+    for ind, rows in by_ind.items():
+        valid = [x for x in rows if x["total_trades"] >= 3]
+        if not valid:
+            learning[ind] = {"status": "insufficient_trades", "rows": len(rows)}
+            continue
+        avg_wr = sum(x["win_rate"] for x in valid) / len(valid)
+        avg_pf = sum(x["profit_factor"] for x in valid if x["profit_factor"] < 900) / max(1, len([x for x in valid if x["profit_factor"] < 900]))
+        avg_trades = sum(x["total_trades"] for x in valid) / len(valid)
+        best = max(valid, key=lambda x: x["profit_factor"] if x["profit_factor"] < 900 else 0)
+        worst = min(valid, key=lambda x: x["profit_factor"])
+
+        learning[ind] = {
+            "avg_win_rate": round(avg_wr, 2),
+            "avg_profit_factor": round(avg_pf, 3),
+            "avg_trades_per_run": round(avg_trades, 1),
+            "best": f"{best['symbol']} {best['timeframe']} PF={best['profit_factor']}",
+            "worst": f"{worst['symbol']} {worst['timeframe']} PF={worst['profit_factor']}",
+            "samples": len(valid),
+        }
+    return learning
+
+
+def main():
+    print("=== Fetching data (~31 days) ===")
+    data = fetch_all(days=31, timeframes=TIMEFRAMES, force=True)
+
+    indicators = ["ut_bot", "alpha_trend", "bj_bot"]
+    all_results: list[dict] = []
+
+    print("\n=== Running backtests ===")
+    for sym, tfs in data.items():
+        market = SYMBOL_MARKET.get(sym, "crypto")
+        for tf, df in tfs.items():
+            if df is None or len(df) < 50:
+                print(f"SKIP {sym} {tf}: no data")
+                continue
+            for ind in indicators:
+                try:
+                    r = run_indicator(ind, df, sym, tf, market)
+                    d = result_to_dict(r)
+                    all_results.append(d)
+                    print(f"  {ind:12} {sym:8} {tf:4} trades={d['total_trades']:3} WR={d['win_rate']:5.1f}% PF={d['profit_factor']}")
+                except Exception as e:
+                    print(f"  {ind:12} {sym:8} {tf:4} ERROR: {e}")
+
+    learning = summarize_learning(all_results)
+
+    out = {"period_days": 31, "results": all_results, "learning": learning}
+    out_path = RESULTS_DIR / "backtest_1m_summary.json"
+    out_path.write_text(json.dumps(out, indent=2), encoding="utf-8")
+    print(f"\nSaved: {out_path}")
+    print("\n=== Learning summary ===")
+    print(json.dumps(learning, indent=2))
+
+
+if __name__ == "__main__":
+    main()
