@@ -1,0 +1,2 @@
+sig_idx,time,pattern,direction,entry_claimed,entry_honest,stop_claimed,target,conf,bars_since_break,hindsight_gap_pct,htf_aligned,chop_idx,vol_spike,outcome,pl_pct,r,bars_held
+213,1781218800,Double Top,short,1.1524720191955566,1.160644769668579,1.1552523225545883,1.1413508057594295,6,4,-0.7091,False,55.8,False,sl,-0.0526,-1.22,0

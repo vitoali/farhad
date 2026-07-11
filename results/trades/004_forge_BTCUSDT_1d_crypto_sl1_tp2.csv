@@ -1,0 +1,2 @@
+sig_idx,time,pattern,direction,entry_claimed,entry_honest,stop_claimed,target,conf,bars_since_break,hindsight_gap_pct,htf_aligned,chop_idx,vol_spike,outcome,pl_pct,r,bars_held
+323,1783123200,Bull Pennant,long,61560.3,63141.5,55619.4675,85323.63,8,1,2.5685,True,53.44,False,sl,-1.2,-1.2,0

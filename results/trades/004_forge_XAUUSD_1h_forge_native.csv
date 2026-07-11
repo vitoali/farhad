@@ -1,0 +1,4 @@
+sig_idx,time,pattern,direction,entry_claimed,entry_honest,stop_claimed,target,conf,bars_since_break,hindsight_gap_pct,htf_aligned,chop_idx,vol_spike,outcome,pl_pct,r,bars_held
+231,1781478000,Double Bottom,long,4325.60009765625,4314.2998046875,4306.087738037109,4403.6495361328125,8,1,-0.2612,True,39.21,False,sl,-0.5282,-1.02,64
+305,1781755200,Bear Pennant,short,4399.60009765625,4335.7998046875,4454.6719970703125,4179.3125,7,9,1.4501,False,39.25,True,tp,3.5988,3.988,21
+429,1782457200,Bull Pennant,long,4023.199951171875,4046.10009765625,3916.33073832194,4450.676802571615,6,1,0.5692,False,54.21,False,open,1.6596,0.664,225
