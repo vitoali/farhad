@@ -1,5 +1,14 @@
 {
   "summaries": {
+    "rsi_advanced_baseline": {
+      "label": "rsi_advanced_baseline",
+      "avg_wr": 53.2,
+      "avg_pf": 2.964,
+      "priority_tf_pf": 3.762,
+      "best": "BTCUSDT 4h PF=8.27 WR=66.67%",
+      "total_trades": 57,
+      "samples": 7
+    },
     "bj_bot_baseline": {
       "label": "bj_bot_baseline",
       "avg_wr": 53.8,
@@ -35,9 +44,209 @@
       "best": "BEATUSDT 15m PF=1.435 WR=66.67%",
       "total_trades": 10,
       "samples": 3
+    },
+    "farhad_master": {
+      "label": "farhad_master",
+      "avg_wr": 44.6,
+      "avg_pf": 1.194,
+      "priority_tf_pf": 1.273,
+      "best": "XAUUSD 4h PF=5.565 WR=75.0%",
+      "total_trades": 1743,
+      "samples": 15
+    },
+    "farhad_master_strict": {
+      "label": "farhad_master_strict",
+      "avg_wr": 42.9,
+      "avg_pf": 0.726,
+      "priority_tf_pf": 0.583,
+      "best": "BEATUSDT 15m PF=1.654 WR=58.33%",
+      "total_trades": 96,
+      "samples": 9
     }
   },
   "results": {
+    "rsi_advanced_baseline": [
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 7,
+        "win_rate": 57.14,
+        "profit_factor": 1.201,
+        "avg_r": 0.031,
+        "max_drawdown_r": 0.646,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 3,
+        "win_rate": 33.33,
+        "profit_factor": 1.63,
+        "avg_r": 0.124,
+        "max_drawdown_r": 0.317,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 3,
+        "win_rate": 66.67,
+        "profit_factor": 8.27,
+        "avg_r": 0.563,
+        "max_drawdown_r": 0.232,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 9,
+        "win_rate": 88.89,
+        "profit_factor": 7.771,
+        "avg_r": 0.373,
+        "max_drawdown_r": 0.495,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 2,
+        "win_rate": 50.0,
+        "profit_factor": 0.923,
+        "avg_r": -0.04,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 100.0,
+        "profit_factor": 999,
+        "avg_r": 0.543,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 15,
+        "win_rate": 26.67,
+        "profit_factor": 0.361,
+        "avg_r": -0.454,
+        "max_drawdown_r": 5.765,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 5,
+        "win_rate": 60.0,
+        "profit_factor": 1.385,
+        "avg_r": 0.16,
+        "max_drawdown_r": 2.08,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.04,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 15,
+        "win_rate": 40.0,
+        "profit_factor": 0.133,
+        "avg_r": -0.867,
+        "max_drawdown_r": 13.333,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 2,
+        "win_rate": 50.0,
+        "profit_factor": 0.2,
+        "avg_r": -0.667,
+        "max_drawdown_r": 1.667,
+        "notes": []
+      },
+      {
+        "indicator": "rsi_advanced",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.667,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      }
+    ],
     "bj_bot_baseline": [
       {
         "indicator": "bj_bot_baseline",
@@ -231,9 +440,7 @@
         "profit_factor": 0.606,
         "avg_r": -0.226,
         "max_drawdown_r": 5.149,
-        "notes": [
-          "signals=13L/14S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -245,9 +452,7 @@
         "profit_factor": 1.482,
         "avg_r": 0.16,
         "max_drawdown_r": 0.885,
-        "notes": [
-          "signals=6L/6S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -259,9 +464,7 @@
         "profit_factor": 1.679,
         "avg_r": 0.229,
         "max_drawdown_r": 1.085,
-        "notes": [
-          "signals=3L/3S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -273,9 +476,7 @@
         "profit_factor": 0.578,
         "avg_r": -0.266,
         "max_drawdown_r": 4.355,
-        "notes": [
-          "signals=14L/13S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -287,9 +488,7 @@
         "profit_factor": 0.96,
         "avg_r": -0.017,
         "max_drawdown_r": 2.493,
-        "notes": [
-          "signals=6L/8S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -301,9 +500,7 @@
         "profit_factor": 0.0,
         "avg_r": -1.005,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=2L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -315,9 +512,7 @@
         "profit_factor": 0.707,
         "avg_r": -0.157,
         "max_drawdown_r": 9.417,
-        "notes": [
-          "signals=26L/28S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -329,9 +524,7 @@
         "profit_factor": 1.323,
         "avg_r": 0.129,
         "max_drawdown_r": 2.761,
-        "notes": [
-          "signals=6L/6S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -343,9 +536,7 @@
         "profit_factor": 1.155,
         "avg_r": 0.067,
         "max_drawdown_r": 0.865,
-        "notes": [
-          "signals=0L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -357,9 +548,7 @@
         "profit_factor": 0.503,
         "avg_r": -0.311,
         "max_drawdown_r": 6.924,
-        "notes": [
-          "signals=13L/17S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -371,9 +560,7 @@
         "profit_factor": 1.187,
         "avg_r": 0.065,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=5L/4S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -385,9 +572,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=2L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -399,9 +584,7 @@
         "profit_factor": 0.838,
         "avg_r": -0.075,
         "max_drawdown_r": 2.872,
-        "notes": [
-          "signals=14L/14S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -413,9 +596,7 @@
         "profit_factor": 1.061,
         "avg_r": 0.032,
         "max_drawdown_r": 1.211,
-        "notes": [
-          "signals=5L/3S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_loose",
@@ -427,9 +608,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=1L/1S"
-        ]
+        "notes": []
       }
     ],
     "farhad_standard": [
@@ -443,9 +622,7 @@
         "profit_factor": 0.0,
         "avg_r": -0.897,
         "max_drawdown_r": 4.314,
-        "notes": [
-          "signals=7L/3S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -457,9 +634,7 @@
         "profit_factor": 999,
         "avg_r": 0.998,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=1L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -471,9 +646,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -485,9 +658,7 @@
         "profit_factor": 0.454,
         "avg_r": -0.397,
         "max_drawdown_r": 4.139,
-        "notes": [
-          "signals=9L/4S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -499,9 +670,7 @@
         "profit_factor": 1.77,
         "avg_r": 0.223,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=5L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -513,9 +682,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -527,9 +694,7 @@
         "profit_factor": 0.505,
         "avg_r": -0.319,
         "max_drawdown_r": 7.06,
-        "notes": [
-          "signals=10L/13S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -541,9 +706,7 @@
         "profit_factor": 0.146,
         "avg_r": -0.605,
         "max_drawdown_r": 3.411,
-        "notes": [
-          "signals=2L/4S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -555,9 +718,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -569,9 +730,7 @@
         "profit_factor": 0.765,
         "avg_r": -0.126,
         "max_drawdown_r": 3.187,
-        "notes": [
-          "signals=4L/8S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -583,9 +742,7 @@
         "profit_factor": 999,
         "avg_r": 0.678,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=1L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -597,9 +754,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -611,9 +766,7 @@
         "profit_factor": 2.559,
         "avg_r": 0.376,
         "max_drawdown_r": 2.408,
-        "notes": [
-          "signals=7L/7S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -625,9 +778,7 @@
         "profit_factor": 1.901,
         "avg_r": 0.363,
         "max_drawdown_r": 1.211,
-        "notes": [
-          "signals=3L/1S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_standard",
@@ -639,9 +790,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       }
     ],
     "farhad_strict": [
@@ -655,9 +804,7 @@
         "profit_factor": 0.0,
         "avg_r": -0.914,
         "max_drawdown_r": 1.091,
-        "notes": [
-          "signals=4L/1S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -669,9 +816,7 @@
         "profit_factor": 999,
         "avg_r": 1.106,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=1L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -683,9 +828,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -697,9 +840,7 @@
         "profit_factor": 0.0,
         "avg_r": -1.181,
         "max_drawdown_r": 2.394,
-        "notes": [
-          "signals=3L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -711,9 +852,7 @@
         "profit_factor": 0.595,
         "avg_r": -0.194,
         "max_drawdown_r": 1.05,
-        "notes": [
-          "signals=2L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -725,9 +864,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -739,9 +876,7 @@
         "profit_factor": 1.435,
         "avg_r": 0.181,
         "max_drawdown_r": 1.248,
-        "notes": [
-          "signals=2L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -753,9 +888,7 @@
         "profit_factor": 0.0,
         "avg_r": -0.909,
         "max_drawdown_r": 1.132,
-        "notes": [
-          "signals=1L/1S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -767,9 +900,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -781,9 +912,7 @@
         "profit_factor": 0.159,
         "avg_r": -0.345,
         "max_drawdown_r": 0.82,
-        "notes": [
-          "signals=1L/1S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -795,9 +924,7 @@
         "profit_factor": 999,
         "avg_r": 0.902,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/2S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -809,9 +936,7 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=0L/0S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -823,9 +948,7 @@
         "profit_factor": 999,
         "avg_r": 0.816,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=1L/1S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -837,9 +960,7 @@
         "profit_factor": 999,
         "avg_r": 1.151,
         "max_drawdown_r": 0.0,
-        "notes": [
-          "signals=1L/1S"
-        ]
+        "notes": []
       },
       {
         "indicator": "farhad_strict",
@@ -851,8 +972,430 @@
         "profit_factor": 0.0,
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
+        "notes": []
+      }
+    ],
+    "farhad_master": [
+      {
+        "indicator": "farhad_master",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 187,
+        "win_rate": 42.78,
+        "profit_factor": 0.808,
+        "avg_r": -0.044,
+        "max_drawdown_r": 9.806,
         "notes": [
-          "signals=0L/0S"
+          "n=188"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 119,
+        "win_rate": 47.9,
+        "profit_factor": 0.913,
+        "avg_r": -0.016,
+        "max_drawdown_r": 7.384,
+        "notes": [
+          "n=120"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 20,
+        "win_rate": 45.0,
+        "profit_factor": 0.52,
+        "avg_r": -0.138,
+        "max_drawdown_r": 4.074,
+        "notes": [
+          "n=20"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 227,
+        "win_rate": 51.98,
+        "profit_factor": 1.146,
+        "avg_r": 0.027,
+        "max_drawdown_r": 6.935,
+        "notes": [
+          "n=228"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 120,
+        "win_rate": 49.17,
+        "profit_factor": 0.806,
+        "avg_r": -0.05,
+        "max_drawdown_r": 12.603,
+        "notes": [
+          "n=121"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 11,
+        "win_rate": 36.36,
+        "profit_factor": 0.68,
+        "avg_r": -0.058,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "n=12"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 391,
+        "win_rate": 46.55,
+        "profit_factor": 0.869,
+        "avg_r": -0.029,
+        "max_drawdown_r": 19.592,
+        "notes": [
+          "n=392"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 95,
+        "win_rate": 42.11,
+        "profit_factor": 0.752,
+        "avg_r": -0.053,
+        "max_drawdown_r": 6.609,
+        "notes": [
+          "n=96"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 7,
+        "win_rate": 28.57,
+        "profit_factor": 0.173,
+        "avg_r": -0.399,
+        "max_drawdown_r": 3.202,
+        "notes": [
+          "n=8"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 254,
+        "win_rate": 42.13,
+        "profit_factor": 1.128,
+        "avg_r": 0.026,
+        "max_drawdown_r": 9.126,
+        "notes": [
+          "n=254"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 68,
+        "win_rate": 50.0,
+        "profit_factor": 1.479,
+        "avg_r": 0.072,
+        "max_drawdown_r": 4.011,
+        "notes": [
+          "n=69"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 6,
+        "win_rate": 16.67,
+        "profit_factor": 1.013,
+        "avg_r": 0.002,
+        "max_drawdown_r": 0.703,
+        "notes": [
+          "n=7"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 207,
+        "win_rate": 46.38,
+        "profit_factor": 1.233,
+        "avg_r": 0.044,
+        "max_drawdown_r": 6.663,
+        "notes": [
+          "n=208"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 23,
+        "win_rate": 47.83,
+        "profit_factor": 0.825,
+        "avg_r": -0.046,
+        "max_drawdown_r": 4.031,
+        "notes": [
+          "n=23"
+        ]
+      },
+      {
+        "indicator": "farhad_master",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 8,
+        "win_rate": 75.0,
+        "profit_factor": 5.565,
+        "avg_r": 0.443,
+        "max_drawdown_r": 0.449,
+        "notes": [
+          "n=8"
+        ]
+      }
+    ],
+    "farhad_master_strict": [
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 7,
+        "win_rate": 28.57,
+        "profit_factor": 0.411,
+        "avg_r": -0.353,
+        "max_drawdown_r": 2.804,
+        "notes": [
+          "n=7"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 11,
+        "win_rate": 54.55,
+        "profit_factor": 0.825,
+        "avg_r": -0.043,
+        "max_drawdown_r": 2.207,
+        "notes": [
+          "n=11"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "n=0"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 8,
+        "win_rate": 37.5,
+        "profit_factor": 0.419,
+        "avg_r": -0.165,
+        "max_drawdown_r": 2.185,
+        "notes": [
+          "n=9"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 9,
+        "win_rate": 66.67,
+        "profit_factor": 1.313,
+        "avg_r": 0.071,
+        "max_drawdown_r": 2.0,
+        "notes": [
+          "n=10"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "n=0"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 24,
+        "win_rate": 58.33,
+        "profit_factor": 1.654,
+        "avg_r": 0.131,
+        "max_drawdown_r": 1.39,
+        "notes": [
+          "n=24"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 5,
+        "win_rate": 40.0,
+        "profit_factor": 0.143,
+        "avg_r": -0.243,
+        "max_drawdown_r": 1.336,
+        "notes": [
+          "n=5"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "n=0"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 13,
+        "win_rate": 23.08,
+        "profit_factor": 0.404,
+        "avg_r": -0.213,
+        "max_drawdown_r": 4.342,
+        "notes": [
+          "n=13"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 3,
+        "win_rate": 33.33,
+        "profit_factor": 0.052,
+        "avg_r": -0.632,
+        "max_drawdown_r": 2.0,
+        "notes": [
+          "n=3"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "n=0"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 16,
+        "win_rate": 43.75,
+        "profit_factor": 1.31,
+        "avg_r": 0.087,
+        "max_drawdown_r": 2.0,
+        "notes": [
+          "n=16"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 2,
+        "win_rate": 50.0,
+        "profit_factor": 3.518,
+        "avg_r": 0.448,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "n=2"
+        ]
+      },
+      {
+        "indicator": "farhad_master_strict",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "n=0"
         ]
       }
     ]

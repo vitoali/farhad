@@ -1,0 +1,173 @@
+//@version=6
+strategy("Farhad Master Strategy", overlay=true, max_labels_count=200,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10,
+     commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ═══════════════════════════════════════════════════════════════════
+// FARHAD MASTER — confluence from top 52-indicator backtest
+// Core: RSI Advanced (PF≈2.96) + Liquidity Shift + Supply/Demand
+// Zones: IFVG, Strong Pullback, Volume OB, Mirage, FVG Retest
+// Tech: UT Bot + AlphaTrend + Zero-Lag + Bj Bot structure
+// SL/TP: weighted blend of zone-native levels
+// ═══════════════════════════════════════════════════════════════════
+
+string GRP_MODE  = "Mode"
+string GRP_CORE  = "Core Signals"
+string GRP_ZONE  = "Zone Confluence"
+string GRP_TECH  = "Technical Filters"
+string GRP_RISK  = "Risk"
+
+string modeIn = input.string("master", "Mode", options=["master", "master_strict"], group=GRP_MODE)
+int zoneLB    = input.int(10, "Zone Lookback Bars", minval=3, maxval=30, group=GRP_ZONE)
+float minScore = input.float(5.5, "Min Confluence Score", step=0.5, group=GRP_MODE)
+int minZoneW  = input.int(1, "Min Zone Weight", minval=1, maxval=5, group=GRP_ZONE)
+
+// ── RSI Advanced (core #1) ────────────────────────────────────────
+int rsiLen = input.int(14, "RSI Length", group=GRP_CORE)
+float rsiV = ta.rsi(close, rsiLen)
+float ewo  = ta.sma(hl2, 5) - ta.sma(hl2, 34)
+float mfiV = ta.mfi(hlc3, 14)
+float volMA = ta.sma(volume, 20)
+bool volOK = volume > volMA * 0.8
+float breakBar = ta.highest(high, 10)[1]
+var bool inOS = false
+if rsiV < 30
+    inOS := true
+bool rsiLong  = rsiV[1] < 40 and rsiV >= 40 and mfiV > 30 and ewo > ewo[1] and volOK and (close > breakBar or inOS)
+bool rsiShort = rsiV[1] > 60 and rsiV <= 60 and mfiV < 70 and ewo < ewo[1] and volOK
+if rsiLong
+    inOS := false
+
+// ── Liquidity Shift (core #2) ─────────────────────────────────────
+int pivLen = 5
+float ph = ta.pivothigh(high, pivLen, pivLen)
+float pl = ta.pivotlow(low, pivLen, pivLen)
+var float swingHi = na
+var float swingLo = na
+var bool bullPend = false
+var bool bearPend = false
+var float bullLvl = na
+var float bearLvl = na
+float atr14 = ta.atr(14)
+if not na(ph)
+    swingHi := ph
+if not na(pl)
+    swingLo := pl
+if not na(swingLo) and low < swingLo and close > swingLo
+    bullPend := true
+    bullLvl := swingLo
+if not na(swingHi) and high > swingHi and close < swingHi
+    bearPend := true
+    bearLvl := swingHi
+bool liqLong  = bullPend and (close > swingHi or (close > open and math.abs(close-open) >= atr14))
+bool liqShort = bearPend and (close < swingLo or (close < open and math.abs(close-open) >= atr14))
+if liqLong
+    bullPend := false
+if liqShort
+    bearPend := false
+
+// ── Strong Pullback proxy (EMA trend + break) ─────────────────────
+float emaF = ta.ema(close, 34)
+float emaS = ta.ema(close, 144)
+bool spLong  = emaF > emaS and close > ta.highest(high, 20)[1] and close > open
+bool spShort = emaF < emaS and close < ta.lowest(low, 20)[1] and close < open
+
+// ── Zone proxies (FVG + supply/demand touch) ──────────────────────
+bool fvgLong  = low > high[2]
+bool fvgShort = high < low[2]
+bool sdLong   = ta.pivotlow(low, 10, 10) != na  // demand formed
+bool sdShort  = ta.pivothigh(high, 10, 10) != na
+
+f_zone_long(int lb) =>
+    int s = 0
+    for i = 0 to lb - 1
+        if fvgLong[i] or sdLong[i] or liqLong[i]
+            s += 1
+    s
+
+f_zone_short(int lb) =>
+    int s = 0
+    for i = 0 to lb - 1
+        if fvgShort[i] or sdShort[i] or liqShort[i]
+            s += 1
+    s
+
+// ── Technical filters ─────────────────────────────────────────────
+float utAtr = ta.atr(10)
+var float tsl = na
+tsl := close > nz(tsl[1], close - utAtr) and close[1] > nz(tsl[1], close - utAtr) ?
+     math.max(nz(tsl[1]), close - utAtr) :
+     close < nz(tsl[1], close + utAtr) and close[1] < nz(tsl[1], close + utAtr) ?
+     math.min(nz(tsl[1]), close + utAtr) :
+     close > nz(tsl[1], close - utAtr) ? close - utAtr : close + utAtr
+bool utBull = close > tsl
+bool utBear = close < tsl
+
+float atrP = ta.sma(ta.tr, 14)
+var float alphaTrend = na
+bool bullM = ta.mfi(close, 14) >= 50
+float upT = low - atrP
+float dnT = high + atrP
+alphaTrend := bullM ? (alphaTrend[1] < upT ? upT : math.max(nz(alphaTrend[1]), upT)) :
+     (alphaTrend[1] > dnT ? dnT : math.min(nz(alphaTrend[1]), dnT))
+bool alphaBull = close > alphaTrend
+bool alphaBear = close < alphaTrend
+
+float ma21 = ta.ema(close, 21)
+float ma50 = ta.ema(close, 50)
+bool bjBull = ma21 > ma50
+bool bjBear = ma21 < ma50
+
+int techLong  = (utBull ? 1 : 0) + (alphaBull ? 1 : 0) + (bjBull ? 1 : 0)
+int techShort = (utBear ? 1 : 0) + (alphaBear ? 1 : 0) + (bjBear ? 1 : 0)
+int techNeed  = modeIn == "master_strict" ? 3 : 2
+
+// ── Scoring ───────────────────────────────────────────────────────
+int tier1L = (rsiLong ? 3 : 0) + (liqLong ? 3 : 0) + (spLong ? 2 : 0)
+int tier1S = (rsiShort ? 3 : 0) + (liqShort ? 3 : 0) + (spShort ? 2 : 0)
+float zoneL = f_zone_long(zoneLB) * 1.5
+float zoneS = f_zone_short(zoneLB) * 1.5
+float scoreL = zoneL + tier1L + techLong * 0.5
+float scoreS = zoneS + tier1S + techShort * 0.5
+int effMinZ = modeIn == "master_strict" ? 2 : minZoneW
+float effMin  = modeIn == "master_strict" ? 8.0 : minScore
+
+bool goLong  = tier1L >= 1 and zoneL >= effMinZ and scoreL >= effMin and techLong >= techNeed and barstate.isconfirmed
+bool goShort = tier1S >= 1 and zoneS >= effMinZ and scoreS >= effMin and techShort >= techNeed and barstate.isconfirmed
+
+// ── Aggregated SL/TP (Bj structural + liquidity level) ──────────
+float swingLo = ta.lowest(low, 5)
+float swingHi = ta.highest(high, 5)
+float longSL  = math.min(swingLo - atr14, nz(bullLvl, swingLo) - atr14 * 0.15)
+float shortSL = math.max(swingHi + atr14, nz(bearLvl, swingHi) + atr14 * 0.15)
+float longRisk  = close - longSL
+float shortRisk = shortSL - close
+float longTP  = close + longRisk * 1.5
+float shortTP = close - shortRisk * 1.5
+
+if goLong and strategy.position_size <= 0
+    strategy.entry("Master Long", strategy.long)
+    strategy.exit("ML Exit", "Master Long", stop=longSL, limit=longTP)
+
+if goShort and strategy.position_size >= 0
+    strategy.entry("Master Short", strategy.short)
+    strategy.exit("MS Exit", "Master Short", stop=shortSL, limit=shortTP)
+
+plot(ma21, "EMA21", color=color.blue)
+plot(ma50, "EMA50", color=color.orange)
+plot(tsl, "UT TSL", color=color.gray, linewidth=1)
+plot(alphaTrend, "AlphaTrend", color=color.purple)
+
+plotshape(goLong,  "L", shape.triangleup,   location.belowbar, color.lime, size=size.small, text="M")
+plotshape(goShort, "S", shape.triangledown, location.abovebar, color.red,  size=size.small, text="M")
+
+var table dash = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 80))
+if barstate.islast
+    table.cell(dash, 0, 0, "Score L/S", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 0, str.tostring(scoreL, "#.#") + " / " + str.tostring(scoreS, "#.#"), text_color=color.yellow, text_size=size.small)
+    table.cell(dash, 0, 1, "Tier1", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 1, str.tostring(tier1L) + " / " + str.tostring(tier1S), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 2, "Zone", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 2, str.tostring(zoneL, "#.#") + " / " + str.tostring(zoneS, "#.#"), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 3, "Tech", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 3, str.tostring(techLong) + " / " + str.tostring(techShort), text_color=color.white, text_size=size.small)

@@ -1452,3 +1452,61 @@ SL/TP:    Bj Bot structural (swing ± ATR × RiskM, R:R=1)
 - **بهبود:** loosen zone filter روی کریپتو، HTF alignment
 - **Pine:** `backtest/indicators/Farhad_Combo_Strategy.pine` آماده TradingView
 
+
+---
+
+## #54 Farhad Master Strategy (استراتژی نهایی)
+
+**فایل:** `farhad_master_strategy.py` + `indicators/Farhad_Master_Strategy.pine` | **کلید:** `farhad_master` / `farhad_master_strict`
+
+### معماری — بهترین‌ها از ۵۲ اندیکاتور
+
+| لایه | منبع | وزن (PF) | نقش |
+|------|------|----------|-----|
+| **هسته Tier-1** | RSI Advanced | 3.0 | تریگر اصلی (#1 PF=2.96) |
+| | Liquidity Shift | 2.7 | SMC sweep + displacement |
+| | Strong Pullback | 1.4 | ورود در محدوده برگشت |
+| **Zone Tier-2** | Supply/Demand | 1.7 | محدوده ورود |
+| | IFVG | 1.6 | ناحیه rebalance |
+| | Smart Money Structure | 1.5 | مومنتوم ساختاری |
+| | Volume OB Retest | 1.3 | ریتست اوردر بلاک |
+| | FVG Retest / Mirage / Multi-Div | 1.0–1.2 | تأیید zone |
+| **فیلتر تکنیکال** | UT Bot + AlphaTrend + Zero-Lag + Bj EMA | — | حداقل ۲/۴ هم‌جهت |
+| **SL/TP** | ترکیب وزن‌دار zone-native + Bj structural | — | RR 1.0–3.0 |
+
+### مقایسه بک‌تست (~۳۱ روز)
+
+| استراتژی | PF میانگین | PF 1h/4h | معاملات | بهترین |
+|----------|-----------|----------|---------|--------|
+| RSI Advanced تنها | **2.964** | **3.762** | 57 | BTC 4h PF=8.27 |
+| Bj Bot تنها | 1.196 | 1.547 | 155 | BEAT 4h PF=2.1 |
+| **farhad_master** | **1.194** | 1.273 | 1743 | **XAU 4h PF=5.57 WR=75%** |
+| farhad_combo standard | 1.012 | 1.272 | 71 | XAU 15m PF=2.56 |
+| farhad_master_strict | 0.726 | 0.583 | 96 | BEAT 15m PF=1.65 |
+
+### نتایج برجسته (farhad_master)
+
+| نماد | TF | معاملات | WR% | PF |
+|------|-----|---------|-----|-----|
+| XAUUSD | 4h | 8 | 75.0 | **5.565** |
+| EURUSD | 1h | 68 | 50.0 | 1.479 |
+| XAUUSD | 15m | 207 | 46.4 | 1.233 |
+| HYPEUSDT | 15m | 227 | 52.0 | 1.146 |
+| EURUSD | 15m | 254 | 42.1 | 1.128 |
+
+### قوانین ورود (master mode)
+1. حداقل **۱ سیگنال Tier-1** (RSI Advanced یا Liquidity Shift یا Strong Pullback)
+2. حداقل **۱ zone confluence** (Supply/Demand, IFVG, OB retest, FVG, Mirage...)
+3. **امتیاز کل ≥ 5.5** (وزن‌دار بر اساس PF بک‌تست)
+4. حداقل **۲ فیلتر تکنیکال** هم‌جهت (UT + Alpha + Bj + Zero-Lag)
+
+### SL/TP
+- SL: میانگین وزن‌دار از سطوح zone-native + Bj swing±ATR
+- TP: RR وزن‌دار 1.0–3.0 بر اساس بهترین zone signal
+
+### نگه داریم / حذف / بهبود
+- **استراتژی نهایی پیشنهادی:** `farhad_master` (نه strict — نمونه کمتر)
+- **TF:** 1h و 4h اولویت؛ XAUUSD بهترین نماد
+- **Pine:** `indicators/Farhad_Master_Strategy.pine`
+- **بهبود بعدی:** HTF bias، trail بعد TP1، فیلتر جداگانه per-symbol
+

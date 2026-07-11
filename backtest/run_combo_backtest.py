@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backtest Farhad Combo Strategy (loose / standard / strict) vs Bj Bot baseline."""
+"""Backtest Farhad Combo + Master Strategy vs baselines."""
 from __future__ import annotations
 
 import json
@@ -7,12 +7,14 @@ from pathlib import Path
 
 from engine import aggregate, simulate_bj_native
 from farhad_strategy import farhad_combo_signals
+from farhad_master_strategy import farhad_master_signals
 from fetch_data import fetch_all
 from indicators import bj_bot_signals
-from run_backtest import SYMBOL_MARKET, TIMEFRAMES, result_to_dict
+from run_backtest import SYMBOL_MARKET, TIMEFRAMES, result_to_dict, run_indicator
+from zone_engine import extract_zone_signals_from_df, simulate_zone_native
 
 RESULTS = Path(__file__).parent / "results"
-MODES = ["loose", "standard", "strict"]
+MODES = ["loose", "standard", "strict", "master", "master_strict"]
 PRIORITY_TFS = ["1h", "4h"]
 
 
@@ -24,10 +26,28 @@ def run_mode(mode: str, data: dict) -> list[dict]:
         for tf, df in tfs.items():
             if df is None or len(df) < 80:
                 continue
-            sig = farhad_combo_signals(df, mode=mode, novolumedata=novol)
-            trades = simulate_bj_native(sig)
-            r = aggregate(trades, f"farhad_{mode}", sym, tf, market)
-            r.notes.append(f"signals={int(sig['buy'].sum())}L/{int(sig['sell'].sum())}S")
+            if mode.startswith("master"):
+                sig = farhad_master_signals(df, mode=mode, novolumedata=novol)
+                zlist = extract_zone_signals_from_df(sig)
+                trades = simulate_zone_native(df, zlist, market)
+                r = aggregate(trades, f"farhad_{mode}", sym, tf, market)
+                r.notes.append(f"n={len(zlist)}")
+            else:
+                sig = farhad_combo_signals(df, mode=mode, novolumedata=novol)
+                trades = simulate_bj_native(sig)
+                r = aggregate(trades, f"farhad_{mode}", sym, tf, market)
+            rows.append(result_to_dict(r))
+    return rows
+
+
+def run_rsi_baseline(data: dict) -> list[dict]:
+    rows: list[dict] = []
+    for sym, tfs in data.items():
+        market = SYMBOL_MARKET.get(sym, "crypto")
+        for tf, df in tfs.items():
+            if df is None or len(df) < 80:
+                continue
+            r = run_indicator("rsi_advanced", df, sym, tf, market)
             rows.append(result_to_dict(r))
     return rows
 
@@ -72,6 +92,7 @@ def main():
     data = fetch_all(days=31, timeframes=TIMEFRAMES, force=False)
 
     all_results: dict[str, list[dict]] = {}
+    all_results["rsi_advanced_baseline"] = run_rsi_baseline(data)
     all_results["bj_bot_baseline"] = run_bj_baseline(data)
     for mode in MODES:
         print(f"\n=== farhad_{mode} ===")
