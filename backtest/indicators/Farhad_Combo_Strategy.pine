@@ -1,0 +1,150 @@
+//@version=6
+strategy("Farhad Combo Strategy", overlay=true, max_labels_count=100,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10,
+     commission_type=strategy.commission.percent, commission_value=0.1)
+
+// ═══════════════════════════════════════════════════════════
+// FARHAD COMBO — synthesized from 52-indicator backtest
+// Entry: Bj Bot EMA cross | Filters: UT + Alpha + Zone confluence
+// SL/TP: Bj Bot structural swing + ATR
+// ═══════════════════════════════════════════════════════════
+
+string GRP_ENTRY  = "Entry (Bj Bot)"
+string GRP_FILT   = "Filters"
+string GRP_ZONE   = "Zone Confluence"
+string GRP_RISK   = "Risk (Bj Bot)"
+string GRP_MODE   = "Mode"
+
+string modeInput = input.string("standard", "Strategy Mode",
+     options=["loose", "standard", "strict"], group=GRP_MODE,
+     tooltip="loose: Bj+UT+Alpha | standard: +zone≥1 | strict: +zone≥2+ZeroLag")
+
+int maLen1    = input.int(21, "Fast EMA", group=GRP_ENTRY)
+int maLen2    = input.int(50, "Slow EMA", group=GRP_ENTRY)
+bool useUT    = input.bool(true, "UT Bot Trend Filter", group=GRP_FILT)
+bool useAlpha = input.bool(true, "AlphaTrend Momentum Filter", group=GRP_FILT)
+bool useZL    = input.bool(true, "Zero-Lag Trend Filter (strict)", group=GRP_FILT)
+float utMult  = input.float(1.0, "UT ATR Multiplier", step=0.1, group=GRP_FILT)
+int zoneLook  = input.int(8, "Zone Lookback Bars", minval=1, maxval=30, group=GRP_ZONE)
+int minZone   = input.int(1, "Min Zone Confluence", minval=0, maxval=4, group=GRP_ZONE)
+
+int atrLen    = input.int(14, "ATR Length", group=GRP_RISK)
+int swingLen  = input.int(5, "Swing Lookback", group=GRP_RISK)
+float riskM   = input.float(1.0, "ATR Risk Multiplier (SL buffer)", step=0.1, group=GRP_RISK)
+float rrRatio = input.float(1.0, "Risk:Reward", step=0.1, group=GRP_RISK)
+
+// ── Bj Bot entry ──────────────────────────────────────────
+float ma1 = ta.ema(close, maLen1)
+float ma2 = ta.ema(close, maLen2)
+bool bjLong  = ta.crossover(ma1, ma2)
+bool bjShort = ta.crossunder(ma1, ma2)
+
+// ── UT Bot trend filter ───────────────────────────────────
+float utAtr = ta.atr(10) * utMult
+var float tsl = na
+tsl := close > nz(tsl[1], close - utAtr) and close[1] > nz(tsl[1], close - utAtr) ?
+     math.max(nz(tsl[1]), close - utAtr) :
+     close < nz(tsl[1], close + utAtr) and close[1] < nz(tsl[1], close + utAtr) ?
+     math.min(nz(tsl[1]), close + utAtr) :
+     close > nz(tsl[1], close - utAtr) ? close - utAtr : close + utAtr
+
+bool utBull = close > tsl
+bool utBear = close < tsl
+
+// ── AlphaTrend momentum ───────────────────────────────────
+float atrP = ta.sma(ta.tr, 14)
+float upT  = low - atrP
+float dnT  = high + atrP
+bool bullM = ta.mfi(close, 14) >= 50
+var float alphaTrend = na
+alphaTrend := bullM ? (alphaTrend[1] < upT ? upT : math.max(nz(alphaTrend[1]), upT)) :
+     (alphaTrend[1] > dnT ? dnT : math.min(nz(alphaTrend[1]), dnT))
+bool alphaBull = close > alphaTrend
+bool alphaBear = close < alphaTrend
+
+// ── Zero-Lag trend state ──────────────────────────────────
+int zlLen = 70
+float zlMult = 1.2
+int lag = (zlLen - 1) / 2
+float zlema = ta.ema(close + (close - close[lag]), zlLen)
+float zlVol = ta.ema(ta.tr, zlLen) * ta.highest(ta.ema(ta.tr, zlLen), zlLen * 3) / ta.ema(ta.tr, zlLen) * zlMult
+var int zlTrend = 0
+if close > zlema + zlVol and close[1] <= zlema[1] + zlVol[1]
+    zlTrend := 1
+if close < zlema - zlVol and close[1] >= zlema[1] - zlVol[1]
+    zlTrend := -1
+
+// ── Zone confluence (simplified proxies) ──────────────────
+// IFVG: bullish FVG retest | Supply/Demand: pivot zone touch | RSI: EWO+RSI breakout
+float rsiV = ta.rsi(close, 14)
+float ewo  = ta.sma(hl2, 5) - ta.sma(hl2, 34)
+bool zoneLongSig  = ta.crossover(ewo, 0) and rsiV > 50
+bool zoneShortSig = ta.crossunder(ewo, 0) and rsiV < 50
+bool fvgLong  = low > high[2] and close > open  // simplified bullish FVG
+bool fvgShort = high < low[2] and close < open
+
+int zLong = 0
+int zShort = 0
+for i = 0 to zoneLook - 1
+    if zoneLongSig[i] or fvgLong[i]
+        zLong += 1
+    if zoneShortSig[i] or fvgShort[i]
+        zShort += 1
+
+// ── Mode resolution ───────────────────────────────────────
+int effMinZone = modeInput == "loose" ? 0 : modeInput == "strict" ? 2 : minZone
+bool effZL = modeInput == "strict" ? useZL : (modeInput == "strict")
+
+bool filtLong  = (not useUT or utBull) and (not useAlpha or alphaBull) and (not effZL or zlTrend == 1) and zLong >= effMinZone
+bool filtShort = (not useUT or utBear) and (not useAlpha or alphaBear) and (not effZL or zlTrend == -1) and zShort >= effMinZone
+
+bool goLong  = bjLong  and filtLong  and barstate.isconfirmed
+bool goShort = bjShort and filtShort and barstate.isconfirmed
+
+// ── Bj Bot structural SL/TP ───────────────────────────────
+float atrV = ta.atr(atrLen)
+float swingLo = ta.lowest(low, swingLen)
+float swingHi = ta.highest(high, swingLen)
+float longSL  = swingLo - atrV * riskM
+float shortSL = swingHi + atrV * riskM
+float longRisk  = close - longSL
+float shortRisk = shortSL - close
+float longTP  = close + rrRatio * longRisk
+float shortTP = close - rrRatio * shortRisk
+
+var float activeSL = na
+var float activeTP = na
+
+if goLong and strategy.position_size <= 0
+    activeSL := longSL
+    activeTP := longTP
+    strategy.entry("Long", strategy.long)
+    strategy.exit("Long Exit", "Long", stop=activeSL, limit=activeTP)
+
+if goShort and strategy.position_size >= 0
+    activeSL := shortSL
+    activeTP := shortTP
+    strategy.entry("Short", strategy.short)
+    strategy.exit("Short Exit", "Short", stop=activeSL, limit=activeTP)
+
+// ── Visuals ───────────────────────────────────────────────
+plot(ma1, "EMA Fast", color=color.new(color.blue, 0), linewidth=1)
+plot(ma2, "EMA Slow", color=color.new(color.orange, 0), linewidth=1)
+plot(tsl, "UT TSL", color=color.new(color.gray, 40), linewidth=1, style=plot.style_stepline)
+plot(alphaTrend, "AlphaTrend", color=color.new(color.purple, 30), linewidth=1)
+
+plotshape(goLong,  "Long",  shape.triangleup,   location.belowbar, color.new(color.lime, 0), size=size.small, text="L")
+plotshape(goShort, "Short", shape.triangledown, location.abovebar, color.new(color.red, 0),  size=size.small, text="S")
+
+var table dash = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 80))
+if barstate.islast
+    table.cell(dash, 0, 0, "Mode", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 0, modeInput, text_color=color.yellow, text_size=size.small)
+    table.cell(dash, 0, 1, "UT", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 1, utBull ? "Bull" : utBear ? "Bear" : "—", text_color=utBull ? color.lime : color.red, text_size=size.small)
+    table.cell(dash, 0, 2, "Alpha", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 2, alphaBull ? "Bull" : "Bear", text_color=alphaBull ? color.lime : color.red, text_size=size.small)
+    table.cell(dash, 0, 3, "Zone", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 3, str.tostring(math.max(zLong, zShort)), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 4, "ZL Trend", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 4, zlTrend == 1 ? "Up" : zlTrend == -1 ? "Down" : "—", text_color=color.white, text_size=size.small)

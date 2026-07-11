@@ -9,6 +9,7 @@ import pandas as pd
 
 from config import CRYPTO_SL_PCT, CRYPTO_TP_PCT, FOREX_SL_PIPS, FOREX_TP_RR
 from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
+from farhad_strategy import farhad_combo_signals
 from fetch_data import fetch_all
 from forge_patterns import detect_double_patterns, simulate_forge_signals
 from ml_indicators import ml_rsi_signals
@@ -190,6 +191,15 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         else:
             trades = simulate_bj_native(sig)
         return aggregate(trades, name, symbol, tf, market)
+
+    if name.startswith("farhad_"):
+        mode = name.replace("farhad_", "")
+        novol = market == "forex" or symbol == "BEATUSDT"
+        sig = farhad_combo_signals(df, mode=mode, novolumedata=novol)
+        trades = simulate_bj_native(sig)
+        res = aggregate(trades, name, symbol, tf, market)
+        res.notes.append(f"zone_avg={sig['zone_score'].mean():.2f}")
+        return res
 
     if name == "forge":
         if len(df) < 650:
