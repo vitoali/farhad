@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from engine import BacktestResult, aggregate, simulate_bj_native, simulate_fixed_sl_tp
+from engine import BacktestResult, Trade, aggregate, simulate_bj_native, simulate_fixed_sl_tp
 from fetch_data import SYMBOLS, fetch_all
+from forge_patterns import detect_double_patterns, simulate_forge_signals
 from indicators import alpha_trend_signals, bj_bot_signals, ut_bot_signals
 
 RESULTS_DIR = Path(__file__).parent / "results"
@@ -49,6 +50,37 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         sig = bj_bot_signals(df)
         trades = simulate_bj_native(sig)
         return aggregate(trades, name, symbol, tf, market)
+
+    if name == "forge":
+        if len(df) < 650:
+            return BacktestResult(name, symbol, tf, market, notes=["need 600+ bars for pivot gate"])
+        raw = detect_double_patterns(df)
+        # cooldown 5 bars between signals
+        filtered = []
+        last = -99
+        for s in raw:
+            if s.bar - last >= 5:
+                filtered.append(s)
+                last = s.bar
+        outcomes = simulate_forge_signals(df, filtered)
+        trades = [
+            Trade(
+                direction="long" if o["bullish"] else "short",
+                entry_bar=o["entry_bar"],
+                entry_price=0,
+                exit_bar=o["entry_bar"] + o["bars_to_outcome"],
+                exit_price=0,
+                outcome="win" if o["outcome"] == "win" else "loss",
+                bars_held=o["bars_to_outcome"],
+                r_multiple=o["r_multiple"],
+                exit_reason=o["outcome"],
+            )
+            for o in outcomes
+            if o["outcome"] in ("win", "loss")
+        ]
+        res = aggregate(trades, name, symbol, tf, market)
+        res.notes.append(f"patterns={len(filtered)} grades={[o['grade'] for o in outcomes[:5]]}")
+        return res
 
     raise ValueError(name)
 
@@ -101,7 +133,7 @@ def main():
     print("=== Fetching data (~31 days) ===")
     data = fetch_all(days=31, timeframes=TIMEFRAMES, force=True)
 
-    indicators = ["ut_bot", "alpha_trend", "bj_bot"]
+    indicators = ["ut_bot", "alpha_trend", "bj_bot", "forge"]
     all_results: list[dict] = []
 
     print("\n=== Running backtests ===")
