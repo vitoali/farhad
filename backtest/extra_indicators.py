@@ -548,3 +548,129 @@ def cm_ma_mtf_signals(df: pd.DataFrame, fast: int = 20, slow: int = 50) -> pd.Da
     buy = crossover(ema(out["close"], fast), ema(out["close"], slow))
     sell = crossunder(ema(out["close"], fast), ema(out["close"], slow))
     return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)
+
+
+def fxpip_scob_signals(df: pd.DataFrame) -> pd.DataFrame:
+    """FxPipFinder Single Candle Order Block pattern."""
+    out = df.copy()
+    o, h, l, c = out["open"], out["high"], out["low"], out["close"]
+    bull = (o.shift(2) > c.shift(2)) & (c.shift(1) > o.shift(1)) & (c > o) & (l.shift(1) < l.shift(2)) & (c > h.shift(1))
+    bear = (o.shift(2) < c.shift(2)) & (c.shift(1) < o.shift(1)) & (c < o) & (h.shift(1) > h.shift(2)) & (c < l.shift(1))
+    return _signal_df(out, bull.fillna(False).values, bear.fillna(False).values)
+
+
+def buyside_liquidity_signals(df: pd.DataFrame, pivot_len: int = 10, tp_rr: float = 2.0) -> pd.DataFrame:
+    """LuxAlgo BSL/SSL breach — SSL taken then reclaim long, BSL taken then reclaim short."""
+    return stop_hunt_signals(df, left_bars=pivot_len, right_bars=3, tp_rr=tp_rr)
+
+
+def sr_signals_mtf_signals(df: pd.DataFrame, lookback: int = 20, tp_rr: float = 2.0) -> pd.DataFrame:
+    """S/R breakout + zone retest (LuxAlgo SR Signals simplified)."""
+    out = df.copy()
+    highs, lows, closes, opens = out["high"].values, out["low"].values, out["close"].values, out["open"].values
+    atr_v = atr_wilder(out, 14).values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    res_hi = pd.Series(highs).rolling(lookback).max().shift(1).values
+    sup_lo = pd.Series(lows).rolling(lookback).min().shift(1).values
+    zones: list[dict] = []
+
+    for i in range(lookback + 2, n):
+        a = atr_v[i] if not np.isnan(atr_v[i]) else closes[i] * 0.005
+        if closes[i] > res_hi[i]:
+            zones.append({"type": "res", "top": highs[i], "bot": res_hi[i], "bar": i})
+        if closes[i] < sup_lo[i]:
+            zones.append({"type": "sup", "top": sup_lo[i], "bot": lows[i], "bar": i})
+        zones = zones[-15:]
+        for z in zones:
+            if z["type"] == "res" and opens[i] < z["bot"] and highs[i] > z["bot"] and closes[i] < z["bot"] and i > z["bar"] + 2:
+                entry = closes[i]
+                sl = z["top"] + a * 0.1
+                risk = max(sl - entry, a * 0.3)
+                signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
+            if z["type"] == "sup" and opens[i] > z["top"] and lows[i] < z["top"] and closes[i] > z["top"] and i > z["bar"] + 2:
+                entry = closes[i]
+                sl = z["bot"] - a * 0.1
+                risk = max(entry - sl, a * 0.3)
+                signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * tp_rr))
+    return _zone_df(out, signals)
+
+
+def divergence_signals(df: pd.DataFrame, rsi_len: int = 14, lookback: int = 5) -> pd.DataFrame:
+    """Regular RSI divergence (simplified)."""
+    out = df.copy()
+    rsi_v = rsi(out["close"], rsi_len).values
+    lows, highs, closes = out["low"].values, out["high"].values, out["close"].values
+    n = len(out)
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    for i in range(lookback * 2 + 2, n):
+        pl_now = lows[i] < min(lows[i - lookback : i])
+        pl_prev = lows[i - lookback] < min(lows[i - lookback * 2 : i - lookback])
+        if pl_now and pl_prev and lows[i] < lows[i - lookback] and rsi_v[i] > rsi_v[i - lookback]:
+            buy[i] = True
+        ph_now = highs[i] > max(highs[i - lookback : i])
+        ph_prev = highs[i - lookback] > max(highs[i - lookback * 2 : i - lookback])
+        if ph_now and ph_prev and highs[i] > highs[i - lookback] and rsi_v[i] < rsi_v[i - lookback]:
+            sell[i] = True
+    return _signal_df(out, buy, sell)
+
+
+def orderflow_print_signals(df: pd.DataFrame, vol_mult: float = 2.0) -> pd.DataFrame:
+    """OrderFlow absorption matrix — volume spike + direction."""
+    out = df.copy()
+    if "volume" not in out.columns:
+        return _signal_df(out, np.zeros(len(out), bool), np.zeros(len(out), bool))
+    vol_ma = sma(out["volume"], 20)
+    spike = out["volume"] > vol_ma * vol_mult
+    buy = spike & (out["close"] > out["open"])
+    sell = spike & (out["close"] < out["open"])
+    return _signal_df(out, buy.fillna(False).values, sell.fillna(False).values)
+
+
+def fair_value_gap_signals(df: pd.DataFrame, min_gap_atr: float = 0.1, tp_rr: float = 1.5) -> pd.DataFrame:
+    """LuxAlgo FVG display -> formation entry (same as matrix_fvg)."""
+    return matrix_fvg_signals(df, min_gap_atr=min_gap_atr, tp_rr=tp_rr)
+
+
+def fib_ote_signals(df: pd.DataFrame, pivot_len: int = 10, tp_rr: float = 2.0) -> pd.DataFrame:
+    """Smart Money Fib OTE — entry on 0.618-0.786 retrace after BOS."""
+    out = df.copy()
+    highs, lows, closes = out["high"].values, out["low"].values, out["close"].values
+    atr_v = atr_wilder(out, 14).values
+    ph = pivot_high(out["high"], pivot_len, pivot_len).values
+    pl = pivot_low(out["low"], pivot_len, pivot_len).values
+    n = len(out)
+    signals: list[ZoneSignal] = []
+    trend = 0
+    swing_hi = swing_lo = np.nan
+
+    for i in range(pivot_len * 2, n):
+        a = atr_v[i] if not np.isnan(atr_v[i]) else closes[i] * 0.005
+        if not np.isnan(ph[i]):
+            swing_hi = highs[i - pivot_len]
+            if trend <= 0 and closes[i] > swing_hi:
+                trend = 1
+        if not np.isnan(pl[i]):
+            swing_lo = lows[i - pivot_len]
+            if trend >= 0 and closes[i] < swing_lo:
+                trend = -1
+        if trend == 1 and not np.isnan(swing_hi) and not np.isnan(swing_lo):
+            rng = swing_hi - swing_lo
+            ote_top = swing_hi - rng * 0.618
+            ote_bot = swing_hi - rng * 0.786
+            if lows[i] <= ote_top and closes[i] >= ote_bot:
+                entry = closes[i]
+                sl = swing_lo - a * 0.1
+                risk = max(entry - sl, a * 0.3)
+                signals.append(ZoneSignal(i, "long", entry, sl, entry + risk * tp_rr))
+        if trend == -1 and not np.isnan(swing_hi) and not np.isnan(swing_lo):
+            rng = swing_hi - swing_lo
+            ote_bot = swing_lo + rng * 0.618
+            ote_top = swing_lo + rng * 0.786
+            if highs[i] >= ote_bot and closes[i] <= ote_top:
+                entry = closes[i]
+                sl = swing_hi + a * 0.1
+                risk = max(sl - entry, a * 0.3)
+                signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
+    return _zone_df(out, signals)

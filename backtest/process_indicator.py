@@ -57,7 +57,21 @@ PORT_MAP: dict[str, str] = {
     "QQE_KHOOB_1aba.txt": "qqe",
     "MACD_30e7.txt": "macd_mtf",
     "power_order_bloc_151a.txt": "power_ob",
-    "suply_demand_zone_f0e7.txt": "supply_demand",
+    "CM_Ultimate_MA_MTF_202b.txt": "cm_ma_mtf",
+    "FxPipFinder_Engagement_Zone_41e2.txt": "fxpip_scob",
+    "Buyside___Sellside_Liquidity_631a.txt": "buyside_liquidity",
+    "Support_and_Resistance_Signals__bc86.txt": "sr_signals_mtf",
+    "Divergence_for_Many_Indicators_2408.txt": "divergence",
+    "Divergence_for_many_indicator_2b36.txt": "divergence",
+    "Order-Flow_Detection_d054.txt": "orderflow_print",
+    "Fair_Value_Gap_f587.txt": "fair_value_gap",
+    "FVG___IFVG_ICT_a586.txt": "fair_value_gap",
+    "smart_mony_fibo_67b7.txt": "fib_ote",
+    "mirage_8451.txt": "buyside_liquidity",
+    "quadpad_9f11.txt": "quadapt",
+    "quadapt_ml_trader.pine": "quadapt",
+    "atomatic_multi_pattern__9980.txt": "forge",
+    "auto_pattern_detector_bf37.txt": "forge",
 }
 
 KNOWN_DONE = {
@@ -90,6 +104,19 @@ KNOWN_DONE = {
     "qqe": 28,
     "macd_mtf": 29,
     "power_ob": 30,
+    "sr_breaks": 31,
+    "liquidity_pool": 32,
+    "slingshot": 33,
+    "ichimoku_ml": 34,
+    "liquidity_shift": 35,
+    "cm_ma_mtf": 36,
+    "fxpip_scob": 37,
+    "buyside_liquidity": 38,
+    "sr_signals_mtf": 39,
+    "divergence": 40,
+    "orderflow_print": 41,
+    "fair_value_gap": 42,
+    "fib_ote": 43,
 }
 
 

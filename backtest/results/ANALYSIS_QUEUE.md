@@ -1,51 +1,50 @@
 # صف تحلیل اندیکاتورها
 
-آخرین به‌روزرسانی: 2026-07-11 (batch خودکار)
+آخرین به‌روزرسانی: 2026-07-11 (ادامه بدون وقفه)
 
 ## وضعیت کلی
 
 | وضعیت | تعداد |
 |--------|-------|
-| فایل‌های کامل در sources | 88 |
-| فایل‌های ناقص | 13 |
-| **بک‌تست Python (پورت شده)** | **32 کلید** (#1–#32) |
-| تحلیل استاتیک batch | 88 |
-| ثبت در processed_registry | 80+ |
-
-## بک‌تست شده — کلیدهای Python
-
-| # | اندیکاتور | کلید | وضعیت |
-|---|-----------|------|--------|
-| 1–9 | UT Bot … Lorentzian | ut_bot … lorentzian | ✅ |
-| 10–15 | IFVG … RSI Advanced | ifvg … rsi_advanced | ✅ |
-| 16 | Monster Trex | monster | ⏳ blocked |
-| 17–19 | ML RSI … Strong Pullback | ml_rsi … strong_pullback | ✅ |
-| 20–32 | Cardwell … Liquidity Pools | cardwell_rsi … liquidity_pool | ✅ |
+| فایل‌های کامل | **88** |
+| فایل‌های ناقص | **13** |
+| **پورت Python + بک‌تست** | **43 کلید** (#1–#43) |
+| فایل‌های mapped به پورت | **~55** |
+| visualization-only (استاتیک) | **~33** |
 
 ## بهترین PF میانگین (batch ~31 روز)
 
-| کلید | avg PF | بهترین |
-|------|--------|--------|
-| rsi_advanced | 2.96 | BTC 4h PF=8.27 |
-| supply_demand | 1.70 | XAU 1h PF=2.86 |
-| ifvg | 1.63 | XAU 15m PF=3.60 |
-| smart_money_structure | 1.48 | HYPE 4h PF=6.75 |
-| strong_pullback | 1.41 | EURUSD 15m PF=1.90 |
-| fvg_retest | ~1.2+ | BTC 15m PF=1.75 |
+| رتبه | کلید | avg PF | بهترین |
+|------|------|--------|--------|
+| 1 | rsi_advanced | 2.96 | BTC 4h PF=8.27 |
+| 2 | liquidity_shift | 2.67 | BEAT 4h PF=15.6 |
+| 3 | supply_demand | 1.70 | XAU 1h PF=2.86 |
+| 4 | ifvg | 1.63 | XAU 15m PF=3.60 |
+| 5 | smart_money_structure | 1.48 | HYPE 4h PF=6.75 |
+| 6 | ichimoku_ml | 0.87 | HYPE 1h PF=4.34 |
+| 7 | sr_signals_mtf | 1.11 | HYPE 4h PF=1.99 |
 
-## فایل‌های ناقص (منتظر آپلود)
+## پورت‌های جدید (#37–#43)
 
-- CT_Concepts, ELYOT, FVG_743a, FVGGGG, Market_Structure, Support_and_Resistance_7693
-- VOLOM, dynamic_trend, high_volom_pivoty, rb_seteup, volon_trend_order_block
-- strong_reversal_02f0 (قطع شده ~110 خط)
+| # | کلید | فایل منبع |
+|---|------|-----------|
+| 37 | fxpip_scob | FxPipFinder_Engagement_Zone |
+| 38 | buyside_liquidity | Buyside/Sellside Liquidity, Mirage |
+| 39 | sr_signals_mtf | Support_and_Resistance_Signals MTF |
+| 40 | divergence | Divergence for Many Indicators |
+| 41 | orderflow_print | OrderFlow Absorption Matrix |
+| 42 | fair_value_gap | Fair Value Gap, FVG ICT |
+| 43 | fib_ote | Smart Money Fib OTE (نمونه کم) |
 
-## دستور اجرا
+## فایل‌های ناقص — منتظر آپلود
+
+strong_reversal_02f0, mirage_8451 (109 خط), smart_mony_fibo (109 خط), 4_4040, CT_Concepts, ELYOT, FVG_743a, ...
+
+## دستور
 
 ```bash
-cd backtest
-python3 batch_pipeline.py          # بک‌تست همه پورت‌ها
-python3 static_journal_all.py      # ثبت استاتیک بقیه
-python3 process_indicator.py FILE  # تک‌فایل
+python3 batch_pipeline.py
+python3 static_journal_all.py
 ```
 
-نتایج: `results/backtest_batch_all.json` | ژورنال: `results/LEARNING_JOURNAL.md`
+نتایج: `results/backtest_batch_all.json`

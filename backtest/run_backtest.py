@@ -30,6 +30,13 @@ from extra_indicators import (
     ichimoku_ml_signals,
     liquidity_shift_signals,
     cm_ma_mtf_signals,
+    fxpip_scob_signals,
+    buyside_liquidity_signals,
+    sr_signals_mtf_signals,
+    divergence_signals,
+    orderflow_print_signals,
+    fair_value_gap_signals,
+    fib_ote_signals,
 )
 from zone_engine import extract_zone_signals_from_df, simulate_zone_native
 from zone_indicators import (
@@ -72,6 +79,7 @@ ZONE_NATIVE = {
     "cardwell_rsi",
     "liquidity_pool",
     "liquidity_shift",
+    "buyside_liquidity", "sr_signals_mtf", "fair_value_gap", "fib_ote",
 }
 
 
@@ -108,6 +116,14 @@ def _run_zone(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str) ->
         sig = liquidity_pool_signals(df)
     elif name == "liquidity_shift":
         sig = liquidity_shift_signals(df)
+    elif name == "buyside_liquidity":
+        sig = buyside_liquidity_signals(df)
+    elif name == "sr_signals_mtf":
+        sig = sr_signals_mtf_signals(df)
+    elif name == "fair_value_gap":
+        sig = fair_value_gap_signals(df)
+    elif name == "fib_ote":
+        sig = fib_ote_signals(df)
     else:
         raise ValueError(name)
     zlist = extract_zone_signals_from_df(sig)
@@ -274,6 +290,18 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         sig = cm_ma_mtf_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
 
+    if name == "fxpip_scob":
+        sig = fxpip_scob_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "divergence":
+        sig = divergence_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
+    if name == "orderflow_print":
+        sig = orderflow_print_signals(df)
+        return _run_fixed(name, df, symbol, tf, market, sig)
+
     if name == "qqe":
         sig = qqe_signals(df)
         return _run_fixed(name, df, symbol, tf, market, sig)
@@ -343,7 +371,9 @@ def main():
         "supply_demand", "strong_pullback",
         "cardwell_rsi", "fvg_retest", "stop_hunt", "smart_money_structure",
         "smc_pro_alt", "matrix_fvg", "put_call_vp", "ranked_ob", "qqe", "macd_mtf", "power_ob",
-        "sr_breaks", "liquidity_pool", "slingshot", "ichimoku_ml", "liquidity_shift", "cm_ma_mtf",
+        "sr_breaks", "liquidity_pool",         "slingshot", "ichimoku_ml", "liquidity_shift", "cm_ma_mtf",
+        "fxpip_scob", "buyside_liquidity", "sr_signals_mtf", "divergence", "orderflow_print",
+        "fair_value_gap", "fib_ote",
     ]
     all_results: list[dict] = []
 

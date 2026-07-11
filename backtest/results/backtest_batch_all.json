@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-07-11T18:36:31.388989+00:00",
-  "indicators": 34,
+  "generated_at": "2026-07-11T18:54:15.413678+00:00",
+  "indicators": 41,
   "summaries": {
     "alpha_trend": {
       "avg_wr": 35.7,
@@ -215,6 +215,85 @@
           "max_drawdown_r": 10.31,
           "notes": [
             "signals=72"
+          ]
+        }
+      ]
+    },
+    "buyside_liquidity": {
+      "avg_wr": 39.2,
+      "avg_pf": 0.899,
+      "best": "XAUUSD 1h PF=1.551 WR=50.0%",
+      "worst": "EURUSD 4h PF=0.0",
+      "samples": 15,
+      "top5": [
+        {
+          "indicator": "buyside_liquidity",
+          "symbol": "XAUUSD",
+          "timeframe": "1h",
+          "market": "forex",
+          "total_trades": 30,
+          "win_rate": 50.0,
+          "profit_factor": 1.551,
+          "avg_r": 0.191,
+          "max_drawdown_r": 4.66,
+          "notes": [
+            "signals=31"
+          ]
+        },
+        {
+          "indicator": "buyside_liquidity",
+          "symbol": "BEATUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 45,
+          "win_rate": 55.56,
+          "profit_factor": 1.538,
+          "avg_r": 0.175,
+          "max_drawdown_r": 4.703,
+          "notes": [
+            "signals=46"
+          ]
+        },
+        {
+          "indicator": "buyside_liquidity",
+          "symbol": "XAUUSD",
+          "timeframe": "4h",
+          "market": "forex",
+          "total_trades": 4,
+          "win_rate": 50.0,
+          "profit_factor": 1.205,
+          "avg_r": 0.088,
+          "max_drawdown_r": 1.713,
+          "notes": [
+            "signals=5"
+          ]
+        },
+        {
+          "indicator": "buyside_liquidity",
+          "symbol": "HYPEUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 56,
+          "win_rate": 44.64,
+          "profit_factor": 1.143,
+          "avg_r": 0.059,
+          "max_drawdown_r": 6.714,
+          "notes": [
+            "signals=57"
+          ]
+        },
+        {
+          "indicator": "buyside_liquidity",
+          "symbol": "EURUSD",
+          "timeframe": "15m",
+          "market": "forex",
+          "total_trades": 134,
+          "win_rate": 40.3,
+          "profit_factor": 1.118,
+          "avg_r": 0.051,
+          "max_drawdown_r": 11.306,
+          "notes": [
+            "signals=135"
           ]
         }
       ]
@@ -436,6 +515,154 @@
         }
       ]
     },
+    "divergence": {
+      "avg_wr": 50.9,
+      "avg_pf": 0.646,
+      "best": "BTCUSDT 15m PF=1.094 WR=66.67%",
+      "worst": "EURUSD 15m PF=0.108",
+      "samples": 12,
+      "top5": [
+        {
+          "indicator": "divergence",
+          "symbol": "BTCUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 9,
+          "win_rate": 66.67,
+          "profit_factor": 1.094,
+          "avg_r": 0.013,
+          "max_drawdown_r": 0.883,
+          "notes": []
+        },
+        {
+          "indicator": "divergence",
+          "symbol": "HYPEUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 9,
+          "win_rate": 55.56,
+          "profit_factor": 1.053,
+          "avg_r": 0.019,
+          "max_drawdown_r": 2.08,
+          "notes": []
+        },
+        {
+          "indicator": "divergence",
+          "symbol": "HYPEUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 15,
+          "win_rate": 60.0,
+          "profit_factor": 0.97,
+          "avg_r": -0.009,
+          "max_drawdown_r": 2.544,
+          "notes": []
+        },
+        {
+          "indicator": "divergence",
+          "symbol": "BEATUSDT",
+          "timeframe": "4h",
+          "market": "crypto",
+          "total_trades": 3,
+          "win_rate": 33.33,
+          "profit_factor": 0.889,
+          "avg_r": -0.04,
+          "max_drawdown_r": 1.08,
+          "notes": []
+        },
+        {
+          "indicator": "divergence",
+          "symbol": "BTCUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 5,
+          "win_rate": 80.0,
+          "profit_factor": 0.853,
+          "avg_r": -0.03,
+          "max_drawdown_r": 1.04,
+          "notes": []
+        }
+      ]
+    },
+    "fair_value_gap": {
+      "avg_wr": 45.8,
+      "avg_pf": 1.024,
+      "best": "BTCUSDT 4h PF=1.782 WR=52.38%",
+      "worst": "HYPEUSDT 15m PF=0.793",
+      "samples": 15,
+      "top5": [
+        {
+          "indicator": "fair_value_gap",
+          "symbol": "BTCUSDT",
+          "timeframe": "4h",
+          "market": "crypto",
+          "total_trades": 21,
+          "win_rate": 52.38,
+          "profit_factor": 1.782,
+          "avg_r": 0.304,
+          "max_drawdown_r": 2.0,
+          "notes": [
+            "signals=22"
+          ]
+        },
+        {
+          "indicator": "fair_value_gap",
+          "symbol": "BEATUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 153,
+          "win_rate": 50.98,
+          "profit_factor": 1.194,
+          "avg_r": 0.078,
+          "max_drawdown_r": 16.986,
+          "notes": [
+            "signals=154"
+          ]
+        },
+        {
+          "indicator": "fair_value_gap",
+          "symbol": "XAUUSD",
+          "timeframe": "15m",
+          "market": "forex",
+          "total_trades": 261,
+          "win_rate": 47.51,
+          "profit_factor": 1.089,
+          "avg_r": 0.038,
+          "max_drawdown_r": 11.003,
+          "notes": [
+            "signals=261"
+          ]
+        },
+        {
+          "indicator": "fair_value_gap",
+          "symbol": "XAUUSD",
+          "timeframe": "1h",
+          "market": "forex",
+          "total_trades": 71,
+          "win_rate": 46.48,
+          "profit_factor": 1.084,
+          "avg_r": 0.034,
+          "max_drawdown_r": 4.638,
+          "notes": [
+            "signals=71"
+          ]
+        },
+        {
+          "indicator": "fair_value_gap",
+          "symbol": "BEATUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 867,
+          "win_rate": 48.33,
+          "profit_factor": 1.075,
+          "avg_r": 0.029,
+          "max_drawdown_r": 33.253,
+          "notes": [
+            "signals=868"
+          ]
+        }
+      ]
+    },
     "fib_fib": {
       "avg_wr": 48.3,
       "avg_pf": 0.598,
@@ -514,6 +741,10 @@
           ]
         }
       ]
+    },
+    "fib_ote": {
+      "status": "insufficient",
+      "samples": 15
     },
     "forge": {
       "avg_wr": 46.0,
@@ -642,6 +873,75 @@
           "notes": [
             "signals=76"
           ]
+        }
+      ]
+    },
+    "fxpip_scob": {
+      "avg_wr": 31.6,
+      "avg_pf": 0.45,
+      "best": "HYPEUSDT 1h PF=1.217 WR=43.9%",
+      "worst": "EURUSD 4h PF=0.0",
+      "samples": 15,
+      "top5": [
+        {
+          "indicator": "fxpip_scob",
+          "symbol": "HYPEUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 41,
+          "win_rate": 43.9,
+          "profit_factor": 1.217,
+          "avg_r": 0.051,
+          "max_drawdown_r": 2.924,
+          "notes": []
+        },
+        {
+          "indicator": "fxpip_scob",
+          "symbol": "BEATUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 46,
+          "win_rate": 54.35,
+          "profit_factor": 1.114,
+          "avg_r": 0.053,
+          "max_drawdown_r": 5.23,
+          "notes": []
+        },
+        {
+          "indicator": "fxpip_scob",
+          "symbol": "BEATUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 138,
+          "win_rate": 49.28,
+          "profit_factor": 1.005,
+          "avg_r": 0.002,
+          "max_drawdown_r": 10.105,
+          "notes": []
+        },
+        {
+          "indicator": "fxpip_scob",
+          "symbol": "BTCUSDT",
+          "timeframe": "4h",
+          "market": "crypto",
+          "total_trades": 6,
+          "win_rate": 33.33,
+          "profit_factor": 0.64,
+          "avg_r": -0.18,
+          "max_drawdown_r": 1.04,
+          "notes": []
+        },
+        {
+          "indicator": "fxpip_scob",
+          "symbol": "HYPEUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 65,
+          "win_rate": 33.85,
+          "profit_factor": 0.58,
+          "avg_r": -0.056,
+          "max_drawdown_r": 4.013,
+          "notes": []
         }
       ]
     },
@@ -1233,6 +1533,75 @@
           "profit_factor": 0.162,
           "avg_r": -0.287,
           "max_drawdown_r": 3.133,
+          "notes": []
+        }
+      ]
+    },
+    "orderflow_print": {
+      "avg_wr": 32.6,
+      "avg_pf": 0.672,
+      "best": "HYPEUSDT 1h PF=1.371 WR=46.67%",
+      "worst": "BTCUSDT 4h PF=0.0",
+      "samples": 12,
+      "top5": [
+        {
+          "indicator": "orderflow_print",
+          "symbol": "HYPEUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 45,
+          "win_rate": 46.67,
+          "profit_factor": 1.371,
+          "avg_r": 0.086,
+          "max_drawdown_r": 2.274,
+          "notes": []
+        },
+        {
+          "indicator": "orderflow_print",
+          "symbol": "XAUUSD",
+          "timeframe": "4h",
+          "market": "forex",
+          "total_trades": 10,
+          "win_rate": 30.0,
+          "profit_factor": 1.226,
+          "avg_r": 0.263,
+          "max_drawdown_r": 11.0,
+          "notes": []
+        },
+        {
+          "indicator": "orderflow_print",
+          "symbol": "HYPEUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 52,
+          "win_rate": 36.54,
+          "profit_factor": 1.027,
+          "avg_r": 0.004,
+          "max_drawdown_r": 2.031,
+          "notes": []
+        },
+        {
+          "indicator": "orderflow_print",
+          "symbol": "BEATUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 57,
+          "win_rate": 47.37,
+          "profit_factor": 1.004,
+          "avg_r": 0.002,
+          "max_drawdown_r": 9.955,
+          "notes": []
+        },
+        {
+          "indicator": "orderflow_print",
+          "symbol": "BTCUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 48,
+          "win_rate": 41.67,
+          "profit_factor": 0.796,
+          "avg_r": -0.023,
+          "max_drawdown_r": 2.394,
           "notes": []
         }
       ]
@@ -2029,6 +2398,85 @@
           "avg_r": -0.04,
           "max_drawdown_r": 1.04,
           "notes": []
+        }
+      ]
+    },
+    "sr_signals_mtf": {
+      "avg_wr": 42.9,
+      "avg_pf": 1.108,
+      "best": "HYPEUSDT 4h PF=1.985 WR=46.03%",
+      "worst": "BTCUSDT 4h PF=0.567",
+      "samples": 15,
+      "top5": [
+        {
+          "indicator": "sr_signals_mtf",
+          "symbol": "HYPEUSDT",
+          "timeframe": "4h",
+          "market": "crypto",
+          "total_trades": 63,
+          "win_rate": 46.03,
+          "profit_factor": 1.985,
+          "avg_r": 0.177,
+          "max_drawdown_r": 2.091,
+          "notes": [
+            "signals=64"
+          ]
+        },
+        {
+          "indicator": "sr_signals_mtf",
+          "symbol": "BTCUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 154,
+          "win_rate": 53.25,
+          "profit_factor": 1.512,
+          "avg_r": 0.122,
+          "max_drawdown_r": 5.633,
+          "notes": [
+            "signals=155"
+          ]
+        },
+        {
+          "indicator": "sr_signals_mtf",
+          "symbol": "HYPEUSDT",
+          "timeframe": "1h",
+          "market": "crypto",
+          "total_trades": 186,
+          "win_rate": 53.23,
+          "profit_factor": 1.426,
+          "avg_r": 0.107,
+          "max_drawdown_r": 4.283,
+          "notes": [
+            "signals=187"
+          ]
+        },
+        {
+          "indicator": "sr_signals_mtf",
+          "symbol": "EURUSD",
+          "timeframe": "1h",
+          "market": "forex",
+          "total_trades": 71,
+          "win_rate": 40.85,
+          "profit_factor": 1.261,
+          "avg_r": 0.077,
+          "max_drawdown_r": 5.693,
+          "notes": [
+            "signals=72"
+          ]
+        },
+        {
+          "indicator": "sr_signals_mtf",
+          "symbol": "EURUSD",
+          "timeframe": "15m",
+          "market": "forex",
+          "total_trades": 95,
+          "win_rate": 41.05,
+          "profit_factor": 1.172,
+          "avg_r": 0.081,
+          "max_drawdown_r": 10.401,
+          "notes": [
+            "signals=95"
+          ]
         }
       ]
     },
@@ -2989,6 +3437,218 @@
         ]
       }
     ],
+    "buyside_liquidity": [
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 102,
+        "win_rate": 45.1,
+        "profit_factor": 0.907,
+        "avg_r": -0.042,
+        "max_drawdown_r": 7.757,
+        "notes": [
+          "signals=103"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 43,
+        "win_rate": 32.56,
+        "profit_factor": 0.683,
+        "avg_r": -0.17,
+        "max_drawdown_r": 8.381,
+        "notes": [
+          "signals=44"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 10,
+        "win_rate": 40.0,
+        "profit_factor": 0.824,
+        "avg_r": -0.072,
+        "max_drawdown_r": 2.716,
+        "notes": [
+          "signals=11"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 106,
+        "win_rate": 44.34,
+        "profit_factor": 0.817,
+        "avg_r": -0.087,
+        "max_drawdown_r": 15.542,
+        "notes": [
+          "signals=107"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 56,
+        "win_rate": 44.64,
+        "profit_factor": 1.143,
+        "avg_r": 0.059,
+        "max_drawdown_r": 6.714,
+        "notes": [
+          "signals=57"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 9,
+        "win_rate": 11.11,
+        "profit_factor": 0.177,
+        "avg_r": -0.666,
+        "max_drawdown_r": 6.291,
+        "notes": [
+          "signals=10"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 187,
+        "win_rate": 40.11,
+        "profit_factor": 0.929,
+        "avg_r": -0.032,
+        "max_drawdown_r": 27.132,
+        "notes": [
+          "signals=187"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 45,
+        "win_rate": 55.56,
+        "profit_factor": 1.538,
+        "avg_r": 0.175,
+        "max_drawdown_r": 4.703,
+        "notes": [
+          "signals=46"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 5,
+        "win_rate": 40.0,
+        "profit_factor": 0.501,
+        "avg_r": -0.128,
+        "max_drawdown_r": 0.283,
+        "notes": [
+          "signals=6"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 134,
+        "win_rate": 40.3,
+        "profit_factor": 1.118,
+        "avg_r": 0.051,
+        "max_drawdown_r": 11.306,
+        "notes": [
+          "signals=135"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 31,
+        "win_rate": 48.39,
+        "profit_factor": 1.018,
+        "avg_r": 0.009,
+        "max_drawdown_r": 4.743,
+        "notes": [
+          "signals=31"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 3,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -0.667,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "signals=4"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 108,
+        "win_rate": 45.37,
+        "profit_factor": 1.077,
+        "avg_r": 0.032,
+        "max_drawdown_r": 7.908,
+        "notes": [
+          "signals=109"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 30,
+        "win_rate": 50.0,
+        "profit_factor": 1.551,
+        "avg_r": 0.191,
+        "max_drawdown_r": 4.66,
+        "notes": [
+          "signals=31"
+        ]
+      },
+      {
+        "indicator": "buyside_liquidity",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 4,
+        "win_rate": 50.0,
+        "profit_factor": 1.205,
+        "avg_r": 0.088,
+        "max_drawdown_r": 1.713,
+        "notes": [
+          "signals=5"
+        ]
+      }
+    ],
     "cardwell_rsi": [
       {
         "indicator": "cardwell_rsi",
@@ -3565,6 +4225,400 @@
         "notes": []
       }
     ],
+    "divergence": [
+      {
+        "indicator": "divergence",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 9,
+        "win_rate": 66.67,
+        "profit_factor": 1.094,
+        "avg_r": 0.013,
+        "max_drawdown_r": 0.883,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 5,
+        "win_rate": 80.0,
+        "profit_factor": 0.853,
+        "avg_r": -0.03,
+        "max_drawdown_r": 1.04,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 2,
+        "win_rate": 100.0,
+        "profit_factor": 999,
+        "avg_r": 0.96,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 15,
+        "win_rate": 60.0,
+        "profit_factor": 0.97,
+        "avg_r": -0.009,
+        "max_drawdown_r": 2.544,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 9,
+        "win_rate": 55.56,
+        "profit_factor": 1.053,
+        "avg_r": 0.019,
+        "max_drawdown_r": 2.08,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 4,
+        "win_rate": 25.0,
+        "profit_factor": 0.451,
+        "avg_r": -0.292,
+        "max_drawdown_r": 1.04,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 36,
+        "win_rate": 38.89,
+        "profit_factor": 0.587,
+        "avg_r": -0.262,
+        "max_drawdown_r": 10.4,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 15,
+        "win_rate": 40.0,
+        "profit_factor": 0.615,
+        "avg_r": -0.24,
+        "max_drawdown_r": 4.16,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 3,
+        "win_rate": 33.33,
+        "profit_factor": 0.889,
+        "avg_r": -0.04,
+        "max_drawdown_r": 1.08,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 20,
+        "win_rate": 35.0,
+        "profit_factor": 0.108,
+        "avg_r": -0.967,
+        "max_drawdown_r": 18.0,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 9,
+        "win_rate": 77.78,
+        "profit_factor": 0.7,
+        "avg_r": -0.111,
+        "max_drawdown_r": 3.0,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 2,
+        "win_rate": 50.0,
+        "profit_factor": 0.2,
+        "avg_r": -0.667,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 23,
+        "win_rate": 39.13,
+        "profit_factor": 0.129,
+        "avg_r": -0.884,
+        "max_drawdown_r": 19.333,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 5,
+        "win_rate": 60.0,
+        "profit_factor": 0.3,
+        "avg_r": -0.467,
+        "max_drawdown_r": 3.0,
+        "notes": []
+      },
+      {
+        "indicator": "divergence",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      }
+    ],
+    "fair_value_gap": [
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 248,
+        "win_rate": 44.76,
+        "profit_factor": 0.929,
+        "avg_r": -0.034,
+        "max_drawdown_r": 16.083,
+        "notes": [
+          "signals=249"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 114,
+        "win_rate": 43.86,
+        "profit_factor": 0.854,
+        "avg_r": -0.072,
+        "max_drawdown_r": 15.66,
+        "notes": [
+          "signals=115"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 21,
+        "win_rate": 52.38,
+        "profit_factor": 1.782,
+        "avg_r": 0.304,
+        "max_drawdown_r": 2.0,
+        "notes": [
+          "signals=22"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 237,
+        "win_rate": 40.51,
+        "profit_factor": 0.793,
+        "avg_r": -0.107,
+        "max_drawdown_r": 32.848,
+        "notes": [
+          "signals=237"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 101,
+        "win_rate": 47.52,
+        "profit_factor": 1.066,
+        "avg_r": 0.03,
+        "max_drawdown_r": 14.102,
+        "notes": [
+          "signals=101"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 25,
+        "win_rate": 44.0,
+        "profit_factor": 1.031,
+        "avg_r": 0.014,
+        "max_drawdown_r": 3.774,
+        "notes": [
+          "signals=26"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 867,
+        "win_rate": 48.33,
+        "profit_factor": 1.075,
+        "avg_r": 0.029,
+        "max_drawdown_r": 33.253,
+        "notes": [
+          "signals=868"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 153,
+        "win_rate": 50.98,
+        "profit_factor": 1.194,
+        "avg_r": 0.078,
+        "max_drawdown_r": 16.986,
+        "notes": [
+          "signals=154"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 26,
+        "win_rate": 46.15,
+        "profit_factor": 0.793,
+        "avg_r": -0.098,
+        "max_drawdown_r": 6.952,
+        "notes": [
+          "signals=27"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 520,
+        "win_rate": 43.65,
+        "profit_factor": 0.945,
+        "avg_r": -0.024,
+        "max_drawdown_r": 32.521,
+        "notes": [
+          "signals=521"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 120,
+        "win_rate": 40.83,
+        "profit_factor": 0.823,
+        "avg_r": -0.082,
+        "max_drawdown_r": 13.869,
+        "notes": [
+          "signals=120"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 24,
+        "win_rate": 41.67,
+        "profit_factor": 0.962,
+        "avg_r": -0.017,
+        "max_drawdown_r": 5.791,
+        "notes": [
+          "signals=24"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 261,
+        "win_rate": 47.51,
+        "profit_factor": 1.089,
+        "avg_r": 0.038,
+        "max_drawdown_r": 11.003,
+        "notes": [
+          "signals=261"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 71,
+        "win_rate": 46.48,
+        "profit_factor": 1.084,
+        "avg_r": 0.034,
+        "max_drawdown_r": 4.638,
+        "notes": [
+          "signals=71"
+        ]
+      },
+      {
+        "indicator": "fair_value_gap",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 21,
+        "win_rate": 47.62,
+        "profit_factor": 0.942,
+        "avg_r": -0.026,
+        "max_drawdown_r": 4.073,
+        "notes": [
+          "signals=21"
+        ]
+      }
+    ],
     "fib_fib": [
       {
         "indicator": "fib_fib",
@@ -3774,6 +4828,218 @@
         "max_drawdown_r": 0.0,
         "notes": [
           "need 265+ bars"
+        ]
+      }
+    ],
+    "fib_ote": [
+      {
+        "indicator": "fib_ote",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
+        ]
+      },
+      {
+        "indicator": "fib_ote",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0"
         ]
       }
     ],
@@ -4199,6 +5465,188 @@
         "notes": [
           "signals=1"
         ]
+      }
+    ],
+    "fxpip_scob": [
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 76,
+        "win_rate": 27.63,
+        "profit_factor": 0.359,
+        "avg_r": -0.051,
+        "max_drawdown_r": 3.877,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 38,
+        "win_rate": 34.21,
+        "profit_factor": 0.448,
+        "avg_r": -0.11,
+        "max_drawdown_r": 4.586,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 6,
+        "win_rate": 33.33,
+        "profit_factor": 0.64,
+        "avg_r": -0.18,
+        "max_drawdown_r": 1.04,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 65,
+        "win_rate": 33.85,
+        "profit_factor": 0.58,
+        "avg_r": -0.056,
+        "max_drawdown_r": 4.013,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 41,
+        "win_rate": 43.9,
+        "profit_factor": 1.217,
+        "avg_r": 0.051,
+        "max_drawdown_r": 2.924,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 11,
+        "win_rate": 27.27,
+        "profit_factor": 0.417,
+        "avg_r": -0.367,
+        "max_drawdown_r": 3.873,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 138,
+        "win_rate": 49.28,
+        "profit_factor": 1.005,
+        "avg_r": 0.002,
+        "max_drawdown_r": 10.105,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 46,
+        "win_rate": 54.35,
+        "profit_factor": 1.114,
+        "avg_r": 0.053,
+        "max_drawdown_r": 5.23,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 14,
+        "win_rate": 35.71,
+        "profit_factor": 0.531,
+        "avg_r": -0.303,
+        "max_drawdown_r": 3.2,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 60,
+        "win_rate": 43.33,
+        "profit_factor": 0.154,
+        "avg_r": -0.796,
+        "max_drawdown_r": 46.077,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 18,
+        "win_rate": 44.44,
+        "profit_factor": 0.16,
+        "avg_r": -0.778,
+        "max_drawdown_r": 12.667,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 7,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.667,
+        "max_drawdown_r": 10.0,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 124,
+        "win_rate": 25.81,
+        "profit_factor": 0.07,
+        "avg_r": -1.151,
+        "max_drawdown_r": 142.0,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 33,
+        "win_rate": 21.21,
+        "profit_factor": 0.054,
+        "avg_r": -1.242,
+        "max_drawdown_r": 39.667,
+        "notes": []
+      },
+      {
+        "indicator": "fxpip_scob",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 7,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.667,
+        "max_drawdown_r": 10.0,
+        "notes": []
       }
     ],
     "ichimoku_ml": [
@@ -5795,6 +7243,188 @@
         "notes": [
           "need 200+ bars"
         ]
+      }
+    ],
+    "orderflow_print": [
+      {
+        "indicator": "orderflow_print",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 92,
+        "win_rate": 26.09,
+        "profit_factor": 0.42,
+        "avg_r": -0.047,
+        "max_drawdown_r": 4.38,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 48,
+        "win_rate": 41.67,
+        "profit_factor": 0.796,
+        "avg_r": -0.023,
+        "max_drawdown_r": 2.394,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 6,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -0.718,
+        "max_drawdown_r": 3.269,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 52,
+        "win_rate": 36.54,
+        "profit_factor": 1.027,
+        "avg_r": 0.004,
+        "max_drawdown_r": 2.031,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 45,
+        "win_rate": 46.67,
+        "profit_factor": 1.371,
+        "avg_r": 0.086,
+        "max_drawdown_r": 2.274,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 7,
+        "win_rate": 28.57,
+        "profit_factor": 0.448,
+        "avg_r": -0.338,
+        "max_drawdown_r": 2.24,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 221,
+        "win_rate": 42.53,
+        "profit_factor": 0.719,
+        "avg_r": -0.11,
+        "max_drawdown_r": 26.504,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 57,
+        "win_rate": 47.37,
+        "profit_factor": 1.004,
+        "avg_r": 0.002,
+        "max_drawdown_r": 9.955,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 22,
+        "win_rate": 27.27,
+        "profit_factor": 0.327,
+        "avg_r": -0.497,
+        "max_drawdown_r": 10.805,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 137,
+        "win_rate": 29.93,
+        "profit_factor": 0.16,
+        "avg_r": -1.123,
+        "max_drawdown_r": 154.167,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 38,
+        "win_rate": 34.21,
+        "profit_factor": 0.564,
+        "avg_r": -0.842,
+        "max_drawdown_r": 39.933,
+        "notes": []
+      },
+      {
+        "indicator": "orderflow_print",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 10,
+        "win_rate": 30.0,
+        "profit_factor": 1.226,
+        "avg_r": 0.263,
+        "max_drawdown_r": 11.0,
+        "notes": []
       }
     ],
     "power_ob": [
@@ -7951,6 +9581,218 @@
         "avg_r": 0.0,
         "max_drawdown_r": 0.0,
         "notes": []
+      }
+    ],
+    "sr_signals_mtf": [
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 320,
+        "win_rate": 45.0,
+        "profit_factor": 1.045,
+        "avg_r": 0.013,
+        "max_drawdown_r": 14.478,
+        "notes": [
+          "signals=321"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 154,
+        "win_rate": 53.25,
+        "profit_factor": 1.512,
+        "avg_r": 0.122,
+        "max_drawdown_r": 5.633,
+        "notes": [
+          "signals=155"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 48,
+        "win_rate": 31.25,
+        "profit_factor": 0.567,
+        "avg_r": -0.116,
+        "max_drawdown_r": 6.457,
+        "notes": [
+          "signals=49"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 370,
+        "win_rate": 46.76,
+        "profit_factor": 1.036,
+        "avg_r": 0.011,
+        "max_drawdown_r": 25.574,
+        "notes": [
+          "signals=371"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 186,
+        "win_rate": 53.23,
+        "profit_factor": 1.426,
+        "avg_r": 0.107,
+        "max_drawdown_r": 4.283,
+        "notes": [
+          "signals=187"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 63,
+        "win_rate": 46.03,
+        "profit_factor": 1.985,
+        "avg_r": 0.177,
+        "max_drawdown_r": 2.091,
+        "notes": [
+          "signals=64"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 521,
+        "win_rate": 44.15,
+        "profit_factor": 1.091,
+        "avg_r": 0.031,
+        "max_drawdown_r": 11.89,
+        "notes": [
+          "signals=521"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 167,
+        "win_rate": 40.12,
+        "profit_factor": 0.894,
+        "avg_r": -0.037,
+        "max_drawdown_r": 12.057,
+        "notes": [
+          "signals=168"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 33,
+        "win_rate": 39.39,
+        "profit_factor": 0.666,
+        "avg_r": -0.111,
+        "max_drawdown_r": 7.437,
+        "notes": [
+          "signals=34"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 95,
+        "win_rate": 41.05,
+        "profit_factor": 1.172,
+        "avg_r": 0.081,
+        "max_drawdown_r": 10.401,
+        "notes": [
+          "signals=95"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 71,
+        "win_rate": 40.85,
+        "profit_factor": 1.261,
+        "avg_r": 0.077,
+        "max_drawdown_r": 5.693,
+        "notes": [
+          "signals=72"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "EURUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 21,
+        "win_rate": 38.1,
+        "profit_factor": 1.126,
+        "avg_r": 0.032,
+        "max_drawdown_r": 2.689,
+        "notes": [
+          "signals=22"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 512,
+        "win_rate": 45.7,
+        "profit_factor": 1.054,
+        "avg_r": 0.013,
+        "max_drawdown_r": 15.12,
+        "notes": [
+          "signals=513"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 95,
+        "win_rate": 45.26,
+        "profit_factor": 0.85,
+        "avg_r": -0.045,
+        "max_drawdown_r": 7.583,
+        "notes": [
+          "signals=96"
+        ]
+      },
+      {
+        "indicator": "sr_signals_mtf",
+        "symbol": "XAUUSD",
+        "timeframe": "4h",
+        "market": "forex",
+        "total_trades": 15,
+        "win_rate": 33.33,
+        "profit_factor": 0.941,
+        "avg_r": -0.021,
+        "max_drawdown_r": 2.68,
+        "notes": [
+          "signals=16"
+        ]
       }
     ],
     "stop_hunt": [
