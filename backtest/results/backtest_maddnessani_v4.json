@@ -1,0 +1,902 @@
+{
+  "period_days": 31,
+  "chart_tfs": [
+    "5m",
+    "15m",
+    "1h"
+  ],
+  "summaries": {
+    "maddnessani_precision_htf": {
+      "label": "maddnessani_precision_htf",
+      "status": "insufficient",
+      "runs": 15,
+      "total_signals": 0
+    },
+    "maddnessani_precision_nohtf": {
+      "label": "maddnessani_precision_nohtf",
+      "avg_pf": 0.0,
+      "avg_wr": 0.0,
+      "total_trades": 3,
+      "samples": 2,
+      "market_pf": {
+        "crypto": 0.0,
+        "forex": 0.0
+      },
+      "best": "BEATUSDT 15m PF=0.0 WR=0.0%"
+    },
+    "maddnessani_balanced_htf": {
+      "label": "maddnessani_balanced_htf",
+      "avg_pf": 0.387,
+      "avg_wr": 14.3,
+      "total_trades": 15,
+      "samples": 7,
+      "market_pf": {
+        "crypto": 0.405,
+        "forex": 0.342
+      },
+      "best": "BTCUSDT 1h PF=2.025 WR=66.67%"
+    },
+    "maddnessani_balanced_nohtf": {
+      "label": "maddnessani_balanced_nohtf",
+      "avg_pf": 0.876,
+      "avg_wr": 42.0,
+      "total_trades": 796,
+      "samples": 15,
+      "market_pf": {
+        "crypto": 0.987,
+        "forex": 0.71
+      },
+      "best": "BTCUSDT 15m PF=2.309 WR=59.38%"
+    }
+  },
+  "results": {
+    "maddnessani_precision_htf": [
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "BTCUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "BEATUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "EURUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "XAUUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_htf",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=precision"
+        ]
+      }
+    ],
+    "maddnessani_precision_nohtf": [
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=1 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "EURUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "XAUUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 2,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -0.5,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "signals=2 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      },
+      {
+        "indicator": "maddnessani_precision_nohtf",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=False mode=precision"
+        ]
+      }
+    ],
+    "maddnessani_balanced_htf": [
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "BTCUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=1 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -0.205,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=1 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 3,
+        "win_rate": 66.67,
+        "profit_factor": 2.025,
+        "avg_r": 0.342,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "signals=3 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "BEATUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=1 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=1 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "EURUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 6,
+        "win_rate": 33.33,
+        "profit_factor": 0.685,
+        "avg_r": -0.174,
+        "max_drawdown_r": 2.0,
+        "notes": [
+          "signals=6 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 2,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "signals=2 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "XAUUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_htf",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 htf=True mode=balanced"
+        ]
+      }
+    ],
+    "maddnessani_balanced_nohtf": [
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 31,
+        "win_rate": 29.03,
+        "profit_factor": 0.54,
+        "avg_r": -0.235,
+        "max_drawdown_r": 6.668,
+        "notes": [
+          "signals=31 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 32,
+        "win_rate": 59.38,
+        "profit_factor": 2.309,
+        "avg_r": 0.327,
+        "max_drawdown_r": 3.0,
+        "notes": [
+          "signals=33 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 23,
+        "win_rate": 60.87,
+        "profit_factor": 1.319,
+        "avg_r": 0.084,
+        "max_drawdown_r": 2.498,
+        "notes": [
+          "signals=24 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 37,
+        "win_rate": 45.95,
+        "profit_factor": 0.956,
+        "avg_r": -0.018,
+        "max_drawdown_r": 8.477,
+        "notes": [
+          "signals=37 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 41,
+        "win_rate": 41.46,
+        "profit_factor": 0.86,
+        "avg_r": -0.046,
+        "max_drawdown_r": 5.231,
+        "notes": [
+          "signals=42 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "HYPEUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 17,
+        "win_rate": 35.29,
+        "profit_factor": 0.419,
+        "avg_r": -0.284,
+        "max_drawdown_r": 4.104,
+        "notes": [
+          "signals=18 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 196,
+        "win_rate": 41.33,
+        "profit_factor": 0.919,
+        "avg_r": -0.034,
+        "max_drawdown_r": 19.538,
+        "notes": [
+          "signals=197 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 72,
+        "win_rate": 40.28,
+        "profit_factor": 0.645,
+        "avg_r": -0.166,
+        "max_drawdown_r": 15.707,
+        "notes": [
+          "signals=73 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "BEATUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 15,
+        "win_rate": 60.0,
+        "profit_factor": 0.917,
+        "avg_r": -0.025,
+        "max_drawdown_r": 2.723,
+        "notes": [
+          "signals=16 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "EURUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 91,
+        "win_rate": 36.26,
+        "profit_factor": 0.941,
+        "avg_r": -0.029,
+        "max_drawdown_r": 8.327,
+        "notes": [
+          "signals=92 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 42,
+        "win_rate": 38.1,
+        "profit_factor": 0.528,
+        "avg_r": -0.207,
+        "max_drawdown_r": 11.099,
+        "notes": [
+          "signals=43 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "EURUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 14,
+        "win_rate": 28.57,
+        "profit_factor": 0.484,
+        "avg_r": -0.301,
+        "max_drawdown_r": 3.21,
+        "notes": [
+          "signals=14 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "XAUUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 127,
+        "win_rate": 47.24,
+        "profit_factor": 1.232,
+        "avg_r": 0.089,
+        "max_drawdown_r": 8.109,
+        "notes": [
+          "signals=128 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 44,
+        "win_rate": 45.45,
+        "profit_factor": 0.893,
+        "avg_r": -0.036,
+        "max_drawdown_r": 6.797,
+        "notes": [
+          "signals=45 htf=False mode=balanced"
+        ]
+      },
+      {
+        "indicator": "maddnessani_balanced_nohtf",
+        "symbol": "XAUUSD",
+        "timeframe": "1h",
+        "market": "forex",
+        "total_trades": 14,
+        "win_rate": 21.43,
+        "profit_factor": 0.182,
+        "avg_r": -0.396,
+        "max_drawdown_r": 5.627,
+        "notes": [
+          "signals=15 htf=False mode=balanced"
+        ]
+      }
+    ]
+  }
+}

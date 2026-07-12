@@ -359,19 +359,140 @@ def apply_trend_filter(
     return out
 
 
+def _df_with_index(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if isinstance(out.index, pd.DatetimeIndex):
+        return out
+    if "timestamp" in out.columns:
+        out = out.set_index(pd.to_datetime(out["timestamp"], utc=True))
+    return out
+
+
+def resample_ohlcv(df: pd.DataFrame, rule: str) -> pd.DataFrame:
+    """Resample OHLCV using timestamp column."""
+    d = df.copy()
+    if "timestamp" not in d.columns:
+        d = _df_with_index(d).reset_index()
+        if d.columns[0] != "timestamp":
+            d = d.rename(columns={d.columns[0]: "timestamp"})
+    d = d.set_index(pd.to_datetime(d["timestamp"], utc=True))
+    agg = d.resample(rule).agg(
+        {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+    ).dropna()
+    out = agg.reset_index()
+    if out.columns[0] != "timestamp":
+        out = out.rename(columns={out.columns[0]: "timestamp"})
+    return out
+
+
+def htf_trend_gate(
+    chart_df: pd.DataFrame,
+    market: Market,
+    trend_rule: str = "both_agree",
+    block_4h_counter: bool = True,
+    h1_df: pd.DataFrame | None = None,
+    h4_df: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """
+    1h + 4h trend gate aligned to chart bars (Monster Trex HTF style).
+    """
+    base = chart_df.copy()
+    chart = _df_with_index(base)
+    n = len(chart)
+    if "timestamp" not in base.columns and isinstance(chart.index, pd.DatetimeIndex):
+        base = chart.reset_index()
+        if base.columns[0] != "timestamp":
+            base = base.rename(columns={base.columns[0]: "timestamp"})
+
+    if not isinstance(chart.index, pd.DatetimeIndex) and "timestamp" not in base.columns:
+        return pd.DataFrame(
+            {
+                "htf_allow_long": np.ones(n, dtype=bool),
+                "htf_allow_short": np.ones(n, dtype=bool),
+                "h1_bull": np.zeros(n, dtype=bool),
+                "h4_bull": np.zeros(n, dtype=bool),
+                "h1_score": np.zeros(n),
+                "h4_score": np.zeros(n),
+            }
+        )
+
+    if not isinstance(chart.index, pd.DatetimeIndex):
+        chart = base.set_index(pd.to_datetime(base["timestamp"], utc=True))
+
+    h1_src = h1_df if h1_df is not None and len(h1_df) > 0 else resample_ohlcv(base, "1h")
+    h4_src = h4_df if h4_df is not None and len(h4_df) > 0 else resample_ohlcv(base, "4h")
+    if len(h1_src) < 30 or len(h4_src) < 10:
+        return pd.DataFrame(
+            {
+                "htf_allow_long": np.zeros(n, dtype=bool),
+                "htf_allow_short": np.zeros(n, dtype=bool),
+                "h1_bull": np.zeros(n, dtype=bool),
+                "h4_bull": np.zeros(n, dtype=bool),
+                "h1_score": np.zeros(n),
+                "h4_score": np.zeros(n),
+            }
+        )
+
+    t1 = apply_trend_filter(h1_src, preset=f"{market}_1h", market=market)
+    t4 = apply_trend_filter(h4_src, preset=f"{market}_4h", market=market)
+
+    h1_idx = pd.to_datetime(h1_src["timestamp"], utc=True)
+    h4_idx = pd.to_datetime(h4_src["timestamp"], utc=True)
+
+    def _align(series: pd.Series, idx: pd.DatetimeIndex) -> pd.Series:
+        s = pd.Series(series.values, index=idx)
+        return s.reindex(chart.index, method="ffill").fillna(False)
+
+    h1_long = _align(t1["allow_long"], h1_idx)
+    h1_short = _align(t1["allow_short"], h1_idx)
+    h4_long = _align(t4["allow_long"], h4_idx)
+    h4_short = _align(t4["allow_short"], h4_idx)
+    h1_net = _align(t1["trend_score"], h1_idx).astype(float).fillna(0)
+    h4_net = _align(t4["trend_score"], h4_idx).astype(float).fillna(0)
+
+    if trend_rule == "4h_lead":
+        allow_long = h4_long & ~h4_short
+        allow_short = h4_short & ~h4_long
+    elif trend_rule == "1h_lead":
+        allow_long = h1_long & ~h1_short
+        allow_short = h1_short & ~h1_long
+    else:
+        allow_long = h1_long & h4_long
+        allow_short = h1_short & h4_short
+
+    if block_4h_counter:
+        allow_long = allow_long & ~h4_short
+        allow_short = allow_short & ~h4_long
+
+    return pd.DataFrame(
+        {
+            "htf_allow_long": allow_long.values,
+            "htf_allow_short": allow_short.values,
+            "h1_bull": h1_long.values,
+            "h4_bull": h4_long.values,
+            "h1_score": h1_net.values,
+            "h4_score": h4_net.values,
+        }
+    )
+
+
 def filter_signals_df(
     sig: pd.DataFrame,
     trend: pd.DataFrame,
     require_trend: bool = True,
+    long_col: str = "allow_long",
+    short_col: str = "allow_short",
 ) -> pd.DataFrame:
-    """Gate buy/sell columns with trend allow_long / allow_short."""
+    """Gate buy/sell with trend columns."""
     out = sig.copy()
     if not require_trend:
         return out
+    long_ok = trend[long_col] if long_col in trend.columns else trend["htf_allow_long"]
+    short_ok = trend[short_col] if short_col in trend.columns else trend["htf_allow_short"]
     if "buy" in out.columns:
-        out["buy"] = out["buy"].fillna(False) & trend["allow_long"].reindex(out.index).fillna(False)
+        out["buy"] = out["buy"].fillna(False) & pd.Series(long_ok).fillna(False).values
     if "sell" in out.columns:
-        out["sell"] = out["sell"].fillna(False) & trend["allow_short"].reindex(out.index).fillna(False)
+        out["sell"] = out["sell"].fillna(False) & pd.Series(short_ok).fillna(False).values
     return out
 
 
