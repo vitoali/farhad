@@ -1,238 +1,324 @@
 // This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © ChartPrime — Enhanced detection layer by farhad
+// © ChartPrime — Enhanced MTF detection by farhad
 
 //@version=5
-indicator("Trendline Enhanced Detection [farhad]", shorttitle="TL Enhanced", overlay=true, max_bars_back=500, max_lines_count=500)
+indicator("Trendline MTF Enhanced [farhad]", shorttitle="TL MTF", overlay=true, max_bars_back=500, max_lines_count=500)
 
-// ─── Core (از ChartPrime) ────────────────────────────────────────────────────
-string CORE = "➞ Core Settings 🔸"
-var bool TradeisON = false
-var bool LongTrade = false
-var bool ShortTrade = false
-var float TP = 0.0
-var float SL = 0.0
-int BarTIME = time - time[1]
-var line tpLine = na
-var label LAB = na
-var int UpdatedX = 0
-var float UpdatedY = 0.0
-var float UpdatedSLP = 0.0
-var int UpdatedXLow = 0
-var float UpdatedYLow = 0.0
-var float UpdatedSLPLow = 0.0
+// ─── تایم‌فریم‌های مجاز ─────────────────────────────────────────────────────
+string TF5   = "5"
+string TF15  = "15"
+string TF60  = "60"
+string TF240 = "240"
+string TFD   = "D"
 
-int Period = input.int(10, title="Period ➞", group=CORE, inline="001")
-bool Trendtype = input.string(title="Type ➞", defval="Wicks", options=["Wicks", "Body"], group=CORE, inline="001") == "Wicks"
-string Extensions = input.string(title="Extend ➞", defval="  25", options=["  25", "  50", "  75", "Dynamic"], group=CORE, inline="001")
-color LineCol1 = input.color(color.rgb(109, 111, 111, 19), "", group=CORE, inline="001")
-bool ShowTargets = input.bool(true, "Show Targets", group=CORE, inline="002")
+isAllowedTF(string tf) =>
+    tf == TF5 or tf == TF15 or tf == TF60 or tf == TF240 or tf == TFD
 
-// ─── فیلترهای دقت تشخیص (جدید) ─────────────────────────────────────────────
-string FILTER = "➞ Accuracy Filters 🔸"
-bool useStructural = input.bool(true, "فیلتر ساختار (HL / LH)", group=FILTER, tooltip="حمایت: کف بالاتر | مقاومت: سقف پایین‌تر")
-bool usePathValidation = input.bool(true, "اعتبارسنجی مسیر خط", group=FILTER, tooltip="قیمت نباید بین دو پیوت از خط عبور کند")
-bool useMinSwing = input.bool(true, "حداقل اندازه سوینگ", group=FILTER)
-float minSwingATR = input.float(0.5, "حداقل سوینگ (× ATR)", minval=0.1, maxval=5.0, step=0.1, group=FILTER)
-bool useSlopeFilter = input.bool(true, "فیلتر زاویه خط", group=FILTER)
-float minSlopeATR = input.float(0.02, "حداقل شیب (× ATR/کندل)", minval=0.0, maxval=1.0, step=0.01, group=FILTER)
-float maxSlopeATR = input.float(1.5, "حداکثر شیب (× ATR/کندل)", minval=0.1, maxval=5.0, step=0.1, group=FILTER)
-bool useProminence = input.bool(true, "فیلتر برجستگی پیوت", group=FILTER)
-float minProminenceATR = input.float(0.3, "حداقل برجستگی (× ATR)", minval=0.0, maxval=3.0, step=0.1, group=FILTER)
-bool useTouchScore = input.bool(true, "امتیاز برخورد با خط", group=FILTER)
-int minTouchCount = input.int(1, "حداقل برخورد بعد از تشکیل", minval=0, maxval=5, group=FILTER)
-bool enableSignals = input.bool(false, "فعال‌سازی سیگنال (بعداً)", group=FILTER, tooltip="فعلاً خاموش — بعداً فعال می‌کنیم")
+chartTFKey() =>
+    string tf = timeframe.period
+    isAllowedTF(tf) ? tf : na
+
+// ─── تنظیمات پیشنهادی هر تایم‌فریم ───────────────────────────────────────────
+getPreset(string tf) =>
+    switch tf
+        TF5   => [8,  0.40, 0.25, 0.025, 1.20]
+        TF15  => [10, 0.50, 0.30, 0.020, 1.50]
+        TF60  => [15, 0.40, 0.25, 0.015, 1.30]
+        TF240 => [20, 0.50, 0.35, 0.010, 1.20]
+        TFD   => [25, 0.60, 0.40, 0.010, 1.00]
+        => [10, 0.50, 0.30, 0.020, 1.50]
+
+tfLabel(string tf) =>
+    switch tf
+        TF5   => "5m"
+        TF15  => "15m"
+        TF60  => "1H"
+        TF240 => "4H"
+        TFD   => "1D"
+        => tf
+
+tfColor(string tf) =>
+    switch tf
+        TF5   => color.new(#2196F3, 15)
+        TF15  => color.new(#00BCD4, 15)
+        TF60  => color.new(#FF9800, 15)
+        TF240 => color.new(#9C27B0, 15)
+        TFD   => color.new(#FFEB3B, 10)
+        => color.gray
+
+tfResColor(string tf) => color.new(tfColor(tf), 35)
+tfSupColor(string tf) => color.new(tfColor(tf), 5)
 
 ExtenSwitcher(ex) =>
     switch ex
         "  25" => 1
         "  50" => 2
         "  75" => 3
-        => 0  // Dynamic
+        => 0
 
-method volAdj(int len) =>
-    math.min(ta.atr(len) * 0.3, close * (0.3 / 100))[20] / 2
+// ─── Inputs ───────────────────────────────────────────────────────────────────
+string CORE   = "➞ Core 🔸"
+string MTF    = "➞ Multi Timeframe 🔸"
+string FILTER = "➞ Accuracy Filters 🔸"
 
-Zband = volAdj(30)
-float atr14 = ta.atr(14)
+bool useAutoPreset  = input.bool(true, "تنظیم خودکار پیشنهادی", group=CORE)
+bool Trendtype      = input.string("Wicks", "نوع پیوت", options=["Wicks", "Body"], group=CORE) == "Wicks"
+string Extensions   = input.string("Dynamic", "امتداد خط", options=["  25", "  50", "  75", "Dynamic"], group=CORE)
+bool showTFTable    = input.bool(true, "جدول تایم‌فریم‌ها", group=CORE)
 
-// ─── توابع اعتبارسنجی (جدید) ─────────────────────────────────────────────────
-passesStructural(float prevPivot, float currPivot, bool isSupport) =>
-    not useStructural or (isSupport ? currPivot >= prevPivot : currPivot <= prevPivot)
+bool show5m  = input.bool(true, "5 دقیقه",  group=MTF, inline="t1")
+bool show15m = input.bool(true, "15 دقیقه", group=MTF, inline="t1")
+bool show1h  = input.bool(true, "1 ساعت",   group=MTF, inline="t2")
+bool show4h  = input.bool(true, "4 ساعت",   group=MTF, inline="t2")
+bool show1d  = input.bool(true, "روزانه",   group=MTF, inline="t2")
+bool onlyAllowedTF = input.bool(true, "فقط TFهای 5m/15m/1H/4H/1D", group=MTF)
 
-passesMinSwing(float prevPivot, float currPivot) =>
-    not useMinSwing or math.abs(currPivot - prevPivot) >= atr14 * minSwingATR
+bool useStructural     = input.bool(true, "فیلتر ساختار HL/LH", group=FILTER)
+bool usePathValidation = input.bool(true, "اعتبارسنجی مسیر", group=FILTER)
+bool useMinSwing       = input.bool(true, "حداقل سوینگ", group=FILTER)
+bool useSlopeFilter    = input.bool(true, "فیلتر زاویه", group=FILTER)
+bool useProminence     = input.bool(true, "برجستگی پیوت", group=FILTER)
+bool useTouchScore     = input.bool(true, "امتیاز برخورد", group=FILTER)
+int  minTouchCount     = input.int(1, "حداقل برخورد", minval=0, maxval=5, group=FILTER)
+bool enableSignals     = input.bool(false, "سیگنال (بعداً)", group=FILTER)
 
-passesSlope(float slope) =>
-    if not useSlopeFilter
+int   manualPeriod           = input.int(10, "Period دستی", minval=2, maxval=50, group=CORE)
+float manualMinSwingATR      = input.float(0.5, "minSwing دستی", minval=0.1, maxval=5.0, step=0.1, group=FILTER)
+float manualMinProminenceATR = input.float(0.3, "minProminence دستی", minval=0.0, maxval=3.0, step=0.1, group=FILTER)
+float manualMinSlopeATR      = input.float(0.02, "minSlope دستی", minval=0.0, maxval=1.0, step=0.01, group=FILTER)
+float manualMaxSlopeATR      = input.float(1.5, "maxSlope دستی", minval=0.1, maxval=5.0, step=0.1, group=FILTER)
+
+// ─── فیلترها ─────────────────────────────────────────────────────────────────
+passesStructural(bool enabled, float pPrev, float pCurr, bool isSupport) =>
+    not enabled or (isSupport ? pCurr >= pPrev : pCurr <= pPrev)
+
+passesMinSwing(bool enabled, float pPrev, float pCurr, float atr, float mult) =>
+    not enabled or math.abs(pCurr - pPrev) >= atr * mult
+
+passesSlope(bool enabled, float slope, int barTime, float atr, float minMult, float maxMult) =>
+    if not enabled
         true
     else
-        slopePerBar = math.abs(slope * BarTIME)
-        slopePerBar >= atr14 * minSlopeATR and slopePerBar <= atr14 * maxSlopeATR
+        slopePerBar = math.abs(slope * barTime)
+        slopePerBar >= atr * minMult and slopePerBar <= atr * maxMult
 
-passesProminence(float pivotVal, bool isHigh) =>
-    if not useProminence
+passesProminence(bool enabled, float pivotVal, bool isHigh, int period, float atr, float mult) =>
+    if not enabled
         true
     else
-        float prominence = isHigh ? pivotVal - ta.lowest(low, Period * 2) : ta.highest(high, Period * 2) - pivotVal
-        prominence >= atr14 * minProminenceATR
+        prominence = isHigh ? pivotVal - ta.lowest(low, period * 2) : ta.highest(high, period * 2) - pivotVal
+        prominence >= atr * mult
 
-validateLinePath(int startTime, float startPrice, int endTime, float slope, bool isSupport) =>
-    if not usePathValidation or startTime == endTime
+validatePath(bool enabled, int t1, float p1, int t2, float slope, bool isSupport, float zband) =>
+    if not enabled or t1 == t2
         true
     else
-        bool valid = true
-        int tMin = math.min(startTime, endTime)
-        int tMax = math.max(startTime, endTime)
-        int maxLook = math.min(500, bar_index)
+        bool ok = true
+        int tMin = math.min(t1, t2)
+        int tMax = math.max(t1, t2)
+        int maxLook = math.min(300, bar_index)
         for i = 0 to maxLook
-            int t = time[i]
-            if t >= tMin and t <= tMax
-                float linePrice = startPrice + (t - startTime) * slope
-                if isSupport and low[i] < linePrice - Zband
-                    valid := false
-                if not isSupport and high[i] > linePrice + Zband
-                    valid := false
-        valid
+            int ti = time[i]
+            if ti >= tMin and ti <= tMax
+                float lp = p1 + (ti - t1) * slope
+                if isSupport and low[i] < lp - zband
+                    ok := false
+                if not isSupport and high[i] > lp + zband
+                    ok := false
+        ok
 
-countLineTouches(int startTime, float startPrice, float slope, bool isSupport, int fromTime) =>
-    int touches = 0
-    int maxLook = math.min(300, bar_index)
-    for i = 0 to maxLook
-        if time[i] < fromTime
-            break
-        float lp = startPrice + (time[i] - startTime) * slope
-        bool touched = isSupport ? math.abs(low[i] - lp) <= Zband * 1.5 : math.abs(high[i] - lp) <= Zband * 1.5
-        if touched
-            touches += 1
-    touches
+countTouches(bool enabled, int t1, float p1, float slope, bool isSupport, int fromT, float zband, int minTouch) =>
+    if not enabled
+        minTouch
+    else
+        int touches = 0
+        int maxLook = math.min(200, bar_index)
+        for i = 0 to maxLook
+            if time[i] < fromT
+                break
+            float lp = p1 + (time[i] - t1) * slope
+            bool hit = isSupport ? math.abs(low[i] - lp) <= zband * 1.5 : math.abs(high[i] - lp) <= zband * 1.5
+            if hit
+                touches += 1
+        touches
 
-passesAllFilters(float prevPivot, float currPivot, float slope, int startTime, int endTime, bool isSupport) =>
-    isHigh = not isSupport
-    passesStructural(prevPivot, currPivot, isSupport) and passesMinSwing(prevPivot, currPivot) and passesSlope(slope) and passesProminence(currPivot, isHigh) and validateLinePath(startTime, prevPivot, endTime, slope, isSupport)
+// ─── موتور تشخیص (برای request.security) ────────────────────────────────────
+f_detect(bool useWicks, int period, float minSwingAtr, float minPromAtr, float minSlopeAtr, float maxSlopeAtr, bool structF, bool pathF, bool minSwingF, bool slopeF, bool promF, bool touchF, int minTouch) =>
+    int barTime = time - time[1]
+    float atr14 = ta.atr(14)
+    float zband = math.min(ta.atr(30) * 0.3, close * 0.003) / 2.0
 
-// ─── رسم ترندلاین (بهبودیافته) ───────────────────────────────────────────────
-method Trendlines(float src, int timeIndex, bool dir) =>
-    var int Start = 1
-    var int End = 0
-    var int TIME = 1
-    var float YEnd = 0.0
-    var float YStart = 0.0
-    var float Slope = 0.0
-    var line Line1 = line.new(na, na, na, na)
-    var line Line2 = line.new(na, na, na, na)
-    var line Line3 = line.new(na, na, na, na)
-    var bool lineValid = false
+    float phSrc = useWicks ? high : (close > open ? close : open)
+    float plSrc = useWicks ? low  : (close > open ? open  : close)
+    int rightBars = math.max(1, int(math.round(period / 2.0)))
+    float ph = ta.pivothigh(phSrc, period, rightBars)
+    float pl = ta.pivotlow(plSrc, period, rightBars)
 
-    SCR = fixnan(src)
-    if ta.change(SCR) != 0
-        TIME := time[timeIndex]
-        YStart := SCR[1]
-        Start := TIME[1]
-        Slope := (SCR - YStart) / (TIME - Start)
+    var float prevPH = na
+    var float prevPL = na
+    var int   prevPHT = na
+    var int   prevPLT = na
+
+    var int   resT1 = na
+    var float resP1 = na
+    var int   resT2 = na
+    var float resP2 = na
+    var float resSlope = na
+    var bool  resValid = false
+
+    var int   supT1 = na
+    var float supP1 = na
+    var int   supT2 = na
+    var float supP2 = na
+    var float supSlope = na
+    var bool  supValid = false
+
+    if not na(ph)
+        int phTime = time[rightBars]
+        if not na(prevPH) and prevPHT != phTime
+            float slope = (ph - prevPH) / (phTime - prevPHT)
+            bool ok = passesStructural(structF, prevPH, ph, false)
+            ok := ok and passesMinSwing(minSwingF, prevPH, ph, atr14, minSwingAtr)
+            ok := ok and passesSlope(slopeF, slope, barTime, atr14, minSlopeAtr, maxSlopeAtr)
+            ok := ok and passesProminence(promF, ph, true, period, atr14, minPromAtr)
+            ok := ok and validatePath(pathF, prevPHT, prevPH, phTime, slope, false, zband)
+            int touches = countTouches(touchF, prevPHT, prevPH, slope, false, phTime, zband, minTouch)
+            ok := ok and (not touchF or touches >= minTouch)
+            if ok
+                resT1 := prevPHT
+                resP1 := prevPH
+                resT2 := phTime
+                resP2 := ph
+                resSlope := slope
+                resValid := true
+            else
+                resValid := false
+        prevPH := ph
+        prevPHT := phTime
+
+    if not na(pl)
+        int plTime = time[rightBars]
+        if not na(prevPL) and prevPLT != plTime
+            float slope = (pl - prevPL) / (plTime - prevPLT)
+            bool ok = passesStructural(structF, prevPL, pl, true)
+            ok := ok and passesMinSwing(minSwingF, prevPL, pl, atr14, minSwingAtr)
+            ok := ok and passesSlope(slopeF, slope, barTime, atr14, minSlopeAtr, maxSlopeAtr)
+            ok := ok and passesProminence(promF, pl, false, period, atr14, minPromAtr)
+            ok := ok and validatePath(pathF, prevPLT, prevPL, plTime, slope, true, zband)
+            int touches = countTouches(touchF, prevPLT, prevPL, slope, true, plTime, zband, minTouch)
+            ok := ok and (not touchF or touches >= minTouch)
+            if ok
+                supT1 := prevPLT
+                supP1 := prevPL
+                supT2 := plTime
+                supP2 := pl
+                supSlope := slope
+                supValid := true
+            else
+                supValid := false
+        prevPL := pl
+        prevPLT := plTime
 
     int extMult = ExtenSwitcher(Extensions)
-    int EXTime = extMult == 0 ? (time - TIME) + BarTIME * 10 : extMult * BarTIME * 25
-    End := TIME + EXTime
-    YEnd := SCR + EXTime * Slope
+    int resEndT = resValid ? resT2 + (extMult == 0 ? (time - resT2) + barTime * 10 : extMult * barTime * 25) : na
+    float resEndP = resValid ? resP2 + (resEndT - resT2) * resSlope : na
+    int supEndT = supValid ? supT2 + (extMult == 0 ? (time - supT2) + barTime * 10 : extMult * barTime * 25) : na
+    float supEndP = supValid ? supP2 + (supEndT - supT2) * supSlope : na
 
-    bool filtersOk = passesAllFilters(YStart, SCR, Slope, Start, TIME, dir)
-    int touches = useTouchScore ? countLineTouches(Start, YStart, Slope, dir, TIME) : minTouchCount
-    bool touchOk = not useTouchScore or touches >= minTouchCount
+    [resT1, resP1, resEndT, resEndP, resValid, supT1, supP1, supEndT, supEndP, supValid]
 
-    if ta.change(SCR) != 0 and not TradeisON[1] and filtersOk and touchOk
-        lineValid := true
-        LineCond = Slope * time < 0 ? dir ? na : color.rgb(11, 139, 7, 53) : dir ? color.rgb(212, 46, 0, 54) : na
-        if not na(LineCond)
-            Line1 := line.new(Start, YStart, End, YEnd, xloc.bar_time, extend.none, color=color.new(color.white, 100))
-            Line2 := line.new(Start, YStart - Zband * 2, End, YEnd - Zband * 2, xloc.bar_time, extend.none, color=color.new(color.black, 100))
-            Line3 := line.new(Start, YStart - Zband * 1, End, YEnd - Zband * 1, xloc.bar_time, extend.none, color=color.new(color.black, 100))
-            linefill.new(Line3, Line2, color=LineCol1)
-            linefill.new(Line3, Line1, color=LineCond)
-    else if ta.change(SCR) != 0
-        lineValid := false
+f_runTF(string tf) =>
+    [p, ms, mp, mins, maxs] = getPreset(tf)
+    period      = useAutoPreset ? p    : manualPeriod
+    minSwingAtr = useAutoPreset ? ms   : manualMinSwingATR
+    minPromAtr  = useAutoPreset ? mp   : manualMinProminenceATR
+    minSlopeAtr = useAutoPreset ? mins : manualMinSlopeATR
+    maxSlopeAtr = useAutoPreset ? maxs : manualMaxSlopeATR
+    f_detect(Trendtype, period, minSwingAtr, minPromAtr, minSlopeAtr, maxSlopeAtr, useStructural, usePathValidation, useMinSwing, useSlopeFilter, useProminence, useTouchScore, minTouchCount)
 
-    [Start, YStart, Slope, lineValid]
+// ─── MTF Security ─────────────────────────────────────────────────────────────
+[resT1_5, resP1_5, resT2_5, resP2_5, resV_5, supT1_5, supP1_5, supT2_5, supP2_5, supV_5]     = request.security(syminfo.tickerid, TF5,   f_runTF(TF5),   lookahead=barmerge.lookahead_off)
+[resT1_15, resP1_15, resT2_15, resP2_15, resV_15, supT1_15, supP1_15, supT2_15, supP2_15, supV_15] = request.security(syminfo.tickerid, TF15,  f_runTF(TF15),  lookahead=barmerge.lookahead_off)
+[resT1_60, resP1_60, resT2_60, resP2_60, resV_60, supT1_60, supP1_60, supT2_60, supP2_60, supV_60] = request.security(syminfo.tickerid, TF60,  f_runTF(TF60),  lookahead=barmerge.lookahead_off)
+[resT1_240, resP1_240, resT2_240, resP2_240, resV_240, supT1_240, supP1_240, supT2_240, supP2_240, supV_240] = request.security(syminfo.tickerid, TF240, f_runTF(TF240), lookahead=barmerge.lookahead_off)
+[resT1_D, resP1_D, resT2_D, resP2_D, resV_D, supT1_D, supP1_D, supT2_D, supP2_D, supV_D]       = request.security(syminfo.tickerid, TFD,   f_runTF(TFD),   lookahead=barmerge.lookahead_off)
 
-method GetlinePrice(int TIME, float Price, float SLOP, int LookB) =>
-    var float Current = 0.0
-    EsTime = time - TIME
-    Current := Price + (EsTime - LookB * BarTIME) * SLOP
-    Current
+// ─── رسم خطوط MTF ───────────────────────────────────────────────────────────
+var line l_res_5   = na
+var line l_sup_5   = na
+var line l_res_15  = na
+var line l_sup_15  = na
+var line l_res_60  = na
+var line l_sup_60  = na
+var line l_res_240 = na
+var line l_sup_240 = na
+var line l_res_D   = na
+var line l_sup_D   = na
 
-method CheckCross(float Price, int StartTime, float StartPrice, float SLP) =>
-    var float Current = 0.0
-    var float Previous = 0.0
-    if StartPrice[Period] != StartPrice
-        Current := GetlinePrice(StartTime, StartPrice, SLP, 0)
-        Previous := GetlinePrice(StartTime, StartPrice, SLP, 1)
-        Crossover = Price[1] < Previous and Price > Current ? 1 : Price[1] > Previous - Zband * 0.1 and Price < Current - Zband * 0.1 ? -1 : 0
-        Crossover
-    else
-        0
+drawTFLine(line ln, int x1, float y1, int x2, float y2, color col, bool isRes, bool valid, bool enabled) =>
+    line out = ln
+    if enabled and valid and not na(x1) and not na(x2)
+        if na(out)
+            out := line.new(x1, y1, x2, y2, xloc.bar_time, extend.right, color=col, width=isRes ? 1 : 2, style=isRes ? line.style_dashed : line.style_solid)
+        else
+            line.set_xy1(out, x1, y1)
+            line.set_xy2(out, x2, y2)
+            line.set_color(out, col)
+            line.set_extend(out, extend.right)
+    else if not na(out)
+        line.delete(out)
+        out := na
+    out
 
-// ─── پیوت‌ها ─────────────────────────────────────────────────────────────────
-PH = ta.pivothigh(Trendtype ? high : close > open ? close : open, Period, Period / 2)
-PL = ta.pivotlow(Trendtype ? low : close > open ? open : close, Period, Period / 2)
+l_res_5   := drawTFLine(l_res_5,   resT1_5,   resP1_5,   resT2_5,   resP2_5,   tfResColor(TF5),   true,  resV_5,   show5m)
+l_sup_5   := drawTFLine(l_sup_5,   supT1_5,   supP1_5,   supT2_5,   supP2_5,   tfSupColor(TF5),   false, supV_5,   show5m)
+l_res_15  := drawTFLine(l_res_15,  resT1_15,  resP1_15,  resT2_15,  resP2_15,  tfResColor(TF15),  true,  resV_15,  show15m)
+l_sup_15  := drawTFLine(l_sup_15,  supT1_15,  supP1_15,  supT2_15,  supP2_15,  tfSupColor(TF15),  false, supV_15,  show15m)
+l_res_60  := drawTFLine(l_res_60,  resT1_60,  resP1_60,  resT2_60,  resP2_60,  tfResColor(TF60),  true,  resV_60,  show1h)
+l_sup_60  := drawTFLine(l_sup_60,  supT1_60,  supP1_60,  supT2_60,  supP2_60,  tfSupColor(TF60),  false, supV_60,  show1h)
+l_res_240 := drawTFLine(l_res_240, resT1_240, resP1_240, resT2_240, resP2_240, tfResColor(TF240), true,  resV_240, show4h)
+l_sup_240 := drawTFLine(l_sup_240, supT1_240, supP1_240, supT2_240, supP2_240, tfSupColor(TF240), false, supV_240, show4h)
+l_res_D   := drawTFLine(l_res_D,   resT1_D,   resP1_D,   resT2_D,   resP2_D,   tfResColor(TFD),   true,  resV_D,   show1d)
+l_sup_D   := drawTFLine(l_sup_D,   supT1_D,   supP1_D,   supT2_D,   supP2_D,   tfSupColor(TFD),   false, supV_D,   show1d)
 
-[Xx, XZ, SLPXZ, resValid] = Trendlines(PH, Period / 2, false)
-[XxL, XZL, SLPXZL, supValid] = Trendlines(PL, Period / 2, true)
+// ─── جدول وضعیت ───────────────────────────────────────────────────────────────
+var table tfTable = table.new(position.top_right, 4, 7, bgcolor=color.new(color.black, 80), border_width=1)
 
-if ta.change(fixnan(PH)) != 0 and resValid
-    UpdatedX := Xx
-    UpdatedY := XZ
-    UpdatedSLP := SLPXZ
+f_tableRow(int row, string tf, bool enabled, bool resValid) =>
+    [period, _, _, _, _] = getPreset(tf)
+    table.cell(tfTable, 0, row, tfLabel(tf), text_color=tfColor(tf), text_size=size.small)
+    table.cell(tfTable, 1, row, enabled ? "ON" : "OFF", text_color=enabled ? color.lime : color.gray, text_size=size.small)
+    table.cell(tfTable, 2, row, resValid ? "R✓" : "R—", text_color=resValid ? color.red : color.gray, text_size=size.small)
+    table.cell(tfTable, 3, row, "P" + str.tostring(period), text_color=color.white, text_size=size.small)
 
-if ta.change(fixnan(PL)) != 0 and supValid
-    UpdatedXLow := XxL
-    UpdatedYLow := XZL
-    UpdatedSLPLow := SLPXZL
+if showTFTable and barstate.islast
+    table.cell(tfTable, 0, 0, "TF", text_color=color.white, text_size=size.small)
+    table.cell(tfTable, 1, 0, "نمایش", text_color=color.white, text_size=size.small)
+    table.cell(tfTable, 2, 0, "مقاومت", text_color=color.white, text_size=size.small)
+    table.cell(tfTable, 3, 0, "Period", text_color=color.white, text_size=size.small)
+    f_tableRow(1, TF5,   show5m,  resV_5)
+    f_tableRow(2, TF15,  show15m, resV_15)
+    f_tableRow(3, TF60,  show1h,  resV_60)
+    f_tableRow(4, TF240, show4h,  resV_240)
+    f_tableRow(5, TFD,   show1d,  resV_D)
+    string cur = chartTFKey()
+    string curTxt = na(cur) ? "TF فعلی: غیرمجاز" : "TF فعلی: " + tfLabel(cur)
+    table.cell(tfTable, 0, 6, curTxt, text_color=na(cur) and onlyAllowedTF ? color.orange : color.white, text_size=size.small)
+    table.merge_cells(tfTable, 0, 6, 3, 6)
 
-// ─── سیگنال (فعلاً خاموش — بعداً فعال می‌شود) ───────────────────────────────
-Long = enableSignals and not (UpdatedSLP * time > 0) and CheckCross(close, UpdatedX, UpdatedY, UpdatedSLP) == 1 and not TradeisON
-Short = enableSignals and not (UpdatedSLPLow * time < 0) and CheckCross(close, UpdatedXLow, UpdatedYLow, UpdatedSLPLow) == -1 and not TradeisON
+// ─── هشدارها ─────────────────────────────────────────────────────────────────
+string curTF = chartTFKey()
+bool chartAllowed = not na(curTF)
 
-TradeFire = Long or Short
+alertcondition(chartAllowed and resV_5,   title="5m مقاومت",  message="خط مقاومت 5m — {{ticker}}")
+alertcondition(chartAllowed and supV_5,   title="5m حمایت",   message="خط حمایت 5m — {{ticker}}")
+alertcondition(chartAllowed and resV_15,  title="15m مقاومت", message="خط مقاومت 15m — {{ticker}}")
+alertcondition(chartAllowed and supV_15,  title="15m حمایت",  message="خط حمایت 15m — {{ticker}}")
+alertcondition(chartAllowed and resV_60,  title="1H مقاومت",  message="خط مقاومت 1H — {{ticker}}")
+alertcondition(chartAllowed and supV_60,  title="1H حمایت",   message="خط حمایت 1H — {{ticker}}")
+alertcondition(chartAllowed and resV_240, title="4H مقاومت",  message="خط مقاومت 4H — {{ticker}}")
+alertcondition(chartAllowed and supV_240, title="4H حمایت",   message="خط حمایت 4H — {{ticker}}")
+alertcondition(chartAllowed and resV_D,   title="1D مقاومت",  message="خط مقاومت 1D — {{ticker}}")
+alertcondition(chartAllowed and supV_D,   title="1D حمایت",   message="خط حمایت 1D — {{ticker}}")
 
-if Long and not TradeisON
-    LongTrade := true
-    ShortTrade := false
-
-if Short and not TradeisON
-    LongTrade := false
-    ShortTrade := true
-
-if enableSignals
-    if TradeFire and not TradeisON
-        TP := Long ? high + Zband * 20 : low - Zband * 20
-        SL := Long ? low - Zband * 20 : high + Zband * 20
-        TradeisON := true
-        if ShowTargets
-            line.new(bar_index, Long ? high : low, bar_index, TP, width=2, color=color.rgb(154, 103, 20), style=line.style_dashed)
-            tpLine := line.new(bar_index, TP, bar_index + 2, TP, style=line.style_dashed, color=color.rgb(154, 103, 20))
-            LAB := label.new(bar_index, TP, "Target", color=color.rgb(154, 103, 20), style=label.style_label_left, size=size.small, textcolor=color.white)
-
-    if TradeisON
-        line.set_x2(tpLine, bar_index)
-        label.set_x(LAB, bar_index + 1)
-
-    if LongTrade and TradeisON
-        if high >= TP
-            label.set_color(LAB, color.rgb(6, 128, 10, 37))
-            TradeisON := false
-        if close <= SL
-            label.set_color(LAB, color.new(color.rgb(246, 7, 7), 70))
-            TradeisON := false
-    else if ShortTrade and TradeisON
-        if low <= TP
-            label.set_color(LAB, color.rgb(6, 128, 10, 37))
-            TradeisON := false
-        if close >= SL
-            label.set_color(LAB, color.new(color.rgb(246, 7, 7), 70))
-            TradeisON := false
-
-plotshape(enableSignals and Long and not TradeisON[1], size=size.small, color=color.rgb(46, 192, 6, 11), location=location.belowbar, style=shape.labelup, text="", textcolor=color.white)
-plotshape(enableSignals and Short and not TradeisON[1], size=size.small, color=color.rgb(241, 2, 2, 11), location=location.abovebar, style=shape.labeldown, text="", textcolor=color.white)
-
-// ─── نمایش وضعیت فیلترها ─────────────────────────────────────────────────────
-plotchar(resValid and ta.change(fixnan(PH)) != 0, "Res Valid", "R", location=location.abovebar, color=color.new(color.red, 30), size=size.tiny)
-plotchar(supValid and ta.change(fixnan(PL)) != 0, "Sup Valid", "S", location=location.belowbar, color=color.new(color.green, 30), size=size.tiny)
+plotchar(onlyAllowedTF and barstate.islast and na(curTF), title="TF نامجاز", char="!", location=location.top, color=color.orange, size=size.tiny)
