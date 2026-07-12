@@ -94,13 +94,56 @@
 - جدول گوشه راست وضعیت هر TF را نشان می‌دهد
 - گزینه «تنظیم خودکار پیشنهادی» باید روشن باشد (پیش‌فرض: روشن)
 
+## Cardwell Enhanced (بک‌تست‌محور)
+
+فایل `indicators/cardwell_enhanced.pine` نسخه اصلاح‌شده اندیکاتور **Cardwell Range Analyze [MarkitTick]** است. فیلترها از بک‌تست ۱ ماهه BTC/SOL روی 15m و 1H استخراج شده‌اند.
+
+### منطق سیگنال
+
+- **BUY:** تغییر رژیم به Bull (قیمت > SMA50 + RSI بین 40–80 + تأیید N کندل)
+- **SELL:** تغییر رژیم به Bear (قیمت < SMA50 + RSI بین 20–60 + تأیید N کندل)
+- TP/SL بر اساس ATR (SL=1.5×, TP1/2/3 = 1/2/3×)
+
+### فیلترهای بهبودیافته (پیش‌فرض)
+
+| فیلتر | مقدار | هدف |
+|-------|-------|-----|
+| ADX ≥ 22 | روشن | حذف سیگنال در رنج |
+| Confirm Bars | 3 | کاهش whipsaw |
+| Min MA Distance | 0.15% | فقط وقتی قیمت از MA فاصله دارد |
+| RSI Momentum | روشن | Long: RSI صعودی / Short: RSI نزولی |
+| Late RSI Cut | L≤68, S≥32 | جلوگیری از ورود دیرهنگام |
+| Cooldown | 4 کندل | فاصله بین سیگنال‌ها |
+| HTF | `lookahead_off` | بدون repaint |
+
+### نتایج بک‌تست (OKX، ~۱ ماه)
+
+| جفت | TF | اصلی | اصلاح‌شده |
+|-----|-----|------|-----------|
+| SOL | 1H | -6.56% | **+3.77%** |
+| BTC | 1H | +6.35% | +2.08% |
+| SOL | 15m | +8.27% | +2.41% |
+| BTC | 15m | -1.59% | -11.25% |
+
+> فیلترهای یکسان روی 15m برای BTC بدتر شد — برای 15m می‌توانید ADX را خاموش کنید یا Confirm را به 2 برگردانید.
+
+### نصب
+
+1. Pine Editor → محتوای `indicators/cardwell_enhanced.pine` را کپی کنید
+2. Save → Add to Chart
+3. تایم‌فریم پیشنهادی: **1H** (بهترین نتیجه بک‌تست)
+
 ## ساختار پروژه
 
 ```
 farhad/
 ├── indicators/
 │   ├── trend_line.pine           # نسخه ساده
-│   └── trend_line_enhanced.pine  # نسخه پیشرفته (ChartPrime + فیلترها)
+│   ├── trend_line_enhanced.pine  # نسخه پیشرفته (ChartPrime + فیلترها)
+│   └── cardwell_enhanced.pine    # Cardwell اصلاح‌شده (بک‌تست‌محور)
+├── backtest/
+│   ├── cardwell_backtest.py      # بک‌تست اولیه
+│   └── cardwell_forensics.py     # تحلیل معاملات بازنده
 └── README.md
 ```
 
