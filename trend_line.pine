@@ -1,0 +1,96 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// © farhad
+//
+// Auto Trend Line Indicator
+// -------------------------
+// Automatically detects swing pivots (highs/lows) and draws:
+//   * A descending trend line connecting the two most recent pivot highs  -> dynamic resistance
+//   * An ascending  trend line connecting the two most recent pivot lows  -> dynamic support
+// Lines are extended to the right so you can see where price may react next,
+// and optional breakout alerts fire when price closes beyond a line.
+
+//@version=5
+indicator("Auto Trend Line", shorttitle="Trend Line", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// ─────────────────────────────────────────── Inputs ───────────────────────────────────────────
+grpPivot = "Pivot Detection"
+leftBars   = input.int(15, "Pivot Left Bars",  minval=1, group=grpPivot, tooltip="Number of bars to the left of a pivot used to confirm it.")
+rightBars  = input.int(15, "Pivot Right Bars", minval=1, group=grpPivot, tooltip="Number of bars to the right of a pivot used to confirm it. Larger = fewer, stronger pivots.")
+
+grpStyle = "Trend Line Style"
+extendRight = input.bool(true,  "Extend Lines to the Right", group=grpStyle)
+lineWidth   = input.int(2, "Line Width", minval=1, maxval=5, group=grpStyle)
+resColor    = input.color(color.new(#f23645, 0), "Resistance (down) line", group=grpStyle)
+supColor    = input.color(color.new(#089981, 0), "Support (up) line",      group=grpStyle)
+showPivots  = input.bool(false, "Show Pivot Markers", group=grpStyle)
+
+grpBreak = "Breakouts & Alerts"
+showBreaks = input.bool(true, "Highlight Breakouts", group=grpBreak)
+brkUpColor = input.color(color.new(#089981, 0), "Bullish breakout", group=grpBreak)
+brkDnColor = input.color(color.new(#f23645, 0), "Bearish breakout", group=grpBreak)
+
+// ─────────────────────────────────────────── Pivots ───────────────────────────────────────────
+ph = ta.pivothigh(high, leftBars, rightBars)
+pl = ta.pivotlow(low,  leftBars, rightBars)
+
+// Keep the bar index and price of the two most recent pivot highs / lows.
+var int   ph1x = na   // most recent pivot high (bar index)
+var float ph1y = na   // most recent pivot high (price)
+var int   ph2x = na   // previous pivot high (bar index)
+var float ph2y = na   // previous pivot high (price)
+var int   pl1x = na   // most recent pivot low (bar index)
+var float pl1y = na   // most recent pivot low (price)
+var int   pl2x = na   // previous pivot low (bar index)
+var float pl2y = na   // previous pivot low (price)
+
+// Persistent line objects (redrawn as new pivots appear).
+var line resLine = na
+var line supLine = na
+
+pivotBar = bar_index - rightBars   // the actual bar where the confirmed pivot occurred
+
+if not na(ph)
+    ph2x := ph1x
+    ph2y := ph1y
+    ph1x := pivotBar
+    ph1y := ph
+    if showPivots
+        label.new(pivotBar, ph, "H", style=label.style_label_down, color=color.new(resColor, 70), textcolor=color.white, size=size.tiny)
+
+if not na(pl)
+    pl2x := pl1x
+    pl2y := pl1y
+    pl1x := pivotBar
+    pl1y := pl
+    if showPivots
+        label.new(pivotBar, pl, "L", style=label.style_label_up, color=color.new(supColor, 70), textcolor=color.white, size=size.tiny)
+
+// ─────────────────────────────────────── Draw / update lines ──────────────────────────────────
+xtend = extendRight ? extend.right : extend.none
+
+// Resistance: connect the two latest pivot highs.
+if not na(ph1x) and not na(ph2x) and ph1x != ph2x
+    line.delete(resLine)
+    resLine := line.new(ph2x, ph2y, ph1x, ph1y, color=resColor, width=lineWidth, extend=xtend)
+
+// Support: connect the two latest pivot lows.
+if not na(pl1x) and not na(pl2x) and pl1x != pl2x
+    line.delete(supLine)
+    supLine := line.new(pl2x, pl2y, pl1x, pl1y, color=supColor, width=lineWidth, extend=xtend)
+
+// ─────────────────────────────────────── Projected line values ────────────────────────────────
+// Value of each trend line, projected forward to the current bar.
+resSlope = not na(resLine) ? (ph1y - ph2y) / (ph1x - ph2x) : na
+supSlope = not na(supLine) ? (pl1y - pl2y) / (pl1x - pl2x) : na
+resAtBar = not na(resSlope) ? ph1y + resSlope * (bar_index - ph1x) : na
+supAtBar = not na(supSlope) ? pl1y + supSlope * (bar_index - pl1x) : na
+
+// ──────────────────────────────────────────── Breakouts ───────────────────────────────────────
+brokeUp = not na(resAtBar) and close > resAtBar and close[1] <= resAtBar[1]
+brokeDn = not na(supAtBar) and close < supAtBar and close[1] >= supAtBar[1]
+
+plotshape(showBreaks and brokeUp, title="Bullish Breakout", style=shape.triangleup,   location=location.belowbar, color=brkUpColor, size=size.small, text="B")
+plotshape(showBreaks and brokeDn, title="Bearish Breakout", style=shape.triangledown, location=location.abovebar, color=brkDnColor, size=size.small, text="S")
+
+alertcondition(brokeUp, title="Resistance Trend Line Broken (Up)",   message="Price closed above the resistance trend line on {{ticker}} ({{interval}})")
+alertcondition(brokeDn, title="Support Trend Line Broken (Down)",     message="Price closed below the support trend line on {{ticker}} ({{interval}})")
