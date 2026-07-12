@@ -1,0 +1,132 @@
+//@version=6
+indicator("اندیکاتور ترند لاین | Auto Trend Line", overlay=true, max_lines_count=20, max_labels_count=10)
+
+// ─── تنظیمات پیوت ───────────────────────────────────────────────────────────
+pivotLookback = input.int(10, "دوره پیوت", minval=2, maxval=50, tooltip="تعداد کندل‌های قبل و بعد برای تشخیص سقف/کف")
+breakTolerancePct = input.float(0.2, "تحمل شکست (%)", minval=0.0, maxval=5.0, step=0.05, tooltip="درصد بافر برای جلوگیری از حذف خط در شکست‌های کاذب")
+
+// ─── تنظیمات نمایش ──────────────────────────────────────────────────────────
+showSupport = input.bool(true, "خط حمایت (صعودی)", group="نمایش")
+showResistance = input.bool(true, "خط مقاومت (نزولی)", group="نمایش")
+showPivotMarkers = input.bool(true, "نمایش مارکر پیوت‌ها", group="نمایش")
+showBreakAlerts = input.bool(true, "هشدار شکست خط", group="نمایش")
+
+// ─── رنگ و استایل ───────────────────────────────────────────────────────────
+supportColor = input.color(color.new(#26a69a, 0), "رنگ حمایت", group="استایل")
+resistanceColor = input.color(color.new(#ef5350, 0), "رنگ مقاومت", group="استایل")
+lineWidth = input.int(2, "ضخامت خط", minval=1, maxval=4, group="استایل")
+lineStyle = input.string("Solid", "نوع خط", options=["Solid", "Dashed", "Dotted"], group="استایل")
+
+lineStyleEnum = lineStyle == "Dashed" ? line.style_dashed : lineStyle == "Dotted" ? line.style_dotted : line.style_solid
+
+// ─── تشخیص پیوت ──────────────────────────────────────────────────────────────
+float pivotHigh = ta.pivothigh(high, pivotLookback, pivotLookback)
+float pivotLow = ta.pivotlow(low, pivotLookback, pivotLookback)
+
+// ─── ذخیره دو پیوت آخر برای خط مقاومت ─────────────────────────────────────
+var int resBar1 = na
+var float resPrice1 = na
+var int resBar2 = na
+var float resPrice2 = na
+var line resLine = na
+var bool resActive = false
+
+// ─── ذخیره دو پیوت آخر برای خط حمایت ──────────────────────────────────────
+var int supBar1 = na
+var float supPrice1 = na
+var int supBar2 = na
+var float supPrice2 = na
+var line supLine = na
+var bool supActive = false
+
+// ─── توابع کمکی ─────────────────────────────────────────────────────────────
+getTrendlinePrice(int x1, float y1, int x2, float y2, int x) =>
+    if na(x1) or na(x2) or x1 == x2
+        na
+    else
+        slope = (y2 - y1) / (x2 - x1)
+        y1 + slope * (x - x1)
+
+hasValidPair(int b1, float p1, int b2, float p2) =>
+    not na(b1) and not na(b2) and not na(p1) and not na(p2) and b1 != b2
+
+// ─── به‌روزرسانی پیوت‌های مقاومت ────────────────────────────────────────────
+if not na(pivotHigh)
+    int pivotBar = bar_index - pivotLookback
+    if na(resBar2) or pivotBar != resBar2
+        resBar1 := resBar2
+        resPrice1 := resPrice2
+        resBar2 := pivotBar
+        resPrice2 := pivotHigh
+        resActive := true
+
+// ─── به‌روزرسانی پیوت‌های حمایت ─────────────────────────────────────────────
+if not na(pivotLow)
+    int pivotBar = bar_index - pivotLookback
+    if na(supBar2) or pivotBar != supBar2
+        supBar1 := supBar2
+        supPrice1 := supPrice2
+        supBar2 := pivotBar
+        supPrice2 := pivotLow
+        supActive := true
+
+// ─── محاسبه قیمت خط در کندل فعلی ────────────────────────────────────────────
+float resLinePrice = hasValidPair(resBar1, resPrice1, resBar2, resPrice2) ? getTrendlinePrice(resBar1, resPrice1, resBar2, resPrice2, bar_index) : na
+float supLinePrice = hasValidPair(supBar1, supPrice1, supBar2, supPrice2) ? getTrendlinePrice(supBar1, supPrice1, supBar2, supPrice2, bar_index) : na
+
+// ─── تشخیص شکست خط ──────────────────────────────────────────────────────────
+float resTolerance = not na(resLinePrice) ? resLinePrice * breakTolerancePct / 100 : 0.0
+float supTolerance = not na(supLinePrice) ? supLinePrice * breakTolerancePct / 100 : 0.0
+
+bool resBroken = resActive and not na(resLinePrice) and close > resLinePrice + resTolerance
+bool supBroken = supActive and not na(supLinePrice) and close < supLinePrice - supTolerance
+
+// ─── مدیریت شکست مقاومت ─────────────────────────────────────────────────────
+if resBroken
+    resActive := false
+    if not na(resLine)
+        line.delete(resLine)
+        resLine := na
+    if showBreakAlerts
+        label.new(bar_index, high, "شکست مقاومت", style=label.style_label_down, color=resistanceColor, textcolor=color.white, size=size.small)
+
+// ─── مدیریت شکست حمایت ──────────────────────────────────────────────────────
+if supBroken
+    supActive := false
+    if not na(supLine)
+        line.delete(supLine)
+        supLine := na
+    if showBreakAlerts
+        label.new(bar_index, low, "شکست حمایت", style=label.style_label_up, color=supportColor, textcolor=color.white, size=size.small)
+
+// ─── رسم خط مقاومت ──────────────────────────────────────────────────────────
+if showResistance and resActive and hasValidPair(resBar1, resPrice1, resBar2, resPrice2)
+    if na(resLine)
+        resLine := line.new(resBar1, resPrice1, resBar2, resPrice2, extend=extend.right, color=resistanceColor, width=lineWidth, style=lineStyleEnum)
+    else
+        line.set_xy1(resLine, resBar1, resPrice1)
+        line.set_xy2(resLine, resBar2, resPrice2)
+        line.set_color(resLine, resistanceColor)
+        line.set_width(resLine, lineWidth)
+        line.set_style(resLine, lineStyleEnum)
+
+// ─── رسم خط حمایت ───────────────────────────────────────────────────────────
+if showSupport and supActive and hasValidPair(supBar1, supPrice1, supBar2, supPrice2)
+    if na(supLine)
+        supLine := line.new(supBar1, supPrice1, supBar2, supPrice2, extend=extend.right, color=supportColor, width=lineWidth, style=lineStyleEnum)
+    else
+        line.set_xy1(supLine, supBar1, supPrice1)
+        line.set_xy2(supLine, supBar2, supPrice2)
+        line.set_color(supLine, supportColor)
+        line.set_width(supLine, lineWidth)
+        line.set_style(supLine, lineStyleEnum)
+
+// ─── مارکر پیوت‌ها ──────────────────────────────────────────────────────────
+plotshape(showPivotMarkers and not na(pivotHigh), title="سقف پیوت", style=shape.triangledown, location=location.abovebar, color=resistanceColor, offset=-pivotLookback, size=size.tiny)
+plotshape(showPivotMarkers and not na(pivotLow), title="کف پیوت", style=shape.triangleup, location=location.belowbar, color=supportColor, offset=-pivotLookback, size=size.tiny)
+
+// ─── هشدارها ─────────────────────────────────────────────────────────────────
+alertcondition(resBroken, title="شکست خط مقاومت", message="قیمت خط مقاومت را شکست - {{ticker}} {{interval}}")
+alertcondition(supBroken, title="شکست خط حمایت", message="قیمت خط حمایت را شکست - {{ticker}} {{interval}}")
+alertcondition(not na(pivotHigh), title="پیوت سقف جدید", message="پیوت سقف جدید شناسایی شد - {{ticker}} {{interval}}")
+alertcondition(not na(pivotLow), title="پیوت کف جدید", message="پیوت کف جدید شناسایی شد - {{ticker}} {{interval}}")
