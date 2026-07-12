@@ -1544,3 +1544,9 @@ sig = filter_signals_df(my_signals, trend)
 
 **وضعیت:** آماده — منتظر ساخت اندیکاتور CRYPTO_BEAST و FX_SNIPER
 
+### MADDNESSANI v4 — ادغام Trend Filter
+- فیلتر ۱h + ۴h via `request.security` (الگوی Monster Trex: HTF روند / LTF تریگر)
+- فقط لانگ وقتی هر دو HTF صعودی | فقط شورت وقتی هر دو نزولی
+- چارت: **۵m / ۱۵m / ۱h** (پس‌زمینه نارنجی روی TFهای دیگر)
+- preset خودکار crypto/forex + امتیاز نرم‌تر روی ۵m/۱۵m
+

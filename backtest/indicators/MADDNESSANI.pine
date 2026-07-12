@@ -1,5 +1,5 @@
 // This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © MADDNESSANI v3 — wider structural SL + structural TP + BE/trail
+// © MADDNESSANI v4 — HTF trend filter (1h+4h) + LTF entries (5m/15m/1h)
 
 //@version=6
 strategy("MADDNESSANI", shorttitle="MADDNESSANI", overlay=true, max_labels_count=200,
@@ -8,25 +8,23 @@ strategy("MADDNESSANI", shorttitle="MADDNESSANI", overlay=true, max_labels_count
      pyramiding=0, calc_on_every_tick=false, process_orders_on_close=true)
 
 // ═══════════════════════════════════════════════════════════════════
-// MADDNESSANI v3 — fixes weak TP + early pullback stop-outs
-// • Wider SL: swing + EMA34 + liquidity level + ATR buffer
-// • Structural TP: next swing liquidity with minimum R:R floor
-// • Breakeven after 1R, ATR trail after 1.5R
+// MADDNESSANI v4
+// • Monster Trex style: 1h + 4h = trend | chart TF = trigger (5m/15m/1h)
+// • Trend Filter Module: Liq + Bj + SMC + Pullback + Ichimoku vote
+// • Long ONLY if 1h AND 4h bullish | Short ONLY if both bearish
 // ═══════════════════════════════════════════════════════════════════
 
 string GRP_MODE  = "⚙ Mode"
+string GRP_TREND = "🧭 HTF Trend Filter"
 string GRP_CORE  = "🎯 Core Signals"
 string GRP_ZONE  = "📦 Zone Confluence"
 string GRP_TECH  = "📈 Technical Filters"
-string GRP_HTF   = "🕐 Higher Timeframe"
 string GRP_RISK  = "🛡 Risk Management"
 string GRP_EXIT  = "🎯 Exit Engine"
 string GRP_VIS   = "👁 Display"
 
 string modeIn = input.string("precision", "Strategy Mode",
-     options=["precision", "balanced", "sniper"],
-     tooltip="precision=WR focus | balanced=more trades | sniper=ultra strict",
-     group=GRP_MODE)
+     options=["precision", "balanced", "sniper"], group=GRP_MODE)
 
 int    effMinTier1 = modeIn == "sniper" ? 2 : modeIn == "precision" ? 2 : 1
 int    effTechNeed = modeIn == "sniper" ? 4 : modeIn == "precision" ? 4 : 2
@@ -34,6 +32,15 @@ float  effMinScore = modeIn == "sniper" ? 9.0 : modeIn == "precision" ? 7.5 : 5.
 int    effMinZone  = modeIn == "sniper" ? 2 : modeIn == "precision" ? 2 : 1
 int    effCooldown = modeIn == "sniper" ? 10 : modeIn == "precision" ? 5 : 3
 float  effMinRR    = modeIn == "sniper" ? 2.5 : modeIn == "precision" ? 2.0 : 1.8
+
+bool   useTrendF  = input.bool(true, "Enable 1h+4h Trend Filter", group=GRP_TREND)
+string mktPreset  = input.string("auto", "Market Preset",
+     options=["auto", "crypto", "forex"], group=GRP_TREND)
+string trendRule  = input.string("both_agree", "Trend Rule",
+     options=["both_agree", "4h_lead", "1h_lead"],
+     tooltip="both_agree=1h AND 4h same direction | 4h_lead=4h required | 1h_lead=1h required",
+     group=GRP_TREND)
+bool   block4hCh  = input.bool(true, "Block counter-trend vs 4h", group=GRP_TREND)
 
 int    zoneLB    = input.int(8, "Zone Lookback (bars)", minval=3, maxval=20, group=GRP_ZONE)
 bool   useRSI    = input.bool(true,  "RSI Advanced", group=GRP_CORE)
@@ -46,52 +53,122 @@ bool   useUT     = input.bool(true,  "UT Bot Trend", group=GRP_TECH)
 bool   useAlpha  = input.bool(true,  "AlphaTrend", group=GRP_TECH)
 bool   useZL     = input.bool(true,  "Zero-Lag Trend", group=GRP_TECH)
 bool   useBJ     = input.bool(true,  "Bj EMA 21/50", group=GRP_TECH)
-bool   useADX    = input.bool(true,  "ADX Trend Filter", group=GRP_TECH)
-float  adxMin    = input.float(22.0, "Min ADX", step=1.0, group=GRP_TECH)
-
-bool   useHTF    = input.bool(true,  "HTF Trend Filter", group=GRP_HTF)
-string htfTF     = input.timeframe("240", "HTF Timeframe", group=GRP_HTF)
+bool   useADX    = input.bool(true,  "Chart ADX Filter", group=GRP_TECH)
+float  adxMin    = input.float(20.0, "Min Chart ADX", step=1.0, group=GRP_TECH)
 
 int    rsiLen    = input.int(14, "RSI Length", group=GRP_CORE)
 int    pivLen    = input.int(5,  "Liquidity Pivot", minval=2, group=GRP_CORE)
 int    sdLen     = input.int(10, "S/D Pivot", minval=3, group=GRP_ZONE)
 float  utMult    = input.float(1.0, "UT ATR Mult", step=0.1, group=GRP_TECH)
 
-int    swingLen  = input.int(12, "Swing Lookback", minval=5, maxval=40, group=GRP_RISK,
-     tooltip="Wider = SL survives normal pullbacks on 1h")
+int    swingLen  = input.int(12, "Swing Lookback", minval=5, maxval=40, group=GRP_RISK)
 float  slAtrBuf  = input.float(1.5, "SL ATR Buffer", step=0.1, minval=0.5, group=GRP_RISK)
 float  minRiskAtr= input.float(0.55, "Min Risk (ATR)", step=0.05, group=GRP_RISK)
 bool   useEmaSL  = input.bool(true, "Include EMA34 in SL", group=GRP_RISK)
 
-string tpMode    = input.string("hybrid", "TP Mode",
-     options=["hybrid", "structural", "fixed_rr"],
-     tooltip="hybrid=max(struct swing, min R:R) | structural=swing liquidity | fixed_rr=R:R only",
-     group=GRP_EXIT)
+string tpMode    = input.string("hybrid", "TP Mode", options=["hybrid", "structural", "fixed_rr"], group=GRP_EXIT)
 float  minRR     = input.float(2.0, "Min Take-Profit R:R", step=0.1, minval=1.0, maxval=5.0, group=GRP_EXIT)
 float  maxRR     = input.float(4.0, "Max Take-Profit R:R (cap)", step=0.1, minval=1.5, maxval=8.0, group=GRP_EXIT)
 int    tpSwingLB = input.int(24, "TP Swing Lookback", minval=8, maxval=60, group=GRP_EXIT)
 bool   useBE     = input.bool(true,  "Breakeven after 1R", group=GRP_EXIT)
-float  beTrigger = input.float(1.0, "BE Trigger (R)", step=0.1, minval=0.5, group=GRP_EXIT)
+float  beTrigger = input.float(1.0, "BE Trigger (R)", step=0.1, group=GRP_EXIT)
 bool   useTrail  = input.bool(true,  "Trail after 1.5R", group=GRP_EXIT)
-float  trailTrig = input.float(1.5, "Trail Trigger (R)", step=0.1, minval=1.0, group=GRP_EXIT)
+float  trailTrig = input.float(1.5, "Trail Trigger (R)", step=0.1, group=GRP_EXIT)
 float  trailAtr  = input.float(1.3, "Trail ATR Mult", step=0.1, group=GRP_EXIT)
 
 bool   showDash  = input.bool(true, "Dashboard", group=GRP_VIS)
 bool   showMA    = input.bool(true, "EMA 21/50", group=GRP_VIS)
 bool   showLvls  = input.bool(true, "Show SL/TP Lines", group=GRP_VIS)
 
+// ── Chart TF guard (5m / 15m / 1h trigger — Monster Trex LTF idea) ──
+int chartSec = timeframe.in_seconds()
+bool chartOk = chartSec == 300 or chartSec == 900 or chartSec == 3600
+bool isScalp5  = chartSec == 300
+bool isScalp15 = chartSec == 900
+bool isChart1h = chartSec == 3600
+
+bool isForex = mktPreset == "forex" or (mktPreset == "auto" and (
+     syminfo.type == "forex" or str.contains(str.upper(syminfo.ticker), "XAU") or
+     str.contains(str.upper(syminfo.ticker), "EUR") or str.contains(str.upper(syminfo.ticker), "GBP")))
+
+float tfScoreAdj = isScalp5 ? -1.0 : isScalp15 ? -0.5 : 0.0
+int   tfSwingLen = isScalp5 ? 8 : isScalp15 ? 10 : swingLen
+int   tfCooldown = isScalp5 ? 8 : isScalp15 ? 6 : effCooldown
+float tfMinScore = effMinScore + tfScoreAdj
 float effRRfloor = math.max(minRR, effMinRR)
 float atr14 = ta.atr(14)
 
-// ── ADX ───────────────────────────────────────────────────────────
+// ── HTF Trend Pack (stateless — safe inside request.security) ─────
+// Returns [allowLong, allowShort, netScore, adx]
+f_trend_pack(bool forex, bool is4h) =>
+    float wBj  = forex ? (is4h ? 0.75 : 1.0) : (is4h ? 1.25 : 1.0)
+    float wLiq = forex ? (is4h ? 3.0  : 2.0) : (is4h ? 2.5  : 2.0)
+    float wSmc = forex ? 0.5 : (is4h ? 2.0 : 0.75)
+    float wPb  = forex ? (is4h ? 1.0 : 2.0) : (is4h ? 0.75 : 1.0)
+    float wIc  = forex ? (is4h ? 0.25 : 0.75) : (is4h ? 0.5 : 1.5)
+    float minL = forex ? (is4h ? 0.58 : 0.55) : (is4h ? 0.60 : 0.55)
+    float minS = minL
+    float adxF = forex ? (is4h ? 20.0 : 18.0) : (is4h ? 20.0 : 18.0)
+
+    float ema21 = ta.ema(close, 21)
+    float ema50 = ta.ema(close, 50)
+    float ema34 = ta.ema(close, 34)
+    float ema144 = ta.ema(close, 144)
+    float ema30 = ta.ema(close, 30)
+    float ema100 = ta.ema(close, 100)
+    bool bjB = ema21 > ema50 and close > ema50
+    bool bjS = ema21 < ema50 and close < ema50
+    bool pbB = ema34 > ema144 and close > ema144 and ema34 > ema34[5]
+    bool pbS = ema34 < ema144 and close < ema144 and ema34 < ema34[5]
+    bool smcB = ema30 > ema100 and close > ta.highest(high, 5)[1]
+    bool smcS = ema30 < ema100 and close < ta.lowest(low, 5)[1]
+    float swingLo = ta.lowest(low, 20)[1]
+    float swingHi = ta.highest(high, 20)[1]
+    bool liqB = low <= swingLo * 1.001 and close > swingLo and close > open
+    bool liqS = high >= swingHi * 0.999 and close < swingHi and close < open
+    float hl2v = (high + low) / 2
+    float tenkan = ta.ema(hl2v, 9)
+    float kijun  = ta.ema(hl2v, 26)
+    float sa = ta.ema((tenkan + kijun) / 2, 26)
+    float sb = ta.ema(hl2v, 52)
+    float cTop = math.max(sa, sb)[26]
+    float cBot = math.min(sa, sb)[26]
+    bool icB = close > cTop and tenkan > kijun
+    bool icS = close < cBot and tenkan < kijun
+    float wSum = wBj + wLiq + wSmc + wPb + wIc
+    float bullSc = (bjB ? wBj : 0) + (liqB ? wLiq : 0) + (smcB ? wSmc : 0) + (pbB ? wPb : 0) + (icB ? wIc : 0)
+    float bearSc = (bjS ? wBj : 0) + (liqS ? wLiq : 0) + (smcS ? wSmc : 0) + (pbS ? wPb : 0) + (icS ? wIc : 0)
+    float net = (bullSc - bearSc) / wSum
+    [_, _, adxV] = ta.dmi(14, 14)
+    bool adxOk = adxV >= adxF
+    bool aLong  = net >= minL and adxOk
+    bool aShort = -net >= minS and adxOk
+    [aLong ? 1.0 : 0.0, aShort ? 1.0 : 0.0, net, adxV]
+
+[h1Long, h1Short, h1Net, h1Adx] = request.security(syminfo.tickerid, "60",  f_trend_pack(isForex, false), barmerge.gaps_off, barmerge.lookahead_off)
+[h4Long, h4Short, h4Net, h4Adx] = request.security(syminfo.tickerid, "240", f_trend_pack(isForex, true),  barmerge.gaps_off, barmerge.lookahead_off)
+
+bool h1Bull = h1Long > 0.5
+bool h1Bear = h1Short > 0.5
+bool h4Bull = h4Long > 0.5
+bool h4Bear = h4Short > 0.5
+
+bool trendLong  = not useTrendF or (
+     trendRule == "both_agree" ? (h1Bull and h4Bull) :
+     trendRule == "4h_lead"    ? (h4Bull and not h4Bear) :
+     (h1Bull and not h1Bear))
+bool trendShort = not useTrendF or (
+     trendRule == "both_agree" ? (h1Bear and h4Bear) :
+     trendRule == "4h_lead"    ? (h4Bear and not h4Bull) :
+     (h1Bear and not h1Bull))
+
+if block4hCh and useTrendF
+    trendLong  := trendLong and not h4Bear
+    trendShort := trendShort and not h4Bull
+
+// ── Chart ADX ─────────────────────────────────────────────────────
 [diPlus, diMinus, adxV] = ta.dmi(14, 14)
 bool adxOK = not useADX or adxV >= adxMin
-
-// ── HTF trend ─────────────────────────────────────────────────────
-htfClose = request.security(syminfo.tickerid, htfTF, close[1], barmerge.gaps_off, barmerge.lookahead_off)
-htfEma50 = request.security(syminfo.tickerid, htfTF, ta.ema(close, 50)[1], barmerge.gaps_off, barmerge.lookahead_off)
-htfBull  = not useHTF or htfClose > htfEma50
-htfBear  = not useHTF or htfClose < htfEma50
 
 // ── RSI Advanced ──────────────────────────────────────────────────
 float rsiV = ta.rsi(close, rsiLen)
@@ -108,7 +185,7 @@ bool rsiShort = useRSI and rsiV[1] > 60 and rsiV <= 60 and mfiV < 70 and ewo < e
 if rsiLong
     inOS := false
 
-// ── Liquidity Shift ───────────────────────────────────────────────
+// ── Liquidity Shift (chart TF trigger) ────────────────────────────
 float ph = ta.pivothigh(high, pivLen, pivLen)
 float pl = ta.pivotlow(low, pivLen, pivLen)
 var float mSwingHi = na
@@ -225,19 +302,23 @@ float scoreL = zoneL + tier1L * 3.0 + techLong * 0.75
 float scoreS = zoneS + tier1S * 3.0 + techShort * 0.75
 
 var int lastSigBar = -999
-bool coolOK = bar_index - lastSigBar >= effCooldown
+bool coolOK = bar_index - lastSigBar >= tfCooldown
 
-bool rawLong  = tier1L >= effMinTier1 and zoneL >= effMinZone and scoreL >= effMinScore and
-     techLong >= effTechNeed and adxOK and htfBull and coolOK and barstate.isconfirmed
-bool rawShort = tier1S >= effMinTier1 and zoneS >= effMinZone and scoreS >= effMinScore and
-     techShort >= effTechNeed and adxOK and htfBear and coolOK and barstate.isconfirmed
+bool setupLong  = tier1L >= effMinTier1 and zoneL >= effMinZone and scoreL >= tfMinScore and
+     techLong >= effTechNeed and adxOK and coolOK and barstate.isconfirmed
+bool setupShort = tier1S >= effMinTier1 and zoneS >= effMinZone and scoreS >= tfMinScore and
+     techShort >= effTechNeed and adxOK and coolOK and barstate.isconfirmed
+
+// ★ HTF trend gate — long only in bull HTF, short only in bear HTF
+bool rawLong  = chartOk and setupLong  and trendLong
+bool rawShort = chartOk and setupShort and trendShort
 
 if rawLong or rawShort
     lastSigBar := bar_index
 
-// ── SL / TP helpers ───────────────────────────────────────────────
+// ── SL / TP (TF-adaptive swing) ───────────────────────────────────
 f_long_sl(float px) =>
-    float swingLo = ta.lowest(low, swingLen)
+    float swingLo = ta.lowest(low, tfSwingLen)
     float emaSl   = useEmaSL ? emaF - atr14 * 0.3 : swingLo
     float liqSl   = nz(bullLvl, swingLo)
     float base    = math.min(swingLo, emaSl, liqSl)
@@ -246,7 +327,7 @@ f_long_sl(float px) =>
     [sl, risk]
 
 f_short_sl(float px) =>
-    float swingHi = ta.highest(high, swingLen)
+    float swingHi = ta.highest(high, tfSwingLen)
     float emaSl   = useEmaSL ? emaF + atr14 * 0.3 : swingHi
     float liqSl   = nz(bearLvl, swingHi)
     float base    = math.max(swingHi, emaSl, liqSl)
@@ -255,28 +336,21 @@ f_short_sl(float px) =>
     [sl, risk]
 
 f_long_tp(float px, float risk) =>
-    float rrTp      = px + risk * effRRfloor
-    float structHi  = ta.highest(high, tpSwingLB)
-    float structTp  = structHi + atr14 * 0.1
-    float hybridTp  = math.max(rrTp, structTp)
-    float capped    = px + risk * maxRR
-    float tp = tpMode == "fixed_rr" ? rrTp :
-         tpMode == "structural" ? math.max(structTp, px + risk * 1.2) :
-         math.min(hybridTp, capped)
-    tp
+    float rrTp = px + risk * effRRfloor
+    float structHi = ta.highest(high, tpSwingLB)
+    float structTp = structHi + atr14 * 0.1
+    float hybridTp = math.max(rrTp, structTp)
+    float capped = px + risk * maxRR
+    tpMode == "fixed_rr" ? rrTp : tpMode == "structural" ? math.max(structTp, px + risk * 1.2) : math.min(hybridTp, capped)
 
 f_short_tp(float px, float risk) =>
-    float rrTp      = px - risk * effRRfloor
-    float structLo  = ta.lowest(low, tpSwingLB)
-    float structTp  = structLo - atr14 * 0.1
-    float hybridTp  = math.min(rrTp, structTp)
-    float capped    = px - risk * maxRR
-    float tp = tpMode == "fixed_rr" ? rrTp :
-         tpMode == "structural" ? math.min(structTp, px - risk * 1.2) :
-         math.max(hybridTp, capped)
-    tp
+    float rrTp = px - risk * effRRfloor
+    float structLo = ta.lowest(low, tpSwingLB)
+    float structTp = structLo - atr14 * 0.1
+    float hybridTp = math.min(rrTp, structTp)
+    float capped = px - risk * maxRR
+    tpMode == "fixed_rr" ? rrTp : tpMode == "structural" ? math.min(structTp, px - risk * 1.2) : math.max(hybridTp, capped)
 
-// ── Position state for BE / trail ─────────────────────────────────
 var float posEntry = na
 var float posInitSL = na
 var float posInitTP = na
@@ -296,7 +370,7 @@ if rawLong and strategy.position_size <= 0
     posRisk := calcLongRisk
     beActive := false
     posDir := 1
-    strategy.entry("MAD Long", strategy.long, comment="MADDNESSANI L")
+    strategy.entry("MAD Long", strategy.long, comment="MAD L " + timeframe.period)
 
 if rawShort and strategy.position_size >= 0
     posEntry := close
@@ -305,7 +379,7 @@ if rawShort and strategy.position_size >= 0
     posRisk := calcShortRisk
     beActive := false
     posDir := -1
-    strategy.entry("MAD Short", strategy.short, comment="MADDNESSANI S")
+    strategy.entry("MAD Short", strategy.short, comment="MAD S " + timeframe.period)
 
 if strategy.position_size == 0
     posDir := 0
@@ -325,8 +399,7 @@ if strategy.position_size > 0 and posDir == 1 and not na(posEntry)
     if beActive
         activeSL := math.max(activeSL, posEntry + atr14 * 0.08)
     if useTrail and beActive and high >= posEntry + posRisk * trailTrig
-        float trailSl = close - atr14 * trailAtr
-        activeSL := math.max(activeSL, trailSl)
+        activeSL := math.max(activeSL, close - atr14 * trailAtr)
     strategy.exit("MAD Long Exit", "MAD Long", stop=activeSL, limit=activeTP)
 
 if strategy.position_size < 0 and posDir == -1 and not na(posEntry)
@@ -336,39 +409,44 @@ if strategy.position_size < 0 and posDir == -1 and not na(posEntry)
     if beActive
         activeSL := math.min(activeSL, posEntry - atr14 * 0.08)
     if useTrail and beActive and low <= posEntry - posRisk * trailTrig
-        float trailSl = close + atr14 * trailAtr
-        activeSL := math.min(activeSL, trailSl)
+        activeSL := math.min(activeSL, close + atr14 * trailAtr)
     strategy.exit("MAD Short Exit", "MAD Short", stop=activeSL, limit=activeTP)
 
-alertcondition(rawLong,  title="MADDNESSANI Long",  message='{"strategy":"MADDNESSANI","side":"long"}')
-alertcondition(rawShort, title="MADDNESSANI Short", message='{"strategy":"MADDNESSANI","side":"short"}')
+alertcondition(rawLong,  title="MADDNESSANI Long",  message='{"strategy":"MADDNESSANI","side":"long","tf":"' + timeframe.period + '"}')
+alertcondition(rawShort, title="MADDNESSANI Short", message='{"strategy":"MADDNESSANI","side":"short","tf":"' + timeframe.period + '"}')
 
 plot(showMA ? ma21 : na, "EMA21", color=color.blue)
 plot(showMA ? ma50 : na, "EMA50", color=color.orange)
 plotshape(rawLong,  "Long",  shape.triangleup,   location.belowbar, color.new(#00ff88,0), size=size.small, text="MAD")
 plotshape(rawShort, "Short", shape.triangledown, location.abovebar, color.new(#ff3366,0), size=size.small, text="MAD")
+bgcolor(not chartOk ? color.new(color.orange, 88) : na, title="TF warning")
 
-plot(showLvls and strategy.position_size > 0 ? activeSL : na, "Active SL", color=color.new(color.red, 30), style=plot.style_linebr, linewidth=2)
-plot(showLvls and strategy.position_size > 0 ? activeTP : na, "Active TP", color=color.new(color.lime, 30), style=plot.style_linebr, linewidth=2)
-plot(showLvls and strategy.position_size > 0 ? posEntry : na, "Entry", color=color.new(color.yellow, 40), style=plot.style_linebr, linewidth=1)
+plot(showLvls and strategy.position_size != 0 ? activeSL : na, "Active SL", color=color.new(color.red, 30), style=plot.style_linebr, linewidth=2)
+plot(showLvls and strategy.position_size != 0 ? activeTP : na, "Active TP", color=color.new(color.lime, 30), style=plot.style_linebr, linewidth=2)
+plot(showLvls and strategy.position_size != 0 ? posEntry : na, "Entry", color=color.new(color.yellow, 40), style=plot.style_linebr, linewidth=1)
 
-var table dash = table.new(position.top_right, 2, 8, bgcolor=color.new(#0d1117,10))
+string h1Lbl = h1Bull ? "BULL" : h1Bear ? "BEAR" : "—"
+string h4Lbl = h4Bull ? "BULL" : h4Bear ? "BEAR" : "—"
+
+var table dash = table.new(position.top_right, 2, 10, bgcolor=color.new(#0d1117,10))
 if showDash and barstate.islast
     table.cell(dash, 0, 0, "MADDNESSANI", text_color=#00ff88, text_size=size.normal)
-    table.cell(dash, 1, 0, "v3 " + modeIn, text_color=color.yellow, text_size=size.small)
-    table.cell(dash, 0, 1, "Tier1", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 1, str.tostring(tier1L)+"/"+str.tostring(effMinTier1)+"  "+str.tostring(tier1S)+"/"+str.tostring(effMinTier1), text_color=color.white, text_size=size.small)
-    table.cell(dash, 0, 2, "Tech", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 2, str.tostring(techLong)+"/"+str.tostring(effTechNeed)+"  "+str.tostring(techShort)+"/"+str.tostring(effTechNeed), text_color=color.white, text_size=size.small)
-    table.cell(dash, 0, 3, "Score", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 3, str.tostring(scoreL,"#.#")+" / "+str.tostring(scoreS,"#.#"), text_color=color.yellow, text_size=size.small)
-    table.cell(dash, 0, 4, "HTF / ADX", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 4, (htfBull ? "BULL" : "BEAR") + "  " + str.tostring(adxV,"#.#"), text_color=htfBull?color.lime:color.red, text_size=size.small)
-    table.cell(dash, 0, 5, "Min R:R", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 5, str.tostring(effRRfloor,"#.#"), text_color=color.white, text_size=size.small)
-    table.cell(dash, 0, 6, "Risk ATR", text_color=color.white, text_size=size.small)
-    float liveRisk = strategy.position_size > 0 ? (posEntry - posInitSL) / atr14 :
-         strategy.position_size < 0 ? (posInitSL - posEntry) / atr14 : calcLongRisk / atr14
-    table.cell(dash, 1, 6, str.tostring(liveRisk,"#.#") + " ATR", text_color=color.orange, text_size=size.small)
-    table.cell(dash, 0, 7, "BE / Trail", text_color=color.white, text_size=size.small)
-    table.cell(dash, 1, 7, (beActive ? "BE ON" : "—") + " / " + (useTrail ? "ON" : "OFF"), text_color=beActive?color.lime:color.gray, text_size=size.small)
+    table.cell(dash, 1, 0, "v4 " + modeIn, text_color=color.yellow, text_size=size.small)
+    table.cell(dash, 0, 1, "Chart TF", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 1, chartOk ? timeframe.period : timeframe.period + " !", text_color=chartOk ? color.lime : color.orange, text_size=size.small)
+    table.cell(dash, 0, 2, "1h Trend", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 2, h1Lbl + " " + str.tostring(h1Net, "#.##"), text_color=h1Bull ? color.lime : h1Bear ? color.red : color.gray, text_size=size.small)
+    table.cell(dash, 0, 3, "4h Trend", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 3, h4Lbl + " " + str.tostring(h4Net, "#.##"), text_color=h4Bull ? color.lime : h4Bear ? color.red : color.gray, text_size=size.small)
+    table.cell(dash, 0, 4, "Gate", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 4, trendLong ? "LONG OK" : trendShort ? "SHORT OK" : "WAIT", text_color=trendLong ? color.lime : trendShort ? color.red : color.gray, text_size=size.small)
+    table.cell(dash, 0, 5, "Tier1", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 5, str.tostring(tier1L)+"/"+str.tostring(effMinTier1)+"  "+str.tostring(tier1S)+"/"+str.tostring(effMinTier1), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 6, "Score", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 6, str.tostring(scoreL,"#.#")+" / "+str.tostring(scoreS,"#.#"), text_color=color.yellow, text_size=size.small)
+    table.cell(dash, 0, 7, "Min score", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 7, str.tostring(tfMinScore,"#.#"), text_color=color.white, text_size=size.small)
+    table.cell(dash, 0, 8, "ADX", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 8, str.tostring(adxV,"#.#"), text_color=adxOK?color.lime:color.red, text_size=size.small)
+    table.cell(dash, 0, 9, "Market", text_color=color.white, text_size=size.small)
+    table.cell(dash, 1, 9, isForex ? "FOREX" : "CRYPTO", text_color=color.white, text_size=size.small)
