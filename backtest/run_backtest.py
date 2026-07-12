@@ -365,7 +365,15 @@ def run_indicator(name: str, df: pd.DataFrame, symbol: str, tf: str, market: str
         return _run_fixed(name, df, symbol, tf, market, sig)
 
     if name == "monster":
-        return BacktestResult(name, symbol, tf, market, notes=["blocked: external pine libraries"])
+        return BacktestResult(name, symbol, tf, market, notes=["blocked: external pine libraries — use monster_trex"])
+
+    if name == "monster_trex":
+        from monster_trex_strategy import monster_trex_signals
+        pair = "H1_M5" if tf == "5m" else "H4_M15" if tf == "15m" else "H1_M5"
+        sig = monster_trex_signals(df, chart_tf=tf, market=market, pair_mode=pair, use_trend_filter=True)
+        zlist = extract_zone_signals_from_df(sig)
+        trades = simulate_zone_native(df, zlist, market)
+        return aggregate(trades, name, symbol, tf, market)
 
     raise ValueError(name)
 

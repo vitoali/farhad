@@ -1,0 +1,335 @@
+{
+  "period_days": 31,
+  "pair_modes": [
+    "H1_M5",
+    "H4_M15"
+  ],
+  "summaries": {
+    "monster_trex_h1_m5_trend": {
+      "label": "monster_trex_h1_m5_trend",
+      "status": "insufficient",
+      "runs": 5,
+      "total_signals": 0
+    },
+    "monster_trex_h1_m5_notrend": {
+      "label": "monster_trex_h1_m5_notrend",
+      "avg_pf": 1.014,
+      "avg_wr": 37.0,
+      "total_trades": 40,
+      "samples": 5,
+      "market_pf": {
+        "crypto": 1.048,
+        "forex": 0.962
+      },
+      "best": "BTCUSDT 5m PF=1.872 WR=50.0%"
+    },
+    "monster_trex_h4_m15_trend": {
+      "label": "monster_trex_h4_m15_trend",
+      "status": "insufficient",
+      "runs": 5,
+      "total_signals": 0
+    },
+    "monster_trex_h4_m15_notrend": {
+      "label": "monster_trex_h4_m15_notrend",
+      "avg_pf": 0.134,
+      "avg_wr": 50.0,
+      "total_trades": 5,
+      "samples": 3,
+      "market_pf": {
+        "crypto": 0.134,
+        "forex": 0.0
+      },
+      "best": "BTCUSDT 15m PF=0.269 WR=50.0%"
+    }
+  },
+  "results": {
+    "monster_trex_h1_m5_trend": [
+      {
+        "indicator": "monster_trex_h1_m5_trend",
+        "symbol": "BTCUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_trend",
+        "symbol": "HYPEUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_trend",
+        "symbol": "BEATUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_trend",
+        "symbol": "EURUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_trend",
+        "symbol": "XAUUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H1_M5"
+        ]
+      }
+    ],
+    "monster_trex_h1_m5_notrend": [
+      {
+        "indicator": "monster_trex_h1_m5_notrend",
+        "symbol": "BTCUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 6,
+        "win_rate": 50.0,
+        "profit_factor": 1.872,
+        "avg_r": 0.354,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "signals=6 trend=False pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_notrend",
+        "symbol": "HYPEUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 4,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 3.0,
+        "notes": [
+          "signals=4 trend=False pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_notrend",
+        "symbol": "BEATUSDT",
+        "timeframe": "5m",
+        "market": "crypto",
+        "total_trades": 12,
+        "win_rate": 50.0,
+        "profit_factor": 1.272,
+        "avg_r": 0.136,
+        "max_drawdown_r": 2.896,
+        "notes": [
+          "signals=12 trend=False pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_notrend",
+        "symbol": "EURUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 10,
+        "win_rate": 60.0,
+        "profit_factor": 1.694,
+        "avg_r": 0.277,
+        "max_drawdown_r": 2.0,
+        "notes": [
+          "signals=10 trend=False pair=H1_M5"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h1_m5_notrend",
+        "symbol": "XAUUSD",
+        "timeframe": "5m",
+        "market": "forex",
+        "total_trades": 8,
+        "win_rate": 25.0,
+        "profit_factor": 0.23,
+        "avg_r": -0.578,
+        "max_drawdown_r": 4.722,
+        "notes": [
+          "signals=8 trend=False pair=H1_M5"
+        ]
+      }
+    ],
+    "monster_trex_h4_m15_trend": [
+      {
+        "indicator": "monster_trex_h4_m15_trend",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_trend",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_trend",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_trend",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_trend",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=True pair=H4_M15"
+        ]
+      }
+    ],
+    "monster_trex_h4_m15_notrend": [
+      {
+        "indicator": "monster_trex_h4_m15_notrend",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 2,
+        "win_rate": 50.0,
+        "profit_factor": 0.269,
+        "avg_r": -0.366,
+        "max_drawdown_r": 1.0,
+        "notes": [
+          "signals=2 trend=False pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_notrend",
+        "symbol": "HYPEUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": -1.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=1 trend=False pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_notrend",
+        "symbol": "BEATUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=False pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_notrend",
+        "symbol": "EURUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 2,
+        "win_rate": 100.0,
+        "profit_factor": 999,
+        "avg_r": 1.707,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=2 trend=False pair=H4_M15"
+        ]
+      },
+      {
+        "indicator": "monster_trex_h4_m15_notrend",
+        "symbol": "XAUUSD",
+        "timeframe": "15m",
+        "market": "forex",
+        "total_trades": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "avg_r": 0.0,
+        "max_drawdown_r": 0.0,
+        "notes": [
+          "signals=0 trend=False pair=H4_M15"
+        ]
+      }
+    ]
+  }
+}
