@@ -1,0 +1,133 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// TrendFilterLib — reusable trend bias module (crypto / forex presets)
+// Based on 1h/4h backtest: Liquidity Shift + Bj + SMC + Pullback + Ichimoku
+
+//@version=6
+library("TrendFilterLib", overlay=true)
+
+export type TrendSettings
+    string preset
+    float minScoreLong
+    float minScoreShort
+    float wBj
+    float wLiq
+    float wSmc
+    float wPb
+    float wIchi
+    float adxMin
+    bool useAdx
+    int liqPivot
+    int liqMemory
+
+export presetCrypto1h() =>
+    TrendSettings.new("crypto_1h", 0.55, 0.55, 1.0, 2.0, 0.75, 1.0, 1.5, 18.0, true, 5, 80)
+
+export presetCrypto4h() =>
+    TrendSettings.new("crypto_4h", 0.60, 0.60, 1.25, 2.5, 2.0, 0.75, 0.5, 20.0, true, 5, 80)
+
+export presetCryptoScalp() =>
+    TrendSettings.new("crypto_scalp", 0.50, 0.50, 1.25, 1.75, 0.5, 0.0, 1.0, 18.0, false, 5, 60)
+
+export presetForex1h() =>
+    TrendSettings.new("forex_1h", 0.55, 0.55, 1.0, 2.0, 0.5, 2.0, 0.75, 18.0, true, 5, 80)
+
+export presetForex4h() =>
+    TrendSettings.new("forex_4h", 0.58, 0.58, 0.75, 3.0, 0.5, 1.0, 0.25, 20.0, true, 5, 80)
+
+export presetForexScalp() =>
+    TrendSettings.new("forex_scalp", 0.52, 0.52, 1.0, 2.0, 0.0, 1.5, 0.0, 18.0, false, 5, 60)
+
+export presetFor(bool isForex, string tf) =>
+    bool scalp = tf == "5" or tf == "15" or tf == "5m" or tf == "15m"
+    bool htf   = tf == "240" or tf == "4h" or tf == "D" or tf == "1D"
+    isForex ?
+         (scalp ? presetForexScalp() : htf ? presetForex4h() : presetForex1h()) :
+         (scalp ? presetCryptoScalp() : htf ? presetCrypto4h() : presetCrypto1h())
+
+// ── Engines ───────────────────────────────────────────────────────
+export bjBias(int fast, int slow) =>
+    float mf = ta.ema(close, fast)
+    float ms = ta.ema(close, slow)
+    bool bull = mf > ms and close > ms
+    bool bear = mf < ms and close < ms
+    [bull, bear]
+
+export smcBias(int fast, int slow) =>
+    float mf = ta.ema(close, fast)
+    float ms = ta.ema(close, slow)
+    float hiBr = ta.highest(high, 5)[1]
+    float loBr = ta.lowest(low, 5)[1]
+    bool bull = mf > ms and close > hiBr
+    bool bear = mf < ms and close < loBr
+    [bull, bear]
+
+export pullbackBias(int fast, int slow) =>
+    float mf = ta.ema(close, fast)
+    float ms = ta.ema(close, slow)
+    bool bull = mf > ms and close > ms and mf > mf[5]
+    bool bear = mf < ms and close < ms and mf < mf[5]
+    [bull, bear]
+
+export ichimokuBias() =>
+    float hl2 = (high + low) / 2
+    float tenkan = ta.ema(hl2, 9)
+    float kijun  = ta.ema(hl2, 26)
+    float sa = ta.ema((tenkan + kijun) / 2, 26)
+    float sb = ta.ema(hl2, 52)
+    float cTop = math.max(sa, sb)[26]
+    float cBot = math.min(sa, sb)[26]
+    bool bull = close > cTop and tenkan > kijun
+    bool bear = close < cBot and tenkan < kijun
+    [bull, bear]
+
+export liquidityBias(int pivLen, int memory) =>
+    float ph = ta.pivothigh(high, pivLen, pivLen)
+    float pl = ta.pivotlow(low, pivLen, pivLen)
+    var float swingHi = na
+    var float swingLo = na
+    var bool bullPend = false
+    var bool bearPend = false
+    var int bullBar = 0
+    var int bearBar = 0
+    var int bias = 0
+    if not na(ph)
+        swingHi := ph
+    if not na(pl)
+        swingLo := pl
+    if not na(swingLo) and low < swingLo and close > swingLo
+        bullPend := true
+        bullBar := bar_index
+    if not na(swingHi) and high > swingHi and close < swingHi
+        bearPend := true
+        bearBar := bar_index
+    if bullPend and bar_index - bullBar > memory
+        bullPend := false
+    if bearPend and bar_index - bearBar > memory
+        bearPend := false
+    float atrV = ta.atr(14)
+    bool bullTrig = bullPend and (close > nz(swingHi, close) or (close > open and math.abs(close - open) >= atrV * 0.8))
+    bool bearTrig = bearPend and (close < nz(swingLo, close) or (close < open and math.abs(close - open) >= atrV * 0.8))
+    if bullTrig
+        bias := 1
+        bullPend := false
+    if bearTrig
+        bias := -1
+        bearPend := false
+    [bias == 1, bias == -1]
+
+export calcTrend(TrendSettings s) =>
+    [bjB, bjS] = bjBias(21, 50)
+    [liqB, liqS] = liquidityBias(s.liqPivot, s.liqMemory)
+    [smcB, smcS] = smcBias(30, 100)
+    [pbB, pbS] = pullbackBias(34, 144)
+    [icB, icS] = ichimokuBias()
+    float wSum = s.wBj + s.wLiq + s.wSmc + s.wPb + s.wIchi
+    float bullSc = (bjB ? s.wBj : 0) + (liqB ? s.wLiq : 0) + (smcB ? s.wSmc : 0) + (pbB ? s.wPb : 0) + (icB ? s.wIchi : 0)
+    float bearSc = (bjS ? s.wBj : 0) + (liqS ? s.wLiq : 0) + (smcS ? s.wSmc : 0) + (pbS ? s.wPb : 0) + (icS ? s.wIchi : 0)
+    float net = (bullSc - bearSc) / wSum
+    [diPlus, diMinus, adxV] = ta.dmi(14, 14)
+    bool adxOk = not s.useAdx or adxV >= s.adxMin
+    bool allowLong  = net >= s.minScoreLong and adxOk
+    bool allowShort = -net >= s.minScoreShort and adxOk
+    string label = allowLong ? "bull" : allowShort ? "bear" : "neutral"
+    [allowLong, allowShort, net, adxV, label, bjB, liqB, smcB, pbB, icB]

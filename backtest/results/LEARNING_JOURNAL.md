@@ -1510,3 +1510,37 @@ SL/TP:    Bj Bot structural (swing ± ATR × RiskM, R:R=1)
 - **Pine:** `indicators/Farhad_Master_Strategy.pine`
 - **بهبود بعدی:** HTF bias، trail بعد TP1، فیلتر جداگانه per-symbol
 
+---
+
+## #55 Trend Filter Module (آماده برای CRYPTO / FX)
+
+**فایل‌ها:**
+- Python: `backtest/trend_filter.py`
+- Pine library: `backtest/indicators/TrendFilterLib.pine`
+
+### موتورهای روند (وزن‌دار)
+| موتور | نقش |
+|--------|-----|
+| Liquidity Shift | ساختار + sweep (بهترین 1h/4h) |
+| Bj Bot EMA 21/50 | فیلتر روند خالص |
+| SMC Structure | EMA30/100 + break |
+| Strong Pullback | EMA34/144 + slope |
+| Ichimoku | ابر + TK cross (کریپتو 1h) |
+
+### Presetها
+- `crypto_1h`, `crypto_4h`, `crypto_scalp`
+- `forex_1h`, `forex_4h`, `forex_scalp`
+- `universal`
+
+### خروجی ستون‌ها
+`trend_bull`, `trend_bear`, `trend_score`, `allow_long`, `allow_short`, `adx_ok`
+
+### استفاده
+```python
+from trend_filter import apply_trend_filter, filter_signals_df
+trend = apply_trend_filter(df, market="crypto", timeframe="4h")
+sig = filter_signals_df(my_signals, trend)
+```
+
+**وضعیت:** آماده — منتظر ساخت اندیکاتور CRYPTO_BEAST و FX_SNIPER
+
