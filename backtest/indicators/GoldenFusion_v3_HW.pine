@@ -28,6 +28,7 @@ tpAtr = input.float(3.0, "TP × ATR", group=grpRisk)
 
 grpVis = "Display"
 showHtf = input.bool(true, "Show HTF score table", group=grpVis)
+showMacdPane = input.bool(true, "Show MACD pane", group=grpVis)
 
 // ── MACD helpers ─────────────────────────────────────────────────
 macdPack() =>
@@ -104,10 +105,11 @@ plotshape(hwShort, title="S0 HW Short", style=shape.triangledown, location=locat
 
 bgcolor(hwLong ? color.new(color.lime, 92) : hwShort ? color.new(color.red, 92) : na)
 
-plot(macd, "MACD", color=color.blue, display=display.pane)
-plot(sig, "Signal", color=color.orange, display=display.pane)
-plot(hist, "Hist", color=hist >= 0 ? color.aqua : color.maroon, style=plot.style_columns, display=display.pane)
-hline(0, "Zero", color=color.gray, display=display.pane)
+plot(showMacdPane ? macd : na, "MACD", color=color.blue, display=display.pane)
+plot(showMacdPane ? sig : na, "Signal", color=color.orange, display=display.pane)
+plot(showMacdPane ? hist : na, "Hist", color=hist >= 0 ? color.aqua : color.maroon,
+     style=plot.style_columns, display=display.pane)
+plot(showMacdPane ? 0.0 : na, "Zero", color=color.gray, display=display.pane)
 
 if showHtf and barstate.islast
     var table t = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 30))
