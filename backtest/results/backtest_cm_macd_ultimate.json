@@ -1,0 +1,1596 @@
+{
+  "period_days": 31,
+  "indicator": "CM_MACD_Ultimate_Position_Fixed",
+  "logic": {
+    "silver_long": "bullish cross + MACD below -1*stdev(100)",
+    "silver_short": "bearish cross + MACD above +1*stdev(100)",
+    "gold_long": "silver_long + bullish MACD divergence within 10 bars",
+    "gold_short": "silver_short + bearish MACD divergence within 10 bars"
+  },
+  "fusion_with_prior_analysis": {
+    "htf_filter": "Require HTF MACD confluence score >= 2 (from prior CM MACD study)",
+    "recommended_combo": "15m GOLD + HTF>=2 for entry; 1h Cardwell MA100 for trend; 4h Elliott for structure"
+  },
+  "best_variants": [
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 3.826,
+      "avg_r": 0.848,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 5,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 3,
+      "win_rate": 66.67,
+      "profit_factor": 3.0,
+      "avg_r": 0.8,
+      "max_drawdown_r": 1.2,
+      "notes": [],
+      "signals": 3,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 17,
+      "win_rate": 41.18,
+      "profit_factor": 0.916,
+      "avg_r": -0.03,
+      "max_drawdown_r": 5.026,
+      "notes": [],
+      "signals": 31,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 15,
+      "win_rate": 26.67,
+      "profit_factor": 0.59,
+      "avg_r": -0.333,
+      "max_drawdown_r": 6.0,
+      "notes": [],
+      "signals": 15,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 27,
+      "win_rate": 25.93,
+      "profit_factor": 0.432,
+      "avg_r": -0.504,
+      "max_drawdown_r": 13.18,
+      "notes": [],
+      "signals": 32,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 9,
+      "win_rate": 66.67,
+      "profit_factor": 0.4,
+      "avg_r": -0.333,
+      "max_drawdown_r": 3.333,
+      "notes": [],
+      "signals": 9,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 28,
+      "win_rate": 28.57,
+      "profit_factor": 0.384,
+      "avg_r": -0.503,
+      "max_drawdown_r": 12.883,
+      "notes": [],
+      "signals": 34,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 5,
+      "win_rate": 60.0,
+      "profit_factor": 0.3,
+      "avg_r": -0.467,
+      "max_drawdown_r": 1.667,
+      "notes": [],
+      "signals": 5,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 20,
+      "win_rate": 55.0,
+      "profit_factor": 0.244,
+      "avg_r": -0.567,
+      "max_drawdown_r": 9.667,
+      "notes": [],
+      "signals": 20,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 20,
+      "win_rate": 30.0,
+      "profit_factor": 0.242,
+      "avg_r": -0.556,
+      "max_drawdown_r": 9.929,
+      "notes": [],
+      "signals": 29,
+      "variant": "buy_silver"
+    }
+  ],
+  "all_results": [
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 17,
+      "win_rate": 41.18,
+      "profit_factor": 0.916,
+      "avg_r": -0.03,
+      "max_drawdown_r": 5.026,
+      "notes": [],
+      "signals": 31,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 50.0,
+      "profit_factor": 0.022,
+      "avg_r": -0.587,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 5,
+      "win_rate": 20.0,
+      "profit_factor": 0.005,
+      "avg_r": -0.955,
+      "max_drawdown_r": 3.6,
+      "notes": [],
+      "signals": 6,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 50.0,
+      "profit_factor": 0.022,
+      "avg_r": -0.587,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 50.0,
+      "profit_factor": 0.022,
+      "avg_r": -0.587,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 28,
+      "win_rate": 28.57,
+      "profit_factor": 0.384,
+      "avg_r": -0.503,
+      "max_drawdown_r": 12.883,
+      "notes": [],
+      "signals": 34,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 4,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 3.6,
+      "notes": [],
+      "signals": 4,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 15,
+      "win_rate": 6.67,
+      "profit_factor": 0.114,
+      "avg_r": -0.935,
+      "max_drawdown_r": 14.4,
+      "notes": [],
+      "signals": 15,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 1.2,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 50.0,
+      "profit_factor": 1.5,
+      "avg_r": 0.3,
+      "max_drawdown_r": 1.2,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 20,
+      "win_rate": 30.0,
+      "profit_factor": 0.242,
+      "avg_r": -0.556,
+      "max_drawdown_r": 9.929,
+      "notes": [],
+      "signals": 29,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 1.2,
+      "notes": [],
+      "signals": 3,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 3.826,
+      "avg_r": 0.848,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 5,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 27,
+      "win_rate": 25.93,
+      "profit_factor": 0.432,
+      "avg_r": -0.504,
+      "max_drawdown_r": 13.18,
+      "notes": [],
+      "signals": 32,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 3,
+      "win_rate": 66.67,
+      "profit_factor": 3.0,
+      "avg_r": 0.8,
+      "max_drawdown_r": 1.2,
+      "notes": [],
+      "signals": 3,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 15,
+      "win_rate": 26.67,
+      "profit_factor": 0.59,
+      "avg_r": -0.333,
+      "max_drawdown_r": 6.0,
+      "notes": [],
+      "signals": 15,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 1.2,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.2,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 1.8,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "EURUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 137,
+      "win_rate": 51.82,
+      "profit_factor": 0.215,
+      "avg_r": -0.63,
+      "max_drawdown_r": 87.333,
+      "notes": [],
+      "signals": 143,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "EURUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 11,
+      "win_rate": 18.18,
+      "profit_factor": 0.044,
+      "avg_r": -1.303,
+      "max_drawdown_r": 12.667,
+      "notes": [],
+      "signals": 12,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "EURUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 37,
+      "win_rate": 54.05,
+      "profit_factor": 0.235,
+      "avg_r": -0.586,
+      "max_drawdown_r": 20.667,
+      "notes": [],
+      "signals": 38,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "EURUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "EURUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 46,
+      "win_rate": 45.65,
+      "profit_factor": 0.168,
+      "avg_r": -0.754,
+      "max_drawdown_r": 33.333,
+      "notes": [],
+      "signals": 49,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.333,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 25.0,
+      "profit_factor": 0.067,
+      "avg_r": -1.167,
+      "max_drawdown_r": 3.0,
+      "notes": [],
+      "signals": 4,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 9,
+      "win_rate": 44.44,
+      "profit_factor": 0.16,
+      "avg_r": -0.778,
+      "max_drawdown_r": 5.667,
+      "notes": [],
+      "signals": 9,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 116,
+      "win_rate": 50.86,
+      "profit_factor": 0.207,
+      "avg_r": -0.649,
+      "max_drawdown_r": 76.667,
+      "notes": [],
+      "signals": 116,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 9,
+      "win_rate": 66.67,
+      "profit_factor": 0.4,
+      "avg_r": -0.333,
+      "max_drawdown_r": 3.333,
+      "notes": [],
+      "signals": 9,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 20,
+      "win_rate": 55.0,
+      "profit_factor": 0.244,
+      "avg_r": -0.567,
+      "max_drawdown_r": 9.667,
+      "notes": [],
+      "signals": 20,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 35,
+      "win_rate": 42.86,
+      "profit_factor": 0.15,
+      "avg_r": -0.81,
+      "max_drawdown_r": 26.667,
+      "notes": [],
+      "signals": 35,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.667,
+      "max_drawdown_r": 1.667,
+      "notes": [],
+      "signals": 2,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 5,
+      "win_rate": 60.0,
+      "profit_factor": 0.3,
+      "avg_r": -0.467,
+      "max_drawdown_r": 1.667,
+      "notes": [],
+      "signals": 5,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver",
+      "symbol": "XAUUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 9,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.667,
+      "max_drawdown_r": 13.333,
+      "notes": [],
+      "signals": 9,
+      "variant": "buy_silver"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold",
+      "symbol": "XAUUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.667,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_gold"
+    },
+    {
+      "indicator": "cm_ultimate_buy_silver_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.667,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "variant": "buy_silver_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf",
+      "symbol": "XAUUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf"
+    },
+    {
+      "indicator": "cm_ultimate_buy_gold_htf3",
+      "symbol": "XAUUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "variant": "buy_gold_htf3"
+    }
+  ],
+  "by_symbol_tf": {
+    "BTCUSDT": {
+      "5m": {
+        "silver": {
+          "trades": 17,
+          "wr": 41.18,
+          "pf": 0.916,
+          "signals": 31
+        },
+        "gold": {
+          "trades": 2,
+          "wr": 50.0,
+          "pf": 0.022,
+          "signals": 2
+        },
+        "silver+htf>=2": {
+          "trades": 5,
+          "wr": 20.0,
+          "pf": 0.005,
+          "signals": 6
+        },
+        "gold+htf>=2": {
+          "trades": 2,
+          "wr": 50.0,
+          "pf": 0.022,
+          "signals": 2
+        },
+        "gold+htf>=3": {
+          "trades": 2,
+          "wr": 50.0,
+          "pf": 0.022,
+          "signals": 2
+        }
+      },
+      "15m": {
+        "silver": {
+          "trades": 28,
+          "wr": 28.57,
+          "pf": 0.384,
+          "signals": 34
+        },
+        "gold": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        },
+        "silver+htf>=2": {
+          "trades": 4,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 4
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "1h": {
+        "silver": {
+          "trades": 15,
+          "wr": 6.67,
+          "pf": 0.114,
+          "signals": 15
+        },
+        "gold": {
+          "trades": 2,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 2
+        },
+        "silver+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "4h": {
+        "silver": {
+          "trades": 2,
+          "wr": 50.0,
+          "pf": 1.5,
+          "signals": 2
+        },
+        "gold": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "silver+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      }
+    },
+    "SOLUSDT": {
+      "5m": {
+        "silver": {
+          "trades": 20,
+          "wr": 30.0,
+          "pf": 0.242,
+          "signals": 29
+        },
+        "gold": {
+          "trades": 2,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 3
+        },
+        "silver+htf>=2": {
+          "trades": 4,
+          "wr": 75.0,
+          "pf": 3.826,
+          "signals": 5
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "15m": {
+        "silver": {
+          "trades": 27,
+          "wr": 25.93,
+          "pf": 0.432,
+          "signals": 32
+        },
+        "gold": {
+          "trades": 3,
+          "wr": 66.67,
+          "pf": 3.0,
+          "signals": 3
+        },
+        "silver+htf>=2": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "1h": {
+        "silver": {
+          "trades": 15,
+          "wr": 26.67,
+          "pf": 0.59,
+          "signals": 15
+        },
+        "gold": {
+          "trades": 2,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 2
+        },
+        "silver+htf>=2": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        },
+        "gold+htf>=2": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        },
+        "gold+htf>=3": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        }
+      },
+      "4h": {
+        "silver": {
+          "trades": 1,
+          "wr": 100.0,
+          "pf": 999,
+          "signals": 1
+        },
+        "gold": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "silver+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      }
+    },
+    "EURUSD": {
+      "5m": {
+        "silver": {
+          "trades": 137,
+          "wr": 51.82,
+          "pf": 0.215,
+          "signals": 143
+        },
+        "gold": {
+          "trades": 11,
+          "wr": 18.18,
+          "pf": 0.044,
+          "signals": 12
+        },
+        "silver+htf>=2": {
+          "trades": 37,
+          "wr": 54.05,
+          "pf": 0.235,
+          "signals": 38
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "15m": {
+        "silver": {
+          "trades": 46,
+          "wr": 45.65,
+          "pf": 0.168,
+          "signals": 49
+        },
+        "gold": {
+          "trades": 1,
+          "wr": 100.0,
+          "pf": 999,
+          "signals": 1
+        },
+        "silver+htf>=2": {
+          "trades": 4,
+          "wr": 25.0,
+          "pf": 0.067,
+          "signals": 4
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "1h": {
+        "silver": {
+          "trades": 9,
+          "wr": 44.44,
+          "pf": 0.16,
+          "signals": 9
+        },
+        "gold": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "silver+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      }
+    },
+    "XAUUSD": {
+      "5m": {
+        "silver": {
+          "trades": 116,
+          "wr": 50.86,
+          "pf": 0.207,
+          "signals": 116
+        },
+        "gold": {
+          "trades": 9,
+          "wr": 66.67,
+          "pf": 0.4,
+          "signals": 9
+        },
+        "silver+htf>=2": {
+          "trades": 20,
+          "wr": 55.0,
+          "pf": 0.244,
+          "signals": 20
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "15m": {
+        "silver": {
+          "trades": 35,
+          "wr": 42.86,
+          "pf": 0.15,
+          "signals": 35
+        },
+        "gold": {
+          "trades": 2,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 2
+        },
+        "silver+htf>=2": {
+          "trades": 5,
+          "wr": 60.0,
+          "pf": 0.3,
+          "signals": 5
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      },
+      "1h": {
+        "silver": {
+          "trades": 9,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 9
+        },
+        "gold": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        },
+        "silver+htf>=2": {
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 1
+        },
+        "gold+htf>=2": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        },
+        "gold+htf>=3": {
+          "trades": 0,
+          "wr": 0.0,
+          "pf": 0.0,
+          "signals": 0
+        }
+      }
+    }
+  }
+}

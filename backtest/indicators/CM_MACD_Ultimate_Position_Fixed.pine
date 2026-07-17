@@ -1,0 +1,64 @@
+//@version=5
+indicator("CM_MACD_Ultimate_Position_Fixed", overlay=true)
+
+// User-authored: Silver = cross in auto OB/OS; Gold = Silver + MACD divergence
+fastLength   = input.int(12, "Fast Length")
+slowLength   = input.int(26, "Slow Length")
+signalLength = input.int(9, "Signal Length")
+src          = input.source(close, "Source")
+
+fastMA      = ta.ema(src, fastLength)
+slowMA      = ta.ema(src, slowLength)
+macdLine    = fastMA - slowMA
+signalLine  = ta.ema(macdLine, signalLength)
+
+macdStdDev   = ta.stdev(macdLine, 100)
+autoObLevel  = macdStdDev * 1.0
+autoOsLevel  = -macdStdDev * 1.0
+
+bullishCross = ta.crossover(macdLine, signalLine)
+bearishCross = ta.crossunder(macdLine, signalLine)
+
+inOversold   = macdLine < autoOsLevel
+inOverbought = macdLine > autoObLevel
+
+silverLong  = bullishCross and inOversold
+silverShort = bearishCross and inOverbought
+
+lbL = 5
+lbR = 5
+plFound = not na(ta.pivotlow(macdLine, lbL, lbR))
+phFound = not na(ta.pivothigh(macdLine, lbL, lbR))
+
+var float pValMacdLong = na
+var float pValPriceLong = na
+var float pValMacdShort = na
+var float pValPriceShort = na
+
+if plFound
+    pValMacdLong := macdLine[lbR]
+    pValPriceLong := low[lbR]
+
+if phFound
+    pValMacdShort := macdLine[lbR]
+    pValPriceShort := high[lbR]
+
+bullDiv = plFound and macdLine[lbR] > pValMacdLong[1] and low[lbR] < pValPriceLong[1]
+bearDiv = phFound and macdLine[lbR] < pValMacdShort[1] and high[lbR] > pValPriceShort[1]
+
+isBullDiv = ta.barssince(bullDiv) < 10
+isBearDiv = ta.barssince(bearDiv) < 10
+
+goldLong  = silverLong and isBullDiv
+goldShort = silverShort and isBearDiv
+
+color longColor  = goldLong ? color.new(#FFD700, 0) : (silverLong ? color.new(#C0C0C0, 0) : na)
+color shortColor = goldShort ? color.new(#FFD700, 0) : (silverShort ? color.new(#C0C0C0, 0) : na)
+
+plotshape(silverLong[1] or goldLong[1], title="BUY Signal Dot",
+          style=shape.circle, location=location.belowbar,
+          color=longColor[1], size=size.tiny, offset=1)
+
+plotshape(silverShort[1] or goldShort[1], title="SELL Signal Dot",
+          style=shape.circle, location=location.abovebar,
+          color=shortColor[1], size=size.tiny, offset=1)

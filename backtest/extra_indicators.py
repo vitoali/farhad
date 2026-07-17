@@ -70,6 +70,111 @@ def cardwell_rsi_signals(
 
 
 # ---------------------------------------------------------------------------
+# CM_MACD_Ultimate_Position_Fixed — Silver (OB/OS cross) + Gold (+ divergence)
+# ---------------------------------------------------------------------------
+
+def cm_macd_ultimate_signals(
+    df: pd.DataFrame,
+    fast: int = 12,
+    slow: int = 26,
+    sig: int = 9,
+    std_len: int = 100,
+    std_mult: float = 1.0,
+    pivot_lb: int = 5,
+    pivot_rb: int = 5,
+    div_lookback: int = 10,
+) -> pd.DataFrame:
+    """
+    User indicator: silver = cross in auto OB/OS zone; gold = silver + MACD divergence.
+    """
+    out = df.copy()
+    src = out["close"]
+    macd_line = ema(src, fast) - ema(src, slow)
+    signal_line = ema(macd_line, sig)
+    m = macd_line.values
+    s = signal_line.values
+    lows = out["low"].values
+    highs = out["high"].values
+    n = len(out)
+
+    std_v = macd_line.rolling(std_len, min_periods=std_len).std().values
+    auto_ob = std_v * std_mult
+    auto_os = -std_v * std_mult
+
+    cross_bull = crossover(macd_line, signal_line).fillna(False).values
+    cross_bear = crossunder(macd_line, signal_line).fillna(False).values
+
+    pl_s = pivot_low(pd.Series(m, index=out.index), pivot_lb, pivot_rb).values
+    ph_s = pivot_high(pd.Series(m, index=out.index), pivot_lb, pivot_rb).values
+
+    silver_long = np.zeros(n, dtype=bool)
+    silver_short = np.zeros(n, dtype=bool)
+    gold_long = np.zeros(n, dtype=bool)
+    gold_short = np.zeros(n, dtype=bool)
+    bull_div = np.zeros(n, dtype=bool)
+    bear_div = np.zeros(n, dtype=bool)
+
+    p_macd_l = p_price_l = p_macd_s = p_price_s = np.nan
+    last_bull_div = last_bear_div = -999
+
+    for i in range(std_len, n):
+        in_os = m[i] < auto_os[i] if not np.isnan(auto_os[i]) else m[i] < 0
+        in_ob = m[i] > auto_ob[i] if not np.isnan(auto_ob[i]) else m[i] > 0
+
+        if not np.isnan(pl_s[i]):
+            lb = i - pivot_rb
+            prev_m = p_macd_l
+            prev_p = p_price_l
+            cur_m, cur_p = m[lb], lows[lb]
+            if not np.isnan(prev_m) and cur_m > prev_m and cur_p < prev_p:
+                bull_div[i] = True
+                last_bull_div = i
+            p_macd_l, p_price_l = cur_m, cur_p
+
+        if not np.isnan(ph_s[i]):
+            lb = i - pivot_rb
+            prev_m = p_macd_s
+            prev_p = p_price_s
+            cur_m, cur_p = m[lb], highs[lb]
+            if not np.isnan(prev_m) and cur_m < prev_m and cur_p > prev_p:
+                bear_div[i] = True
+                last_bear_div = i
+            p_macd_s, p_price_s = cur_m, cur_p
+
+        is_bull_div = (i - last_bull_div) < div_lookback if last_bull_div >= 0 else False
+        is_bear_div = (i - last_bear_div) < div_lookback if last_bear_div >= 0 else False
+
+        if cross_bull[i] and in_os:
+            silver_long[i] = True
+            if is_bull_div:
+                gold_long[i] = True
+        if cross_bear[i] and in_ob:
+            silver_short[i] = True
+            if is_bear_div:
+                gold_short[i] = True
+
+    out["macd_line"] = macd_line
+    out["signal_line"] = signal_line
+    out["auto_ob"] = auto_ob
+    out["auto_os"] = auto_os
+    out["silver_long"] = silver_long
+    out["silver_short"] = silver_short
+    out["gold_long"] = gold_long
+    out["gold_short"] = gold_short
+    out["macd_bull_div"] = bull_div
+    out["macd_bear_div"] = bear_div
+    # Pine plots with [1] offset — entry next bar
+    out["buy_silver"] = np.roll(silver_long, 1)
+    out["sell_silver"] = np.roll(silver_short, 1)
+    out["buy_gold"] = np.roll(gold_long, 1)
+    out["sell_gold"] = np.roll(gold_short, 1)
+    out.loc[out.index[0], ["buy_silver", "sell_silver", "buy_gold", "sell_gold"]] = False
+    out["buy"] = out["buy_gold"]
+    out["sell"] = out["sell_gold"]
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Cardwell Range Analyze [MarkitTick] — regime + entry signals (MA=100 default)
 # ---------------------------------------------------------------------------
 
