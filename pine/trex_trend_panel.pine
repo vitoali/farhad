@@ -1,0 +1,261 @@
+// Trex Trend Panel — روند ساختاری خاکستر (Reverse + FTC ✓)
+// Publish first: KhaksterTrexAtrLib + MarketStructureEngine
+//
+//@version=5
+indicator("Trex Trend [Khakster]", overlay=true, max_labels_count=1)
+
+import dorkadehali/KhaksterTrexAtrLib/1 as trex
+import dorkadehali/MarketStructureEngine/1 as mse
+
+grpTf = "Timeframes"
+showMn = input.bool(true, "Mn", group=grpTf, inline="a")
+showW1 = input.bool(true, "W1", group=grpTf, inline="a")
+showD1 = input.bool(true, "D1", group=grpTf, inline="b")
+showH4 = input.bool(true, "H4", group=grpTf, inline="b")
+showH1 = input.bool(true, "H1", group=grpTf, inline="c")
+showM15 = input.bool(true, "M15", group=grpTf, inline="c")
+showM5 = input.bool(true, "M5", group=grpTf, inline="d")
+
+grpRule = "Trend rules"
+minScore = input.int(40, "Min structure score", minval=0, maxval=100, group=grpRule)
+requireFtc = input.bool(true, "Require FTC credible (✓)", group=grpRule)
+reverseOnly = input.bool(true, "Only Reverse pivots", group=grpRule)
+
+grpUi = "Display"
+panelPos = input.string("Top Right", "Panel position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=grpUi)
+txtSize = input.string("Small", "Font", options=["Tiny", "Small", "Normal"], group=grpUi)
+tintChart = input.bool(true, "Tint chart by matching TF trend", group=grpUi)
+showOverall = input.bool(true, "Show HTF overall row", group=grpUi)
+
+mseS = mse.defaultMseSettings()
+mseS.atr := trex.settingsForSymbol(trex.defaultSettings())
+
+fontSz(string sz) =>
+    sz == "Tiny" ? size.tiny : sz == "Normal" ? size.normal : size.small
+
+panelPosEnum(string p) =>
+    p == "Top Left" ? position.top_left : p == "Bottom Right" ? position.bottom_right : p == "Bottom Left" ? position.bottom_left : position.top_right
+
+// ── Poll one TF: bear + bull spawn + HTF close ────────────────────────────────
+tfTrendPack(mse.MseSettings ms, string tf) =>
+    int len = trex.lenForTf(tf, ms.atr)
+    float boost = trex.thBoostForLen(len, ms.atr)
+    [bSig, bTop, bBot, _, bTime, _, _, _, _, _, bFc, bSc, bKind, _] = mse.bearLevelPack(ms, len, boost, tf)
+    [uSig, uTop, uBot, _, uTime, _, _, _, _, _, uFc, uSc, uKind, _] = mse.bullLevelPack(ms, len, boost, tf)
+    [bSig, bTop, bBot, bTime, bFc, bSc, bKind, uSig, uTop, uBot, uTime, uFc, uSc, uKind, close]
+
+kindOk(int k) =>
+    reverseOnly ? k == mse.PIVOT_REVERSE : k == mse.PIVOT_REVERSE or k == mse.PIVOT_PULLBACK or k == mse.PIVOT_SETTLEMENT
+
+credOk(int fc) =>
+    requireFtc ? fc == 1 : true
+
+// dir: 1 bull, -1 bear, 0 unknown | broken: zone lost
+updateTrend(int dir, float zTop, float zBot, int score, bool broken,
+     int bSig, float bTop, float bBot, int bTime, int bFc, int bSc, int bKind,
+     int uSig, float uTop, float uBot, int uTime, int uFc, int uSc, int uKind, float c) =>
+    int nd = dir
+    float nTop = zTop
+    float nBot = zBot
+    int nSc = score
+    bool nBr = broken
+    bool bOk = bSig == 1 and kindOk(bKind) and credOk(bFc) and bSc >= minScore
+    bool uOk = uSig == 1 and kindOk(uKind) and credOk(uFc) and uSc >= minScore
+    if bOk or uOk
+        if bOk and uOk
+            nd := bTime >= uTime ? -1 : 1
+        else
+            nd := bOk ? -1 : 1
+        if nd == -1
+            nTop := bTop
+            nBot := bBot
+            nSc := bSc
+        else
+            nTop := uTop
+            nBot := uBot
+            nSc := uSc
+        nBr := false
+    if nd == -1 and not na(nTop) and c > nTop
+        nBr := true
+    else if nd == 1 and not na(nBot) and c < nBot
+        nBr := true
+    [nd, nTop, nBot, nSc, nBr]
+
+trendFa(int d, bool br) =>
+    br ? "شکست" : d == 1 ? "صعودی ▲" : d == -1 ? "نزولی ▼" : "—"
+
+trendColor(int d, bool br) =>
+    br ? color.orange : d == 1 ? color.lime : d == -1 ? color.red : color.gray
+
+// ── MTF poll (fixed calls — no loop in security) ─────────────────────────────
+[mnBS, mnBT, mnBB, mnBTm, mnBFc, mnBSc, mnBK, mnUS, mnUT, mnUB, mnUTm, mnUFc, mnUSc, mnUK, mnC] =
+     request.security(syminfo.tickerid, "M", tfTrendPack(mseS, "M"), barmerge.gaps_off, barmerge.lookahead_off)
+[wBS, wBT, wBB, wBTm, wBFc, wBSc, wBK, wUS, wUT, wUB, wUTm, wUFc, wUSc, wUK, wC] =
+     request.security(syminfo.tickerid, "W", tfTrendPack(mseS, "W"), barmerge.gaps_off, barmerge.lookahead_off)
+[dBS, dBT, dBB, dBTm, dBFc, dBSc, dBK, dUS, dUT, dUB, dUTm, dUFc, dUSc, dUK, dC] =
+     request.security(syminfo.tickerid, "D", tfTrendPack(mseS, "D"), barmerge.gaps_off, barmerge.lookahead_off)
+[h4BS, h4BT, h4BB, h4BTm, h4BFc, h4BSc, h4BK, h4US, h4UT, h4UB, h4UTm, h4UFc, h4USc, h4UK, h4C] =
+     request.security(syminfo.tickerid, "240", tfTrendPack(mseS, "240"), barmerge.gaps_off, barmerge.lookahead_off)
+[h1BS, h1BT, h1BB, h1BTm, h1BFc, h1BSc, h1BK, h1US, h1UT, h1UB, h1UTm, h1UFc, h1USc, h1UK, h1C] =
+     request.security(syminfo.tickerid, "60", tfTrendPack(mseS, "60"), barmerge.gaps_off, barmerge.lookahead_off)
+[m15BS, m15BT, m15BB, m15BTm, m15BFc, m15BSc, m15BK, m15US, m15UT, m15UB, m15UTm, m15UFc, m15USc, m15UK, m15C] =
+     request.security(syminfo.tickerid, "15", tfTrendPack(mseS, "15"), barmerge.gaps_off, barmerge.lookahead_off)
+[m5BS, m5BT, m5BB, m5BTm, m5BFc, m5BSc, m5BK, m5US, m5UT, m5UB, m5UTm, m5UFc, m5USc, m5UK, m5C] =
+     request.security(syminfo.tickerid, "5", tfTrendPack(mseS, "5"), barmerge.gaps_off, barmerge.lookahead_off)
+
+var int mnDir = 0
+var float mnTop = na
+var float mnBot = na
+var int mnSc = 0
+var bool mnBr = false
+var int wDir = 0
+var float wTop = na
+var float wBot = na
+var int wSc = 0
+var bool wBr = false
+var int dDir = 0
+var float dTop = na
+var float dBot = na
+var int dSc = 0
+var bool dBr = false
+var int h4Dir = 0
+var float h4Top = na
+var float h4Bot = na
+var int h4Sc = 0
+var bool h4Br = false
+var int h1Dir = 0
+var float h1Top = na
+var float h1Bot = na
+var int h1Sc = 0
+var bool h1Br = false
+var int m15Dir = 0
+var float m15Top = na
+var float m15Bot = na
+var int m15Sc = 0
+var bool m15Br = false
+var int m5Dir = 0
+var float m5Top = na
+var float m5Bot = na
+var int m5Sc = 0
+var bool m5Br = false
+
+[mnDirN, mnTopN, mnBotN, mnScN, mnBrN] = updateTrend(mnDir, mnTop, mnBot, mnSc, mnBr, mnBS, mnBT, mnBB, mnBTm, mnBFc, mnBSc, mnBK, mnUS, mnUT, mnUB, mnUTm, mnUFc, mnUSc, mnUK, mnC)
+mnDir := mnDirN
+mnTop := mnTopN
+mnBot := mnBotN
+mnSc := mnScN
+mnBr := mnBrN
+[wDirN, wTopN, wBotN, wScN, wBrN] = updateTrend(wDir, wTop, wBot, wSc, wBr, wBS, wBT, wBB, wBTm, wBFc, wBSc, wBK, wUS, wUT, wUB, wUTm, wUFc, wUSc, wUK, wC)
+wDir := wDirN
+wTop := wTopN
+wBot := wBotN
+wSc := wScN
+wBr := wBrN
+[dDirN, dTopN, dBotN, dScN, dBrN] = updateTrend(dDir, dTop, dBot, dSc, dBr, dBS, dBT, dBB, dBTm, dBFc, dBSc, dBK, dUS, dUT, dUB, dUTm, dUFc, dUSc, dUK, dC)
+dDir := dDirN
+dTop := dTopN
+dBot := dBotN
+dSc := dScN
+dBr := dBrN
+[h4DirN, h4TopN, h4BotN, h4ScN, h4BrN] = updateTrend(h4Dir, h4Top, h4Bot, h4Sc, h4Br, h4BS, h4BT, h4BB, h4BTm, h4BFc, h4BSc, h4BK, h4US, h4UT, h4UB, h4UTm, h4UFc, h4USc, h4UK, h4C)
+h4Dir := h4DirN
+h4Top := h4TopN
+h4Bot := h4BotN
+h4Sc := h4ScN
+h4Br := h4BrN
+[h1DirN, h1TopN, h1BotN, h1ScN, h1BrN] = updateTrend(h1Dir, h1Top, h1Bot, h1Sc, h1Br, h1BS, h1BT, h1BB, h1BTm, h1BFc, h1BSc, h1BK, h1US, h1UT, h1UB, h1UTm, h1UFc, h1USc, h1UK, h1C)
+h1Dir := h1DirN
+h1Top := h1TopN
+h1Bot := h1BotN
+h1Sc := h1ScN
+h1Br := h1BrN
+[m15DirN, m15TopN, m15BotN, m15ScN, m15BrN] = updateTrend(m15Dir, m15Top, m15Bot, m15Sc, m15Br, m15BS, m15BT, m15BB, m15BTm, m15BFc, m15BSc, m15BK, m15US, m15UT, m15UB, m15UTm, m15UFc, m15USc, m15UK, m15C)
+m15Dir := m15DirN
+m15Top := m15TopN
+m15Bot := m15BotN
+m15Sc := m15ScN
+m15Br := m15BrN
+[m5DirN, m5TopN, m5BotN, m5ScN, m5BrN] = updateTrend(m5Dir, m5Top, m5Bot, m5Sc, m5Br, m5BS, m5BT, m5BB, m5BTm, m5BFc, m5BSc, m5BK, m5US, m5UT, m5UB, m5UTm, m5UFc, m5USc, m5UK, m5C)
+m5Dir := m5DirN
+m5Top := m5TopN
+m5Bot := m5BotN
+m5Sc := m5ScN
+m5Br := m5BrN
+
+// HTF overall: highest TF with known direction (not broken preferred)
+overallTrend() =>
+    int d = 0
+    string src = "—"
+    if showMn and mnDir != 0 and not mnBr
+        d := mnDir
+        src := "Mn"
+    else if showW1 and wDir != 0 and not wBr
+        d := wDir
+        src := "W1"
+    else if showD1 and dDir != 0 and not dBr
+        d := dDir
+        src := "D1"
+    else if showH4 and h4Dir != 0 and not h4Br
+        d := h4Dir
+        src := "H4"
+    else if showH1 and h1Dir != 0 and not h1Br
+        d := h1Dir
+        src := "H1"
+    else if showM15 and m15Dir != 0 and not m15Br
+        d := m15Dir
+        src := "M15"
+    else if showM5 and m5Dir != 0 and not m5Br
+        d := m5Dir
+        src := "M5"
+    [d, src]
+
+[ovDir, ovSrc] = overallTrend()
+
+chartTfCode() =>
+    timeframe.ismonthly ? "M" : timeframe.isweekly ? "W" : timeframe.isdaily ? "D" : timeframe.isintraday and timeframe.multiplier == 240 ? "240" : timeframe.isintraday and timeframe.multiplier == 60 ? "60" : timeframe.isintraday and timeframe.multiplier == 15 ? "15" : timeframe.isintraday and timeframe.multiplier == 5 ? "5" : ""
+
+chartTrend() =>
+    string c = chartTfCode()
+    c == "M" ? mnDir : c == "W" ? wDir : c == "D" ? dDir : c == "240" ? h4Dir : c == "60" ? h1Dir : c == "15" ? m15Dir : c == "5" ? m5Dir : ovDir
+
+chartBroken() =>
+    string c = chartTfCode()
+    c == "M" ? mnBr : c == "W" ? wBr : c == "D" ? dBr : c == "240" ? h4Br : c == "60" ? h1Br : c == "15" ? m15Br : c == "5" ? m5Br : false
+
+int ct = chartTrend()
+bool cbr = chartBroken()
+bgcolor(tintChart and ct == 1 and not cbr ? color.new(color.lime, 93) : tintChart and ct == -1 and not cbr ? color.new(color.red, 93) : na, title="Trend tint")
+
+var table pan = table.new(panelPosEnum(panelPos), 3, 10, bgcolor=color.new(color.black, 82), border_width=1)
+fz = fontSz(txtSize)
+
+drawRow(int row, bool en, string tf, int dir, int sc, bool br) =>
+    if en
+        color bg = color.new(color.gray, 88)
+        table.cell(pan, 0, row, trex.tfLabel(tf), text_color=color.white, bgcolor=bg, text_size=fz)
+        table.cell(pan, 1, row, trendFa(dir, br), text_color=trendColor(dir, br), bgcolor=bg, text_size=fz)
+        table.cell(pan, 2, row, dir == 0 ? "—" : "S" + str.tostring(sc), text_color=color.silver, bgcolor=bg, text_size=fz)
+
+if barstate.islast
+    table.cell(pan, 0, 0, "TF", text_color=color.gray, text_size=fz)
+    table.cell(pan, 1, 0, "روند", text_color=color.gray, text_size=fz)
+    table.cell(pan, 2, 0, "امتیاز", text_color=color.gray, text_size=fz)
+    int row = 1
+    if showOverall
+        table.cell(pan, 0, row, "کلان (" + ovSrc + ")", text_color=color.yellow, text_size=fz)
+        table.cell(pan, 1, row, trendFa(ovDir, false), text_color=trendColor(ovDir, false), text_size=fz)
+        table.cell(pan, 2, row, ovDir == 0 ? "—" : "HTF", text_color=color.silver, text_size=fz)
+        row += 1
+    drawRow(row, showMn, "M", mnDir, mnSc, mnBr)
+    row += showMn ? 1 : 0
+    drawRow(row, showW1, "W", wDir, wSc, wBr)
+    row += showW1 ? 1 : 0
+    drawRow(row, showD1, "D", dDir, dSc, dBr)
+    row += showD1 ? 1 : 0
+    drawRow(row, showH4, "240", h4Dir, h4Sc, h4Br)
+    row += showH4 ? 1 : 0
+    drawRow(row, showH1, "60", h1Dir, h1Sc, h1Br)
+    row += showH1 ? 1 : 0
+    drawRow(row, showM15, "15", m15Dir, m15Sc, m15Br)
+    row += showM15 ? 1 : 0
+    drawRow(row, showM5, "5", m5Dir, m5Sc, m5Br)

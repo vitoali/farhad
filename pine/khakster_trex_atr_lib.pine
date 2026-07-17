@@ -1,0 +1,214 @@
+// کتابخانه ATR تیرکس — سبک سعید خاکستر
+//
+// کالیبره شده با اسکرین‌شات AUDDKK (MT5 TRex.ex5 + TradingView MrD3v — 2026-07-08)
+// مرجع: docs/khakster-atr-calibration.md
+//
+// Strategy:
+//   import YOUR_USER/KhaksterTrexAtrLib/1 as trex
+//
+//@version=5
+library("KhaksterTrexAtrLib", overlay=true)
+
+export type TrexSettings
+    int lenM1
+    int lenM5
+    int lenM15
+    int lenH1
+    int lenH4
+    int lenD1
+    int lenW1
+    int lenMN
+    float thBoostM5
+    float thBoostM15
+    float thBoostH1
+    float thBoostH4
+    float thBoostD1
+    float tpThMult
+    float pipsAtrRatio
+    float engSlPct
+    float spinPct
+    float stdPct
+    float longPct
+    float pipScale
+
+export type TrexMetrics
+    float tr
+    float th
+    float live
+    float pipsSpin
+    float pipsStd
+    float pipsLong
+    float tpTh
+    float engSl
+    float pivotSl
+
+export type TrexCalibRef
+    float tr
+    float th
+    float live
+
+// TH boost از نسبت Th÷TR در MT5 TRex (AUDDKK H1 — 2026-07-08)
+export defaultSettings() =>
+    TrexSettings.new(3, 12, 16, 24, 42, 30, 52, 55, 1.071, 1.25, 1.154, 1.494, 1.573, 3.0, 5.0 / 6.0, 0.25, 0.80, 1.20, 2.40, 1.0)
+
+export allTfCodes() =>
+    array.from("1", "5", "15", "60", "240", "D", "W", "M")
+
+// مرجع MT5 TRex.ex5 — AUDDKK — اسکرین H1 (2026-07-08 ~17:51 UTC)
+export mt5CalibRef(string tf) =>
+    switch tf
+        "1" => TrexCalibRef.new(6, 6, 1)
+        "5" => TrexCalibRef.new(14, 15, 8)
+        "15" => TrexCalibRef.new(24, 30, 12)
+        "60" => TrexCalibRef.new(52, 60, 30)
+        "240" => TrexCalibRef.new(81, 121, 62)
+        "D" => TrexCalibRef.new(192, 302, 205)
+        "W" => TrexCalibRef.new(591, 591, 221)
+        "M" => TrexCalibRef.new(1167, 1167, 373)
+        => na
+
+// مرجع TradingView MrD3v — AUDDKK — اسکرین D1 (2026-07-08)
+export mrd3vCalibRef(string tf) =>
+    switch tf
+        "1" => TrexCalibRef.new(4, 8, 8)
+        "5" => TrexCalibRef.new(13, 18, 8)
+        "15" => TrexCalibRef.new(22, 31, 10)
+        "60" => TrexCalibRef.new(44, 62, 29)
+        "240" => TrexCalibRef.new(88, 123, 29)
+        "D" => TrexCalibRef.new(253, 302, 205)
+        "W" => TrexCalibRef.new(631, 800, 224)
+        "M" => TrexCalibRef.new(1728, 1657, 373)
+        => na
+
+// ── Market unit (forex pips + crypto points) ───────────────────────────────────
+export isForex() =>
+    syminfo.type == "forex"
+
+export isCrypto() =>
+    syminfo.type == "crypto"
+
+export pipUnit() =>
+    float u = syminfo.mintick
+    if isForex()
+        bool jpy = str.contains(syminfo.ticker, "JPY")
+        u := jpy ? 0.01 : 0.0001
+    else if isCrypto()
+        u := syminfo.mintick
+    u
+
+export toPips(float priceDist) =>
+    float u = pipUnit()
+    u > 0 ? priceDist / u : priceDist
+
+export roundPips(float v) =>
+    math.round(v)
+
+export scalePips(float v, TrexSettings s) =>
+    roundPips(v * s.pipScale)
+
+// ── Khakster range (TR = SMA true range; Live = HL کندل جاری) ─────────────────
+export barTr() =>
+    ta.tr(true)
+
+export barHl() =>
+    high - low
+
+export smaTr(int len) =>
+    ta.sma(barTr(), len)
+
+export thBoostForLen(int len, TrexSettings s) =>
+    len == s.lenM1 ? 1.0 :
+     len == s.lenM5 ? s.thBoostM5 :
+     len == s.lenM15 ? s.thBoostM15 :
+     len == s.lenH1 ? s.thBoostH1 :
+     len == s.lenH4 ? s.thBoostH4 :
+     len == s.lenD1 ? s.thBoostD1 : 1.0
+
+export lenForTf(string tf, TrexSettings s) =>
+    tf == "1" ? s.lenM1 :
+     tf == "5" ? s.lenM5 :
+     tf == "15" ? s.lenM15 :
+     tf == "60" ? s.lenH1 :
+     tf == "240" ? s.lenH4 :
+     tf == "D" ? s.lenD1 :
+     tf == "W" ? s.lenW1 :
+     tf == "M" ? s.lenMN : s.lenH1
+
+export tfLabel(string tf) =>
+    tf == "1" ? "M1" :
+     tf == "5" ? "M5" :
+     tf == "15" ? "M15" :
+     tf == "60" ? "H1" :
+     tf == "240" ? "H4" :
+     tf == "D" ? "D1" :
+     tf == "W" ? "W1" :
+     tf == "M" ? "Mn" : tf
+
+export calcTr(float trSeries, TrexSettings s) =>
+    scalePips(toPips(trSeries), s)
+
+export calcLive(float hl, TrexSettings s) =>
+    scalePips(toPips(hl), s)
+
+export calcTh(float trSeries, float boost, TrexSettings s) =>
+    scalePips(toPips(trSeries * boost), s)
+
+export calcMetricsRaw(float trVal, float hlVal, float boost, TrexSettings s) =>
+    float trP = scalePips(toPips(trVal), s)
+    float thP = scalePips(toPips(trVal * boost), s)
+    float liveP = scalePips(toPips(hlVal), s)
+    float tp = math.round(thP * s.tpThMult)
+    float pSpin = math.round(tp * s.pipsAtrRatio)
+    float pStd = math.round(tp * s.pipsAtrRatio * (s.stdPct / s.spinPct))
+    float pLong = math.round(tp * s.pipsAtrRatio * (s.longPct / s.spinPct))
+    float eng = math.round(thP / 6.0)
+    float piv = trP + eng
+    TrexMetrics.new(trP, thP, liveP, pSpin, pStd, pLong, tp, eng, piv)
+
+export fetchMetrics(string tf, TrexSettings s) =>
+    int len = lenForTf(tf, s)
+    float boost = thBoostForLen(len, s)
+    float trVal = request.security(syminfo.tickerid, tf, smaTr(len), barmerge.gaps_off, barmerge.lookahead_off)
+    float hlVal = request.security(syminfo.tickerid, tf, barHl(), barmerge.gaps_off, barmerge.lookahead_off)
+    calcMetricsRaw(trVal, hlVal, boost, s)
+
+export fetchAllMetrics(TrexSettings s) =>
+    array<TrexMetrics> out = array.new<TrexMetrics>()
+    for tf in allTfCodes()
+        array.push(out, fetchMetrics(tf, s))
+    out
+
+export calibDelta(TrexMetrics m, TrexCalibRef r) =>
+    na(r) ? na : math.abs(m.tr - r.tr) + math.abs(m.th - r.th)
+
+// Candle class vs TR (Khakster Trex)
+export candleClass(float rangePips, float trPips, TrexSettings s) =>
+    trPips <= 0 ? 0 :
+     rangePips < trPips * s.spinPct ? 1 :
+     rangePips < trPips * s.stdPct ? 2 :
+     rangePips < trPips * s.longPct ? 3 : 4
+
+export candleClassName(int c) =>
+    c == 1 ? "Spinning" : c == 2 ? "Standard" : c == 3 ? "LongBar" : c == 4 ? "Spike" : "Unknown"
+
+// Structure / pattern / trigger map (Trex fractal stack)
+export structureTf() =>
+    timeframe.isweekly ? "W" :
+     timeframe.isdaily ? "D" :
+     timeframe.isintraday and timeframe.multiplier == 240 ? "240" :
+     timeframe.isintraday and timeframe.multiplier == 60 ? "60" :
+     timeframe.isintraday and timeframe.multiplier == 15 ? "15" :
+     timeframe.isintraday and timeframe.multiplier == 5 ? "5" : "60"
+
+export patternTf(string st) =>
+    st == "W" ? "D" : st == "D" ? "240" : st == "240" ? "60" : st == "60" ? "15" : st == "15" ? "5" : "1"
+
+export triggerTf(string st) =>
+    st == "W" ? "240" : st == "D" ? "60" : st == "240" ? "15" : st == "60" ? "5" : st == "15" ? "1" : "1"
+
+// TP rows (3× / 7× / 15×) — همان MT5: Tp(ATR)=TR×n ، TP(Th)=TH×n
+export tpRowTr(TrexMetrics m) =>
+    str.tostring(math.round(m.tr * 3)) + " — " + str.tostring(math.round(m.tr * 7)) + " — " + str.tostring(math.round(m.tr * 15))
+
+export tpRowTh(TrexMetrics m) =>
+    str.tostring(math.round(m.th * 3)) + " — " + str.tostring(math.round(m.th * 7)) + " — " + str.tostring(math.round(m.th * 15))
