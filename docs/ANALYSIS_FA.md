@@ -112,6 +112,23 @@ EWO_RSI در همین متریک ≈ **۰٪** بود (قفل one-signal-per-leg)
 - `backtest/results/summary.csv` — نتایج پایه
 - `backtest/results/improved_comparison.csv` — مقایسه Hybrid
 
-## تنظیم پیشنهادی در TradingView
-- **EURUSD / Gold اسکالپ 5m-15m:** Risk Mode=`Pips`، Pip Size EUR=`0.0001` / XAU=`1.0`، HTF=`60`، Min Flip Bars=`8–12`
-- **BTC:** Risk Mode=`Percent`، SL=3 / TP=5، ترجیحاً TF=`60` یا `240`، HTF یک پله بالاتر
+## چرا وین‌ریت در TradingView پایین بود؟
+
+1. **SL3٪ / TP5٪** یعنی هدف سود دورتر از استاپ است → وین‌ریت طبیعی حدود ۳۰–۴۰٪ (حتی با سیگنال خوب).
+2. **۵ پیپ روی طلا/تایم‌فریم بالا** داخل نویز یک کندل می‌افتد و تقریباً همیشه استاپ می‌خورد.
+3. فیلترهای v1 برای چَپ LTF کافی نبود.
+
+### نسخه v2 — High Winrate ATR
+- پیش‌فرض: **SL = 2×ATR / TP = 1×ATR** (وین‌ریت بالاتر، R:R کمتر)
+- Confirm=4، ADX≥25، MA slope، RSI edge، cooldown=12، HTF
+
+نمونه بک‌تست داخلی (حدود ۲–۳ ماه):
+| بازار | TF | WR تقریبی |
+|-------|----|-----------|
+| BTC | 5m | ~90٪ (۱۰ ترید) |
+| EURUSD | 5m | ~85٪ (۱۳ ترید) |
+| XAU | 5m | ~83٪ |
+
+فایل: `indicators/Cardwell_Hybrid_v2_HighWR_Strategy.pine`
+Preset داخل استراتژی: **High Winrate ATR**
+
