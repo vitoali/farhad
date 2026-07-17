@@ -1,0 +1,145 @@
+{
+  "period_days": 31,
+  "entry_tf": "15m",
+  "confirm_tf": "1h",
+  "structure_modes": [
+    "4h",
+    "1h"
+  ],
+  "scenarios": {
+    "S1_bottom": "\u062e\u0631\u06cc\u062f \u06a9\u0641 \u0645\u0637\u0644\u0642 (\u067e\u0627\u06cc\u0627\u0646 \u0645\u0648\u062c \u06f5 \u0646\u0632\u0648\u0644\u06cc)",
+    "S2_top": "\u0641\u0631\u0648\u0634 \u0633\u0642\u0641 \u0645\u0637\u0644\u0642 (\u067e\u0627\u06cc\u0627\u0646 \u0645\u0648\u062c \u06f5 \u0635\u0639\u0648\u062f\u06cc)",
+    "S3_wave3": "\u062e\u0631\u06cc\u062f \u0645\u0648\u062c \u06f3 \u0635\u0639\u0648\u062f\u06cc",
+    "S4_pullback_long": "\u062e\u0631\u06cc\u062f \u067e\u0648\u0644\u0628\u06a9 \u0627\u0635\u0644\u0627\u062d\u06cc C",
+    "S5_pullback_short": "\u0641\u0631\u0648\u0634 \u067e\u0648\u0644\u0628\u06a9 \u0627\u0635\u0644\u0627\u062d\u06cc C"
+  },
+  "summaries": {
+    "struct_4h": {
+      "status": "no_trades"
+    },
+    "struct_1h": {
+      "best": "XAUUSD PF=0.607 WR=45.45% trades=11",
+      "avg_pf": 0.204,
+      "total_trades": 20
+    }
+  },
+  "scenario_stats": {
+    "4h": {},
+    "1h": {
+      "S1_bottom": [
+        {
+          "symbol": "EURUSD",
+          "trades": 2,
+          "wr": 100.0,
+          "pf": 999
+        },
+        {
+          "symbol": "XAUUSD",
+          "trades": 2,
+          "wr": 50.0,
+          "pf": 1.5
+        }
+      ],
+      "S2_top": [
+        {
+          "symbol": "XAUUSD",
+          "trades": 9,
+          "wr": 44.4,
+          "pf": 0.375
+        },
+        {
+          "symbol": "USDJPY",
+          "trades": 7,
+          "wr": 14.3,
+          "pf": 0.004
+        }
+      ]
+    }
+  },
+  "results": [
+    {
+      "indicator": "golden_combo_4h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [
+        "signals=0 struct=4h scenarios={'': 2109}"
+      ]
+    },
+    {
+      "indicator": "golden_combo_4h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [
+        "signals=0 struct=4h scenarios={'': 1907}"
+      ]
+    },
+    {
+      "indicator": "golden_combo_4h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [
+        "signals=0 struct=4h scenarios={'': 2180}"
+      ]
+    },
+    {
+      "indicator": "golden_combo_1h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.499,
+      "max_drawdown_r": 0.0,
+      "notes": [
+        "signals=2 struct=1h scenarios={'': 2107, 'S1_bottom': 2}"
+      ]
+    },
+    {
+      "indicator": "golden_combo_1h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 11,
+      "win_rate": 45.45,
+      "profit_factor": 0.607,
+      "avg_r": -0.174,
+      "max_drawdown_r": 4.182,
+      "notes": [
+        "signals=11 struct=1h scenarios={'': 1896, 'S2_top': 9, 'S1_bottom': 2}"
+      ]
+    },
+    {
+      "indicator": "golden_combo_1h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 7,
+      "win_rate": 14.29,
+      "profit_factor": 0.004,
+      "avg_r": -0.353,
+      "max_drawdown_r": 2.452,
+      "notes": [
+        "signals=7 struct=1h scenarios={'': 2173, 'S2_top': 7}"
+      ]
+    }
+  ]
+}

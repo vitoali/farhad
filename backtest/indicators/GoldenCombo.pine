@@ -1,0 +1,148 @@
+//@version=6
+strategy("Golden Combo MTF [EW+MACD+EWO/RSI]", shorttitle="GoldenCombo", overlay=true,
+     initial_capital=10000, pyramiding=0, commission_type=strategy.commission.percent, commission_value=0.02)
+
+// ═══════════════════════════════════════════════════════════════════
+// Golden Combo — 5 MTF scenarios (Gemini fusion)
+// Structure: 4H/1H Elliott | Confirm: 1H CM MACD | Entry: 15M EWO/RSI
+// ═══════════════════════════════════════════════════════════════════
+
+grpMtf = "Multi-Timeframe"
+structTf = input.timeframe("240", "Structure TF (Elliott)", group=grpMtf)
+confirmTf = input.timeframe("60", "Confirm TF (MACD)", group=grpMtf)
+useVolFilter = input.bool(true, "Volume filter on 15m entry", group=grpMtf)
+
+grpEwo = "EWO/RSI Entry (chart TF = 15m)"
+ewoFast = input.int(5, "EWO Fast", group=grpEwo)
+ewoSlow = input.int(34, "EWO Slow", group=grpEwo)
+rsiLen  = input.int(14, "RSI Length", group=grpEwo)
+brkLen  = input.int(10, "Breakout Lookback", group=grpEwo)
+
+// ── EWO/RSI on chart (15m) ────────────────────────────────────────
+hl2 = (high + low) / 2
+ewo = ta.sma(hl2, ewoFast) - ta.sma(hl2, ewoSlow)
+rsiV = ta.rsi(close, rsiLen)
+mfiV = ta.mfi(hlc3, 14)
+volMa = ta.sma(volume, 20)
+volOk = not useVolFilter or volume > volMa * 0.8
+brkBar = ta.highest(high, brkLen)[1]
+priceBreak = close > brkBar
+
+var bool osZone = false
+if rsiV < 30
+    osZone := true
+
+preBuy  = rsiV < 40 and ewo > ewo[1] and ewo < 0
+preSell = rsiV > 60 and ewo < ewo[1] and ewo > 0
+rawBuy  = ta.crossover(rsiV, 40) and mfiV > 30 and ewo > ewo[1] and volOk and (priceBreak or osZone)
+rawSell = ta.crossunder(rsiV, 60) and mfiV < 70 and ewo < ewo[1] and volOk
+if rawBuy
+    osZone := false
+
+// ── MACD on confirm TF ────────────────────────────────────────────
+[macdH, sigH, histH] = request.security(syminfo.tickerid, confirmTf, ta.macd(close, 12, 26, 9), barmerge.gaps_off, barmerge.lookahead_off)
+macdCrossBull = ta.crossover(macdH, sigH)
+macdCrossBear = ta.crossunder(macdH, sigH)
+macdBullBelow = macdCrossBull and macdH < 0
+macdBearAbove = macdCrossBear and macdH > 0
+macdBullAbove = macdH > sigH and macdH > 0
+histAqua = histH > histH[1] and histH > 0
+histMaroon = histH > histH[1] and histH <= 0
+histBlue = histH < histH[1] and histH > 0
+
+// ── Elliott structure pack (simplified zigzag wave-5 / ABC) ─────
+ewPack(int left) =>
+    ph = ta.pivothigh(high, left, 1)
+    pl = ta.pivotlow(low, left, 1)
+    var int[] d = array.new_int(11, 0)
+    var float[] y = array.new_float(11, 0.0)
+    bool motiveBull5 = false
+    bool motiveBear5 = false
+    bool waveStartBull = false
+    bool corrBull = false
+    bool corrBear = false
+    float slL = na
+    float slS = na
+    float tpL = na
+    float tpS = na
+    if not na(ph)
+        y2 = high[1]
+        if array.get(d, 0) < 1
+            array.unshift(d, 1), array.unshift(y, y2), array.pop(d), array.pop(y)
+        _6 = y2
+        _5 = array.get(y, 1)
+        _4 = array.get(y, 2)
+        _3 = array.get(y, 3)
+        _2 = array.get(y, 4)
+        _1 = array.get(y, 5)
+        w5 = _6 - _5
+        w3 = _4 - _3
+        w1 = _2 - _1
+        mn = math.min(w1, w3, w5)
+        if w3 != mn and _6 > _4 and _3 > _1 and _5 > _2
+            motiveBull5 := true
+            slS := _6 * 1.001
+            tpS := _3
+    if not na(pl)
+        y2 = low[1]
+        if array.get(d, 0) > -1
+            array.unshift(d, -1), array.unshift(y, y2), array.pop(d), array.pop(y)
+        _6 = y2
+        _5 = array.get(y, 1)
+        _4 = array.get(y, 2)
+        _3 = array.get(y, 3)
+        w5 = _5 - _6
+        w3 = _3 - _4
+        w1 = array.get(y, 5) - array.get(y, 4)
+        mn = math.min(w1, w3, w5)
+        if w3 != mn and _4 > _6 and array.get(y, 5) > _3 and array.get(y, 4) > _5
+            motiveBear5 := true
+            slL := _6 * 0.999
+            tpL := _4
+    [motiveBull5, motiveBear5, waveStartBull, corrBull, corrBear, slL, slS, tpL, tpS]
+
+[mBull5, mBear5, wStartB, cBull, cBear, slL_h, slS_h, tpL_h, tpS_h] =
+     request.security(syminfo.tickerid, structTf, ewPack(8), barmerge.gaps_off, barmerge.lookahead_off)
+
+// persistence helpers
+barsSince(bool cond) =>
+    ta.barssince(cond)
+
+structBearRecent = barsSince(mBear5) < 48
+structBullRecent = barsSince(mBull5) < 48
+corrBullRecent = barsSince(cBull) < 48
+corrBearRecent = barsSince(cBear) < 48
+wave3Recent = barsSince(wStartB) < 48
+
+macdBullConfirm = barsSince(macdBullBelow) < 32 or barsSince(histMaroon) < 16 or barsSince(macdCrossBull) < 24
+macdBearConfirm = barsSince(macdBearAbove) < 32 or barsSince(histBlue) < 16 or barsSince(macdCrossBear) < 24
+
+// ── 5 Golden Scenarios ────────────────────────────────────────────
+s1Long = structBearRecent and macdBullConfirm and (rawBuy or (preBuy and rsiV < 38)) and volOk
+s2Short = structBullRecent and macdBearConfirm and (rawSell or (preSell and rsiV > 62)) and volOk
+s4Long = corrBullRecent and macdBullConfirm and (rawBuy or preBuy) and volOk
+s5Short = corrBearRecent and macdBearConfirm and (rawSell or preSell) and volOk
+s3Long = wave3Recent and macdBullAbove and histAqua and (rawBuy or (preBuy and priceBreak)) and volOk
+
+bool goLong = s1Long or s4Long or s3Long
+bool goShort = s2Short or s5Short
+
+atrV = ta.atr(14)
+slL = not na(slL_h) ? slL_h : close - atrV * 2
+tpL = not na(tpL_h) ? tpL_h : close + atrV * 3
+slS = not na(slS_h) ? slS_h : close + atrV * 2
+tpS = not na(tpS_h) ? tpS_h : close - atrV * 3
+
+if goLong and strategy.position_size <= 0
+    strategy.entry("Long", strategy.long)
+    strategy.exit("XL", "Long", stop=slL, limit=tpL)
+if goShort and strategy.position_size >= 0
+    strategy.entry("Short", strategy.short)
+    strategy.exit("XS", "Short", stop=slS, limit=tpS)
+
+plotshape(s1Long, title="S1 Bottom", style=shape.triangleup, location=location.belowbar, color=color.lime, size=size.small, text="S1")
+plotshape(s2Short, title="S2 Top", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small, text="S2")
+plotshape(s3Long, title="S3 Wave3", style=shape.labelup, location=location.belowbar, color=color.green, text="S3")
+plotshape(s4Long, title="S4 Pullback L", style=shape.circle, location=location.belowbar, color=color.aqua, size=size.tiny, text="S4")
+plotshape(s5Short, title="S5 Pullback S", style=shape.circle, location=location.abovebar, color=color.orange, size=size.tiny, text="S5")
+plot(not priceBreak ? brkBar : na, "Breakout Barrier", color=color.purple, style=plot.style_linebr)
