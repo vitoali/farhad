@@ -1,7 +1,7 @@
 // Trex Trend Panel — روند ساختاری خاکستر (Reverse + FTC ✓)
 // Publish first: KhaksterTrexAtrLib + MarketStructureEngine
 //
-//@version=5
+//@version=6
 indicator("Trex Trend [Khakster]", overlay=true, max_labels_count=1)
 
 import dorkadehali/KhaksterTrexAtrLib/1 as trex
@@ -45,7 +45,7 @@ tfTrendPack(mse.MseSettings ms, string tf) =>
     [bSig, bTop, bBot, bTime, bFc, bSc, bKind, uSig, uTop, uBot, uTime, uFc, uSc, uKind, close]
 
 kindOk(int k) =>
-    reverseOnly ? k == mse.PIVOT_REVERSE : k == mse.PIVOT_REVERSE or k == mse.PIVOT_PULLBACK or k == mse.PIVOT_SETTLEMENT
+    reverseOnly ? k == mse.PIVOT_REVERSE : k == mse.PIVOT_REVERSE or k == mse.PIVOT_PULLBACK or k == mse.PIVOT_SETTLEMENT  // 0=Rev 1=Pull 2=Sett
 
 credOk(int fc) =>
     requireFtc ? fc == 1 : true
