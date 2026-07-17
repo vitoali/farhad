@@ -9,10 +9,8 @@ from indicators import ema
 
 TF_RANK = {"5m": 0, "15m": 1, "1h": 2, "4h": 3}
 TIMEFRAMES = ["5m", "15m", "1h", "4h"]
-
-def _is_crypto_symbol(sym: str) -> bool:
-    s = sym.upper()
-    return s.endswith("USDT") or s.endswith("USD") and "JPY" not in s and len(s) > 6 or s.endswith("BTC") or s.endswith("ETH")
+HW_LONG_HTF_MIN: dict[str, int] = {"default": 3}
+HW_SHORT_HTF_MIN: dict[str, int] = {"default": 2}
 
 
 def _market_long_min(sym: str) -> int:
@@ -119,13 +117,16 @@ def build_hw_context(
     entry_red_above = entry_st["macd_cross_bear_above"].fillna(False).values
     confirm_red_hist = _align_bool(confirm_st, "red_hist_start", entry_df)
 
-    long_min = HW_LONG_HTF_MIN.get(sym, HW_LONG_HTF_MIN["default"])
-    short_min = HW_SHORT_HTF_MIN.get(sym, HW_SHORT_HTF_MIN["default"])
+    long_min = _market_long_min(sym)
+    short_min = HW_SHORT_HTF_MIN["default"]
+    is_crypto = sym.upper().endswith("USDT") or sym.upper() in ("BTCUSD", "ETHUSD", "SOLUSD")
 
     hw_long = entry_green_below & (htf_long_15m >= long_min)
-    if sym in HW_SHORT_RED_HIST_1H:
+    if selective and not is_crypto:
+        hw_short = entry_red_above & (htf_short_15m >= short_min)
+    elif is_crypto:
         hw_short = confirm_red_hist & (htf_short_1h >= short_min)
-    elif selective or sym not in HW_SHORT_ENABLED:
+    elif selective:
         hw_short = np.zeros(n, dtype=bool)
     else:
         hw_short = entry_red_above & (htf_short_15m >= short_min)
