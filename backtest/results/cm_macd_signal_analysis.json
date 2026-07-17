@@ -1,0 +1,600 @@
+{
+  "period_days": 31,
+  "hold_bars": {
+    "5m": 48,
+    "15m": 32,
+    "1h": 24,
+    "4h": 12
+  },
+  "summary_by_symbol_tf": {
+    "EURUSD": {
+      "5m": {
+        "aqua_start": {
+          "n": 557,
+          "wr": 45.1,
+          "avg_rsi": 55.0,
+          "avg_hist_slope": 2e-05
+        },
+        "cross_bear_dot": {
+          "n": 275,
+          "wr": 51.6,
+          "avg_rsi": 46.1,
+          "avg_hist_slope": -2e-05
+        },
+        "red_hist_start": {
+          "n": 572,
+          "wr": 51.7,
+          "avg_rsi": 43.5,
+          "avg_hist_slope": -1e-05
+        },
+        "cross_bull_dot": {
+          "n": 274,
+          "wr": 42.7,
+          "avg_rsi": 52.3,
+          "avg_hist_slope": 2e-05
+        }
+      },
+      "15m": {
+        "red_hist_start": {
+          "n": 200,
+          "wr": 47.0,
+          "avg_rsi": 43.1,
+          "avg_hist_slope": -3e-05
+        },
+        "cross_bull_dot": {
+          "n": 91,
+          "wr": 34.1,
+          "avg_rsi": 51.9,
+          "avg_hist_slope": 5e-05
+        },
+        "aqua_start": {
+          "n": 169,
+          "wr": 41.4,
+          "avg_rsi": 53.2,
+          "avg_hist_slope": 3e-05
+        },
+        "cross_bear_dot": {
+          "n": 91,
+          "wr": 39.6,
+          "avg_rsi": 45.2,
+          "avg_hist_slope": -4e-05
+        }
+      },
+      "1h": {
+        "cross_bull_dot": {
+          "n": 19,
+          "wr": 47.4,
+          "avg_rsi": 49.9,
+          "avg_hist_slope": 0.00011
+        },
+        "aqua_start": {
+          "n": 38,
+          "wr": 42.1,
+          "avg_rsi": 50.9,
+          "avg_hist_slope": 7e-05
+        },
+        "cross_bear_dot": {
+          "n": 19,
+          "wr": 31.6,
+          "avg_rsi": 44.3,
+          "avg_hist_slope": -8e-05
+        },
+        "red_hist_start": {
+          "n": 42,
+          "wr": 42.9,
+          "avg_rsi": 42.0,
+          "avg_hist_slope": -6e-05
+        }
+      }
+    },
+    "XAUUSD": {
+      "5m": {
+        "cross_bull_dot": {
+          "n": 222,
+          "wr": 41.9,
+          "avg_rsi": 51.6,
+          "avg_hist_slope": 0.42415
+        },
+        "aqua_start": {
+          "n": 491,
+          "wr": 45.6,
+          "avg_rsi": 53.7,
+          "avg_hist_slope": 0.279
+        },
+        "cross_bear_dot": {
+          "n": 222,
+          "wr": 52.7,
+          "avg_rsi": 46.2,
+          "avg_hist_slope": -0.42422
+        },
+        "red_hist_start": {
+          "n": 516,
+          "wr": 52.9,
+          "avg_rsi": 44.4,
+          "avg_hist_slope": -0.26004
+        }
+      },
+      "15m": {
+        "red_hist_start": {
+          "n": 163,
+          "wr": 49.1,
+          "avg_rsi": 43.9,
+          "avg_hist_slope": -0.43517
+        },
+        "cross_bull_dot": {
+          "n": 66,
+          "wr": 50.0,
+          "avg_rsi": 51.4,
+          "avg_hist_slope": 0.823
+        },
+        "aqua_start": {
+          "n": 150,
+          "wr": 46.7,
+          "avg_rsi": 54.4,
+          "avg_hist_slope": 0.53628
+        },
+        "cross_bear_dot": {
+          "n": 65,
+          "wr": 46.2,
+          "avg_rsi": 46.8,
+          "avg_hist_slope": -0.74736
+        }
+      },
+      "1h": {
+        "red_hist_start": {
+          "n": 40,
+          "wr": 50.0,
+          "avg_rsi": 43.2,
+          "avg_hist_slope": -0.94928
+        },
+        "cross_bull_dot": {
+          "n": 19,
+          "wr": 21.1,
+          "avg_rsi": 53.1,
+          "avg_hist_slope": 1.88193
+        },
+        "aqua_start": {
+          "n": 33,
+          "wr": 30.3,
+          "avg_rsi": 53.5,
+          "avg_hist_slope": 1.42787
+        },
+        "cross_bear_dot": {
+          "n": 18,
+          "wr": 55.6,
+          "avg_rsi": 46.7,
+          "avg_hist_slope": -1.58585
+        }
+      }
+    },
+    "USDJPY": {
+      "5m": {
+        "aqua_start": {
+          "n": 612,
+          "wr": 48.9,
+          "avg_rsi": 56.4,
+          "avg_hist_slope": 0.0015
+        },
+        "cross_bear_dot": {
+          "n": 271,
+          "wr": 41.3,
+          "avg_rsi": 48.3,
+          "avg_hist_slope": -0.00259
+        },
+        "red_hist_start": {
+          "n": 613,
+          "wr": 39.6,
+          "avg_rsi": 46.3,
+          "avg_hist_slope": -0.00171
+        },
+        "cross_bull_dot": {
+          "n": 271,
+          "wr": 48.3,
+          "avg_rsi": 54.6,
+          "avg_hist_slope": 0.00235
+        }
+      },
+      "15m": {
+        "aqua_start": {
+          "n": 198,
+          "wr": 44.4,
+          "avg_rsi": 57.5,
+          "avg_hist_slope": 0.00292
+        },
+        "cross_bear_dot": {
+          "n": 85,
+          "wr": 36.5,
+          "avg_rsi": 48.7,
+          "avg_hist_slope": -0.0042
+        },
+        "red_hist_start": {
+          "n": 207,
+          "wr": 36.7,
+          "avg_rsi": 47.2,
+          "avg_hist_slope": -0.0025
+        },
+        "cross_bull_dot": {
+          "n": 85,
+          "wr": 43.5,
+          "avg_rsi": 55.2,
+          "avg_hist_slope": 0.00457
+        }
+      },
+      "1h": {
+        "cross_bull_dot": {
+          "n": 21,
+          "wr": 14.3,
+          "avg_rsi": 53.4,
+          "avg_hist_slope": 0.0076
+        },
+        "aqua_start": {
+          "n": 45,
+          "wr": 15.6,
+          "avg_rsi": 59.3,
+          "avg_hist_slope": 0.00556
+        },
+        "cross_bear_dot": {
+          "n": 20,
+          "wr": 35.0,
+          "avg_rsi": 48.7,
+          "avg_hist_slope": -0.00875
+        },
+        "red_hist_start": {
+          "n": 42,
+          "wr": 23.8,
+          "avg_rsi": 47.2,
+          "avg_hist_slope": -0.00621
+        }
+      }
+    },
+    "BTCUSDT": {
+      "5m": {
+        "aqua_start": {
+          "n": 121,
+          "wr": 38.0,
+          "avg_rsi": 56.2,
+          "avg_hist_slope": 5.77469
+        },
+        "cross_bear_dot": {
+          "n": 63,
+          "wr": 42.9,
+          "avg_rsi": 46.2,
+          "avg_hist_slope": -7.57787
+        },
+        "red_hist_start": {
+          "n": 142,
+          "wr": 44.4,
+          "avg_rsi": 45.0,
+          "avg_hist_slope": -4.90866
+        },
+        "cross_bull_dot": {
+          "n": 63,
+          "wr": 34.9,
+          "avg_rsi": 53.7,
+          "avg_hist_slope": 7.67633
+        }
+      },
+      "15m": {
+        "aqua_start": {
+          "n": 114,
+          "wr": 54.4,
+          "avg_rsi": 56.6,
+          "avg_hist_slope": 8.93018
+        },
+        "cross_bear_dot": {
+          "n": 60,
+          "wr": 40.0,
+          "avg_rsi": 47.0,
+          "avg_hist_slope": -14.22032
+        },
+        "red_hist_start": {
+          "n": 129,
+          "wr": 41.1,
+          "avg_rsi": 45.0,
+          "avg_hist_slope": -9.11057
+        },
+        "cross_bull_dot": {
+          "n": 59,
+          "wr": 57.6,
+          "avg_rsi": 53.7,
+          "avg_hist_slope": 12.8999
+        }
+      },
+      "1h": {
+        "red_hist_start": {
+          "n": 60,
+          "wr": 45.0,
+          "avg_rsi": 46.7,
+          "avg_hist_slope": -23.00019
+        },
+        "cross_bull_dot": {
+          "n": 29,
+          "wr": 37.9,
+          "avg_rsi": 54.5,
+          "avg_hist_slope": 29.9705
+        },
+        "aqua_start": {
+          "n": 66,
+          "wr": 45.5,
+          "avg_rsi": 56.2,
+          "avg_hist_slope": 19.19657
+        },
+        "cross_bear_dot": {
+          "n": 29,
+          "wr": 44.8,
+          "avg_rsi": 48.4,
+          "avg_hist_slope": -36.52908
+        }
+      },
+      "4h": {
+        "aqua_start": {
+          "n": 16,
+          "wr": 25.0,
+          "avg_rsi": 66.6,
+          "avg_hist_slope": 32.25499
+        },
+        "cross_bear_dot": {
+          "n": 6,
+          "wr": 50.0,
+          "avg_rsi": 56.3,
+          "avg_hist_slope": -58.5313
+        },
+        "red_hist_start": {
+          "n": 15,
+          "wr": 33.3,
+          "avg_rsi": 48.5,
+          "avg_hist_slope": -45.72291
+        },
+        "cross_bull_dot": {
+          "n": 5,
+          "wr": 20.0,
+          "avg_rsi": 59.3,
+          "avg_hist_slope": 64.22088
+        }
+      }
+    },
+    "SOLUSDT": {
+      "5m": {
+        "cross_bull_dot": {
+          "n": 51,
+          "wr": 45.1,
+          "avg_rsi": 52.4,
+          "avg_hist_slope": 0.01288
+        },
+        "aqua_start": {
+          "n": 125,
+          "wr": 37.6,
+          "avg_rsi": 54.3,
+          "avg_hist_slope": 0.00772
+        },
+        "cross_bear_dot": {
+          "n": 50,
+          "wr": 52.0,
+          "avg_rsi": 47.1,
+          "avg_hist_slope": -0.01173
+        },
+        "red_hist_start": {
+          "n": 121,
+          "wr": 51.2,
+          "avg_rsi": 44.3,
+          "avg_hist_slope": -0.00778
+        }
+      },
+      "15m": {
+        "red_hist_start": {
+          "n": 106,
+          "wr": 48.1,
+          "avg_rsi": 44.2,
+          "avg_hist_slope": -0.0153
+        },
+        "cross_bull_dot": {
+          "n": 54,
+          "wr": 55.6,
+          "avg_rsi": 52.1,
+          "avg_hist_slope": 0.0229
+        },
+        "aqua_start": {
+          "n": 116,
+          "wr": 44.8,
+          "avg_rsi": 53.4,
+          "avg_hist_slope": 0.01502
+        },
+        "cross_bear_dot": {
+          "n": 53,
+          "wr": 49.1,
+          "avg_rsi": 44.8,
+          "avg_hist_slope": -0.02334
+        }
+      },
+      "1h": {
+        "aqua_start": {
+          "n": 57,
+          "wr": 54.4,
+          "avg_rsi": 57.2,
+          "avg_hist_slope": 0.03296
+        },
+        "cross_bear_dot": {
+          "n": 23,
+          "wr": 47.8,
+          "avg_rsi": 48.5,
+          "avg_hist_slope": -0.06418
+        },
+        "red_hist_start": {
+          "n": 62,
+          "wr": 51.6,
+          "avg_rsi": 46.2,
+          "avg_hist_slope": -0.03444
+        },
+        "cross_bull_dot": {
+          "n": 22,
+          "wr": 68.2,
+          "avg_rsi": 52.5,
+          "avg_hist_slope": 0.05001
+        }
+      },
+      "4h": {
+        "red_hist_start": {
+          "n": 15,
+          "wr": 40.0,
+          "avg_rsi": 41.8,
+          "avg_hist_slope": -0.04986
+        },
+        "cross_bull_dot": {
+          "n": 6,
+          "wr": 33.3,
+          "avg_rsi": 50.8,
+          "avg_hist_slope": 0.11983
+        },
+        "aqua_start": {
+          "n": 14,
+          "wr": 35.7,
+          "avg_rsi": 56.8,
+          "avg_hist_slope": 0.0875
+        },
+        "cross_bear_dot": {
+          "n": 5,
+          "wr": 60.0,
+          "avg_rsi": 49.1,
+          "avg_hist_slope": -0.07265
+        }
+      }
+    }
+  },
+  "best_per_timeframe": {
+    "5m": [
+      {
+        "type": "cross_bear_dot",
+        "n": 881,
+        "wr": 48.1
+      },
+      {
+        "type": "red_hist_start",
+        "n": 1964,
+        "wr": 47.7
+      },
+      {
+        "type": "aqua_start",
+        "n": 1906,
+        "wr": 45.5
+      },
+      {
+        "type": "cross_bull_dot",
+        "n": 881,
+        "wr": 43.8
+      }
+    ],
+    "15m": [
+      {
+        "type": "cross_bull_dot",
+        "n": 355,
+        "wr": 46.5
+      },
+      {
+        "type": "aqua_start",
+        "n": 747,
+        "wr": 45.8
+      },
+      {
+        "type": "red_hist_start",
+        "n": 805,
+        "wr": 44.0
+      },
+      {
+        "type": "cross_bear_dot",
+        "n": 354,
+        "wr": 41.5
+      }
+    ],
+    "1h": [
+      {
+        "type": "red_hist_start",
+        "n": 246,
+        "wr": 43.5
+      },
+      {
+        "type": "cross_bear_dot",
+        "n": 109,
+        "wr": 43.1
+      },
+      {
+        "type": "aqua_start",
+        "n": 239,
+        "wr": 39.3
+      },
+      {
+        "type": "cross_bull_dot",
+        "n": 110,
+        "wr": 38.2
+      }
+    ],
+    "4h": [
+      {
+        "type": "cross_bear_dot",
+        "n": 11,
+        "wr": 54.5
+      },
+      {
+        "type": "red_hist_start",
+        "n": 30,
+        "wr": 36.7
+      },
+      {
+        "type": "aqua_start",
+        "n": 30,
+        "wr": 30.0
+      },
+      {
+        "type": "cross_bull_dot",
+        "n": 11,
+        "wr": 27.3
+      }
+    ]
+  },
+  "perfect_100wr_patterns": [
+    {
+      "pattern": "BTCUSDT 15m green below0 HTF>=2",
+      "n": 3,
+      "wr": 100.0,
+      "avg_rsi": 56.1,
+      "avg_macd_zero_dist": -38.668347,
+      "pct_above_ma50": 33.0,
+      "symbols": [
+        "BTCUSDT"
+      ],
+      "tfs": [
+        "15m"
+      ],
+      "examples": [
+        {
+          "symbol": "BTCUSDT",
+          "tf": "15m",
+          "ts": "2026-06-26 21:30:00+00:00",
+          "type": "cross_bull_dot"
+        },
+        {
+          "symbol": "BTCUSDT",
+          "tf": "15m",
+          "ts": "2026-07-01 13:15:00+00:00",
+          "type": "cross_bull_dot"
+        },
+        {
+          "symbol": "BTCUSDT",
+          "tf": "15m",
+          "ts": "2026-07-07 15:00:00+00:00",
+          "type": "cross_bull_dot"
+        }
+      ]
+    }
+  ],
+  "near_perfect_75wr_patterns": [],
+  "key_findings": [
+    "Green dot BELOW zero: WR=44.0% (n=878) vs ABOVE zero: WR=43.8% (n=479)",
+    "Red dot ABOVE zero: WR=46.4% (n=823) vs BELOW zero: WR=45.5% (n=532)",
+    "Best on 5m: cross_bear_dot WR=48.1% (n=881)",
+    "Best on 15m: cross_bull_dot WR=46.5% (n=355)",
+    "Best on 1h: red_hist_start WR=43.5% (n=246)",
+    "Best on 4h: cross_bear_dot WR=54.5% (n=11)",
+    "Found 1 sub-patterns with 100% WR (min 3 samples)",
+    "Top 100% pattern: BTCUSDT 15m green below0 HTF>=2 n=3 avg_RSI=56.1"
+  ]
+}

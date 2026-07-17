@@ -1,0 +1,485 @@
+{
+  "period_days": 31,
+  "strategy": "User Golden Fusion (EW + CM MACD + Cardwell MA100 + EWO/RSI)",
+  "symbols": [
+    "BTCUSDT",
+    "SOLUSDT"
+  ],
+  "entry_tf": "15m",
+  "confirm_tf": "1h",
+  "scenarios": {
+    "S1_bottom": "\u062e\u0631\u06cc\u062f \u06a9\u0641 \u0645\u0637\u0644\u0642 (\u067e\u0627\u06cc\u0627\u0646 \u0645\u0648\u062c \u06f5 \u0646\u0632\u0648\u0644\u06cc)",
+    "S2_top": "\u0641\u0631\u0648\u0634 \u0633\u0642\u0641 \u0645\u0637\u0644\u0642 (\u067e\u0627\u06cc\u0627\u0646 \u0645\u0648\u062c \u06f5 \u0635\u0639\u0648\u062f\u06cc)",
+    "S3_wave3": "\u062e\u0631\u06cc\u062f \u0645\u0648\u062c \u06f3 \u0635\u0639\u0648\u062f\u06cc",
+    "S4_pullback_long": "\u062e\u0631\u06cc\u062f \u067e\u0648\u0644\u0628\u06a9 \u0627\u0635\u0644\u0627\u062d\u06cc C",
+    "S5_pullback_short": "\u0641\u0631\u0648\u0634 \u067e\u0648\u0644\u0628\u06a9 \u0627\u0635\u0644\u0627\u062d\u06cc C"
+  },
+  "gemini_claims_vs_reality": {
+    "claimed_golden_wr": "90%+",
+    "claimed_cardwell_1h_wr": "75-80% (MA100)",
+    "claimed_cardwell_4h_wr": "85-90% (MA100)",
+    "note": "See actual results below \u2014 honest 31-day backtest"
+  },
+  "golden_combo_modes": {
+    "full": {
+      "trades": 0,
+      "avg_pf": 0,
+      "avg_wr": 0,
+      "symbols": []
+    },
+    "cardwell_only": {
+      "trades": 0,
+      "avg_pf": 0,
+      "avg_wr": 0,
+      "symbols": []
+    },
+    "no_extra_filters": {
+      "trades": 3,
+      "avg_pf": 0.0,
+      "avg_wr": 50.0,
+      "symbols": [
+        {
+          "indicator": "golden_1h_no_cw_no_div",
+          "symbol": "BTCUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "avg_r": -1.0,
+          "max_drawdown_r": 0.0,
+          "notes": [],
+          "scenarios": {
+            "S2_top": 1
+          },
+          "signal_count": 1,
+          "filters": {
+            "cardwell": false,
+            "macd_div": false,
+            "structure_tf": "1h"
+          }
+        },
+        {
+          "indicator": "golden_1h_no_cw_no_div",
+          "symbol": "SOLUSDT",
+          "timeframe": "15m",
+          "market": "crypto",
+          "total_trades": 2,
+          "win_rate": 100.0,
+          "profit_factor": 999,
+          "avg_r": 0.793,
+          "max_drawdown_r": 0.0,
+          "notes": [],
+          "scenarios": {
+            "S2_top": 2
+          },
+          "signal_count": 2,
+          "filters": {
+            "cardwell": false,
+            "macd_div": false,
+            "structure_tf": "1h"
+          }
+        }
+      ]
+    }
+  },
+  "golden_results": [
+    {
+      "indicator": "golden_4h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": true,
+        "structure_tf": "4h"
+      }
+    },
+    {
+      "indicator": "golden_4h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": true,
+        "structure_tf": "4h"
+      }
+    },
+    {
+      "indicator": "golden_1h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": true,
+        "structure_tf": "1h"
+      }
+    },
+    {
+      "indicator": "golden_1h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": true,
+        "structure_tf": "1h"
+      }
+    },
+    {
+      "indicator": "golden_4h_no_div",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": false,
+        "structure_tf": "4h"
+      }
+    },
+    {
+      "indicator": "golden_4h_no_div",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": false,
+        "structure_tf": "4h"
+      }
+    },
+    {
+      "indicator": "golden_1h_no_div",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": false,
+        "structure_tf": "1h"
+      }
+    },
+    {
+      "indicator": "golden_1h_no_div",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": true,
+        "macd_div": false,
+        "structure_tf": "1h"
+      }
+    },
+    {
+      "indicator": "golden_4h_no_cw_no_div",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": false,
+        "macd_div": false,
+        "structure_tf": "4h"
+      }
+    },
+    {
+      "indicator": "golden_4h_no_cw_no_div",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {},
+      "signal_count": 0,
+      "filters": {
+        "cardwell": false,
+        "macd_div": false,
+        "structure_tf": "4h"
+      }
+    },
+    {
+      "indicator": "golden_1h_no_cw_no_div",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 1,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": -1.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {
+        "S2_top": 1
+      },
+      "signal_count": 1,
+      "filters": {
+        "cardwell": false,
+        "macd_div": false,
+        "structure_tf": "1h"
+      }
+    },
+    {
+      "indicator": "golden_1h_no_cw_no_div",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.793,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "scenarios": {
+        "S2_top": 2
+      },
+      "signal_count": 2,
+      "filters": {
+        "cardwell": false,
+        "macd_div": false,
+        "structure_tf": "1h"
+      }
+    }
+  ],
+  "scenario_stats": {},
+  "cm_macd_zero_line_filter": {
+    "15m": [
+      {
+        "indicator": "cm_macd_filtered",
+        "symbol": "BTCUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 48,
+        "win_rate": 27.08,
+        "profit_factor": 0.484,
+        "avg_r": -0.303,
+        "max_drawdown_r": 14.419,
+        "notes": [],
+        "signals": 76
+      },
+      {
+        "indicator": "cm_macd_filtered",
+        "symbol": "SOLUSDT",
+        "timeframe": "15m",
+        "market": "crypto",
+        "total_trades": 57,
+        "win_rate": 24.56,
+        "profit_factor": 0.375,
+        "avg_r": -0.47,
+        "max_drawdown_r": 26.658,
+        "notes": [],
+        "signals": 67
+      }
+    ],
+    "1h": [
+      {
+        "indicator": "cm_macd_filtered",
+        "symbol": "BTCUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 33,
+        "win_rate": 21.21,
+        "profit_factor": 0.417,
+        "avg_r": -0.515,
+        "max_drawdown_r": 22.438,
+        "notes": [],
+        "signals": 36
+      },
+      {
+        "indicator": "cm_macd_filtered",
+        "symbol": "SOLUSDT",
+        "timeframe": "1h",
+        "market": "crypto",
+        "total_trades": 31,
+        "win_rate": 32.26,
+        "profit_factor": 0.742,
+        "avg_r": -0.202,
+        "max_drawdown_r": 9.6,
+        "notes": [],
+        "signals": 31
+      }
+    ],
+    "4h": [
+      {
+        "indicator": "cm_macd_filtered",
+        "symbol": "BTCUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 7,
+        "win_rate": 28.57,
+        "profit_factor": 0.6,
+        "avg_r": -0.343,
+        "max_drawdown_r": 2.4,
+        "notes": [],
+        "signals": 7
+      },
+      {
+        "indicator": "cm_macd_filtered",
+        "symbol": "SOLUSDT",
+        "timeframe": "4h",
+        "market": "crypto",
+        "total_trades": 8,
+        "win_rate": 50.0,
+        "profit_factor": 1.5,
+        "avg_r": 0.3,
+        "max_drawdown_r": 2.4,
+        "notes": [],
+        "signals": 8
+      }
+    ]
+  },
+  "standalone_components": {
+    "BTCUSDT": {
+      "15m_ewo_rsi": {
+        "trades": 7,
+        "wr": 57.1,
+        "pf": 2.0,
+        "signals": 7
+      },
+      "15m_cm_macd_raw": {
+        "trades": 124,
+        "wr": 17.7,
+        "pf": 0.292,
+        "signals": 124
+      },
+      "1h_ewo_rsi": {
+        "trades": 3,
+        "wr": 33.3,
+        "pf": 0.75,
+        "signals": 3
+      },
+      "1h_cm_macd_raw": {
+        "trades": 59,
+        "wr": 30.5,
+        "pf": 0.557,
+        "signals": 59
+      },
+      "4h_ewo_rsi": {
+        "trades": 3,
+        "wr": 66.7,
+        "pf": 3.0,
+        "signals": 3
+      },
+      "4h_cm_macd_raw": {
+        "trades": 13,
+        "wr": 38.5,
+        "pf": 0.834,
+        "signals": 13
+      }
+    },
+    "SOLUSDT": {
+      "15m_ewo_rsi": {
+        "trades": 7,
+        "wr": 28.6,
+        "pf": 0.182,
+        "signals": 7
+      },
+      "15m_cm_macd_raw": {
+        "trades": 111,
+        "wr": 20.7,
+        "pf": 0.301,
+        "signals": 111
+      },
+      "1h_ewo_rsi": {
+        "trades": 5,
+        "wr": 40.0,
+        "pf": 1.0,
+        "signals": 5
+      },
+      "1h_cm_macd_raw": {
+        "trades": 47,
+        "wr": 29.8,
+        "pf": 0.607,
+        "signals": 48
+      },
+      "4h_ewo_rsi": {
+        "trades": 2,
+        "wr": 50.0,
+        "pf": 1.5,
+        "signals": 2
+      },
+      "4h_cm_macd_raw": {
+        "trades": 13,
+        "wr": 53.8,
+        "pf": 1.974,
+        "signals": 13
+      }
+    }
+  }
+}
