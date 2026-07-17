@@ -1,0 +1,261 @@
+
+==========================================================================
+GOLD (GC=F futures) — 1H   (2026-06-17 .. 2026-07-17, 473 bars)
+==========================================================================
+signals: silver BUY=9  silver SELL=3  gold BUY=1  gold SELL=0
+
+-- SILVER BUY  (9 signals) --
+   hold  5 bars : n=9   win%= 22.2  avg=-0.647%  med=-0.590%
+   hold 10 bars : n=9   win%= 33.3  avg=-0.430%  med=-0.055%
+   hold 20 bars : n=8   win%= 37.5  avg=-0.699%  med=-0.710%
+   ATR 1.5SL/3TP: n=9  win%=11  avg=-0.71%  total=-6.19%  PF=0.16  maxDD=-5.61%
+
+-- SILVER SELL (3 signals) --
+   hold  5 bars : n=3   win%= 33.3  avg=-0.610%  med=-0.868%
+   hold 10 bars : n=3   win%= 33.3  avg=-0.620%  med=-0.878%
+   hold 20 bars : n=3   win%= 33.3  avg=-1.513%  med=-2.284%
+   ATR 1.5SL/3TP: n=3  win%=33  avg=-0.06%  total=-0.21%  PF=0.88  maxDD=-0.75%
+
+-- GOLD BUY  (1 signals) --
+   hold  5 bars : n=1   win%=  0.0  avg=-0.666%  med=-0.666%
+   hold 10 bars : n=1   win%=  0.0  avg=-1.222%  med=-1.222%
+   hold 20 bars : n=1   win%=  0.0  avg=-2.265%  med=-2.265%
+   ATR 1.5SL/3TP: n=1  win%=0  avg=-1.12%  total=-1.12%  PF=0.00  maxDD=0.00%
+
+-- FLIP model (silver, always-in) --
+   n=3  win%=0  avg=-2.43%  total=-7.14%  PF=0.00  maxDD=-3.34%
+
+-- signal log (last month) --
+   2026-06-22 01:00  BUY  silver  close=4208.10    entry(next open)=4208.20
+   2026-06-23 13:00  BUY  GOLD    close=4154.10    entry(next open)=4153.10
+   2026-06-24 08:00  BUY  silver  close=4093.30    entry(next open)=4093.30
+   2026-06-24 23:00  BUY  silver  close=4026.60    entry(next open)=4028.30
+   2026-06-30 06:00  BUY  silver  close=4043.50    entry(next open)=4043.70
+   2026-07-01 23:00  SELL silver  close=4047.40    entry(next open)=4047.10
+   2026-07-02 10:00  SELL silver  close=4078.60    entry(next open)=4079.10
+   2026-07-06 03:00  SELL silver  close=4177.00    entry(next open)=4177.00
+   2026-07-08 18:00  BUY  silver  close=4094.10    entry(next open)=4095.00
+   2026-07-13 12:00  BUY  silver  close=4075.20    entry(next open)=4075.30
+   2026-07-14 01:00  BUY  silver  close=4017.00    entry(next open)=4017.50
+   2026-07-17 03:00  BUY  silver  close=3995.70    entry(next open)=3995.00
+
+==========================================================================
+GOLD (GC=F futures) — 15M   (2026-06-17 .. 2026-07-17, 1889 bars)
+==========================================================================
+signals: silver BUY=28  silver SELL=13  gold BUY=2  gold SELL=1
+
+-- SILVER BUY  (28 signals) --
+   hold  5 bars : n=28  win%= 35.7  avg=-0.068%  med=-0.150%
+   hold 10 bars : n=28  win%= 35.7  avg=-0.051%  med=-0.130%
+   hold 20 bars : n=28  win%= 32.1  avg=-0.156%  med=-0.170%
+   ATR 1.5SL/3TP: n=28  win%=25  avg=-0.18%  total=-4.98%  PF=0.50  maxDD=-6.07%
+
+-- SILVER SELL (13 signals) --
+   hold  5 bars : n=12  win%= 33.3  avg=-0.067%  med=-0.046%
+   hold 10 bars : n=12  win%= 50.0  avg=-0.050%  med=-0.012%
+   hold 20 bars : n=12  win%= 58.3  avg=+0.048%  med=+0.067%
+   ATR 1.5SL/3TP: n=13  win%=46  avg=+0.14%  total=+1.78%  PF=1.64  maxDD=-1.00%
+
+-- GOLD BUY  (2 signals) --
+   hold  5 bars : n=2   win%=  0.0  avg=-0.322%  med=-0.322%
+   hold 10 bars : n=2   win%=  0.0  avg=-0.374%  med=-0.374%
+   hold 20 bars : n=2   win%=  0.0  avg=-0.564%  med=-0.564%
+   ATR 1.5SL/3TP: n=2  win%=0  avg=-0.45%  total=-0.89%  PF=0.00  maxDD=-0.46%
+
+-- GOLD SELL (1 signals) --
+   hold  5 bars : n=1   win%=  0.0  avg=-0.003%  med=-0.003%
+   hold 10 bars : n=1   win%=100.0  avg=+0.089%  med=+0.089%
+   hold 20 bars : n=1   win%=100.0  avg=+0.016%  med=+0.016%
+   ATR 1.5SL/3TP: n=1  win%=100  avg=+0.48%  total=+0.48%  PF=inf  maxDD=0.00%
+
+-- FLIP model (silver, always-in) --
+   n=14  win%=57  avg=-0.12%  total=-1.94%  PF=0.79  maxDD=-1.14%
+
+-- signal log (last month) --
+   2026-06-17 22:45  BUY  silver  close=4285.80    entry(next open)=4285.70
+   2026-06-18 13:00  BUY  silver  close=4278.20    entry(next open)=4278.30
+   2026-06-18 17:30  BUY  silver  close=4249.40    entry(next open)=4249.00
+   2026-06-18 19:45  BUY  GOLD    close=4236.20    entry(next open)=4236.20
+   2026-06-19 01:15  BUY  silver  close=4209.00    entry(next open)=4208.30
+   2026-06-21 23:15  BUY  silver  close=4172.80    entry(next open)=4172.00
+   2026-06-22 00:00  BUY  silver  close=4177.60    entry(next open)=4178.30
+   2026-06-23 07:15  BUY  silver  close=4136.20    entry(next open)=4135.90
+   2026-06-23 08:30  BUY  silver  close=4127.30    entry(next open)=4127.20
+   2026-06-24 04:45  BUY  silver  close=4080.60    entry(next open)=4081.20
+   2026-06-24 14:15  BUY  silver  close=4041.10    entry(next open)=4041.10
+   2026-06-24 19:15  BUY  silver  close=4000.70    entry(next open)=4001.00
+   2026-06-25 17:15  SELL silver  close=4048.40    entry(next open)=4048.10
+   2026-06-26 11:45  SELL silver  close=4061.00    entry(next open)=4061.10
+   2026-06-26 16:45  SELL silver  close=4099.90    entry(next open)=4100.20
+   2026-06-29 16:00  BUY  silver  close=4038.40    entry(next open)=4038.20
+   2026-06-29 19:30  BUY  silver  close=4032.50    entry(next open)=4032.60
+   2026-06-30 03:45  BUY  silver  close=3983.80    entry(next open)=3982.50
+   2026-06-30 09:30  SELL silver  close=4032.60    entry(next open)=4032.70
+   2026-06-30 12:00  SELL silver  close=4040.10    entry(next open)=4040.20
+   2026-07-01 03:45  BUY  silver  close=3992.90    entry(next open)=3993.40
+   2026-07-01 15:45  SELL silver  close=4095.10    entry(next open)=4095.50
+   2026-07-02 16:00  SELL silver  close=4136.40    entry(next open)=4136.50
+   2026-07-03 03:45  SELL silver  close=4188.50    entry(next open)=4187.50
+   2026-07-07 06:15  BUY  silver  close=4138.10    entry(next open)=4138.00
+   2026-07-07 14:15  SELL silver  close=4169.00    entry(next open)=4169.80
+   2026-07-07 23:45  BUY  silver  close=4108.80    entry(next open)=4108.50
+   2026-07-08 11:30  BUY  silver  close=4074.50    entry(next open)=4074.50
+   2026-07-08 16:30  BUY  silver  close=4066.60    entry(next open)=4066.40
+   2026-07-09 09:30  SELL silver  close=4113.30    entry(next open)=4113.10
+   2026-07-09 16:45  SELL GOLD    close=4137.70    entry(next open)=4137.80
+   2026-07-13 01:30  BUY  silver  close=4092.50    entry(next open)=4093.90
+   2026-07-13 05:00  BUY  silver  close=4077.30    entry(next open)=4077.60
+   2026-07-13 18:30  BUY  silver  close=4007.40    entry(next open)=4007.40
+   2026-07-14 15:45  SELL silver  close=4073.10    entry(next open)=4073.20
+   2026-07-16 04:30  BUY  silver  close=4037.90    entry(next open)=4037.40
+   2026-07-16 05:30  BUY  silver  close=4037.60    entry(next open)=4037.80
+   2026-07-16 15:15  BUY  silver  close=4015.50    entry(next open)=4015.80
+   2026-07-16 18:15  BUY  silver  close=3991.40    entry(next open)=3991.10
+   2026-07-16 19:45  BUY  GOLD    close=3984.60    entry(next open)=3984.80
+   2026-07-17 17:45  SELL silver  close=4014.50    entry(next open)=4013.80
+
+==========================================================================
+BITCOIN (BTC-USD Coinbase) — 1H   (2026-06-17 .. 2026-07-17, 721 bars)
+==========================================================================
+signals: silver BUY=10  silver SELL=8  gold BUY=1  gold SELL=1
+
+-- SILVER BUY  (10 signals) --
+   hold  5 bars : n=9   win%= 55.6  avg=+0.014%  med=+0.152%
+   hold 10 bars : n=9   win%= 55.6  avg=-0.252%  med=+0.176%
+   hold 20 bars : n=9   win%= 44.4  avg=-0.476%  med=-0.037%
+   ATR 1.5SL/3TP: n=10  win%=30  avg=-0.45%  total=-4.55%  PF=0.53  maxDD=-8.20%
+
+-- SILVER SELL (8 signals) --
+   hold  5 bars : n=8   win%= 62.5  avg=-0.334%  med=+0.050%
+   hold 10 bars : n=8   win%= 25.0  avg=-0.537%  med=-0.327%
+   hold 20 bars : n=8   win%= 25.0  avg=-0.603%  med=-0.664%
+   ATR 1.5SL/3TP: n=8  win%=12  avg=-0.69%  total=-5.45%  PF=0.24  maxDD=-5.83%
+
+-- GOLD BUY  (1 signals) --
+   hold  5 bars : n=1   win%=  0.0  avg=-0.597%  med=-0.597%
+   hold 10 bars : n=1   win%=  0.0  avg=-0.829%  med=-0.829%
+   hold 20 bars : n=1   win%=  0.0  avg=-0.037%  med=-0.037%
+   ATR 1.5SL/3TP: n=1  win%=0  avg=-1.98%  total=-1.98%  PF=0.00  maxDD=0.00%
+
+-- GOLD SELL (1 signals) --
+   hold  5 bars : n=1   win%=  0.0  avg=-0.121%  med=-0.121%
+   hold 10 bars : n=1   win%=  0.0  avg=-0.190%  med=-0.190%
+   hold 20 bars : n=1   win%=  0.0  avg=-1.067%  med=-1.067%
+   ATR 1.5SL/3TP: n=1  win%=0  avg=-0.90%  total=-0.90%  PF=0.00  maxDD=0.00%
+
+-- FLIP model (silver, always-in) --
+   n=7  win%=71  avg=+0.29%  total=+1.58%  PF=1.20  maxDD=-3.71%
+
+-- signal log (last month) --
+   2026-06-18 08:00  BUY  silver  close=64336.01   entry(next open)=64336.03
+   2026-06-19 00:00  BUY  silver  close=62949.87   entry(next open)=62949.87
+   2026-06-23 20:00  BUY  silver  close=62388.98   entry(next open)=62388.98
+   2026-06-24 23:00  BUY  silver  close=60983.13   entry(next open)=60983.14
+   2026-06-25 23:00  BUY  silver  close=59703.65   entry(next open)=59703.66
+   2026-06-26 03:00  BUY  GOLD    close=59936.99   entry(next open)=59936.98
+   2026-06-30 22:00  BUY  silver  close=58509.56   entry(next open)=58509.56
+   2026-07-02 07:00  SELL silver  close=60058.91   entry(next open)=60058.92
+   2026-07-02 20:00  SELL silver  close=61509.01   entry(next open)=61509.01
+   2026-07-04 02:00  SELL GOLD    close=62481.95   entry(next open)=62481.95
+   2026-07-05 00:00  SELL silver  close=62930.55   entry(next open)=62930.56
+   2026-07-07 03:00  SELL silver  close=63140.03   entry(next open)=63140.03
+   2026-07-08 19:00  BUY  silver  close=62223.70   entry(next open)=62226.01
+   2026-07-10 14:00  SELL silver  close=63859.39   entry(next open)=63860.98
+   2026-07-13 23:00  BUY  silver  close=62264.94   entry(next open)=62264.94
+   2026-07-15 03:00  SELL silver  close=64736.67   entry(next open)=64736.67
+   2026-07-15 16:00  SELL silver  close=65062.83   entry(next open)=65062.84
+   2026-07-17 13:00  BUY  silver  close=63092.11   entry(next open)=63092.11
+
+==========================================================================
+BITCOIN (BTC-USD Coinbase) — 15M   (2026-06-17 .. 2026-07-17, 2881 bars)
+==========================================================================
+signals: silver BUY=35  silver SELL=31  gold BUY=2  gold SELL=0
+
+-- SILVER BUY  (35 signals) --
+   hold  5 bars : n=35  win%= 40.0  avg=+0.033%  med=-0.090%
+   hold 10 bars : n=35  win%= 42.9  avg=-0.121%  med=-0.106%
+   hold 20 bars : n=35  win%= 45.7  avg=-0.102%  med=-0.160%
+   ATR 1.5SL/3TP: n=35  win%=17  avg=-0.29%  total=-9.86%  PF=0.40  maxDD=-9.13%
+
+-- SILVER SELL (31 signals) --
+   hold  5 bars : n=31  win%= 38.7  avg=+0.005%  med=-0.077%
+   hold 10 bars : n=31  win%= 51.6  avg=+0.010%  med=+0.006%
+   hold 20 bars : n=31  win%= 41.9  avg=-0.094%  med=-0.119%
+   ATR 1.5SL/3TP: n=31  win%=35  avg=-0.09%  total=-2.68%  PF=0.77  maxDD=-4.89%
+
+-- GOLD BUY  (2 signals) --
+   hold  5 bars : n=2   win%= 50.0  avg=+0.291%  med=+0.291%
+   hold 10 bars : n=2   win%=  0.0  avg=-0.258%  med=-0.258%
+   hold 20 bars : n=2   win%= 50.0  avg=+0.337%  med=+0.337%
+   ATR 1.5SL/3TP: n=2  win%=50  avg=+0.61%  total=+1.21%  PF=4.43  maxDD=-0.35%
+
+-- FLIP model (silver, always-in) --
+   n=22  win%=50  avg=-0.47%  total=-10.29%  PF=0.50  maxDD=-13.46%
+
+-- signal log (last month) --
+   2026-06-17 18:00  SELL silver  close=65243.85   entry(next open)=65242.76
+   2026-06-17 23:00  BUY  silver  close=64264.18   entry(next open)=64264.18
+   2026-06-18 06:30  BUY  silver  close=64026.04   entry(next open)=64026.10
+   2026-06-18 18:15  BUY  silver  close=62764.26   entry(next open)=62764.26
+   2026-06-20 02:15  SELL silver  close=63333.95   entry(next open)=63333.95
+   2026-06-20 07:45  SELL silver  close=63593.09   entry(next open)=63593.10
+   2026-06-20 17:45  SELL silver  close=63751.18   entry(next open)=63751.18
+   2026-06-21 01:00  SELL silver  close=64169.64   entry(next open)=64169.64
+   2026-06-21 04:45  SELL silver  close=64199.05   entry(next open)=64199.05
+   2026-06-22 00:30  BUY  silver  close=63836.23   entry(next open)=63836.23
+   2026-06-22 03:45  SELL silver  close=63886.56   entry(next open)=63886.56
+   2026-06-22 14:45  SELL silver  close=64900.01   entry(next open)=64901.11
+   2026-06-23 00:30  BUY  silver  close=64036.79   entry(next open)=64036.78
+   2026-06-23 10:00  BUY  silver  close=62384.24   entry(next open)=62384.24
+   2026-06-24 18:45  BUY  silver  close=59513.90   entry(next open)=59513.92
+   2026-06-25 16:15  BUY  silver  close=59649.64   entry(next open)=59611.03
+   2026-06-27 17:00  SELL silver  close=60467.94   entry(next open)=60467.94
+   2026-06-28 00:15  BUY  silver  close=60075.99   entry(next open)=60076.00
+   2026-06-28 20:00  BUY  silver  close=59565.96   entry(next open)=59565.96
+   2026-06-28 23:30  BUY  silver  close=59630.17   entry(next open)=59630.17
+   2026-06-29 02:15  BUY  GOLD    close=59437.81   entry(next open)=59436.98
+   2026-06-29 08:00  SELL silver  close=59861.79   entry(next open)=59861.78
+   2026-06-29 16:00  BUY  silver  close=59616.75   entry(next open)=59616.75
+   2026-06-29 20:45  SELL silver  close=60197.71   entry(next open)=60203.19
+   2026-06-30 06:00  BUY  silver  close=59469.96   entry(next open)=59469.96
+   2026-06-30 09:30  BUY  silver  close=59258.52   entry(next open)=59258.52
+   2026-06-30 14:15  BUY  silver  close=58929.80   entry(next open)=58929.78
+   2026-06-30 16:45  BUY  silver  close=58391.34   entry(next open)=58391.34
+   2026-07-01 06:00  SELL silver  close=58859.22   entry(next open)=58859.21
+   2026-07-01 17:45  SELL silver  close=60129.40   entry(next open)=60129.40
+   2026-07-01 22:45  SELL silver  close=60408.41   entry(next open)=60408.41
+   2026-07-02 05:45  SELL silver  close=60433.52   entry(next open)=60433.26
+   2026-07-02 14:30  SELL silver  close=61360.42   entry(next open)=61359.01
+   2026-07-03 15:15  SELL silver  close=61945.03   entry(next open)=61945.79
+   2026-07-03 19:45  SELL silver  close=62153.87   entry(next open)=62153.87
+   2026-07-03 22:45  SELL silver  close=62512.79   entry(next open)=62512.79
+   2026-07-04 20:15  SELL silver  close=63114.15   entry(next open)=63114.16
+   2026-07-05 04:15  BUY  silver  close=62810.01   entry(next open)=62810.01
+   2026-07-06 01:30  SELL silver  close=63660.53   entry(next open)=63660.53
+   2026-07-06 10:30  BUY  silver  close=62856.35   entry(next open)=62856.35
+   2026-07-06 14:30  BUY  silver  close=62034.75   entry(next open)=62009.09
+   2026-07-06 19:45  SELL silver  close=63692.70   entry(next open)=63694.27
+   2026-07-06 22:30  SELL silver  close=64163.78   entry(next open)=64163.78
+   2026-07-08 06:45  BUY  silver  close=62605.90   entry(next open)=62605.90
+   2026-07-08 10:45  BUY  silver  close=62127.99   entry(next open)=62127.99
+   2026-07-08 14:00  BUY  silver  close=61974.91   entry(next open)=61974.91
+   2026-07-08 16:15  BUY  silver  close=61852.92   entry(next open)=61852.92
+   2026-07-09 09:00  SELL silver  close=62805.04   entry(next open)=62805.03
+   2026-07-09 21:15  SELL silver  close=63203.30   entry(next open)=63203.31
+   2026-07-10 06:00  SELL silver  close=63991.38   entry(next open)=63991.38
+   2026-07-10 11:30  SELL silver  close=64352.35   entry(next open)=64352.34
+   2026-07-11 22:15  SELL silver  close=64204.12   entry(next open)=64204.12
+   2026-07-12 01:30  BUY  silver  close=64118.19   entry(next open)=64118.19
+   2026-07-12 08:00  BUY  GOLD    close=64005.94   entry(next open)=64005.94
+   2026-07-13 06:00  BUY  silver  close=62699.00   entry(next open)=62699.00
+   2026-07-13 14:45  BUY  silver  close=62716.19   entry(next open)=62716.27
+   2026-07-13 19:30  BUY  silver  close=62096.24   entry(next open)=62096.23
+   2026-07-14 17:15  SELL silver  close=64485.98   entry(next open)=64485.99
+   2026-07-15 00:15  SELL silver  close=64837.92   entry(next open)=64837.92
+   2026-07-15 16:00  SELL silver  close=65042.71   entry(next open)=65042.71
+   2026-07-16 02:15  BUY  silver  close=64631.57   entry(next open)=64631.57
+   2026-07-16 10:30  BUY  silver  close=64132.02   entry(next open)=64132.01
+   2026-07-16 13:00  BUY  silver  close=64033.28   entry(next open)=64033.27
+   2026-07-17 01:00  BUY  silver  close=63933.79   entry(next open)=63933.80
+   2026-07-17 03:30  BUY  silver  close=63566.92   entry(next open)=63566.92
+   2026-07-17 08:00  BUY  silver  close=62828.63   entry(next open)=62828.63

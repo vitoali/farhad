@@ -1,0 +1,78 @@
+//@version=5
+indicator("CM_MACD_Ultimate_Position_Fixed", overlay=true)
+
+// ── تنظیمات ورودی (Inputs) ──────────────────────────────────────
+fastLength   = input.int(12, "Fast Length")
+slowLength   = input.int(26, "Slow Length")
+signalLength = input.int(9, "Signal Length")
+src          = input.source(close, "Source")
+
+// ── محاسبات مکدی ─────────────────────────────────────────
+fastMA      = ta.ema(src, fastLength)
+slowMA      = ta.ema(src, slowLength)
+macdLine    = fastMA - slowMA
+signalLine  = ta.ema(macdLine, signalLength)
+
+// محاسبه اتوماتیک و پویا برای سطوح اشباع
+macdStdDev   = ta.stdev(macdLine, 100) 
+autoObLevel  = macdStdDev * 1.0
+autoOsLevel  = -macdStdDev * 1.0
+
+// ── تشخیص تقاطع‌ها (شرط اول) ───────────────────────────────────
+bullishCross = ta.crossover(macdLine, signalLine)
+bearishCross = ta.crossunder(macdLine, signalLine)
+
+// ── فیلتر نواحی اشباع (شرط دوم) ──────────────────────────────────
+inOversold   = macdLine < autoOsLevel
+inOverbought = macdLine > autoObLevel
+
+// شرط دایره نقره‌ای (تقاطع + ناحیه اشباع)
+silverLong  = bullishCross and inOversold
+silverShort = bearishCross and inOverbought
+
+// ── سیستم هوشمند و اصلاح‌شده واگرایی (شرط سوم) ──────────────────────────
+lbL = 5
+lbR = 5
+plFound = not na(ta.pivotlow(macdLine, lbL, lbR))
+phFound = not na(ta.pivothigh(macdLine, lbL, lbR))
+
+var float pValMacdLong = na
+var float pValPriceLong = na
+var float pValMacdShort = na
+var float pValPriceShort = na
+
+if plFound
+    pValMacdLong := macdLine[lbR]
+    pValPriceLong := low[lbR]
+
+if phFound
+    pValMacdShort := macdLine[lbR]
+    pValPriceShort := high[lbR]
+
+// بررسی فکت واگرایی صعودی و نزولی
+bullDiv = plFound and macdLine[lbR] > pValMacdLong[1] and low[lbR] < pValPriceLong[1]
+bearDiv = phFound and macdLine[lbR] < pValMacdShort[1] and high[lbR] > pValPriceShort[1]
+
+// هماهنگ‌سازی زمان واگرایی با کندل تقاطع
+isBullDiv = ta.barssince(bullDiv) < 10
+isBearDiv = ta.barssince(bearDiv) < 10
+
+// ── ترکیب شروط و تعیین وضعیت دایره‌ها ──────────────────────────────
+goldLong  = silverLong and isBullDiv
+goldShort = silverShort and isBearDiv
+
+// فیلتر نهایی رنگ‌ها
+color longColor  = goldLong ? color.new(#FFD700, 0) : (silverLong ? color.new(#C0C0C0, 0) : na)
+color shortColor = goldShort ? color.new(#FFD700, 0) : (silverShort ? color.new(#C0C0C0, 0) : na)
+
+// ── ترسیم دایره‌ها با موقعیت دقیق زیر و بالای کندل ───────────────────
+
+// ۱. سیگنال خرید (بای) -> نقره‌ای یا طلایی -> قطعاً زیر کندل (location.belowbar)
+plotshape(silverLong[1] or goldLong[1], title="BUY Signal Dot", 
+          style=shape.circle, location=location.belowbar, 
+          color=longColor[1], size=size.tiny, offset=1)
+
+// ۲. سیگنال فروش (سل) -> نقره‌ای یا طلایی -> قطعاً بالای کندل (location.abovebar)
+plotshape(silverShort[1] or goldShort[1], title="SELL Signal Dot", 
+          style=shape.circle, location=location.abovebar, 
+          color=shortColor[1], size=size.tiny, offset=1)
