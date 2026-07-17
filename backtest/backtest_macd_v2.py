@@ -46,7 +46,7 @@ def htf_trend(df, ltf):
     return out
 
 
-def run(name, csv_path, ltf):
+def run(name, csv_path, ltf, eval_days=EVAL_DAYS):
     df = pd.read_csv(csv_path)
     df["time"] = pd.to_datetime(df["time"])
     sig = compute_signals(df)
@@ -56,7 +56,7 @@ def run(name, csv_path, ltf):
     trend_up = close > ema200
     htf_dir = htf_trend(df, ltf)
 
-    eval_start = df["time"].iloc[-1] - pd.Timedelta(days=EVAL_DAYS)
+    eval_start = df["time"].iloc[-1] - pd.Timedelta(days=eval_days)
     eval_start_idx = int(np.argmax((df["time"] >= eval_start).to_numpy()))
 
     base_long = [i for i in range(eval_start_idx, len(df) - 1) if sig["silver_long"][i]]
@@ -97,18 +97,37 @@ def run(name, csv_path, ltf):
         "V2-RECENT": (v2rec_long, v2rec_short),
     }
 
-    print(f"\n{'='*78}\n{name}\n{'='*78}")
+    print(f"\n{'='*78}\n{name}   ({df['time'].iloc[eval_start_idx]:%Y-%m-%d} .. {df['time'].iloc[-1]:%Y-%m-%d})\n{'='*78}")
     for sl_m, tp_m in [(1.5, 3.0), (1.0, 2.0)]:
         print(f"\n bracket SL={sl_m}xATR TP={tp_m}xATR")
         for vname, (li, si) in variants.items():
             rl = atr_bracket_stats(df, li, 1, atr_arr, sl_m, tp_m)
             rs = atr_bracket_stats(df, si, -1, atr_arr, sl_m, tp_m)
             allr = np.concatenate([rl, rs]) if len(rl) or len(rs) else np.array([])
-            print(f"   {vname} (L={len(li):>2} S={len(si):>2}) : {summarize(allr)}")
+            print(f"   {vname} (L={len(li):>3} S={len(si):>3}) : {summarize(allr)}")
+
+    if eval_days > 60:  # month-by-month stability check
+        months = df["time"].dt.to_period("M")
+        print("\n monthly breakdown (bracket 1.5/3.0):")
+        for vname in ["BASE     ", "V2-RECENT"]:
+            li, si = variants[vname]
+            print(f"   {vname}:")
+            for m in sorted({months[i] for i in li + si}):
+                rl = atr_bracket_stats(df, [i for i in li if months[i] == m], 1, atr_arr)
+                rs = atr_bracket_stats(df, [i for i in si if months[i] == m], -1, atr_arr)
+                r = np.concatenate([rl, rs]) if len(rl) or len(rs) else np.array([])
+                if len(r):
+                    print(f"      {m}: n={len(r):<3} total={100*((1+r).prod()-1):+6.2f}%  win%={100*(r>0).mean():.0f}")
 
 
 if __name__ == "__main__":
-    run("GOLD 1H", "data/gold_1h.csv", "1h")
-    run("GOLD 15M", "data/gold_15m.csv", "15m")
-    run("BTC 1H", "data/btc_1h.csv", "1h")
-    run("BTC 15M", "data/btc_15m.csv", "15m")
+    import sys
+    if "--6m" in sys.argv:
+        run("GOLD 1H — 6 MONTHS", "data/gold_1h_6m.csv", "1h", 180)
+        run("BTC 1H — 6 MONTHS", "data/btc_1h_6m.csv", "1h", 180)
+        run("BTC 15M — 6 MONTHS", "data/btc_15m_6m.csv", "15m", 180)
+    else:
+        run("GOLD 1H", "data/gold_1h.csv", "1h")
+        run("GOLD 15M", "data/gold_15m.csv", "15m")
+        run("BTC 1H", "data/btc_1h.csv", "1h")
+        run("BTC 15M", "data/btc_15m.csv", "15m")

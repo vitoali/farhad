@@ -1,8 +1,11 @@
 //@version=5
-// CM_MACD_Ultimate v2 — اصلاح ضعف‌های نسخهٔ اول بر اساس بک‌تست یک‌ماههٔ طلا و بیت‌کوین:
+// CM_MACD_Ultimate v2 — اصلاح ضعف‌های نسخهٔ اول بر اساس بک‌تست یک‌ماهه + اعتبارسنجی ۶ماههٔ طلا و بیت‌کوین:
 //   1) فیلتر روند چارت (EMA200) و فیلتر روند تایم‌فریم بالاتر (EMA50 روی HTF، بدون ری‌پینت)
-//   2) ورود بازطراحی‌شده: کراس MACD بعد از لمس ناحیهٔ اشباع در N کندل اخیر (به‌جای کراس داخل ناحیه)
+//   2) ورود بازطراحی‌شده با دو حالت:
+//        Zero Line  — کراس MACD زیر/بالای صفر (برندهٔ تست ۶ماههٔ طلا 1H: +6.8٪، PF=1.45)
+//        Band Touch — کراس بعد از لمس ناحیهٔ اشباع در N کندل اخیر
 //   3) حد ضرر/حد سود ATR روی چارت + alertcondition برای آلارم
+//   هشدار: در بک‌تست ۶ماهه هیچ حالتی روی بیت‌کوین سودده نبود؛ برای طلا 1H طراحی شده است.
 indicator("CM_MACD_Ultimate_v2", overlay=true, max_lines_count=500, max_labels_count=500)
 
 // ── Inputs ──────────────────────────────────────────────────────
@@ -12,6 +15,9 @@ signalLength = input.int(9, "Signal Length", group="MACD")
 src          = input.source(close, "Source", group="MACD")
 bandMult     = input.float(1.0, "OB/OS Band (xStdev)", minval=0.1, step=0.1, group="MACD")
 osWindow     = input.int(10, "Band Touch Lookback (bars)", minval=1, maxval=50, group="MACD")
+// «Zero Line»: کراس وقتی MACD زیر/بالای صفر است (برندهٔ بک‌تست ۶ماههٔ طلا 1H)
+// «Band Touch»: کراس بعد از لمس باند اشباع در N کندل اخیر
+entryMode    = input.string("Zero Line", "Entry Mode", options=["Zero Line", "Band Touch"], group="MACD")
 
 useTrend     = input.bool(true, "Chart Trend Filter (EMA)", group="Filters")
 trendLen     = input.int(200, "Trend EMA Length", minval=10, group="Filters")
@@ -35,9 +41,11 @@ osLevel    = -macdStdev * bandMult
 bullishCross = ta.crossover(macdLine, signalLine)
 bearishCross = ta.crossunder(macdLine, signalLine)
 
-// ورود v2: کراس بعد از لمس ناحیهٔ اشباع در osWindow کندل اخیر
+// ورود v2: بسته به حالت انتخابی
 touchedOS = math.max(ta.barssince(macdLine < osLevel), 0) < osWindow
 touchedOB = math.max(ta.barssince(macdLine > obLevel), 0) < osWindow
+longCtx  = entryMode == "Zero Line" ? macdLine < 0 : touchedOS
+shortCtx = entryMode == "Zero Line" ? macdLine > 0 : touchedOB
 
 // ── Trend filters ───────────────────────────────────────────────
 trendEma  = ta.ema(close, trendLen)
@@ -52,8 +60,8 @@ htfUp   = not useHtf or htfDir == 1
 htfDown = not useHtf or htfDir == -1
 
 // ── Signals ─────────────────────────────────────────────────────
-longSignal  = bullishCross and touchedOS and chartUp and htfUp
-shortSignal = bearishCross and touchedOB and chartDown and htfDown
+longSignal  = bullishCross and longCtx and chartUp and htfUp
+shortSignal = bearishCross and shortCtx and chartDown and htfDown
 
 // نقطه روی همان کندل سیگنال رسم می‌شود ولی بعد از کلوز آن (بدون ری‌پینت)
 plotshape(longSignal[1], title="BUY", style=shape.circle, location=location.belowbar, color=color.new(#26a69a, 0), size=size.tiny, offset=-1)
