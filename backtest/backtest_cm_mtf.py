@@ -29,7 +29,7 @@ import pandas as pd
 
 from backtest_macd_ultimate import atr, pine_ema, atr_bracket_stats, summarize
 
-HTF_RULE = {"1h": "4h", "15m": "1h"}
+HTF_RULE = {"1h": "4h", "15m": "1h", "4h": "1D"}
 BRACKETS = [("RR2  (SL1.5/TP3)", 1.5, 3.0),
             ("RR1  (SL1.5/TP1.5)", 1.5, 1.5),
             ("RR0.5(SL2/TP1)", 2.0, 1.0)]
@@ -129,3 +129,5 @@ if __name__ == "__main__":
     run("GOLD 15M — 1 month", "data/gold_15m.csv", "15m", 30, COST["gold"])
     run("BTC 15M — 1 month", "data/btc_15m_6m.csv", "15m", 30, COST["btc"])
     run("EURUSD 15M — 1 month", "data/eurusd_15m.csv", "15m", 30, COST["eurusd"])
+    run("BTC 4H — 6 months", "data/btc_4h.csv", "4h", 180, COST["btc"])
+    run("BTC 4H — 12 months", "data/btc_4h.csv", "4h", 365, COST["btc"])

@@ -1,0 +1,62 @@
+
+====================================================================================
+BTC 4H — 6 months   (2026-01-18 .. 2026-07-17, dots: 45L/45S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L= 45 S= 45) : n=90  win%=36  avg=+0.04%  total=-0.90%  PF=1.03  maxDD=-20.61%
+   TREND    (L= 17 S= 28) : n=45  win%=42  avg=+0.42%  total=+18.07%  PF=1.33  maxDD=-10.35%
+   HTF      (L= 22 S= 19) : n=41  win%=46  avg=+0.78%  total=+34.54%  PF=1.65  maxDD=-12.77%
+   T+H      (L= 12 S= 16) : n=28  win%=50  avg=+0.87%  total=+25.47%  PF=1.75  maxDD=-8.93%
+   ZLINE    (L= 16 S= 16) : n=32  win%=50  avg=+1.00%  total=+34.99%  PF=1.90  maxDD=-10.71%
+   CONFIRM2 (L= 39 S= 41) : n=80  win%=38  avg=+0.17%  total=+9.37%  PF=1.12  maxDD=-19.93%
+   T+H+C2   (L= 11 S= 16) : n=27  win%=48  avg=+0.95%  total=+26.90%  PF=1.77  maxDD=-9.92%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L= 45 S= 45) : n=90  win%=56  avg=+0.02%  total=-0.67%  PF=1.02  maxDD=-14.44%
+   TREND    (L= 17 S= 28) : n=45  win%=56  avg=+0.06%  total=+1.82%  PF=1.06  maxDD=-8.88%
+   HTF      (L= 22 S= 19) : n=41  win%=63  avg=+0.37%  total=+15.32%  PF=1.42  maxDD=-8.93%
+   T+H      (L= 12 S= 16) : n=28  win%=64  avg=+0.32%  total=+8.44%  PF=1.35  maxDD=-8.93%
+   ZLINE    (L= 16 S= 16) : n=32  win%=69  avg=+0.58%  total=+19.43%  PF=1.76  maxDD=-7.33%
+   CONFIRM2 (L= 39 S= 41) : n=80  win%=62  avg=+0.36%  total=+30.55%  PF=1.39  maxDD=-10.53%
+   T+H+C2   (L= 11 S= 16) : n=27  win%=63  avg=+0.45%  total=+12.00%  PF=1.49  maxDD=-8.97%
+
+ RR0.5(SL2/TP1)
+   BASE     (L= 45 S= 45) : n=90  win%=72  avg=+0.05%  total=+2.64%  PF=1.06  maxDD=-15.88%
+   TREND    (L= 17 S= 28) : n=45  win%=67  avg=-0.14%  total=-7.18%  PF=0.86  maxDD=-13.49%
+   HTF      (L= 22 S= 19) : n=41  win%=78  avg=+0.33%  total=+13.45%  PF=1.47  maxDD=-7.53%
+   T+H      (L= 12 S= 16) : n=28  win%=75  avg=+0.09%  total=+2.00%  PF=1.11  maxDD=-6.94%
+   ZLINE    (L= 16 S= 16) : n=32  win%=75  avg=+0.16%  total=+4.37%  PF=1.19  maxDD=-7.72%
+   CONFIRM2 (L= 39 S= 41) : n=80  win%=79  avg=+0.29%  total=+23.98%  PF=1.39  maxDD=-11.57%
+   T+H+C2   (L= 11 S= 16) : n=27  win%=78  avg=+0.17%  total=+3.99%  PF=1.20  maxDD=-10.68%
+
+====================================================================================
+BTC 4H — 12 months   (2025-07-17 .. 2026-07-17, dots: 91L/91S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L= 91 S= 91) : n=182  win%=36  avg=+0.07%  total=+4.07%  PF=1.05  maxDD=-28.39%
+   TREND    (L= 30 S= 58) : n=88  win%=38  avg=+0.23%  total=+17.59%  PF=1.18  maxDD=-17.87%
+   HTF      (L= 41 S= 43) : n=84  win%=45  avg=+0.60%  total=+58.96%  PF=1.52  maxDD=-15.49%
+   T+H      (L= 19 S= 34) : n=53  win%=45  avg=+0.69%  total=+40.37%  PF=1.60  maxDD=-12.29%
+   ZLINE    (L= 31 S= 34) : n=65  win%=45  avg=+0.63%  total=+45.45%  PF=1.55  maxDD=-15.40%
+   CONFIRM2 (L= 83 S= 80) : n=163  win%=38  avg=+0.16%  total=+20.34%  PF=1.12  maxDD=-22.54%
+   T+H+C2   (L= 18 S= 28) : n=46  win%=39  avg=+0.41%  total=+17.60%  PF=1.32  maxDD=-14.69%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L= 91 S= 91) : n=182  win%=51  avg=-0.10%  total=-20.25%  PF=0.91  maxDD=-26.50%
+   TREND    (L= 30 S= 58) : n=88  win%=50  avg=-0.07%  total=-7.62%  PF=0.93  maxDD=-14.32%
+   HTF      (L= 41 S= 43) : n=84  win%=58  avg=+0.18%  total=+14.64%  PF=1.21  maxDD=-9.98%
+   T+H      (L= 19 S= 34) : n=53  win%=57  avg=+0.13%  total=+5.78%  PF=1.14  maxDD=-8.93%
+   ZLINE    (L= 31 S= 34) : n=65  win%=57  avg=+0.14%  total=+8.31%  PF=1.16  maxDD=-9.74%
+   CONFIRM2 (L= 83 S= 80) : n=163  win%=53  avg=+0.02%  total=-1.16%  PF=1.02  maxDD=-19.49%
+   T+H+C2   (L= 18 S= 28) : n=46  win%=50  avg=-0.02%  total=-2.16%  PF=0.98  maxDD=-13.44%
+
+ RR0.5(SL2/TP1)
+   BASE     (L= 91 S= 91) : n=182  win%=65  avg=-0.20%  total=-33.17%  PF=0.80  maxDD=-36.41%
+   TREND    (L= 30 S= 58) : n=88  win%=58  avg=-0.41%  total=-31.86%  PF=0.64  maxDD=-31.53%
+   HTF      (L= 41 S= 43) : n=84  win%=70  avg=+0.02%  total=+0.00%  PF=1.02  maxDD=-11.65%
+   T+H      (L= 19 S= 34) : n=53  win%=66  avg=-0.18%  total=-10.26%  PF=0.82  maxDD=-12.71%
+   ZLINE    (L= 31 S= 34) : n=65  win%=63  avg=-0.27%  total=-17.22%  PF=0.74  maxDD=-18.00%
+   CONFIRM2 (L= 83 S= 80) : n=163  win%=69  avg=-0.04%  total=-8.93%  PF=0.96  maxDD=-24.23%
+   T+H+C2   (L= 18 S= 28) : n=46  win%=67  avg=-0.10%  total=-5.51%  PF=0.90  maxDD=-10.68%
