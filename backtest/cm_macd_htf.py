@@ -10,11 +10,18 @@ from indicators import ema
 TF_RANK = {"5m": 0, "15m": 1, "1h": 2, "4h": 3}
 TIMEFRAMES = ["5m", "15m", "1h", "4h"]
 
-# From CM MACD study (70–80% WR patterns)
-HW_LONG_HTF_MIN: dict[str, int] = {"default": 3, "BTCUSDT": 2, "EURUSD": 3}
-HW_SHORT_HTF_MIN: dict[str, int] = {"default": 2, "BTCUSDT": 2}
-HW_SHORT_RED_HIST_1H = frozenset({"BTCUSDT"})
-HW_SHORT_ENABLED = frozenset({"BTCUSDT"})
+def _is_crypto_symbol(sym: str) -> bool:
+    s = sym.upper()
+    return s.endswith("USDT") or s.endswith("USD") and "JPY" not in s and len(s) > 6 or s.endswith("BTC") or s.endswith("ETH")
+
+
+def _market_long_min(sym: str) -> int:
+    s = sym.upper()
+    if s.endswith("USDT") or s in ("BTCUSD", "ETHUSD", "SOLUSD"):
+        return 2
+    if s in ("EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "XAGUSD", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD") or (len(s) == 6 and "USD" in s):
+        return 3
+    return HW_LONG_HTF_MIN["default"]
 
 
 def red_hist_start(hist: np.ndarray) -> np.ndarray:
