@@ -37,7 +37,7 @@ def fetch_yahoo(symbol, interval, rng):
         if None in (o, h, l, c):
             continue
         iso = dt.datetime.fromtimestamp(t, dt.timezone.utc).strftime("%Y-%m-%d %H:%M")
-        rows.append([iso, round(o, 2), round(h, 2), round(l, 2), round(c, 2)])
+        rows.append([iso, round(o, 6), round(h, 6), round(l, 6), round(c, 6)])
     return rows
 
 

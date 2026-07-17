@@ -164,7 +164,8 @@ def fixed_horizon_stats(df, idxs, direction, horizons=(5, 10, 20)):
     return res
 
 
-def atr_bracket_stats(df, idxs, direction, atr_arr, sl_m=1.5, tp_m=3.0, max_hold=200):
+def atr_bracket_stats(df, idxs, direction, atr_arr, sl_m=1.5, tp_m=3.0, max_hold=200,
+                      cost_per_side=COST_PER_SIDE):
     opens = df["open"].to_numpy()
     high = df["high"].to_numpy()
     low = df["low"].to_numpy()
@@ -190,7 +191,7 @@ def atr_bracket_stats(df, idxs, direction, atr_arr, sl_m=1.5, tp_m=3.0, max_hold
         if result is None:
             j = min(e + max_hold, len(close)) - 1
             result = direction * (close[j] - entry) / entry
-        outs.append(result - 2 * COST_PER_SIDE)
+        outs.append(result - 2 * cost_per_side)
     return np.array(outs)
 
 
