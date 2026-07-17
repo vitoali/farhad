@@ -1,0 +1,396 @@
+//@version=6
+// Cardwell + SD Magnet + Pre-Buy/Sell  |  Gate = SD AND Pre (strict)
+// Long  = Cardwell Long  AND (Near Demand OR Magnet UP)  AND Pre-Buy
+// Short = Cardwell Short AND (Near Supply OR Magnet DOWN) AND Pre-Sell
+// After SL/TP → flat → resume scanning
+strategy(
+     title                 = "Cardwell SD AND Pre Strategy",
+     shorttitle            = "CW SD&Pre",
+     overlay               = true,
+     initial_capital       = 10000,
+     default_qty_type      = strategy.percent_of_equity,
+     default_qty_value     = 5,
+     commission_type       = strategy.commission.percent,
+     commission_value      = 0.04,
+     pyramiding            = 0,
+     process_orders_on_close = true,
+     calc_on_every_tick    = false,
+     max_boxes_count       = 200,
+     max_labels_count      = 200,
+     max_lines_count       = 100)
+
+//══════════════════════════════════════════════════════════════════
+// 1) CARDWELL
+//══════════════════════════════════════════════════════════════════
+var string G1 = "1) Cardwell"
+i_rsiLen      = input.int(14, "RSI Length", group=G1)
+i_trendLen    = input.int(50, "Trend MA Length", group=G1)
+i_bullLo      = input.int(40, "Bull Range Low", group=G1)
+i_bullHi      = input.int(80, "Bull Range High", group=G1)
+i_bearLo      = input.int(20, "Bear Range Low", group=G1)
+i_bearHi      = input.int(60, "Bear Range High", group=G1)
+i_confirmBars = input.int(3, "Regime Confirm Bars", minval=1, group=G1)
+i_useMacd     = input.bool(true, "MACD Filter", group=G1)
+i_useEwo      = input.bool(true, "EWO Turn Filter", group=G1)
+i_useAdx      = input.bool(true, "ADX Filter", group=G1)
+i_adxMin      = input.int(20, "ADX Min", group=G1)
+i_useHtf      = input.bool(true, "HTF Regime Filter", group=G1)
+i_htfTF       = input.timeframe("60", "HTF", group=G1)
+i_cooldown    = input.int(8, "Anti-Flip Cooldown Bars", minval=0, group=G1)
+
+//══════════════════════════════════════════════════════════════════
+// 2) SD + PRE GATE  (default = SD AND Pre)
+//══════════════════════════════════════════════════════════════════
+var string G2 = "2) SD Magnet + PreBuy/Sell Gate"
+i_useSdGate   = input.bool(true, "Require Gate", group=G2)
+i_gateMode    = input.string("SD AND Pre", "Gate Mode",
+     options=["SD AND Pre", "SD OR Pre", "Near OR Magnet", "Near Zone", "Magnet Direction", "Pre Only"],
+     group=G2,
+     tooltip="SD AND Pre: Long needs (Near Demand OR Magnet UP) AND Pre-Buy.\nShort needs (Near Supply OR Magnet DOWN) AND Pre-Sell.")
+i_usePreGate  = input.bool(true, "Include EWO Pre-Buy / Pre-Sell", group=G2)
+i_preMemory   = input.int(8, "Pre Zone Memory (bars)", minval=0, group=G2)
+i_swingLen    = input.int(12, "Swing Length", minval=3, group=G2)
+i_minZoneDist = input.int(15, "Min Bars Between Zones", group=G2)
+i_uniHeight   = input.float(0.5, "Zone Height (ATR x)", step=0.05, group=G2)
+i_minSwingAtr = input.float(0.3, "Min Swing (ATR x)", step=0.1, group=G2)
+i_strongThr   = input.float(5.0, "Min Zone Score", step=0.5, group=G2)
+i_proxAtr     = input.float(0.35, "Near Zone Distance (ATR x)", step=0.05, group=G2)
+i_nearLookback= input.int(20, "Near-Zone Memory (bars)", minval=1, group=G2)
+i_magnetThr   = input.float(6.5, "Magnet Source Min Score", step=0.5, group=G2)
+i_magMinTouch = input.int(1, "Magnet Min Retests", group=G2)
+i_magTgtThr   = input.float(5.0, "Magnet Target Min Score", step=0.5, group=G2)
+i_magMaxReach = input.float(25.0, "Magnet Max Reach (ATR)", group=G2)
+i_showZones   = input.bool(true, "Show SD Zones", group=G2)
+i_maxZones    = input.int(30, "Max Active Zones Kept", minval=5, maxval=80, group=G2)
+
+//══════════════════════════════════════════════════════════════════
+// 3) RISK
+//══════════════════════════════════════════════════════════════════
+var string G3 = "3) SL / TP"
+i_riskMode = input.string("ATR", "Mode", options=["ATR", "Percent", "Pips"], group=G3)
+i_atrLen   = input.int(14, "ATR Length", group=G3)
+i_slAtr    = input.float(2.0, "SL ATR", step=0.1, group=G3)
+i_tpAtr    = input.float(1.0, "TP ATR", step=0.1, group=G3)
+i_slPct    = input.float(3.0, "SL %", group=G3)
+i_tpPct    = input.float(5.0, "TP %", group=G3)
+i_slPips   = input.float(10.0, "SL Pips", group=G3)
+i_tpPips   = input.float(8.0, "TP Pips", group=G3)
+i_pipSize  = input.float(0.0001, "Pip Size (EUR=0.0001 XAU=1)", group=G3)
+i_allowLong  = input.bool(true, "Allow Long", group=G3)
+i_allowShort = input.bool(true, "Allow Short", group=G3)
+
+var string G4 = "4) Visuals"
+i_showSig  = input.bool(true, "Show Signals", group=G4)
+i_showLvls = input.bool(true, "Show SL/TP", group=G4)
+i_showDash = input.bool(true, "Dashboard", group=G4)
+
+c_bull = #26a69a
+c_bear = #ef5350
+c_dem  = #27c07a
+c_sup  = #e54b5e
+c_buy  = #2196f3
+c_sell = #ff9800
+
+//══════════════════════════════════════════════════════════════════
+// CARDWELL
+//══════════════════════════════════════════════════════════════════
+rsiVal  = ta.rsi(close, i_rsiLen)
+trendMA = ta.sma(close, i_trendLen)
+bullRaw = close > trendMA and rsiVal >= i_bullLo and rsiVal <= i_bullHi
+bearRaw = close < trendMA and rsiVal >= i_bearLo and rsiVal <= i_bearHi
+var int bullCnt = 0
+var int bearCnt = 0
+bullCnt := bullRaw ? bullCnt + 1 : 0
+bearCnt := bearRaw ? bearCnt + 1 : 0
+bullRegime = bullRaw and bullCnt >= i_confirmBars
+bearRegime = bearRaw and bearCnt >= i_confirmBars
+regime = bullRegime ? 1 : bearRegime ? -1 : 0
+prevRegime = regime[1]
+
+f_htf() =>
+    _r = ta.rsi(close, i_rsiLen)
+    _m = ta.sma(close, i_trendLen)
+    _br = close > _m and _r >= i_bullLo and _r <= i_bullHi
+    _er = close < _m and _r >= i_bearLo and _r <= i_bearHi
+    var int _bc = 0
+    var int _ec = 0
+    _bc := _br ? _bc + 1 : 0
+    _ec := _er ? _ec + 1 : 0
+    _br and _bc >= i_confirmBars ? 1 : _er and _ec >= i_confirmBars ? -1 : 0
+
+htf = request.security(syminfo.tickerid, i_htfTF, f_htf()[1], lookahead=barmerge.lookahead_off)
+[_, _, adxVal] = ta.dmi(14, 14)
+macdLine = ta.ema(close, 12) - ta.ema(close, 26)
+macdSig  = ta.sma(macdLine, 9)
+ewo = ta.sma(hl2, 5) - ta.sma(hl2, 34)
+
+cwLongRaw  = regime == 1 and prevRegime != 1 and (not i_useHtf or htf == 1) and (not i_useAdx or adxVal >= i_adxMin) and (not i_useMacd or macdLine > macdSig) and (not i_useEwo or ewo > ewo[1])
+cwShortRaw = regime == -1 and prevRegime != -1 and (not i_useHtf or htf == -1) and (not i_useAdx or adxVal >= i_adxMin) and (not i_useMacd or macdLine < macdSig) and (not i_useEwo or ewo < ewo[1])
+
+//══════════════════════════════════════════════════════════════════
+// SD ZONES
+//══════════════════════════════════════════════════════════════════
+type Zone
+    box   bx
+    float top
+    float bot
+    float mid
+    int   born
+    int   lastTouch
+    int   touches
+    bool  broken
+    bool  inPrev
+    string kind
+    float impF
+    float volF
+    float wickF
+    float score
+
+var array<Zone> zones = array.new<Zone>()
+var int lastSupBar = -999999
+var int lastDemBar = -999999
+
+atrSd = ta.atr(20)
+volBase = ta.sma(volume, 20)
+ph = ta.pivothigh(high, i_swingLen, i_swingLen)
+pl = ta.pivotlow(low, i_swingLen, i_swingLen)
+n = bar_index
+
+f_score(Zone z) =>
+    fresh = math.max(0.0, 1.0 - z.touches / 3.0)
+    raw = (z.impF * 0.35 + z.volF * 0.20 + z.wickF * 0.20 + fresh * 0.25)
+    idle = n - z.lastTouch
+    age = math.max(1.0 - 0.4 * math.min(idle / 600.0, 1.0), 0.6)
+    math.min(math.max(raw * 10.0 * age, 0.0), 10.0)
+
+if not na(ph) and barstate.isconfirmed and n - lastSupBar >= i_minZoneDist
+    pivH = high[i_swingLen]
+    pivL = low[i_swingLen]
+    if (pivH - pivL) >= atrSd * i_minSwingAtr
+        loSwing = ta.lowest(low, i_swingLen)[1]
+        dep = pivH - loSwing
+        impF = math.min(math.max(dep, 0.0) / math.max(atrSd * 3.0, 1e-9), 1.0)
+        volF = nz(volBase) > 0 ? math.min(nz(volume[i_swingLen]) / volBase, 1.0) : 0.0
+        rng = math.max(pivH - pivL, 1e-9)
+        wickF = math.min(math.max(pivH - math.max(open[i_swingLen], close[i_swingLen]), 0.0) / rng, 1.0)
+        hh = atrSd * i_uniHeight
+        top = pivH + hh / 2.0
+        bot = pivH - hh / 2.0
+        bx = i_showZones ? box.new(n - i_swingLen, top, n, bot, bgcolor=color.new(c_sup, 75), border_color=color.new(c_sup, 30), border_width=1, extend=extend.right) : na
+        z = Zone.new(bx, top, bot, pivH, n - i_swingLen, n - i_swingLen, 0, false, false, "Supply", impF, volF, wickF, 0.0)
+        z.score := f_score(z)
+        array.push(zones, z)
+        lastSupBar := n
+
+if not na(pl) and barstate.isconfirmed and n - lastDemBar >= i_minZoneDist
+    pivH = high[i_swingLen]
+    pivL = low[i_swingLen]
+    if (pivH - pivL) >= atrSd * i_minSwingAtr
+        hiSwing = ta.highest(high, i_swingLen)[1]
+        dep = hiSwing - pivL
+        impF = math.min(math.max(dep, 0.0) / math.max(atrSd * 3.0, 1e-9), 1.0)
+        volF = nz(volBase) > 0 ? math.min(nz(volume[i_swingLen]) / volBase, 1.0) : 0.0
+        rng = math.max(pivH - pivL, 1e-9)
+        wickF = math.min(math.max(math.min(open[i_swingLen], close[i_swingLen]) - pivL, 0.0) / rng, 1.0)
+        hh = atrSd * i_uniHeight
+        top = pivL + hh / 2.0
+        bot = pivL - hh / 2.0
+        bx = i_showZones ? box.new(n - i_swingLen, top, n, bot, bgcolor=color.new(c_dem, 75), border_color=color.new(c_dem, 30), border_width=1, extend=extend.right) : na
+        z = Zone.new(bx, top, bot, pivL, n - i_swingLen, n - i_swingLen, 0, false, false, "Demand", impF, volF, wickF, 0.0)
+        z.score := f_score(z)
+        array.push(zones, z)
+        lastDemBar := n
+
+while array.size(zones) > i_maxZones
+    old = array.shift(zones)
+    if not na(old.bx)
+        box.delete(old.bx)
+
+bool nearDemandNow = false
+bool nearSupplyNow = false
+bool magUp = false
+bool magDown = false
+var int lastNearDemBar = na
+var int lastNearSupBar = na
+
+if array.size(zones) > 0
+    for i = 0 to array.size(zones) - 1
+        z = array.get(zones, i)
+        if z.broken
+            continue
+        brk = z.kind == "Supply" ? close > z.top : close < z.bot
+        if brk
+            z.broken := true
+            if not na(z.bx)
+                box.set_bgcolor(z.bx, color.new(color.gray, 90))
+                box.set_extend(z.bx, extend.none)
+                box.set_right(z.bx, n)
+            continue
+        inZone = high >= z.bot and low <= z.top
+        if inZone and not z.inPrev
+            z.touches += 1
+            z.lastTouch := n
+        z.inPrev := inZone
+        z.score := f_score(z)
+        if not na(z.bx)
+            box.set_right(z.bx, n)
+        prox = atrSd * i_proxAtr
+        near = math.abs(close - z.mid) <= prox or inZone
+        if near and z.score >= i_strongThr
+            if z.kind == "Demand"
+                nearDemandNow := true
+                lastNearDemBar := n
+            else
+                nearSupplyNow := true
+                lastNearSupBar := n
+
+    for i = 0 to array.size(zones) - 1
+        src = array.get(zones, i)
+        if src.broken or src.touches < i_magMinTouch or src.score < i_magnetThr
+            continue
+        float bestD = 1e18
+        bool found = false
+        for j = 0 to array.size(zones) - 1
+            tgt = array.get(zones, j)
+            if tgt.broken or tgt.kind == src.kind or tgt.score < i_magTgtThr
+                continue
+            dd = math.abs(src.mid - tgt.mid)
+            okDir = src.kind == "Supply" ? tgt.mid < src.mid : tgt.mid > src.mid
+            if okDir and dd <= atrSd * i_magMaxReach and dd < bestD
+                bestD := dd
+                found := true
+        if found
+            if src.kind == "Supply"
+                magDown := true
+            else
+                magUp := true
+
+nearDemand = nearDemandNow or (not na(lastNearDemBar) and n - lastNearDemBar <= i_nearLookback)
+nearSupply = nearSupplyNow or (not na(lastNearSupBar) and n - lastNearSupBar <= i_nearLookback)
+
+// Pre-Buy / Pre-Sell
+preBuyRaw  = rsiVal < 40 and ewo > ewo[1] and ewo < 0
+preSellRaw = rsiVal > 60 and ewo < ewo[1] and ewo > 0
+var int lastPreBuyBar = na
+var int lastPreSellBar = na
+if preBuyRaw
+    lastPreBuyBar := n
+if preSellRaw
+    lastPreSellBar := n
+preBuy  = i_usePreGate and (preBuyRaw or (not na(lastPreBuyBar) and n - lastPreBuyBar <= i_preMemory))
+preSell = i_usePreGate and (preSellRaw or (not na(lastPreSellBar) and n - lastPreSellBar <= i_preMemory))
+
+// Gate
+gateLong = true
+gateShort = true
+if i_useSdGate
+    nearL = nearDemand
+    nearS = nearSupply
+    magL = magUp
+    magS = magDown
+    sdL = nearL or magL
+    sdS = nearS or magS
+    switch i_gateMode
+        "SD AND Pre" =>
+            gateLong := sdL and preBuy
+            gateShort := sdS and preSell
+        "SD OR Pre" =>
+            gateLong := sdL or preBuy
+            gateShort := sdS or preSell
+        "Near OR Magnet" =>
+            gateLong := sdL
+            gateShort := sdS
+        "Near Zone" =>
+            gateLong := nearL
+            gateShort := nearS
+        "Magnet Direction" =>
+            gateLong := magL
+            gateShort := magS
+        "Pre Only" =>
+            gateLong := preBuy
+            gateShort := preSell
+
+//══════════════════════════════════════════════════════════════════
+// ENTRIES
+//══════════════════════════════════════════════════════════════════
+var int lastSigDir = 0
+var int lastSigBar = na
+flat = strategy.position_size == 0
+barsSince = na(lastSigBar) ? 999999 : n - lastSigBar
+cdBlockLong  = (lastSigDir == -1 and barsSince < i_cooldown) or (lastSigDir == 1 and barsSince < i_cooldown)
+cdBlockShort = (lastSigDir == 1 and barsSince < i_cooldown) or (lastSigDir == -1 and barsSince < i_cooldown)
+
+longSignal  = i_allowLong and flat and cwLongRaw and gateLong and not cdBlockLong and barstate.isconfirmed
+shortSignal = i_allowShort and flat and cwShortRaw and gateShort and not cdBlockShort and barstate.isconfirmed
+
+atrVal = ta.atr(i_atrLen)
+f_sl(float e) => i_riskMode == "Percent" ? e * i_slPct / 100.0 : i_riskMode == "Pips" ? i_slPips * i_pipSize : atrVal * i_slAtr
+f_tp(float e) => i_riskMode == "Percent" ? e * i_tpPct / 100.0 : i_riskMode == "Pips" ? i_tpPips * i_pipSize : atrVal * i_tpAtr
+
+var float entryPx = na
+var float slPx = na
+var float tpPx = na
+
+if longSignal
+    entryPx := close
+    slPx := entryPx - f_sl(entryPx)
+    tpPx := entryPx + f_tp(entryPx)
+    lastSigDir := 1
+    lastSigBar := n
+    strategy.entry("Long", strategy.long, comment="SD&Pre BUY")
+    strategy.exit("XL", from_entry="Long", stop=slPx, limit=tpPx)
+
+if shortSignal
+    entryPx := close
+    slPx := entryPx + f_sl(entryPx)
+    tpPx := entryPx - f_tp(entryPx)
+    lastSigDir := -1
+    lastSigBar := n
+    strategy.entry("Short", strategy.short, comment="SD&Pre SELL")
+    strategy.exit("XS", from_entry="Short", stop=slPx, limit=tpPx)
+
+closedNow = strategy.position_size[1] != 0 and strategy.position_size == 0
+if closedNow
+    entryPx := na
+    slPx := na
+    tpPx := na
+
+blockedLong  = cwLongRaw and not gateLong and flat and barstate.isconfirmed
+blockedShort = cwShortRaw and not gateShort and flat and barstate.isconfirmed
+
+plotshape(i_showSig and longSignal, title="BUY", style=shape.labelup, location=location.belowbar, color=c_buy, textcolor=color.white, text="BUY", size=size.small)
+plotshape(i_showSig and shortSignal, title="SELL", style=shape.labeldown, location=location.abovebar, color=c_sell, textcolor=color.white, text="SELL", size=size.small)
+plotshape(i_showSig and blockedLong, title="Blocked L", style=shape.xcross, location=location.belowbar, color=color.gray, size=size.tiny)
+plotshape(i_showSig and blockedShort, title="Blocked S", style=shape.xcross, location=location.abovebar, color=color.gray, size=size.tiny)
+plot(i_showLvls and strategy.position_size != 0 ? slPx : na, "SL", color=c_bear, style=plot.style_linebr, linewidth=2)
+plot(i_showLvls and strategy.position_size != 0 ? tpPx : na, "TP", color=c_bull, style=plot.style_linebr, linewidth=2)
+bgcolor(nearDemand ? color.new(c_dem, 92) : nearSupply ? color.new(c_sup, 92) : na)
+
+var table dash = table.new(position.top_right, 2, 10, border_width=1)
+if i_showDash and barstate.islast
+    wr = strategy.closedtrades > 0 ? 100.0 * strategy.wintrades / strategy.closedtrades : na
+    table.cell(dash, 0, 0, "Cardwell SD AND Pre", text_color=color.white, bgcolor=color.new(#14b5cb, 20))
+    table.merge_cells(dash, 0, 0, 1, 0)
+    table.cell(dash, 0, 1, "Gate", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 1, i_gateMode, text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 2, "Near D/S", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 2, (nearDemand ? "D✓ " : "D✗ ") + (nearSupply ? "S✓" : "S✗"), text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 3, "Magnet/Pre", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 3, (magUp ? "▲ " : magDown ? "▼ " : "— ") + (preBuy ? "PreB✓" : preSell ? "PreS✓" : "Pre✗"), text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 4, "Gate L/S", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 4, (gateLong ? "L✓ " : "L✗ ") + (gateShort ? "S✓" : "S✗"), text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 5, "Cardwell", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 5, bullRegime ? "BULL" : bearRegime ? "BEAR" : "NEUT", text_color=bullRegime ? c_bull : bearRegime ? c_bear : color.gray, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 6, "Winrate", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 6, na(wr) ? "-" : str.tostring(wr, "#.#") + "% (" + str.tostring(strategy.wintrades) + "/" + str.tostring(strategy.closedtrades) + ")", text_color=na(wr) ? color.gray : wr >= 55 ? c_bull : c_bear, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 7, "Position", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 7, strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT", text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 8, "Risk", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 8, i_riskMode + " SL" + str.tostring(i_slAtr) + "/TP" + str.tostring(i_tpAtr), text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 9, "Rule", text_color=color.new(color.white, 40), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 9, "CW + (SD) AND Pre", text_color=color.new(color.white, 20), bgcolor=color.new(#0d1117, 0))
+
+if longSignal
+    alert('{"action":"long","gate":"SD_AND_Pre","entry":"' + str.tostring(entryPx) + '","sl":"' + str.tostring(slPx) + '","tp":"' + str.tostring(tpPx) + '"}', alert.freq_once_per_bar_close)
+if shortSignal
+    alert('{"action":"short","gate":"SD_AND_Pre","entry":"' + str.tostring(entryPx) + '","sl":"' + str.tostring(slPx) + '","tp":"' + str.tostring(tpPx) + '"}', alert.freq_once_per_bar_close)
