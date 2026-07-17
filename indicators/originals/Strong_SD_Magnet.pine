@@ -1,0 +1,662 @@
+// Strong SD Magnet
+// Credit: original Magnet System concept by FeelsStrategy
+// https://www.tradingview.com/u/FeelsStrategy/
+
+//@version=6
+indicator("Strong SD Magnet", "Strong SD Magnet", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+gSess        = "═══ Session ═══"
+sessionMode  = input.string("Daily", "New-Zone Session", options = ["Daily", "Asian", "London", "New York", "Custom"], group = gSess, tooltip = "Boundary that starts a new batch of zones.")
+customSess   = input.session("0000-2359", "Custom Session", group = gSess)
+sessTZ       = input.string("", "Timezone (blank = exchange)", group = gSess)
+sessionsBack = input.int(10, "Sessions To Display", minval = 1, maxval = 60, group = gSess, tooltip = "Show zones from this many of the most recent sessions.")
+maxPerSession= input.int(3, "Max Zones Per Side / Session", minval = 1, maxval = 10, group = gSess)
+wholeSession = input.bool(true, "Zones Span Whole Session", group = gSess, tooltip = "Draw each zone as a band across the entire session. Off = anchor to the pivot bar.")
+fadeOld      = input.bool(true, "Fade Older Sessions", group = gSess)
+
+gDet         = "═══ Zone Detection ═══"
+swingLen     = input.int(12, "Swing Length (sensitivity)", minval = 3, maxval = 50, tooltip = "Higher = fewer, more significant zones", group = gDet)
+minZoneDist  = input.int(15, "Min Distance Between Zones (bars)", minval = 1, maxval = 200, group = gDet)
+mergeOverlap = input.bool(true, "Merge Overlapping Zones", group = gDet)
+
+gH           = "═══ Zone Height (ATR) ═══"
+atrLen       = input.int(20, "ATR Length", minval = 1, maxval = 500, group = gH)
+uniHeight    = input.float(0.5, "Universal Zone Height (ATR x)", minval = 0.1, maxval = 5.0, step = 0.05, tooltip = "Every zone is this exact thickness, centred on the level.", group = gH)
+minSwingATR  = input.float(0.3, "Ignore Pivots Smaller Than (ATR x)", minval = 0.0, maxval = 3.0, step = 0.1, tooltip = "Reject insignificant swings whose raw range is below this.", group = gH)
+
+gBeh         = "═══ Behaviour ═══"
+invMethod    = input.string("Close", "Invalidation", options = ["Close", "Wick"], group = gBeh, tooltip = "Close: zone is INVALID only when a bar CLOSES beyond it. Wick: a wick beyond it invalidates.")
+
+gStr         = "═══ Strength Scoring (0-10) ═══"
+onlyStrong   = input.bool(false, "Show Only Strong Zones", group = gStr)
+strongThr    = input.float(4.0, "Strong Threshold (score)", minval = 0, maxval = 10, step = 0.5, group = gStr)
+touchNorm    = input.float(3.0, "Touches Until Fully Consumed", minval = 1, step = 0.5, group = gStr)
+impulseNorm  = input.float(3.0, "Impulse For Full Score (ATR x)", minval = 0.5, step = 0.5, group = gStr)
+volLen       = input.int(20, "Volume Baseline Length", minval = 1, group = gStr)
+wImp         = input.float(0.35, "Weight: Departure Impulse", minval = 0, maxval = 1, step = 0.05, group = gStr)
+wVol         = input.float(0.20, "Weight: Volume", minval = 0, maxval = 1, step = 0.05, group = gStr)
+wWick        = input.float(0.20, "Weight: Rejection Wick", minval = 0, maxval = 1, step = 0.05, group = gStr)
+wFresh       = input.float(0.25, "Weight: Freshness (unmitigated)", minval = 0, maxval = 1, step = 0.05, group = gStr)
+useDecay     = input.bool(true, "Decay Strength While Idle", group = gStr)
+decayBars    = input.int(600, "Full Decay Over (idle bars)", minval = 20, maxval = 20000, group = gStr)
+decayFloor   = input.float(0.6, "Decay Floor", minval = 0.1, maxval = 1.0, step = 0.05, group = gStr)
+
+gDisp        = "═══ Display ═══"
+showLabels   = input.bool(true, "Show In-Band Labels", group = gDisp)
+compactLabels= input.bool(true, "Compact Labels", group = gDisp, tooltip = "On: ◆ tag stars score. Off: full label (range, tier, touches, state, session).")
+labelPosFrac = input.float(0.6, "Label Position Along Band (0=left, 1=right)", minval = 0.0, maxval = 1.0, step = 0.05, group = gDisp)
+labelSize    = input.string("Small", "Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = gDisp)
+showDash     = input.bool(true, "Show Current-Session Dashboard", group = gDisp)
+
+gCol         = "═══ Colors / Shading ═══"
+supCol       = input.color(#e54b5e, "Supply", group = gCol)
+demCol       = input.color(#27c07a, "Demand", group = gCol)
+sharpenByStr = input.bool(true, "Sharpen Fill By Strength", group = gCol, tooltip = "Strong zones render sharp/opaque, weak ones faint.")
+trStrong     = input.int(58, "Strongest Fill Transparency", minval = 30, maxval = 90, group = gCol)
+trWeak       = input.int(82, "Weakest Fill Transparency", minval = 40, maxval = 96, group = gCol)
+trBroken     = input.int(88, "Invalidated Fill Transparency", minval = 50, maxval = 96, group = gCol)
+borderTransp = input.int(20, "Border Transparency", minval = 0, maxval = 100, group = gCol)
+borderWidth  = input.int(1, "Border Width", minval = 0, maxval = 4, group = gCol)
+bestSupTxt   = input.color(#ff9d3c, "Best Supply Text", group = gCol)
+bestDemTxt   = input.color(#7bf7b0, "Best Demand Text", group = gCol)
+normTxt      = input.color(#e8eaed, "Normal Text", group = gCol)
+
+gMag         = "═══ Liquidity Magnet ═══"
+magnetsOn    = input.bool(true, "Show Magnet Pulls", group = gMag, tooltip = "Draw a vertical PULL from a strong re-tested zone to the nearest valid opposite zone in the SAME session.")
+magMaxPerSess= input.int(2, "Max Magnets Per Session / Day", minval = 1, maxval = 6, group = gMag)
+magSessBack  = input.int(10, "Show Magnets For Last N Sessions / Days", minval = 1, maxval = 60, group = gMag)
+magnetThr    = input.float(6.5, "Source Zone Min Score", minval = 0, maxval = 10, step = 0.5, group = gMag, tooltip = "The re-tested SOURCE zone must be at least this strong.")
+magMinTouch  = input.int(1, "Source Min Re-tests (touches)", minval = 1, maxval = 10, group = gMag, tooltip = "Source must have been re-tested at least this many times (so FRESH/untested zones do not fire — a magnet needs a retest).")
+magTargetThr = input.float(5.0, "Target Zone Min Score", minval = 0, maxval = 10, step = 0.5, group = gMag, tooltip = "The nearest opposite TARGET zone must be at least this strong.")
+magMaxReach  = input.float(25.0, "Max Reach To Target (ATR)", minval = 2.0, step = 1.0, group = gMag, tooltip = "Target must be within this ATR distance, else no magnet.")
+magAnchorFrac= input.float(0.7, "Arrow Position Along Session", minval = 0.0, maxval = 1.0, step = 0.05, group = gMag)
+magProbMid   = input.float(5.5, "Pull% Midpoint (score → 50%)", minval = 1, maxval = 9, step = 0.5, group = gMag)
+magProbSlope = input.float(1.5, "Pull% Steepness", minval = 0.5, maxval = 5, step = 0.1, group = gMag)
+magColor     = input.color(#ffb300, "Magnet / Pull Color", group = gMag)
+magLblSizeS  = input.string("Small", "Magnet Label Size", options = ["Tiny", "Small", "Normal", "Large"], group = gMag)
+
+gAl          = "═══ Alerts ═══"
+alertsOn     = input.bool(true, "Enable Alerts", group = gAl)
+alertProx    = input.float(0.10, "Proximity (% of price)", minval = 0.0, step = 0.01, group = gAl)
+instThr      = input.float(7.0, "Strong-Zone Score", minval = 0, maxval = 10, step = 0.5, group = gAl)
+
+f_size(s) =>
+    switch s
+        "Tiny"   => size.tiny
+        "Small"  => size.small
+        "Normal" => size.normal
+        "Large"  => size.large
+        => size.small
+
+f_stars(sc) => sc >= 8 ? "★★★★" : sc >= 6.5 ? "★★★" : sc >= 5 ? "★★" : sc >= 3 ? "★" : "·"
+f_tier(sc)  => sc >= 8 ? "ELITE" : sc >= 6.5 ? "STRONG" : sc >= 5 ? "MODERATE" : sc >= 3 ? "WEAK" : "FORMING"
+f_state(bool brk, int t) => brk ? "✗ INVAL" : t == 0 ? "FRESH" : "TESTED"
+f_ageF(idle) => not useDecay ? 1.0 : math.max(1.0 - (1.0 - decayFloor) * math.min(idle / math.max(decayBars, 1), 1.0), decayFloor)
+
+f_sessName(tz) =>
+    h = hour(time, tz)
+    h >= 0 and h < 8 ? "Asia" : h >= 8 and h < 13 ? "London" : h >= 13 and h < 22 ? "NY" : "Late"
+
+f_score(float impF, float volF, float wickF, int touches, int idle) =>
+    freshF = math.max(0.0, 1.0 - touches / math.max(touchNorm, 1.0))
+    wSum   = wImp + wVol + wWick + wFresh
+    raw    = wSum > 0 ? (impF * wImp + volF * wVol + wickF * wWick + freshF * wFresh) / wSum : 0.0
+    math.min(math.max(raw * 10.0 * f_ageF(idle), 0.0), 10.0)
+
+f_overlap(float t1, float b1, float t2, float b2) => t1 >= b2 and b1 <= t2
+
+atr     = ta.atr(atrLen)
+volBase = ta.sma(volume, volLen)
+loSwing = ta.lowest(low, swingLen)
+hiSwing = ta.highest(high, swingLen)
+n       = bar_index
+tzUse   = sessTZ == "" ? syminfo.timezone : sessTZ
+
+type Zone
+    box    bx
+    label  lab
+    float  top
+    float  bot
+    float  mid
+    int    leftTime
+    int    rightTime
+    int    bornBar
+    int    lastTouch
+    int    sessId
+    string sess
+    string kind
+    int    touches
+    bool   inPrev
+    bool   broken
+    float  impF
+    float  volF
+    float  wickF
+    float  score
+
+type Magnet
+    line  ln
+    label lab
+
+type MagStat
+    int    sessId
+    bool   down
+    string srcTag
+    string tgtTag
+    bool   tgtFresh
+    float  tgtMid
+    float  srcMid
+    float  pull10
+
+var array<Zone>    zones    = array.new<Zone>()
+var array<Magnet>  magnets  = array.new<Magnet>()
+var array<MagStat> magStats = array.new<MagStat>()
+var int  sessId       = 0
+var int  curSessStart = na
+var int  lastSupBar   = 0
+var int  lastDemBar   = 0
+magLblSize = f_size(magLblSizeS)
+
+var table dash = showDash ? table.new(position.top_right, 4, 9 + 2 * maxPerSession + magMaxPerSess, frame_width = 1, frame_color = color.new(#3a3f4b, 0), border_width = 1, border_color = color.new(#1b1f27, 0), bgcolor = color.new(#0c0f14, 12)) : na
+
+f_makeZone(string kind, float pivTop, float pivBot, int startBar, float impF, float volF, float wickF) =>
+    level = kind == "Supply" ? pivTop : pivBot
+    h     = atr * uniHeight
+    t     = level + h / 2.0
+    b     = level - h / 2.0
+    lt    = wholeSession ? nz(curSessStart, time) : time[swingLen]
+    Zone.new(na, na, t, b, level, lt, time, startBar, n, sessId, f_sessName(tzUse), kind, 0, false, false, impF, volF, wickF, 0.0)
+
+f_sortDesc(array<int> idx) =>
+    sz = array.size(idx)
+    if sz > 1
+        for a = 0 to sz - 2
+            bIdx = a
+            for b = a + 1 to sz - 1
+                if array.get(zones, array.get(idx, b)).score > array.get(zones, array.get(idx, bIdx)).score
+                    bIdx := b
+            if bIdx != a
+                tmp = array.get(idx, a)
+                array.set(idx, a, array.get(idx, bIdx))
+                array.set(idx, bIdx, tmp)
+
+f_visible(Zone z, int minSess) =>
+    z.sessId >= minSess and (not onlyStrong or z.score >= strongThr)
+
+f_displayed(string kind, int s, int minSess) =>
+    raw = array.new<int>()
+    if array.size(zones) > 0
+        for i = 0 to array.size(zones) - 1
+            z = array.get(zones, i)
+            if z.kind == kind and z.sessId == s and f_visible(z, minSess)
+                array.push(raw, i)
+    f_sortDesc(raw)
+    out = array.new<int>()
+    if array.size(raw) > 0
+        for k = 0 to math.min(maxPerSession, array.size(raw)) - 1
+            array.push(out, array.get(raw, k))
+    out
+
+f_collect(string kind, int sess) =>
+    idx = array.new<int>()
+    if array.size(zones) > 0
+        for i = 0 to array.size(zones) - 1
+            z = array.get(zones, i)
+            if z.kind == kind and z.sessId == sess
+                array.push(idx, i)
+    f_sortDesc(idx)
+    idx
+
+f_drawZone(int zi, int rank, bool isBest) =>
+    z = array.get(zones, zi)
+    fresh   = not z.broken and z.touches == 0
+    baseCol = z.kind == "Supply" ? supCol : demCol
+    int tr = z.broken ? trBroken : (sharpenByStr ? int(math.round(trWeak - (trWeak - trStrong) * (z.score / 10.0))) : trStrong)
+    tr := fadeOld and z.sessId != sessId and not z.broken ? math.min(tr + 6, 96) : tr
+    tr := fresh ? math.max(tr - 12, 28) : tr
+    box.set_bgcolor(z.bx, color.new(baseCol, tr))
+    box.set_border_color(z.bx, isBest ? color.new(baseCol, 0) : color.new(baseCol, z.broken ? math.min(borderTransp + 50, 90) : borderTransp))
+    box.set_border_width(z.bx, isBest ? math.max(borderWidth, 2) : borderWidth)
+    if showLabels
+        tagCore  = (z.kind == "Supply" ? "S" : "D") + str.tostring(rank)
+        scoreStr = str.tostring(z.score, "0.0")
+        bestMk   = isBest ? "«" : ""
+        stateG   = fresh ? "◆ " : ""
+        brkMk    = z.broken ? " ✗" : ""
+        txt = compactLabels ? tagCore + bestMk + " " + stateG + f_stars(z.score) + " " + scoreStr + brkMk : tagCore + (isBest ? "«BEST" : "") + "  " + str.tostring(z.bot, format.mintick) + ".." + str.tostring(z.top, format.mintick) + "  " + f_stars(z.score) + scoreStr + "/10 " + f_tier(z.score) + "  R:" + str.tostring(z.touches) + "  " + f_state(z.broken, z.touches) + "  " + z.sess
+        tcol = isBest ? (z.kind == "Supply" ? bestSupTxt : bestDemTxt) : (z.broken ? color.new(baseCol, 15) : normTxt)
+        lx = z.leftTime + int(math.round((z.rightTime - z.leftTime) * labelPosFrac))
+        if na(z.lab)
+            z.lab := label.new(lx, z.mid, "", xloc = xloc.bar_time, style = label.style_label_center, color = color.new(color.black, 100), textcolor = tcol, size = f_size(labelSize), textalign = text.align_center)
+        label.set_text(z.lab, txt)
+        label.set_xy(z.lab, lx, z.mid)
+        label.set_textcolor(z.lab, tcol)
+        label.set_size(z.lab, f_size(labelSize))
+
+f_hideZone(int zi) =>
+    z = array.get(zones, zi)
+    box.set_bgcolor(z.bx, color.new(color.black, 100))
+    box.set_border_width(z.bx, 0)
+    if not na(z.lab)
+        label.set_text(z.lab, "")
+
+f_renderSide(string kind) =>
+    minSess = math.max(0, sessId - sessionsBack + 1)
+    gBestIdx = -1
+    gBest = -1.0
+    if array.size(zones) > 0
+        for i = 0 to array.size(zones) - 1
+            z = array.get(zones, i)
+            if z.kind == kind and not z.broken and f_visible(z, minSess) and z.score > gBest
+                gBest := z.score
+                gBestIdx := i
+    for s = sessId to minSess
+        idx = array.new<int>()
+        if array.size(zones) > 0
+            for i = 0 to array.size(zones) - 1
+                z = array.get(zones, i)
+                if z.kind == kind and z.sessId == s and f_visible(z, minSess)
+                    array.push(idx, i)
+        f_sortDesc(idx)
+        shown = 0
+        if array.size(idx) > 0
+            for k = 0 to array.size(idx) - 1
+                zi = array.get(idx, k)
+                if shown < maxPerSession
+                    shown += 1
+                    f_drawZone(zi, shown, zi == gBestIdx)
+                else
+                    f_hideZone(zi)
+
+f_dashboard() =>
+    if not na(dash)
+        mp     = maxPerSession
+        hdrBg  = color.new(#0b0d12, 0)
+        bandBg = color.new(#171b24, 0)
+        dimTx  = color.new(normTxt, 50)
+
+        table.cell(dash, 0, 0, "INTRADAY SD + MAGNET", text_color = normTxt, text_size = size.small, text_halign = text.align_left, bgcolor = hdrBg)
+        table.cell(dash, 1, 0, syminfo.ticker, text_color = color.new(normTxt, 35), text_size = size.tiny, text_halign = text.align_left, bgcolor = hdrBg)
+        table.cell(dash, 2, 0, "score", text_color = dimTx, text_size = size.tiny, text_halign = text.align_right, bgcolor = hdrBg)
+        table.cell(dash, 3, 0, "state", text_color = dimTx, text_size = size.tiny, text_halign = text.align_left, bgcolor = hdrBg)
+
+        table.cell(dash, 0, 1, "SUPPLY", text_color = supCol, text_size = size.small, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 1, 1, "this session", text_color = color.new(normTxt, 55), text_size = size.tiny, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 2, 1, "", bgcolor = bandBg)
+        table.cell(dash, 3, 1, "", bgcolor = bandBg)
+        sIdx = f_collect("Supply", sessId)
+        for k = 0 to mp - 1
+            r = 2 + k
+            if k < array.size(sIdx)
+                z = array.get(zones, array.get(sIdx, k))
+                fr = not z.broken and z.touches == 0
+                tc = z.broken ? color.new(supCol, 45) : supCol
+                sc = z.broken ? color.new(normTxt, 45) : fr ? bestSupTxt : color.new(normTxt, 12)
+                table.cell(dash, 0, r, "S" + str.tostring(k + 1) + (fr ? " ◆" : ""), text_color = tc, text_size = size.tiny, text_halign = text.align_left)
+                table.cell(dash, 1, r, str.tostring(z.bot, format.mintick) + ".." + str.tostring(z.top, format.mintick), text_color = color.new(normTxt, 12), text_size = size.tiny, text_halign = text.align_left)
+                table.cell(dash, 2, r, str.tostring(z.score, "0.0"), text_color = tc, text_size = size.tiny, text_halign = text.align_right)
+                table.cell(dash, 3, r, f_state(z.broken, z.touches), text_color = sc, text_size = size.tiny, text_halign = text.align_left)
+            else
+                table.cell(dash, 0, r, "", text_size = size.tiny)
+                table.cell(dash, 1, r, "", text_size = size.tiny)
+                table.cell(dash, 2, r, "", text_size = size.tiny)
+                table.cell(dash, 3, r, "", text_size = size.tiny)
+
+        dr0 = 2 + mp
+        table.cell(dash, 0, dr0, "DEMAND", text_color = demCol, text_size = size.small, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 1, dr0, "this session", text_color = color.new(normTxt, 55), text_size = size.tiny, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 2, dr0, "", bgcolor = bandBg)
+        table.cell(dash, 3, dr0, "", bgcolor = bandBg)
+        dIdx = f_collect("Demand", sessId)
+        for k = 0 to mp - 1
+            r = dr0 + 1 + k
+            if k < array.size(dIdx)
+                z = array.get(zones, array.get(dIdx, k))
+                fr = not z.broken and z.touches == 0
+                tc = z.broken ? color.new(demCol, 45) : demCol
+                sc = z.broken ? color.new(normTxt, 45) : fr ? bestDemTxt : color.new(normTxt, 12)
+                table.cell(dash, 0, r, "D" + str.tostring(k + 1) + (fr ? " ◆" : ""), text_color = tc, text_size = size.tiny, text_halign = text.align_left)
+                table.cell(dash, 1, r, str.tostring(z.bot, format.mintick) + ".." + str.tostring(z.top, format.mintick), text_color = color.new(normTxt, 12), text_size = size.tiny, text_halign = text.align_left)
+                table.cell(dash, 2, r, str.tostring(z.score, "0.0"), text_color = tc, text_size = size.tiny, text_halign = text.align_right)
+                table.cell(dash, 3, r, f_state(z.broken, z.touches), text_color = sc, text_size = size.tiny, text_halign = text.align_left)
+            else
+                table.cell(dash, 0, r, "", text_size = size.tiny)
+                table.cell(dash, 1, r, "", text_size = size.tiny)
+                table.cell(dash, 2, r, "", text_size = size.tiny)
+                table.cell(dash, 3, r, "", text_size = size.tiny)
+
+        cur = array.new<int>()
+        if array.size(magStats) > 0
+            for i = 0 to array.size(magStats) - 1
+                if array.get(magStats, i).sessId == sessId
+                    array.push(cur, i)
+
+        mHdr = dr0 + 1 + mp
+        table.cell(dash, 0, mHdr, "MAGNET PULLS", text_color = magColor, text_size = size.small, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 1, mHdr, "src→tgt", text_color = color.new(normTxt, 55), text_size = size.tiny, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 2, mHdr, "", bgcolor = bandBg)
+        table.cell(dash, 3, mHdr, str.tostring(array.size(cur)) + " active", text_color = dimTx, text_size = size.tiny, text_halign = text.align_right, bgcolor = bandBg)
+        cHdr = mHdr + 1
+        table.cell(dash, 0, cHdr, "route", text_color = dimTx, text_size = size.tiny, text_halign = text.align_left)
+        table.cell(dash, 1, cHdr, "pull/10", text_color = dimTx, text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 2, cHdr, "target", text_color = dimTx, text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 3, cHdr, "to price", text_color = dimTx, text_size = size.tiny, text_halign = text.align_right)
+
+        for k = 0 to magMaxPerSess - 1
+            r = cHdr + 1 + k
+            if k < array.size(cur)
+                ms = array.get(magStats, array.get(cur, k))
+                rc = magColor
+                route = (ms.down ? "▼ " : "▲ ") + ms.srcTag + "→" + ms.tgtTag + (ms.tgtFresh ? "◆" : "")
+                distPct = close != 0 ? (ms.tgtMid - close) / close * 100.0 : 0.0
+                distAtr = atr > 0 ? math.abs(ms.tgtMid - close) / atr : 0.0
+                table.cell(dash, 0, r, route, text_color = rc, text_size = size.tiny, text_halign = text.align_left)
+                table.cell(dash, 1, r, str.tostring(ms.pull10, "0.0"), text_color = rc, text_size = size.tiny, text_halign = text.align_right)
+                table.cell(dash, 2, r, str.tostring(ms.tgtMid, format.mintick), text_color = color.new(normTxt, 10), text_size = size.tiny, text_halign = text.align_right)
+                table.cell(dash, 3, r, str.tostring(distPct, "+0.00") + "%·" + str.tostring(distAtr, "0.0") + "×", text_color = color.new(normTxt, 10), text_size = size.tiny, text_halign = text.align_right)
+            else
+                table.cell(dash, 0, r, k == 0 and array.size(cur) == 0 ? "— none —" : "", text_color = dimTx, text_size = size.tiny, text_halign = text.align_left)
+                table.cell(dash, 1, r, "", text_size = size.tiny)
+                table.cell(dash, 2, r, "", text_size = size.tiny)
+                table.cell(dash, 3, r, "", text_size = size.tiny)
+
+        float downStr = 0.0
+        float upStr   = 0.0
+        int   nearI   = -1
+        float nearD   = 1e18
+        if array.size(cur) > 0
+            for i = 0 to array.size(cur) - 1
+                ms = array.get(magStats, array.get(cur, i))
+                downStr := ms.down ? downStr + ms.pull10 : downStr
+                upStr   := ms.down ? upStr : upStr + ms.pull10
+                dd = math.abs(ms.tgtMid - close)
+                if dd < nearD
+                    nearD := dd
+                    nearI := array.get(cur, i)
+        fHdr = cHdr + 1 + magMaxPerSess
+        table.cell(dash, 0, fHdr, "FIELD", text_color = normTxt, text_size = size.small, text_halign = text.align_left, bgcolor = bandBg)
+        table.cell(dash, 1, fHdr, "", bgcolor = bandBg)
+        table.cell(dash, 2, fHdr, "", bgcolor = bandBg)
+        table.cell(dash, 3, fHdr, "", bgcolor = bandBg)
+
+        string netTx = array.size(cur) == 0 ? "—" : downStr > upStr ? "▼ DOWN" : upStr > downStr ? "▲ UP" : "BALANCED"
+        color  netC  = array.size(cur) == 0 ? dimTx : downStr > upStr ? supCol : upStr > downStr ? demCol : normTxt
+        table.cell(dash, 0, fHdr + 1, " Net pull", text_color = color.new(normTxt, 35), text_size = size.tiny, text_halign = text.align_left)
+        table.cell(dash, 1, fHdr + 1, netTx, text_color = netC, text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 2, fHdr + 1, "Σ▼" + str.tostring(downStr, "0.0"), text_color = supCol, text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 3, fHdr + 1, "Σ▲" + str.tostring(upStr, "0.0"), text_color = demCol, text_size = size.tiny, text_halign = text.align_right)
+
+        string nrRoute = "—"
+        string nrPx    = ""
+        string nrDist  = ""
+        if nearI >= 0
+            ms = array.get(magStats, nearI)
+            nrRoute := (ms.down ? "▼ " : "▲ ") + ms.tgtTag
+            nrPx    := str.tostring(ms.tgtMid, format.mintick)
+            nrDist  := str.tostring(atr > 0 ? math.abs(ms.tgtMid - close) / atr : 0.0, "0.0") + "×"
+        table.cell(dash, 0, fHdr + 2, " Nearest", text_color = color.new(normTxt, 35), text_size = size.tiny, text_halign = text.align_left)
+        table.cell(dash, 1, fHdr + 2, nrRoute, text_color = magColor, text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 2, fHdr + 2, nrPx, text_color = color.new(normTxt, 10), text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 3, fHdr + 2, nrDist, text_color = color.new(normTxt, 10), text_size = size.tiny, text_halign = text.align_right)
+
+        int supN = math.min(mp, array.size(sIdx))
+        int demN = math.min(mp, array.size(dIdx))
+        table.cell(dash, 0, fHdr + 3, " Active", text_color = color.new(normTxt, 35), text_size = size.tiny, text_halign = text.align_left)
+        table.cell(dash, 1, fHdr + 3, str.tostring(array.size(cur)) + " pulls", text_color = color.new(normTxt, 10), text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 2, fHdr + 3, str.tostring(supN) + "S", text_color = supCol, text_size = size.tiny, text_halign = text.align_right)
+        table.cell(dash, 3, fHdr + 3, str.tostring(demN) + "D", text_color = demCol, text_size = size.tiny, text_halign = text.align_right)
+
+f_buildMagnets() =>
+    if array.size(magnets) > 0
+        for mi = 0 to array.size(magnets) - 1
+            m = array.get(magnets, mi)
+            if not na(m.ln)
+                line.delete(m.ln)
+            if not na(m.lab)
+                label.delete(m.lab)
+    array.clear(magnets)
+    array.clear(magStats)
+    bool freshHit = false
+    if magnetsOn
+        int minSessM = math.max(0, sessId - magSessBack + 1)
+        int minSessV = math.max(0, sessId - sessionsBack + 1)
+        for s = sessId to minSessM
+            supD = f_displayed("Supply", s, minSessV)
+            demD = f_displayed("Demand", s, minSessV)
+            cSrc = array.new<int>()
+            cTgt = array.new<int>()
+            cScr = array.new<float>()
+            cSR  = array.new<int>()
+            cTR  = array.new<int>()
+
+            if array.size(supD) > 0
+                for a = 0 to array.size(supD) - 1
+                    si  = array.get(supD, a)
+                    src = array.get(zones, si)
+                    if not src.broken and src.touches >= magMinTouch and src.score >= magnetThr
+                        int   ti = -1
+                        int   tp = -1
+                        float bd = 1e18
+                        if array.size(demD) > 0
+                            for b = 0 to array.size(demD) - 1
+                                di = array.get(demD, b)
+                                d0 = array.get(zones, di)
+                                if not d0.broken and d0.mid < src.mid and d0.score >= magTargetThr
+                                    dd = src.mid - d0.mid
+                                    if dd <= atr * magMaxReach and dd < bd
+                                        bd := dd
+                                        ti := di
+                                        tp := b
+                        if ti >= 0
+                            array.push(cSrc, si)
+                            array.push(cTgt, ti)
+                            array.push(cScr, src.score)
+                            array.push(cSR, a + 1)
+                            array.push(cTR, tp + 1)
+
+            if array.size(demD) > 0
+                for a = 0 to array.size(demD) - 1
+                    di  = array.get(demD, a)
+                    src = array.get(zones, di)
+                    if not src.broken and src.touches >= magMinTouch and src.score >= magnetThr
+                        int   ti = -1
+                        int   tp = -1
+                        float bd = 1e18
+                        if array.size(supD) > 0
+                            for b = 0 to array.size(supD) - 1
+                                si2 = array.get(supD, b)
+                                s0  = array.get(zones, si2)
+                                if not s0.broken and s0.mid > src.mid and s0.score >= magTargetThr
+                                    dd = s0.mid - src.mid
+                                    if dd <= atr * magMaxReach and dd < bd
+                                        bd := dd
+                                        ti := si2
+                                        tp := b
+                        if ti >= 0
+                            array.push(cSrc, di)
+                            array.push(cTgt, ti)
+                            array.push(cScr, src.score)
+                            array.push(cSR, a + 1)
+                            array.push(cTR, tp + 1)
+
+            int nc = array.size(cScr)
+            if nc > 1
+                for x = 0 to nc - 2
+                    int best = x
+                    for y = x + 1 to nc - 1
+                        if array.get(cScr, y) > array.get(cScr, best)
+                            best := y
+                    if best != x
+                        float f0 = array.get(cScr, x)
+                        array.set(cScr, x, array.get(cScr, best))
+                        array.set(cScr, best, f0)
+                        int i0 = array.get(cSrc, x)
+                        array.set(cSrc, x, array.get(cSrc, best))
+                        array.set(cSrc, best, i0)
+                        int j0 = array.get(cTgt, x)
+                        array.set(cTgt, x, array.get(cTgt, best))
+                        array.set(cTgt, best, j0)
+                        int r0 = array.get(cSR, x)
+                        array.set(cSR, x, array.get(cSR, best))
+                        array.set(cSR, best, r0)
+                        int q0 = array.get(cTR, x)
+                        array.set(cTR, x, array.get(cTR, best))
+                        array.set(cTR, best, q0)
+            int drawn = 0
+            if nc > 0
+                for x = 0 to nc - 1
+                    if drawn < magMaxPerSess
+                        src = array.get(zones, array.get(cSrc, x))
+                        tgt = array.get(zones, array.get(cTgt, x))
+                        bool  dn      = src.kind == "Supply"
+                        float pull10  = math.min(10.0, math.max(0.0, 0.5 * src.score + 0.5 * tgt.score))
+                        float pullPct = 100.0 / (1.0 + math.exp(-(pull10 - magProbMid) / magProbSlope))
+                        float frac    = math.min(0.92, magAnchorFrac + drawn * 0.16)
+                        int   lx      = src.leftTime + int((src.rightTime - src.leftTime) * frac)
+                        lx := math.max(src.leftTime, math.min(lx, src.rightTime))
+                        mLn = line.new(lx, src.mid, lx, tgt.mid, xloc = xloc.bar_time, color = color.new(magColor, 0), width = 2, style = line.style_arrow_right)
+                        mTxt = (dn ? "▼" : "▲") + " MAGNET " + str.tostring(pull10, "0.0") + " · " + str.tostring(pullPct, "#") + "%"
+                        mLab = label.new(lx, tgt.mid, mTxt, xloc = xloc.bar_time, style = label.style_label_left, color = color.new(magColor, 8), textcolor = color.new(color.black, 0), size = magLblSize, textalign = text.align_left)
+                        array.push(magnets, Magnet.new(mLn, mLab))
+
+                        string sTag = (dn ? "S" : "D") + str.tostring(array.get(cSR, x))
+                        string tTag = (dn ? "D" : "S") + str.tostring(array.get(cTR, x))
+                        bool   tFr  = not tgt.broken and tgt.touches == 0
+                        array.push(magStats, MagStat.new(s, dn, sTag, tTag, tFr, tgt.mid, src.mid, pull10))
+                        drawn += 1
+                        if src.lastTouch == n
+                            freshHit := true
+    freshHit
+
+bool newSession = false
+if sessionMode == "Daily"
+    newSession := nz(ta.change(time("D")), 0) != 0
+else
+    sStr = sessionMode == "Asian" ? "0000-0800" : sessionMode == "London" ? "0800-1300" : sessionMode == "New York" ? "1300-2200" : customSess
+    inS  = not na(time(timeframe.period, sStr, tzUse))
+    newSession := inS and not inS[1]
+if newSession
+    sessId += 1
+if na(curSessStart) or newSession
+    curSessStart := time
+
+ph = ta.pivothigh(high, swingLen, swingLen)
+pl = ta.pivotlow(low, swingLen, swingLen)
+
+bool evNewSup = not na(ph) and barstate.isconfirmed
+bool evNewDem = not na(pl) and barstate.isconfirmed
+
+if evNewSup and n - lastSupBar >= minZoneDist and (high[swingLen] - low[swingLen]) >= atr * minSwingATR
+    dep  = high[swingLen] - loSwing
+    impF = math.min(math.max(dep, 0.0) / math.max(atr * impulseNorm, 1e-9), 1.0)
+    volF = nz(volBase) > 0 ? math.min(nz(volume[swingLen]) / volBase, 1.0) : 0.0
+    rng  = math.max(high[swingLen] - low[swingLen], 1e-9)
+    wF   = math.min(math.max(high[swingLen] - math.max(open[swingLen], close[swingLen]), 0.0) / rng, 1.0)
+    z = f_makeZone("Supply", high[swingLen], low[swingLen], n - swingLen, impF, volF, wF)
+    merged = false
+    if mergeOverlap and array.size(zones) > 0
+        for i = array.size(zones) - 1 to math.max(0, array.size(zones) - 12)
+            e = array.get(zones, i)
+            if e.kind == "Supply" and not e.broken and e.sessId == sessId and f_overlap(z.top, z.bot, e.top, e.bot)
+                e.top := math.max(z.top, e.top)
+                e.bot := math.min(z.bot, e.bot)
+                e.mid := (e.top + e.bot) / 2.0
+                box.set_top(e.bx, e.top)
+                box.set_bottom(e.bx, e.bot)
+                merged := true
+                break
+    if not merged
+        z.bx := box.new(z.leftTime, z.top, z.rightTime, z.bot, xloc = xloc.bar_time, bgcolor = color.new(supCol, trStrong), border_color = color.new(supCol, borderTransp), border_width = borderWidth)
+        array.push(zones, z)
+        lastSupBar := n
+
+if evNewDem and n - lastDemBar >= minZoneDist and (high[swingLen] - low[swingLen]) >= atr * minSwingATR
+    dep  = hiSwing - low[swingLen]
+    impF = math.min(math.max(dep, 0.0) / math.max(atr * impulseNorm, 1e-9), 1.0)
+    volF = nz(volBase) > 0 ? math.min(nz(volume[swingLen]) / volBase, 1.0) : 0.0
+    rng  = math.max(high[swingLen] - low[swingLen], 1e-9)
+    wF   = math.min(math.max(math.min(open[swingLen], close[swingLen]) - low[swingLen], 0.0) / rng, 1.0)
+    z = f_makeZone("Demand", high[swingLen], low[swingLen], n - swingLen, impF, volF, wF)
+    merged = false
+    if mergeOverlap and array.size(zones) > 0
+        for i = array.size(zones) - 1 to math.max(0, array.size(zones) - 12)
+            e = array.get(zones, i)
+            if e.kind == "Demand" and not e.broken and e.sessId == sessId and f_overlap(z.top, z.bot, e.top, e.bot)
+                e.top := math.max(z.top, e.top)
+                e.bot := math.min(z.bot, e.bot)
+                e.mid := (e.top + e.bot) / 2.0
+                box.set_top(e.bx, e.top)
+                box.set_bottom(e.bx, e.bot)
+                merged := true
+                break
+    if not merged
+        z.bx := box.new(z.leftTime, z.top, z.rightTime, z.bot, xloc = xloc.bar_time, bgcolor = color.new(demCol, trStrong), border_color = color.new(demCol, borderTransp), border_width = borderWidth)
+        array.push(zones, z)
+        lastDemBar := n
+
+minKeep = math.max(0, sessId - sessionsBack - 1)
+nPrune = 0
+keepHit = false
+if array.size(zones) > 0
+    for i = 0 to array.size(zones) - 1
+        isOld = array.get(zones, i).sessId < minKeep
+        keepHit := keepHit or not isOld
+        if isOld and not keepHit
+            nPrune += 1
+nPrune := math.max(nPrune, array.size(zones) - 480)
+if nPrune > 0
+    for i = 0 to nPrune - 1
+        old = array.shift(zones)
+        box.delete(old.bx)
+        if not na(old.lab)
+            label.delete(old.lab)
+
+if array.size(zones) > 0
+    for i = 0 to array.size(zones) - 1
+        z = array.get(zones, i)
+        if z.sessId == sessId
+            z.rightTime := time
+            box.set_right(z.bx, time)
+        if not z.broken
+            inZone = high >= z.bot and low <= z.top
+            if inZone and not z.inPrev
+                z.touches   += 1
+                z.lastTouch := n
+                wk  = z.kind == "Supply" ? math.max(high - math.max(open, close), 0.0) : math.max(math.min(open, close) - low, 0.0)
+                rng = math.max(high - low, 1e-9)
+                z.wickF := math.min(z.wickF + wk / rng, 1.0)
+            z.inPrev := inZone
+            brk = z.kind == "Supply" ? (invMethod == "Close" ? close : high) > z.top : (invMethod == "Close" ? close : low) < z.bot
+            if brk
+                z.broken := true
+
+bool evMagnet = false
+if barstate.islast and array.size(zones) > 0
+    for i = 0 to array.size(zones) - 1
+        z = array.get(zones, i)
+        z.score := f_score(z.impF, z.volF, z.wickF, z.touches, n - z.lastTouch)
+    f_renderSide("Supply")
+    f_renderSide("Demand")
+    evMagnet := f_buildMagnets()
+    f_dashboard()
+
+bool nearSup = false
+bool nearDem = false
+bool nearStrong = false
+prox = close * alertProx / 100.0
+if array.size(zones) > 0
+    for i = 0 to array.size(zones) - 1
+        z = array.get(zones, i)
+        if not z.broken and math.abs(close - z.mid) <= prox
+            if z.kind == "Supply"
+                nearSup := true
+            else
+                nearDem := true
+            if z.score >= instThr
+                nearStrong := true
+
+alertcondition(evNewSup and alertsOn,   "New Supply Zone",   "{{ticker}} new supply zone")
+alertcondition(evNewDem and alertsOn,   "New Demand Zone",   "{{ticker}} new demand zone")
+alertcondition(nearSup and alertsOn,    "Near Supply",       "{{ticker}} price approaching supply")
+alertcondition(nearDem and alertsOn,    "Near Demand",       "{{ticker}} price approaching demand")
+alertcondition(nearStrong and alertsOn, "Near STRONG Zone",  "{{ticker}} price approaching a strong zone")
+alertcondition(evMagnet and alertsOn,   "Magnet Pull Fired", "{{ticker}} strong zone re-tested — magnet pull to opposite zone")
