@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from indicators import atr_wilder, crossover, crossunder, ema, mfi, rsi, sma
-from extra_indicators import cardwell_range_states
+from extra_indicators import cardwell_range_states, cm_macd_ultimate_signals
 from zone_engine import pivot_high, pivot_low
 
 STRUCTURE_TFS = ("4h", "1h")
@@ -402,16 +402,31 @@ def golden_combo_signals(
     use_cardwell: bool = True,
     cardwell_trend_len: int = 100,
     require_macd_div_s1s2: bool = True,
+    use_cm_ultimate: bool = False,
+    require_entry_ultimate_gold: bool = False,
 ) -> pd.DataFrame:
     """
     Fuse 5 golden scenarios on 15m entry chart.
-    Structure = Elliott (4h/1h), Confirm = MACD + Cardwell (1h), Entry = EWO/RSI (15m).
+    Structure = Elliott (4h/1h), Confirm = MACD/CM Ultimate + Cardwell (1h), Entry = EWO/RSI (15m).
+    use_cm_ultimate=True → Golden Fusion v2 (Silver/Gold OB/OS + built-in divergence).
     """
     entry = ewo_rsi_features(entry_df)
-    confirm = macd_divergence_states(confirm_df)
-    cardwell = cardwell_range_states(confirm_df, trend_len=cardwell_trend_len)
-    for col in ("cardwell_bull_regime", "cardwell_bear_regime", "cardwell_regime", "cardwell_long_signal", "cardwell_short_signal"):
-        confirm[col] = cardwell[col].values
+    if use_cm_ultimate:
+        confirm = cm_macd_ultimate_signals(confirm_df)
+        entry_ult = cm_macd_ultimate_signals(entry_df)
+        cardwell = cardwell_range_states(confirm_df, trend_len=cardwell_trend_len)
+        for col in ("cardwell_bull_regime", "cardwell_bear_regime", "cardwell_regime", "cardwell_long_signal", "cardwell_short_signal"):
+            confirm[col] = cardwell[col].values
+        if structure_tf != CONFIRM_TF:
+            struct_ult = cm_macd_ultimate_signals(structure_df)
+        else:
+            struct_ult = None
+    else:
+        confirm = macd_divergence_states(confirm_df)
+        cardwell = cardwell_range_states(confirm_df, trend_len=cardwell_trend_len)
+        for col in ("cardwell_bull_regime", "cardwell_bear_regime", "cardwell_regime", "cardwell_long_signal", "cardwell_short_signal"):
+            confirm[col] = cardwell[col].values
+        entry_ult = struct_ult = None
     structure = elliott_wave_states(structure_df)
 
     n = len(entry)
@@ -435,21 +450,49 @@ def golden_combo_signals(
     s_tp_l = _align_float(structure, "tp_long", entry)
     s_tp_s = _align_float(structure, "tp_short", entry)
 
-    c_cross_bull_below = _align_bool(confirm, "macd_cross_bull_below", entry)
-    c_cross_bear_above = _align_bool(confirm, "macd_cross_bear_above", entry)
-    c_bull_above = _align_bool(confirm, "macd_bull_above_zero", entry)
-    c_hist_aqua = _align_bool(confirm, "macd_hist_aqua", entry)
-    c_hist_maroon = _align_bool(confirm, "macd_hist_maroon_turn", entry)
-    c_hist_blue = _align_bool(confirm, "macd_hist_blue_turn", entry)
-    c_cross_bull = _align_bool(confirm, "macd_cross_bull", entry)
-    c_cross_bear = _align_bool(confirm, "macd_cross_bear", entry)
-    c_hist_bull_turn = _align_bool(confirm, "macd_hist_bull_turn", entry)
-    c_macd_bull_div = _align_bool(confirm, "macd_bull_div", entry)
-    c_macd_bear_div = _align_bool(confirm, "macd_bear_div", entry)
     c_cardwell_bull = _align_bool(confirm, "cardwell_bull_regime", entry)
     c_cardwell_bear = _align_bool(confirm, "cardwell_bear_regime", entry)
     c_cardwell_long = _align_bool(confirm, "cardwell_long_signal", entry)
     c_cardwell_short = _align_bool(confirm, "cardwell_short_signal", entry)
+
+    if use_cm_ultimate:
+        c_cross_bull_below = c_cross_bear_above = np.zeros(n, dtype=bool)
+        c_bull_above = c_hist_aqua = c_hist_maroon = c_hist_blue = np.zeros(n, dtype=bool)
+        c_cross_bull = c_cross_bear = c_hist_bull_turn = np.zeros(n, dtype=bool)
+        c_macd_bull_div = c_macd_bear_div = np.zeros(n, dtype=bool)
+    else:
+        c_cross_bull_below = _align_bool(confirm, "macd_cross_bull_below", entry)
+        c_cross_bear_above = _align_bool(confirm, "macd_cross_bear_above", entry)
+        c_bull_above = _align_bool(confirm, "macd_bull_above_zero", entry)
+        c_hist_aqua = _align_bool(confirm, "macd_hist_aqua", entry)
+        c_hist_maroon = _align_bool(confirm, "macd_hist_maroon_turn", entry)
+        c_hist_blue = _align_bool(confirm, "macd_hist_blue_turn", entry)
+        c_cross_bull = _align_bool(confirm, "macd_cross_bull", entry)
+        c_cross_bear = _align_bool(confirm, "macd_cross_bear", entry)
+        c_hist_bull_turn = _align_bool(confirm, "macd_hist_bull_turn", entry)
+        c_macd_bull_div = _align_bool(confirm, "macd_bull_div", entry)
+        c_macd_bear_div = _align_bool(confirm, "macd_bear_div", entry)
+
+    if use_cm_ultimate:
+        c_u_gold_long = _align_bool(confirm, "gold_long", entry)
+        c_u_gold_short = _align_bool(confirm, "gold_short", entry)
+        c_u_silver_long = _align_bool(confirm, "silver_long", entry)
+        c_u_silver_short = _align_bool(confirm, "silver_short", entry)
+        e_u_gold_long = _align_bool(entry_ult, "gold_long", entry)
+        e_u_gold_short = _align_bool(entry_ult, "gold_short", entry)
+        e_u_silver_long = _align_bool(entry_ult, "silver_long", entry)
+        e_u_silver_short = _align_bool(entry_ult, "silver_short", entry)
+        if struct_ult is not None:
+            s_u_gold_long = _align_bool(struct_ult, "gold_long", entry)
+            s_u_gold_short = _align_bool(struct_ult, "gold_short", entry)
+            s_u_silver_long = _align_bool(struct_ult, "silver_long", entry)
+            s_u_silver_short = _align_bool(struct_ult, "silver_short", entry)
+        else:
+            s_u_gold_long = s_u_gold_short = s_u_silver_long = s_u_silver_short = np.zeros(n, dtype=bool)
+    else:
+        c_u_gold_long = c_u_gold_short = c_u_silver_long = c_u_silver_short = None
+        e_u_gold_long = e_u_gold_short = e_u_silver_long = e_u_silver_short = None
+        s_u_gold_long = s_u_gold_short = s_u_silver_long = s_u_silver_short = None
 
     vol_ok = entry["vol_ok"].fillna(True).values
     atr_v = atr_wilder(entry, 14).values
@@ -475,19 +518,55 @@ def golden_combo_signals(
 
         atr = float(atr_v[i]) if not np.isnan(atr_v[i]) else closes[i] * 0.002
 
-        macd_bull_confirm = recent(c_cross_bull_below, i, 32) or recent(c_hist_maroon, i, 16) or recent(c_cross_bull, i, 24)
-        macd_bear_confirm = recent(c_cross_bear_above, i, 32) or recent(c_hist_blue, i, 16) or recent(c_cross_bear, i, 24)
-        macd_wave3_confirm = recent(c_bull_above, i, 32) and (c_hist_aqua[i] or recent(c_hist_aqua, i, 8))
-        macd_pullback_bull = recent(c_cross_bull, i, 32) or recent(c_hist_bull_turn, i, 16)
-        macd_pullback_bear = recent(c_cross_bear, i, 32)
+        if use_cm_ultimate:
+            # 1H Ultimate: gold preferred; silver acceptable with 4H structure alignment
+            macd_bull_confirm = (
+                recent(c_u_gold_long, i, 32)
+                or recent(c_u_silver_long, i, 24)
+                or (structure_tf == "4h" and recent(s_u_silver_long, i, 48))
+            )
+            macd_bear_confirm = (
+                recent(c_u_gold_short, i, 32)
+                or recent(c_u_silver_short, i, 24)
+                or (structure_tf == "4h" and recent(s_u_silver_short, i, 48))
+            )
+            macd_wave3_confirm = recent(c_u_silver_long, i, 32) and (c_u_gold_long[i] or recent(c_u_gold_long, i, 16))
+            macd_pullback_bull = recent(c_u_silver_long, i, 32) or recent(c_u_gold_long, i, 32)
+            macd_pullback_bear = recent(c_u_silver_short, i, 32) or recent(c_u_gold_short, i, 32)
+            # S1/S2: gold on 1H replaces separate divergence filter
+            s1_div_ok = recent(c_u_gold_long, i, 48) or not require_macd_div_s1s2
+            s2_div_ok = recent(c_u_gold_short, i, 48) or not require_macd_div_s1s2
+            entry_ult_long_ok = (not require_entry_ultimate_gold) or recent(e_u_gold_long, i, 16) or e_u_gold_long[i]
+            entry_ult_short_ok = (not require_entry_ultimate_gold) or recent(e_u_gold_short, i, 16) or e_u_gold_short[i]
+        else:
+            macd_bull_confirm = recent(c_cross_bull_below, i, 32) or recent(c_hist_maroon, i, 16) or recent(c_cross_bull, i, 24)
+            macd_bear_confirm = recent(c_cross_bear_above, i, 32) or recent(c_hist_blue, i, 16) or recent(c_cross_bear, i, 24)
+            macd_wave3_confirm = recent(c_bull_above, i, 32) and (c_hist_aqua[i] or recent(c_hist_aqua, i, 8))
+            macd_pullback_bull = recent(c_cross_bull, i, 32) or recent(c_hist_bull_turn, i, 16)
+            macd_pullback_bear = recent(c_cross_bear, i, 32)
+            s1_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bull_div, i, 96)
+            s2_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bear_div, i, 96)
+            entry_ult_long_ok = entry_ult_short_ok = True
 
-        # S1/S2: Cardwell must not oppose reversal (not bear at bottom, not bull at top)
-        cardwell_s1_ok = (not use_cardwell) or (not c_cardwell_bear[i] and not recent(c_cardwell_bear, i, 8))
-        cardwell_s2_ok = (not use_cardwell) or (not c_cardwell_bull[i] and not recent(c_cardwell_bull, i, 8))
+        # S1/S2 Cardwell: skip at reversals when Ultimate handles OB/OS zones
+        if use_cm_ultimate:
+            cardwell_s1_ok = cardwell_s2_ok = True
+        else:
+            cardwell_s1_ok = (not use_cardwell) or (not c_cardwell_bear[i] and not recent(c_cardwell_bear, i, 8))
+            cardwell_s2_ok = (not use_cardwell) or (not c_cardwell_bull[i] and not recent(c_cardwell_bull, i, 8))
         cardwell_trend_long_ok = (not use_cardwell) or c_cardwell_bull[i] or recent(c_cardwell_bull, i, 16) or recent(c_cardwell_long, i, 32)
         cardwell_trend_short_ok = (not use_cardwell) or c_cardwell_bear[i] or recent(c_cardwell_bear, i, 16) or recent(c_cardwell_short, i, 32)
-        s1_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bull_div, i, 96)
-        s2_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bear_div, i, 96)
+        if not use_cm_ultimate:
+            s1_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bull_div, i, 96)
+            s2_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bear_div, i, 96)
+
+        # Entry layer: Ultimate 15m silver/gold can trigger when EWO silent
+        if use_cm_ultimate:
+            e_long_trig = e_buy or e_pre_buy or e_u_silver_long[i] or e_u_gold_long[i] or recent(e_u_silver_long, i, 8) or recent(e_u_gold_long, i, 16)
+            e_short_trig = e_sell or e_pre_sell or e_u_silver_short[i] or e_u_gold_short[i] or recent(e_u_silver_short, i, 8) or recent(e_u_gold_short, i, 16)
+        else:
+            e_long_trig = e_buy or e_pre_buy
+            e_short_trig = e_sell or e_pre_sell
 
         # S1 — absolute bottom buy
         if (
@@ -495,7 +574,8 @@ def golden_combo_signals(
             and macd_bull_confirm
             and s1_div_ok
             and cardwell_s1_ok
-            and (e_buy or (e_pre_buy and entry["rsi"].iloc[i] < 38))
+            and entry_ult_long_ok
+            and (e_long_trig or (e_pre_buy and entry["rsi"].iloc[i] < 38))
             and struct_ok_long
         ):
             buy[i] = True
@@ -510,7 +590,8 @@ def golden_combo_signals(
             and macd_bear_confirm
             and s2_div_ok
             and cardwell_s2_ok
-            and (e_sell or (e_pre_sell and entry["rsi"].iloc[i] > 62))
+            and entry_ult_short_ok
+            and (e_short_trig or (e_pre_sell and entry["rsi"].iloc[i] > 62))
             and struct_ok_short
         ):
             sell[i] = True
@@ -525,7 +606,8 @@ def golden_combo_signals(
             and not recent(s_box_broken, i, 8)
             and macd_pullback_bull
             and cardwell_trend_long_ok
-            and (e_buy or e_pre_buy)
+            and entry_ult_long_ok
+            and (e_long_trig or e_pre_buy)
             and struct_ok_long
         ):
             buy[i] = True
@@ -540,7 +622,8 @@ def golden_combo_signals(
             and not recent(s_box_broken, i, 8)
             and macd_pullback_bear
             and cardwell_trend_short_ok
-            and (e_sell or e_pre_sell)
+            and entry_ult_short_ok
+            and (e_short_trig or e_pre_sell)
             and struct_ok_short
         ):
             sell[i] = True
@@ -554,7 +637,8 @@ def golden_combo_signals(
             recent(s_wave3, i, 48)
             and macd_wave3_confirm
             and cardwell_trend_long_ok
-            and (e_buy or (e_pre_buy and e_break))
+            and entry_ult_long_ok
+            and (e_long_trig or (e_pre_buy and e_break))
             and struct_ok_long
         ):
             buy[i] = True
