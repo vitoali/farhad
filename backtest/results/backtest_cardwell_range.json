@@ -1,0 +1,316 @@
+{
+  "period_days": 31,
+  "indicator": "cardwell_range",
+  "trend_ma_len": 100,
+  "symbols": {
+    "crypto": [
+      "BTCUSDT",
+      "SOLUSDT"
+    ],
+    "forex": [
+      "EURUSD",
+      "XAUUSD",
+      "USDJPY"
+    ]
+  },
+  "timeframes": [
+    "5m",
+    "15m",
+    "1h",
+    "4h"
+  ],
+  "summaries": {
+    "crypto": {
+      "best": "SOLUSDT 1h PF=2.809 WR=73.91%",
+      "avg_pf": 1.726,
+      "total_trades": 317
+    },
+    "forex": {
+      "best": "XAUUSD 4h PF=2.005 WR=66.67%",
+      "avg_pf": 1.078,
+      "total_trades": 1258
+    }
+  },
+  "results": [
+    {
+      "indicator": "cardwell_range",
+      "symbol": "BTCUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 66,
+      "win_rate": 63.64,
+      "profit_factor": 1.384,
+      "avg_r": 0.113,
+      "max_drawdown_r": 3.703,
+      "notes": [
+        "signals=66 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 68,
+      "win_rate": 57.35,
+      "profit_factor": 1.138,
+      "avg_r": 0.046,
+      "max_drawdown_r": 4.112,
+      "notes": [
+        "signals=69 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "BTCUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 23,
+      "win_rate": 65.22,
+      "profit_factor": 1.633,
+      "avg_r": 0.169,
+      "max_drawdown_r": 1.534,
+      "notes": [
+        "signals=23 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "BTCUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 2.0,
+      "avg_r": 0.25,
+      "max_drawdown_r": 1.0,
+      "notes": [
+        "signals=4 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "SOLUSDT",
+      "timeframe": "5m",
+      "market": "crypto",
+      "total_trades": 71,
+      "win_rate": 67.61,
+      "profit_factor": 1.59,
+      "avg_r": 0.165,
+      "max_drawdown_r": 3.667,
+      "notes": [
+        "signals=72 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 57,
+      "win_rate": 70.18,
+      "profit_factor": 2.067,
+      "avg_r": 0.236,
+      "max_drawdown_r": 3.0,
+      "notes": [
+        "signals=57 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "SOLUSDT",
+      "timeframe": "1h",
+      "market": "crypto",
+      "total_trades": 23,
+      "win_rate": 73.91,
+      "profit_factor": 2.809,
+      "avg_r": 0.317,
+      "max_drawdown_r": 3.713,
+      "notes": [
+        "signals=23 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "SOLUSDT",
+      "timeframe": "4h",
+      "market": "crypto",
+      "total_trades": 5,
+      "win_rate": 60.0,
+      "profit_factor": 1.188,
+      "avg_r": 0.063,
+      "max_drawdown_r": 1.684,
+      "notes": [
+        "signals=5 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "EURUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 278,
+      "win_rate": 66.19,
+      "profit_factor": 1.452,
+      "avg_r": 0.136,
+      "max_drawdown_r": 7.254,
+      "notes": [
+        "signals=278 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 86,
+      "win_rate": 59.3,
+      "profit_factor": 1.165,
+      "avg_r": 0.056,
+      "max_drawdown_r": 6.218,
+      "notes": [
+        "signals=86 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "EURUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 18,
+      "win_rate": 38.89,
+      "profit_factor": 0.424,
+      "avg_r": -0.352,
+      "max_drawdown_r": 5.333,
+      "notes": [
+        "signals=19 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "EURUSD",
+      "timeframe": "4h",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.667,
+      "max_drawdown_r": 0.0,
+      "notes": [
+        "signals=2 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "XAUUSD",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 271,
+      "win_rate": 60.89,
+      "profit_factor": 1.292,
+      "avg_r": 0.089,
+      "max_drawdown_r": 6.018,
+      "notes": [
+        "signals=271 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 77,
+      "win_rate": 62.34,
+      "profit_factor": 1.585,
+      "avg_r": 0.135,
+      "max_drawdown_r": 3.605,
+      "notes": [
+        "signals=77 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "XAUUSD",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 25,
+      "win_rate": 44.0,
+      "profit_factor": 0.704,
+      "avg_r": -0.107,
+      "max_drawdown_r": 3.079,
+      "notes": [
+        "signals=25 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "XAUUSD",
+      "timeframe": "4h",
+      "market": "forex",
+      "total_trades": 3,
+      "win_rate": 66.67,
+      "profit_factor": 2.005,
+      "avg_r": 0.223,
+      "max_drawdown_r": 0.0,
+      "notes": [
+        "signals=3 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "USDJPY",
+      "timeframe": "5m",
+      "market": "forex",
+      "total_trades": 366,
+      "win_rate": 54.64,
+      "profit_factor": 1.256,
+      "avg_r": 0.07,
+      "max_drawdown_r": 5.809,
+      "notes": [
+        "signals=366 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 103,
+      "win_rate": 52.43,
+      "profit_factor": 1.054,
+      "avg_r": 0.016,
+      "max_drawdown_r": 5.269,
+      "notes": [
+        "signals=104 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "USDJPY",
+      "timeframe": "1h",
+      "market": "forex",
+      "total_trades": 25,
+      "win_rate": 64.0,
+      "profit_factor": 1.728,
+      "avg_r": 0.168,
+      "max_drawdown_r": 3.543,
+      "notes": [
+        "signals=25 trend_ma=100"
+      ]
+    },
+    {
+      "indicator": "cardwell_range",
+      "symbol": "USDJPY",
+      "timeframe": "4h",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 25.0,
+      "profit_factor": 0.274,
+      "avg_r": -0.442,
+      "max_drawdown_r": 1.434,
+      "notes": [
+        "signals=4 trend_ma=100"
+      ]
+    }
+  ]
+}

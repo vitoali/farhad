@@ -2,6 +2,9 @@
   "period_days": 31,
   "entry_tf": "15m",
   "confirm_tf": "1h",
+  "cardwell_ma_len": 100,
+  "use_cardwell": true,
+  "require_macd_div_s1s2": true,
   "structure_modes": [
     "4h",
     "1h"
@@ -18,43 +21,12 @@
       "status": "no_trades"
     },
     "struct_1h": {
-      "best": "XAUUSD PF=0.607 WR=45.45% trades=11",
-      "avg_pf": 0.204,
-      "total_trades": 20
+      "status": "no_trades"
     }
   },
   "scenario_stats": {
     "4h": {},
-    "1h": {
-      "S1_bottom": [
-        {
-          "symbol": "EURUSD",
-          "trades": 2,
-          "wr": 100.0,
-          "pf": 999
-        },
-        {
-          "symbol": "XAUUSD",
-          "trades": 2,
-          "wr": 50.0,
-          "pf": 1.5
-        }
-      ],
-      "S2_top": [
-        {
-          "symbol": "XAUUSD",
-          "trades": 9,
-          "wr": 44.4,
-          "pf": 0.375
-        },
-        {
-          "symbol": "USDJPY",
-          "trades": 7,
-          "wr": 14.3,
-          "pf": 0.004
-        }
-      ]
-    }
+    "1h": {}
   },
   "results": [
     {
@@ -104,13 +76,13 @@
       "symbol": "EURUSD",
       "timeframe": "15m",
       "market": "forex",
-      "total_trades": 2,
-      "win_rate": 100.0,
-      "profit_factor": 999,
-      "avg_r": 0.499,
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
       "max_drawdown_r": 0.0,
       "notes": [
-        "signals=2 struct=1h scenarios={'': 2107, 'S1_bottom': 2}"
+        "signals=0 struct=1h scenarios={'': 2109}"
       ]
     },
     {
@@ -118,13 +90,13 @@
       "symbol": "XAUUSD",
       "timeframe": "15m",
       "market": "forex",
-      "total_trades": 11,
-      "win_rate": 45.45,
-      "profit_factor": 0.607,
-      "avg_r": -0.174,
-      "max_drawdown_r": 4.182,
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
       "notes": [
-        "signals=11 struct=1h scenarios={'': 1896, 'S2_top': 9, 'S1_bottom': 2}"
+        "signals=0 struct=1h scenarios={'': 1907}"
       ]
     },
     {
@@ -132,13 +104,13 @@
       "symbol": "USDJPY",
       "timeframe": "15m",
       "market": "forex",
-      "total_trades": 7,
-      "win_rate": 14.29,
-      "profit_factor": 0.004,
-      "avg_r": -0.353,
-      "max_drawdown_r": 2.452,
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
       "notes": [
-        "signals=7 struct=1h scenarios={'': 2173, 'S2_top': 7}"
+        "signals=0 struct=1h scenarios={'': 2180}"
       ]
     }
   ]

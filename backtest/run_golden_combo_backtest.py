@@ -18,9 +18,13 @@ SYMBOLS = ["EURUSD", "XAUUSD", "USDJPY"]
 STRUCTURE_MODES = ["4h", "1h"]
 
 
-def run_golden(data: dict, structure_tf: str) -> list[dict]:
+def run_golden(data: dict, structure_tf: str, use_cardwell: bool = True, require_macd_div: bool = True) -> list[dict]:
     rows: list[dict] = []
     label = f"golden_combo_{structure_tf}"
+    if not use_cardwell:
+        label += "_no_cw"
+    if not require_macd_div:
+        label += "_no_div"
     for sym in SYMBOLS:
         entry_df = data.get(sym, {}).get("15m")
         confirm_df = data.get(sym, {}).get("1h")
@@ -29,7 +33,12 @@ def run_golden(data: dict, structure_tf: str) -> list[dict]:
             continue
         if len(entry_df) < 120 or len(confirm_df) < 50 or len(struct_df) < 20:
             continue
-        sig = golden_combo_signals(entry_df, confirm_df, struct_df, structure_tf=structure_tf)
+        sig = golden_combo_signals(
+            entry_df, confirm_df, struct_df,
+            structure_tf=structure_tf,
+            use_cardwell=use_cardwell,
+            require_macd_div_s1s2=require_macd_div,
+        )
         zlist = extract_zone_signals_from_df(sig)
         if zlist:
             trades = simulate_zone_native(entry_df, zlist, "forex")
@@ -43,13 +52,18 @@ def run_golden(data: dict, structure_tf: str) -> list[dict]:
     return rows
 
 
-def scenario_breakdown(data: dict, structure_tf: str) -> dict:
+def scenario_breakdown(data: dict, structure_tf: str, use_cardwell: bool = True, require_macd_div: bool = True) -> dict:
     out: dict[str, list] = defaultdict(list)
     for sym in SYMBOLS:
         entry_df = data[sym]["15m"]
         confirm_df = data[sym]["1h"]
         struct_df = data[sym][structure_tf]
-        sig = golden_combo_signals(entry_df, confirm_df, struct_df, structure_tf=structure_tf)
+        sig = golden_combo_signals(
+            entry_df, confirm_df, struct_df,
+            structure_tf=structure_tf,
+            use_cardwell=use_cardwell,
+            require_macd_div_s1s2=require_macd_div,
+        )
         for sc in sig["scenario"].unique():
             if not sc:
                 continue
@@ -78,9 +92,27 @@ def main():
     all_rows: list[dict] = []
     summaries: dict = {}
     scenario_stats: dict = {}
+    filter_comparison: dict = {}
+
+    filter_modes = [
+        ("full", True, True),
+        ("cardwell_only", True, False),
+        ("baseline", False, False),
+    ]
+
+    for mode_name, use_cw, use_div in filter_modes:
+        mode_rows: list[dict] = []
+        for st in STRUCTURE_MODES:
+            mode_rows.extend(run_golden(data, st, use_cardwell=use_cw, require_macd_div=use_div))
+        valid = [r for r in mode_rows if r["total_trades"] >= 1]
+        filter_comparison[mode_name] = {
+            "total_trades": sum(r["total_trades"] for r in valid),
+            "avg_pf": round(float(sum(r["profit_factor"] for r in valid if r["profit_factor"] < 900) / len(valid)), 3) if valid else 0,
+            "symbols_with_trades": len(valid),
+        }
 
     for st in STRUCTURE_MODES:
-        rows = run_golden(data, st)
+        rows = run_golden(data, st, use_cardwell=True, require_macd_div=True)
         all_rows.extend(rows)
         valid = [r for r in rows if r["total_trades"] >= 1]
         if valid:
@@ -92,12 +124,16 @@ def main():
             }
         else:
             summaries[f"struct_{st}"] = {"status": "no_trades"}
-        scenario_stats[st] = scenario_breakdown(data, st)
+        scenario_stats[st] = scenario_breakdown(data, st, use_cardwell=True, require_macd_div=True)
 
     out = {
         "period_days": 31,
         "entry_tf": "15m",
         "confirm_tf": "1h",
+        "cardwell_ma_len": 100,
+        "use_cardwell": True,
+        "require_macd_div_s1s2": True,
+        "filter_comparison": filter_comparison,
         "structure_modes": STRUCTURE_MODES,
         "scenarios": SCENARIOS,
         "summaries": summaries,

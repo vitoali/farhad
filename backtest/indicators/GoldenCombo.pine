@@ -9,8 +9,11 @@ strategy("Golden Combo MTF [EW+MACD+EWO/RSI]", shorttitle="GoldenCombo", overlay
 
 grpMtf = "Multi-Timeframe"
 structTf = input.timeframe("240", "Structure TF (Elliott)", group=grpMtf)
-confirmTf = input.timeframe("60", "Confirm TF (MACD)", group=grpMtf)
+confirmTf = input.timeframe("60", "Confirm TF (MACD+Cardwell)", group=grpMtf)
 useVolFilter = input.bool(true, "Volume filter on 15m entry", group=grpMtf)
+useCardwell = input.bool(true, "Cardwell 1H regime filter", group=grpMtf)
+useMacdDiv = input.bool(true, "MACD divergence filter S1/S2", group=grpMtf)
+cardwellMaLen = input.int(100, "Cardwell Trend MA Length", group=grpMtf)
 
 grpEwo = "EWO/RSI Entry (chart TF = 15m)"
 ewoFast = input.int(5, "EWO Fast", group=grpEwo)
@@ -49,6 +52,35 @@ macdBullAbove = macdH > sigH and macdH > 0
 histAqua = histH > histH[1] and histH > 0
 histMaroon = histH > histH[1] and histH <= 0
 histBlue = histH < histH[1] and histH > 0
+
+// ── Cardwell Range on confirm TF (MA=100) ───────────────────────
+cardwellRegime() =>
+    _rsi = ta.rsi(close, 14)
+    _ma = ta.sma(close, cardwellMaLen)
+    _bull = close > _ma and _rsi >= 40 and _rsi <= 80
+    _bear = close < _ma and _rsi >= 20 and _rsi <= 60
+    var int _bc = 0
+    var int _erc = 0
+    _bc := _bull ? _bc + 1 : 0
+    _erc := _bear ? _erc + 1 : 0
+    _bullC = _bull and _bc >= 2
+    _bearC = _bear and _erc >= 2
+    _bullC ? 1 : _bearC ? -1 : 0
+
+cwRegime = request.security(syminfo.tickerid, confirmTf, cardwellRegime(), barmerge.gaps_off, barmerge.lookahead_off)
+cwLongSig = request.security(syminfo.tickerid, confirmTf, cardwellRegime() == 1 and cardwellRegime()[1] != 1, barmerge.gaps_off, barmerge.lookahead_off)
+cwShortSig = request.security(syminfo.tickerid, confirmTf, cardwellRegime() == -1 and cardwellRegime()[1] != -1, barmerge.gaps_off, barmerge.lookahead_off)
+cardwellS1Ok = not useCardwell or (cwRegime != -1 and ta.barssince(cwRegime == -1) > 8)
+cardwellS2Ok = not useCardwell or (cwRegime != 1 and ta.barssince(cwRegime == 1) > 8)
+cardwellTrendLongOk = not useCardwell or cwRegime == 1 or ta.barssince(cwLongSig) < 32
+cardwellTrendShortOk = not useCardwell or cwRegime == -1 or ta.barssince(cwShortSig) < 32
+
+// MACD divergence on confirm TF
+[macdLine, _, _] = request.security(syminfo.tickerid, confirmTf, ta.macd(close, 12, 26, 9), barmerge.gaps_off, barmerge.lookahead_off)
+macdBullDiv = ta.lowest(low, 20)[3] < ta.lowest(low, 20)[13] and macdLine[3] > macdLine[13]
+macdBearDiv = ta.highest(high, 20)[3] > ta.highest(high, 20)[13] and macdLine[3] < macdLine[13]
+s1DivOk = not useMacdDiv or macdBullDiv or ta.barssince(macdBullDiv) < 96
+s2DivOk = not useMacdDiv or macdBearDiv or ta.barssince(macdBearDiv) < 96
 
 // ── Elliott structure pack (simplified zigzag wave-5 / ABC) ─────
 ewPack(int left) =>
@@ -118,11 +150,11 @@ macdBullConfirm = barsSince(macdBullBelow) < 32 or barsSince(histMaroon) < 16 or
 macdBearConfirm = barsSince(macdBearAbove) < 32 or barsSince(histBlue) < 16 or barsSince(macdCrossBear) < 24
 
 // ── 5 Golden Scenarios ────────────────────────────────────────────
-s1Long = structBearRecent and macdBullConfirm and (rawBuy or (preBuy and rsiV < 38)) and volOk
-s2Short = structBullRecent and macdBearConfirm and (rawSell or (preSell and rsiV > 62)) and volOk
-s4Long = corrBullRecent and macdBullConfirm and (rawBuy or preBuy) and volOk
-s5Short = corrBearRecent and macdBearConfirm and (rawSell or preSell) and volOk
-s3Long = wave3Recent and macdBullAbove and histAqua and (rawBuy or (preBuy and priceBreak)) and volOk
+s1Long = structBearRecent and macdBullConfirm and s1DivOk and cardwellS1Ok and (rawBuy or (preBuy and rsiV < 38)) and volOk
+s2Short = structBullRecent and macdBearConfirm and s2DivOk and cardwellS2Ok and (rawSell or (preSell and rsiV > 62)) and volOk
+s4Long = corrBullRecent and macdBullConfirm and cardwellTrendLongOk and (rawBuy or preBuy) and volOk
+s5Short = corrBearRecent and macdBearConfirm and cardwellTrendShortOk and (rawSell or preSell) and volOk
+s3Long = wave3Recent and macdBullAbove and histAqua and cardwellTrendLongOk and (rawBuy or (preBuy and priceBreak)) and volOk
 
 bool goLong = s1Long or s4Long or s3Long
 bool goShort = s2Short or s5Short

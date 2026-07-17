@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from indicators import atr_wilder, crossover, crossunder, ema, mfi, rsi, sma
+from extra_indicators import cardwell_range_states
 from zone_engine import pivot_high, pivot_low
 
 STRUCTURE_TFS = ("4h", "1h")
@@ -79,6 +80,64 @@ def macd_cm_states(df: pd.DataFrame, fast: int = 12, slow: int = 26, sig: int = 
     out["macd_hist_maroon_turn"] = hist_maroon_turn
     out["macd_hist_blue_turn"] = hist_blue_turn
     out["macd_hist_bull_turn"] = hist_bull_turn
+    return out
+
+
+def macd_divergence_states(
+    df: pd.DataFrame,
+    fast: int = 12,
+    slow: int = 26,
+    sig: int = 9,
+    lookback: int = 20,
+    pivot_bars: int = 3,
+) -> pd.DataFrame:
+    """
+    MACD regular divergence on confirm TF.
+    Bullish: price lower low + MACD higher low (S1 filter).
+    Bearish: price higher high + MACD lower high (S2 filter).
+    """
+    out = macd_cm_states(df, fast=fast, slow=slow, sig=sig)
+    macd_line = ema(out["close"], fast) - ema(out["close"], slow)
+    m = macd_line.values
+    lows = out["low"].values
+    highs = out["high"].values
+    n = len(out)
+    bull_div = np.zeros(n, dtype=bool)
+    bear_div = np.zeros(n, dtype=bool)
+
+    for i in range(lookback * 2 + pivot_bars + 2, n):
+        # pivot low at i - pivot_bars
+        lb = i - pivot_bars
+        if lb < lookback:
+            continue
+        is_pl = lows[lb] <= lows[lb - pivot_bars : lb + pivot_bars + 1].min()
+        if not is_pl:
+            continue
+        # find previous pivot low within lookback
+        prev_pl = None
+        for j in range(lb - pivot_bars - 1, max(pivot_bars, lb - lookback), -1):
+            if lows[j] <= lows[max(0, j - pivot_bars) : j + pivot_bars + 1].min():
+                prev_pl = j
+                break
+        if prev_pl is not None:
+            if lows[lb] < lows[prev_pl] and m[lb] > m[prev_pl]:
+                bull_div[i] = True
+
+        # pivot high
+        is_ph = highs[lb] >= highs[lb - pivot_bars : lb + pivot_bars + 1].max()
+        if not is_ph:
+            continue
+        prev_ph = None
+        for j in range(lb - pivot_bars - 1, max(pivot_bars, lb - lookback), -1):
+            if highs[j] >= highs[max(0, j - pivot_bars) : j + pivot_bars + 1].max():
+                prev_ph = j
+                break
+        if prev_ph is not None:
+            if highs[lb] > highs[prev_ph] and m[lb] < m[prev_ph]:
+                bear_div[i] = True
+
+    out["macd_bull_div"] = bull_div
+    out["macd_bear_div"] = bear_div
     return out
 
 
@@ -340,13 +399,19 @@ def golden_combo_signals(
     structure_df: pd.DataFrame,
     structure_tf: str = "4h",
     require_volume: bool = True,
+    use_cardwell: bool = True,
+    cardwell_trend_len: int = 100,
+    require_macd_div_s1s2: bool = True,
 ) -> pd.DataFrame:
     """
     Fuse 5 golden scenarios on 15m entry chart.
-    Structure = Elliott (4h/1h), Confirm = MACD (1h), Entry = EWO/RSI (15m).
+    Structure = Elliott (4h/1h), Confirm = MACD + Cardwell (1h), Entry = EWO/RSI (15m).
     """
     entry = ewo_rsi_features(entry_df)
-    confirm = macd_cm_states(confirm_df)
+    confirm = macd_divergence_states(confirm_df)
+    cardwell = cardwell_range_states(confirm_df, trend_len=cardwell_trend_len)
+    for col in ("cardwell_bull_regime", "cardwell_bear_regime", "cardwell_regime", "cardwell_long_signal", "cardwell_short_signal"):
+        confirm[col] = cardwell[col].values
     structure = elliott_wave_states(structure_df)
 
     n = len(entry)
@@ -379,6 +444,12 @@ def golden_combo_signals(
     c_cross_bull = _align_bool(confirm, "macd_cross_bull", entry)
     c_cross_bear = _align_bool(confirm, "macd_cross_bear", entry)
     c_hist_bull_turn = _align_bool(confirm, "macd_hist_bull_turn", entry)
+    c_macd_bull_div = _align_bool(confirm, "macd_bull_div", entry)
+    c_macd_bear_div = _align_bool(confirm, "macd_bear_div", entry)
+    c_cardwell_bull = _align_bool(confirm, "cardwell_bull_regime", entry)
+    c_cardwell_bear = _align_bool(confirm, "cardwell_bear_regime", entry)
+    c_cardwell_long = _align_bool(confirm, "cardwell_long_signal", entry)
+    c_cardwell_short = _align_bool(confirm, "cardwell_short_signal", entry)
 
     vol_ok = entry["vol_ok"].fillna(True).values
     atr_v = atr_wilder(entry, 14).values
@@ -410,10 +481,20 @@ def golden_combo_signals(
         macd_pullback_bull = recent(c_cross_bull, i, 32) or recent(c_hist_bull_turn, i, 16)
         macd_pullback_bear = recent(c_cross_bear, i, 32)
 
+        # S1/S2: Cardwell must not oppose reversal (not bear at bottom, not bull at top)
+        cardwell_s1_ok = (not use_cardwell) or (not c_cardwell_bear[i] and not recent(c_cardwell_bear, i, 8))
+        cardwell_s2_ok = (not use_cardwell) or (not c_cardwell_bull[i] and not recent(c_cardwell_bull, i, 8))
+        cardwell_trend_long_ok = (not use_cardwell) or c_cardwell_bull[i] or recent(c_cardwell_bull, i, 16) or recent(c_cardwell_long, i, 32)
+        cardwell_trend_short_ok = (not use_cardwell) or c_cardwell_bear[i] or recent(c_cardwell_bear, i, 16) or recent(c_cardwell_short, i, 32)
+        s1_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bull_div, i, 96)
+        s2_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bear_div, i, 96)
+
         # S1 — absolute bottom buy
         if (
             recent(s_motive_bear, i, 48)
             and macd_bull_confirm
+            and s1_div_ok
+            and cardwell_s1_ok
             and (e_buy or (e_pre_buy and entry["rsi"].iloc[i] < 38))
             and struct_ok_long
         ):
@@ -427,6 +508,8 @@ def golden_combo_signals(
         if (
             recent(s_motive_bull, i, 48)
             and macd_bear_confirm
+            and s2_div_ok
+            and cardwell_s2_ok
             and (e_sell or (e_pre_sell and entry["rsi"].iloc[i] > 62))
             and struct_ok_short
         ):
@@ -441,6 +524,7 @@ def golden_combo_signals(
             recent(s_corr_bull, i, 48)
             and not recent(s_box_broken, i, 8)
             and macd_pullback_bull
+            and cardwell_trend_long_ok
             and (e_buy or e_pre_buy)
             and struct_ok_long
         ):
@@ -455,6 +539,7 @@ def golden_combo_signals(
             recent(s_corr_bear, i, 48)
             and not recent(s_box_broken, i, 8)
             and macd_pullback_bear
+            and cardwell_trend_short_ok
             and (e_sell or e_pre_sell)
             and struct_ok_short
         ):
@@ -468,6 +553,7 @@ def golden_combo_signals(
         if (
             recent(s_wave3, i, 48)
             and macd_wave3_confirm
+            and cardwell_trend_long_ok
             and (e_buy or (e_pre_buy and e_break))
             and struct_ok_long
         ):

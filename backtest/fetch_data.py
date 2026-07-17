@@ -19,9 +19,14 @@ KUCOIN_TF = {"5m": "5min", "15m": "15min", "1h": "1hour", "4h": "4hour", "1d": "
 GATE_TF = {"5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
 YF_TF = {"5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
 
-CRYPTO_SYMBOLS = ["BTCUSDT", "HYPEUSDT", "BEATUSDT"]
+CRYPTO_SYMBOLS = ["BTCUSDT", "SOLUSDT", "HYPEUSDT", "BEATUSDT"]
 FOREX_YF = {"EURUSD": "EURUSD=X", "XAUUSD": "GC=F", "USDJPY": "USDJPY=X"}
-YF_CRYPTO_FALLBACK = {"BTCUSDT": "BTC-USD", "HYPEUSDT": "HYPE-USD", "BEATUSDT": "BEAT-USD"}
+YF_CRYPTO_FALLBACK = {
+    "BTCUSDT": "BTC-USD",
+    "SOLUSDT": "SOL-USD",
+    "HYPEUSDT": "HYPE-USD",
+    "BEATUSDT": "BEAT-USD",
+}
 
 
 def _ms(dt: datetime) -> int:

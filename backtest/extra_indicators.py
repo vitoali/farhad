@@ -70,6 +70,115 @@ def cardwell_rsi_signals(
 
 
 # ---------------------------------------------------------------------------
+# Cardwell Range Analyze [MarkitTick] — regime + entry signals (MA=100 default)
+# ---------------------------------------------------------------------------
+
+def cardwell_range_states(
+    df: pd.DataFrame,
+    rsi_len: int = 14,
+    trend_len: int = 100,
+    bull_lo: int = 40,
+    bull_hi: int = 80,
+    bear_lo: int = 20,
+    bear_hi: int = 60,
+    confirm_bars: int = 2,
+) -> pd.DataFrame:
+    """Regime states: 1=bull, -1=bear, 0=neutral."""
+    out = df.copy()
+    src = out["close"]
+    rsi_v = rsi(src, rsi_len).values
+    trend_ma = sma(src, trend_len).values
+    closes = src.values
+    n = len(out)
+
+    bull_regime = np.zeros(n, dtype=bool)
+    bear_regime = np.zeros(n, dtype=bool)
+    regime_state = np.zeros(n, dtype=int)
+    long_signal = np.zeros(n, dtype=bool)
+    short_signal = np.zeros(n, dtype=bool)
+    bull_cnt = bear_cnt = 0
+
+    for i in range(n):
+        is_up = closes[i] > trend_ma[i] if not np.isnan(trend_ma[i]) else False
+        is_dn = closes[i] < trend_ma[i] if not np.isnan(trend_ma[i]) else False
+        in_bull = bull_lo <= rsi_v[i] <= bull_hi
+        in_bear = bear_lo <= rsi_v[i] <= bear_hi
+        bull_raw = is_up and in_bull
+        bear_raw = is_dn and in_bear
+        bull_cnt = bull_cnt + 1 if bull_raw else 0
+        bear_cnt = bear_cnt + 1 if bear_raw else 0
+        bull_regime[i] = bull_raw and bull_cnt >= confirm_bars
+        bear_regime[i] = bear_raw and bear_cnt >= confirm_bars
+        prev_state = regime_state[i - 1] if i > 0 else 0
+        regime_state[i] = 1 if bull_regime[i] else (-1 if bear_regime[i] else 0)
+        if regime_state[i] == 1 and prev_state != 1:
+            long_signal[i] = True
+        if regime_state[i] == -1 and prev_state != -1:
+            short_signal[i] = True
+
+    out["cardwell_rsi"] = rsi_v
+    out["cardwell_trend_ma"] = trend_ma
+    out["cardwell_bull_regime"] = bull_regime
+    out["cardwell_bear_regime"] = bear_regime
+    out["cardwell_regime"] = regime_state
+    out["cardwell_long_signal"] = long_signal
+    out["cardwell_short_signal"] = short_signal
+    return out
+
+
+def cardwell_range_signals(
+    df: pd.DataFrame,
+    rsi_len: int = 14,
+    trend_len: int = 100,
+    bull_lo: int = 40,
+    bull_hi: int = 80,
+    bear_lo: int = 20,
+    bear_hi: int = 60,
+    confirm_bars: int = 2,
+    atr_len: int = 14,
+    sl_mult: float = 1.5,
+    tp_mult: float = 1.0,
+) -> pd.DataFrame:
+    """Cardwell Range Analyze — regime transition buy/sell with ATR levels."""
+    out = cardwell_range_states(
+        df, rsi_len=rsi_len, trend_len=trend_len,
+        bull_lo=bull_lo, bull_hi=bull_hi, bear_lo=bear_lo, bear_hi=bear_hi,
+        confirm_bars=confirm_bars,
+    )
+    regime = out["cardwell_regime"].values
+    atr_v = atr_wilder(out, atr_len).values
+    closes = out["close"].values
+    n = len(out)
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    sl_p = np.full(n, np.nan)
+    tp_p = np.full(n, np.nan)
+
+    for i in range(1, n):
+        prev = regime[i - 1]
+        cur = regime[i]
+        if cur == 1 and prev != 1:
+            buy[i] = True
+            entry = closes[i - 1]
+            a = atr_v[i] if not np.isnan(atr_v[i]) else entry * 0.01
+            sl_p[i] = entry - a * sl_mult
+            tp_p[i] = entry + a * tp_mult
+        elif cur == -1 and prev != -1:
+            sell[i] = True
+            entry = closes[i - 1]
+            a = atr_v[i] if not np.isnan(atr_v[i]) else entry * 0.01
+            sl_p[i] = entry + a * sl_mult
+            tp_p[i] = entry - a * tp_mult
+
+    out["buy"] = buy
+    out["sell"] = sell
+    out["entry_price"] = out["close"].shift(1)
+    out["sl_price"] = sl_p
+    out["tp_price"] = tp_p
+    return out
+
+
+# ---------------------------------------------------------------------------
 # #21 FVG Retest Entry Engine (simplified classic sync)
 # ---------------------------------------------------------------------------
 
