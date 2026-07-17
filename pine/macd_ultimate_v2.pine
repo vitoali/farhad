@@ -1,0 +1,89 @@
+//@version=5
+// CM_MACD_Ultimate v2 — اصلاح ضعف‌های نسخهٔ اول بر اساس بک‌تست یک‌ماههٔ طلا و بیت‌کوین:
+//   1) فیلتر روند چارت (EMA200) و فیلتر روند تایم‌فریم بالاتر (EMA50 روی HTF، بدون ری‌پینت)
+//   2) ورود بازطراحی‌شده: کراس MACD بعد از لمس ناحیهٔ اشباع در N کندل اخیر (به‌جای کراس داخل ناحیه)
+//   3) حد ضرر/حد سود ATR روی چارت + alertcondition برای آلارم
+indicator("CM_MACD_Ultimate_v2", overlay=true, max_lines_count=500, max_labels_count=500)
+
+// ── Inputs ──────────────────────────────────────────────────────
+fastLength   = input.int(12, "Fast Length", group="MACD")
+slowLength   = input.int(26, "Slow Length", group="MACD")
+signalLength = input.int(9, "Signal Length", group="MACD")
+src          = input.source(close, "Source", group="MACD")
+bandMult     = input.float(1.0, "OB/OS Band (xStdev)", minval=0.1, step=0.1, group="MACD")
+osWindow     = input.int(10, "Band Touch Lookback (bars)", minval=1, maxval=50, group="MACD")
+
+useTrend     = input.bool(true, "Chart Trend Filter (EMA)", group="Filters")
+trendLen     = input.int(200, "Trend EMA Length", minval=10, group="Filters")
+useHtf       = input.bool(true, "Higher-TF Trend Filter", group="Filters")
+htfTF        = input.timeframe("240", "Higher Timeframe", group="Filters")
+htfEmaLen    = input.int(50, "HTF EMA Length", minval=5, group="Filters")
+
+atrLen       = input.int(14, "ATR Length", minval=1, group="Trade Levels")
+slMult       = input.float(1.5, "SL ATR Mult", minval=0.1, step=0.1, group="Trade Levels")
+tpMult       = input.float(3.0, "TP ATR Mult", minval=0.1, step=0.1, group="Trade Levels")
+showLevels   = input.bool(true, "Show SL/TP Lines", group="Trade Levels")
+extBars      = input.int(30, "Extend Lines (bars)", minval=1, maxval=500, group="Trade Levels")
+
+// ── MACD core ───────────────────────────────────────────────────
+macdLine   = ta.ema(src, fastLength) - ta.ema(src, slowLength)
+signalLine = ta.ema(macdLine, signalLength)
+macdStdev  = ta.stdev(macdLine, 100)
+obLevel    =  macdStdev * bandMult
+osLevel    = -macdStdev * bandMult
+
+bullishCross = ta.crossover(macdLine, signalLine)
+bearishCross = ta.crossunder(macdLine, signalLine)
+
+// ورود v2: کراس بعد از لمس ناحیهٔ اشباع در osWindow کندل اخیر
+touchedOS = math.max(ta.barssince(macdLine < osLevel), 0) < osWindow
+touchedOB = math.max(ta.barssince(macdLine > obLevel), 0) < osWindow
+
+// ── Trend filters ───────────────────────────────────────────────
+trendEma  = ta.ema(close, trendLen)
+chartUp   = not useTrend or close > trendEma
+chartDown = not useTrend or close < trendEma
+
+f_htfDir() =>
+    _e = ta.ema(close, htfEmaLen)
+    close > _e ? 1 : close < _e ? -1 : 0
+htfDir  = request.security(syminfo.tickerid, htfTF, f_htfDir()[1], lookahead=barmerge.lookahead_on)
+htfUp   = not useHtf or htfDir == 1
+htfDown = not useHtf or htfDir == -1
+
+// ── Signals ─────────────────────────────────────────────────────
+longSignal  = bullishCross and touchedOS and chartUp and htfUp
+shortSignal = bearishCross and touchedOB and chartDown and htfDown
+
+// نقطه روی همان کندل سیگنال رسم می‌شود ولی بعد از کلوز آن (بدون ری‌پینت)
+plotshape(longSignal[1], title="BUY", style=shape.circle, location=location.belowbar, color=color.new(#26a69a, 0), size=size.tiny, offset=-1)
+plotshape(shortSignal[1], title="SELL", style=shape.circle, location=location.abovebar, color=color.new(#ef5350, 0), size=size.tiny, offset=-1)
+plot(useTrend ? trendEma : na, "Trend EMA", color=color.new(color.orange, 40))
+
+// ── ATR trade levels ────────────────────────────────────────────
+atrVal = ta.atr(atrLen)
+var line slLine = na
+var line tpLine = na
+var line enLine = na
+var label slLbl = na
+var label tpLbl = na
+
+if showLevels and (longSignal or shortSignal) and barstate.isconfirmed
+    line.delete(slLine)
+    line.delete(tpLine)
+    line.delete(enLine)
+    label.delete(slLbl)
+    label.delete(tpLbl)
+    float en = close
+    float sl = longSignal ? en - atrVal * slMult : en + atrVal * slMult
+    float tp = longSignal ? en + atrVal * tpMult : en - atrVal * tpMult
+    int xe = bar_index + extBars
+    enLine := line.new(bar_index, en, xe, en, color=color.new(color.blue, 20), style=line.style_dashed)
+    slLine := line.new(bar_index, sl, xe, sl, color=color.new(#ef5350, 0), width=2)
+    tpLine := line.new(bar_index, tp, xe, tp, color=color.new(#26a69a, 0), width=2)
+    slLbl  := label.new(xe, sl, "SL " + str.tostring(sl, format.mintick), style=label.style_label_left, color=color.new(#ef5350, 0), textcolor=color.white, size=size.small)
+    tpLbl  := label.new(xe, tp, "TP " + str.tostring(tp, format.mintick), style=label.style_label_left, color=color.new(#26a69a, 0), textcolor=color.white, size=size.small)
+
+// ── Alerts ──────────────────────────────────────────────────────
+alertcondition(longSignal, "v2 BUY", "MACD Ultimate v2 — BUY signal")
+alertcondition(shortSignal, "v2 SELL", "MACD Ultimate v2 — SELL signal")
