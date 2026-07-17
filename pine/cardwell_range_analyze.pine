@@ -29,7 +29,7 @@ i_slMult        = input.float(1.5, "SL ATR Mult", minval=0.1, step=0.1, group=GR
 i_tp1Mult       = input.float(1.0, "TP1 ATR Mult", minval=0.1, step=0.1, group=GRP_TT)
 i_tp2Mult       = input.float(2.0, "TP2 ATR Mult", minval=0.1, step=0.1, group=GRP_TT)
 i_tp3Mult       = input.float(3.0, "TP3 ATR Mult", minval=0.1, step=0.1, group=GRP_TT)
-i_lineExtBars   = input.int(50, "Level Line Extend Bars", minval=1, group=GRP_TT)
+i_lineExtBars   = input.int(50, "Level Line Extend Bars", minval=1, maxval=500, group=GRP_TT)
 i_closeOnSl     = input.bool(true, "Close trade on SL hit", group=GRP_TT)
 i_intrabarExit  = input.bool(true, "Detect SL/TP3 on live tick", group=GRP_TT)
 
@@ -120,7 +120,8 @@ longSignal  = regimeState == 1 and prevRegimeState != 1 and htfBullOk and chopOk
 shortSignal = regimeState == -1 and prevRegimeState != -1 and htfBearOk and chopOk
 
 atrVal = ta.atr(i_atrLen)
-entryPrice = close[1]
+// ورود با کلوز همان کندلی که سیگنال روی آن تأیید می‌شود
+entryPrice = close
 slLongPrice   = entryPrice - atrVal * i_slMult
 tp1LongPrice  = entryPrice + atrVal * i_tp1Mult
 tp2LongPrice  = entryPrice + atrVal * i_tp2Mult
@@ -175,15 +176,15 @@ if closeShortSignal
 
 if longSignal and barstate.isconfirmed
     tradeDir := 1
-    activeEntry := close[1]
-    activeSl := close[1] - atrVal * i_slMult
-    activeTp3 := close[1] + atrVal * i_tp3Mult
+    activeEntry := entryPrice
+    activeSl := slLongPrice
+    activeTp3 := tp3LongPrice
 
 if shortSignal and barstate.isconfirmed
     tradeDir := -1
-    activeEntry := close[1]
-    activeSl := close[1] + atrVal * i_slMult
-    activeTp3 := close[1] - atrVal * i_tp3Mult
+    activeEntry := entryPrice
+    activeSl := slShortPrice
+    activeTp3 := tp3ShortPrice
 
 // ── ALERTS ──────────────────────────────────────────────────────
 string _mt741a = str.format(
@@ -224,10 +225,11 @@ if closeLongOpp
     alert(closeLongPayload, alert.freq_once_per_bar_close)
 if closeShortOpp
     alert(closeShortPayload, alert.freq_once_per_bar_close)
+// خروج TP3/SL باید روی همان تیکِ برخورد ارسال شود، نه فقط در بستهٔ کندل
 if closeLongTp3 or closeLongSl
-    alert(closeLongPayload, alert.freq_once_per_bar_close)
+    alert(closeLongPayload, alert.freq_once_per_bar)
 if closeShortTp3 or closeShortSl
-    alert(closeShortPayload, alert.freq_once_per_bar_close)
+    alert(closeShortPayload, alert.freq_once_per_bar)
 
 alertcondition(longSignal and barstate.isconfirmed, "BUY Signal", "MarkitTick — BUY Signal Fired")
 alertcondition(shortSignal and barstate.isconfirmed, "SELL Signal", "MarkitTick — SELL Signal Fired")
@@ -383,7 +385,7 @@ if i_showDash
 
     table.cell(dash, 0, 9, "Confirm Bars", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
     int confCnt = bullRegimeRaw ? bullConfirmCount : bearRegimeRaw ? bearConfirmCount : 0
-    table.cell(dash, 1, 9, f_bar(math.min(confCnt, i_confirmBars), i_confirmBars), text_color=f_barColor(math.min(confCnt, i_confirmBars) / i_confirmBars), bgcolor=c_dashValBg, text_size=size.small)
+    table.cell(dash, 1, 9, f_bar(math.min(confCnt, i_confirmBars), i_confirmBars), text_color=f_barColor(math.min(confCnt, i_confirmBars) * 1.0 / i_confirmBars), bgcolor=c_dashValBg, text_size=size.small)
 
     table.cell(dash, 0, 10, "ATR Value", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
     table.cell(dash, 1, 10, str.tostring(atrVal, format.mintick), text_color=c_dashValTxt, bgcolor=c_dashValBg, text_size=size.small)
@@ -399,8 +401,9 @@ if i_showDash
     string tradeTxt = tradeDir == 1 ? "LONG OPEN" : tradeDir == -1 ? "SHORT OPEN" : "FLAT"
     color tradeClr = tradeDir == 1 ? c_bullCandle : tradeDir == -1 ? c_bearCandle : c_neutCandle
     table.cell(dash, 1, 13, tradeTxt, text_color=tradeClr, bgcolor=c_dashValBg, text_size=size.small)
-    if openDir != 0 and not na(openTp3)
-        table.cell(dash, 0, 14, "Active TP3", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
-        table.cell(dash, 1, 14, str.tostring(openTp3, format.mintick), text_color=c_dashValTxt, bgcolor=c_dashValBg, text_size=size.small)
-        table.cell(dash, 0, 15, "Active SL", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
-        table.cell(dash, 1, 15, str.tostring(openSl, format.mintick), text_color=c_dashValTxt, bgcolor=c_dashValBg, text_size=size.small)
+    // با فلت‌شدن معامله، مقادیر قدیمی TP3/SL نباید در جدول باقی بماند
+    bool hasOpenTrade = tradeDir != 0 and not na(activeTp3)
+    table.cell(dash, 0, 14, "Active TP3", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
+    table.cell(dash, 1, 14, hasOpenTrade ? str.tostring(activeTp3, format.mintick) : "—", text_color=hasOpenTrade ? c_dashValTxt : c_neutCandle, bgcolor=c_dashValBg, text_size=size.small)
+    table.cell(dash, 0, 15, "Active SL", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
+    table.cell(dash, 1, 15, hasOpenTrade ? str.tostring(activeSl, format.mintick) : "—", text_color=hasOpenTrade ? c_dashValTxt : c_neutCandle, bgcolor=c_dashValBg, text_size=size.small)
