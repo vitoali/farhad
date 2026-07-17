@@ -241,11 +241,12 @@ m5FtcB := m5FtcBN
 
 // ── Pattern TF: حافظه دو پیوت برای خط روند ───────────────────────────────────
 pickPat() =>
-    patTf == "60" ? [h1BS, h1US, h1BPr, h1BTm, h1BK, h1BFc, h1BSc, h1UPr, h1UTm, h1UK, h1UFc, h1USc, h1H, h1L, h1C] :
-     patTf == "15" ? [m15BS, m15US, m15BPr, m15BTm, m15BK, m15BFc, m15BSc, m15UPr, m15UTm, m15UK, m15UFc, m15USc, m15H, m15L, m15C] :
-     patTf == "240" ? [h4BS, h4US, h4BPr, h4BTm, h4BK, h4BFc, h4BSc, h4UPr, h4UTm, h4UK, h4UFc, h4USc, h4H, h4L, h4C] :
-     patTf == "D" ? [dBS, dUS, dBPr, dBTm, dBK, dBFc, dBSc, dUPr, dUTm, dUK, dUFc, dUSc, dH, dL, dC] :
-     [m5BS, m5US, m5BPr, m5BTm, m5BK, m5BFc, m5BSc, m5UPr, m5UTm, m5UK, m5UFc, m5USc, m5H, m5L, m5C]
+    switch patTf
+        "60" => [h1BS, h1US, h1BPr, h1BTm, h1BK, h1BFc, h1BSc, h1UPr, h1UTm, h1UK, h1UFc, h1USc, h1H, h1L, h1C]
+        "15" => [m15BS, m15US, m15BPr, m15BTm, m15BK, m15BFc, m15BSc, m15UPr, m15UTm, m15UK, m15UFc, m15USc, m15H, m15L, m15C]
+        "240" => [h4BS, h4US, h4BPr, h4BTm, h4BK, h4BFc, h4BSc, h4UPr, h4UTm, h4UK, h4UFc, h4USc, h4H, h4L, h4C]
+        "D" => [dBS, dUS, dBPr, dBTm, dBK, dBFc, dBSc, dUPr, dUTm, dUK, dUFc, dUSc, dH, dL, dC]
+        => [m5BS, m5US, m5BPr, m5BTm, m5BK, m5BFc, m5BSc, m5UPr, m5UTm, m5UK, m5UFc, m5USc, m5H, m5L, m5C]
 
 [patBS, patUS, patBPr, patBTm, patBK, patBFc, patBSc, patUPr, patUTm, patUK, patUFc, patUSc, patH, patL, patC] = pickPat()
 
@@ -273,17 +274,22 @@ if patBullOk
 
 // ── Setup stack از فلوچارت ────────────────────────────────────────────────────
 pickSt(int dir, bool br, float fT, float fB, float hi, float lo) =>
-    stTf == "M" ? [mnDir, mnBr, mnFtcT, mnFtcB, mnH, mnL] :
-     stTf == "W" ? [wDir, wBr, wFtcT, wFtcB, wH, wL] :
-     stTf == "D" ? [dDir, dBr, dFtcT, dFtcB, dH, dL] :
-     stTf == "240" ? [h4Dir, h4Br, h4FtcT, h4FtcB, h4H, h4L] :
-     stTf == "60" ? [h1Dir, h1Br, h1FtcT, h1FtcB, h1H, h1L] :
-     [dir, br, fT, fB, hi, lo]
+    switch stTf
+        "M" => [mnDir, mnBr, mnFtcT, mnFtcB, mnH, mnL]
+        "W" => [wDir, wBr, wFtcT, wFtcB, wH, wL]
+        "D" => [dDir, dBr, dFtcT, dFtcB, dH, dL]
+        "240" => [h4Dir, h4Br, h4FtcT, h4FtcB, h4H, h4L]
+        "60" => [h1Dir, h1Br, h1FtcT, h1FtcB, h1H, h1L]
+        => [dir, br, fT, fB, hi, lo]
 
 [stDir, stBr, stFtcT, stFtcB, stH, stL] = pickSt(0, false, na, na, high, low)
 
 int patNow = time
-bool tlBr = stDir == -1 ? tlBrokenBear(patC, patNow, patHt1, patHi1, patHt2, patHi2) : stDir == 1 ? tlBrokenBull(patC, patNow, patLt1, patLo1, patLt2, patLo2) : false
+bool tlBr = false
+if stDir == -1
+    tlBr := tlBrokenBear(patC, patNow, patHt1, patHi1, patHt2, patHi2)
+else if stDir == 1
+    tlBr := tlBrokenBull(patC, patNow, patLt1, patLo1, patLt2, patLo2)
 
 var bool tlWasBroken = false
 var bool ftcTouched = false
