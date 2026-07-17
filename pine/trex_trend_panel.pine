@@ -25,6 +25,8 @@ grpRule = "Trend rules"
 minScore = input.int(40, "Min structure score", minval=0, maxval=100, group=grpRule)
 requireFtc = input.bool(true, "Require FTC credible (✓)", group=grpRule)
 reverseOnly = input.bool(true, "Only Reverse pivots", group=grpRule)
+filterByH4 = input.bool(true, "فیلتر H1/M15/M5 با روند H4", group=grpRule)
+hideOppLtf = input.bool(true, "مخفی کردن سیگنال مخالف H4", group=grpRule)
 
 grpUi = "Display"
 panelPos = input.string("Top Right", "Panel position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=grpUi)
@@ -106,6 +108,25 @@ trendFa(int d, bool br) =>
 
 trendColor(int d, bool br) =>
     br ? color.orange : d == 1 ? color.lime : d == -1 ? color.red : color.gray
+
+// H4 = master trend برای تایم‌های پایین‌تر
+h4MasterActive() =>
+    filterByH4 and h4Dir != 0 and not h4Br
+
+filterLtf(int dir, bool br, int sc) =>
+    bool masked = h4MasterActive() and dir != 0 and dir != h4Dir
+    int d = masked and hideOppLtf ? 0 : dir
+    bool b = masked and hideOppLtf ? false : br
+    int s = masked and hideOppLtf ? 0 : sc
+    [d, b, s, masked]
+
+filterLtfOrPassthrough(int dir, bool br, int sc, bool useFilter) =>
+    switch useFilter
+        true => filterLtf(dir, br, sc)
+        => [dir, br, sc, false]
+
+trendFaFiltered(int d, bool br, bool masked) =>
+    masked and not hideOppLtf ? (d == 1 ? "صعودی ⊘" : "نزولی ⊘") : trendFa(d, br)
 
 tlY(int t1, float p1, int t2, float p2, int tNow) =>
     t2 == t1 ? p1 : p1 + (p2 - p1) * float(tNow - t1) / float(t2 - t1)
@@ -310,6 +331,9 @@ setupStatus() =>
     else if stBr
         s := "شکست ساختار"
         c := color.orange
+    else if h4MasterActive() and stDir != h4Dir
+        s := h4Dir == -1 ? "فیلتر H4 — فقط فروش" : "فیلتر H4 — فقط خرید"
+        c := color.gray
     else if not tlWasBroken
         s := "صبر — تریگر نیامده"
         c := color.yellow
@@ -329,15 +353,17 @@ setupStatus() =>
 bgcolor(tintChart and stDir == 1 and not stBr ? color.new(color.lime, 93) : tintChart and stDir == -1 and not stBr ? color.new(color.red, 93) : na, title="Setup tint")
 
 // ── Panel ─────────────────────────────────────────────────────────────────────
-var table pan = table.new(panelPosEnum(panelPos), 3, 14, bgcolor=color.new(color.black, 82), border_width=1)
+var table pan = table.new(panelPosEnum(panelPos), 3, 15, bgcolor=color.new(color.black, 82), border_width=1)
 fz = fontSz(txtSize)
 
-drawRow(int row, bool en, string tf, int dir, int sc, bool br) =>
+drawRow(int row, bool en, string tf, int dir, int sc, bool br, bool useH4Filter) =>
     if en
-        color bg = color.new(color.gray, 88)
+        [d, b, s, masked] = filterLtfOrPassthrough(dir, br, sc, useH4Filter)
+        color bg = masked ? color.new(color.gray, 94) : color.new(color.gray, 88)
+        string scTxt = masked and hideOppLtf ? "⊘ H4" : d == 0 ? "—" : "S" + str.tostring(s)
         table.cell(pan, 0, row, trex.tfLabel(tf), text_color=color.white, bgcolor=bg, text_size=fz)
-        table.cell(pan, 1, row, trendFa(dir, br), text_color=trendColor(dir, br), bgcolor=bg, text_size=fz)
-        table.cell(pan, 2, row, dir == 0 ? "—" : "S" + str.tostring(sc), text_color=color.silver, bgcolor=bg, text_size=fz)
+        table.cell(pan, 1, row, trendFaFiltered(d, b, masked), text_color=masked ? color.gray : trendColor(d, b), bgcolor=bg, text_size=fz)
+        table.cell(pan, 2, row, scTxt, text_color=masked ? color.gray : color.silver, bgcolor=bg, text_size=fz)
 
 if barstate.islast
     table.cell(pan, 0, 0, "TF", text_color=color.gray, text_size=fz)
@@ -349,6 +375,11 @@ if barstate.islast
         table.cell(pan, 1, row, pairMode, text_color=color.white, text_size=fz)
         table.cell(pan, 2, row, trex.tfLabel(trTf) + " trg", text_color=color.silver, text_size=fz)
         row += 1
+        if filterByH4
+            table.cell(pan, 0, row, "فیلتر H4", text_color=color.yellow, text_size=fz)
+            table.cell(pan, 1, row, h4Dir == 0 ? "—" : trendFa(h4Dir, h4Br), text_color=trendColor(h4Dir, h4Br), text_size=fz)
+            table.cell(pan, 2, row, h4MasterActive() ? "فعال" : "غیرفعال", text_color=h4MasterActive() ? color.lime : color.gray, text_size=fz)
+            row += 1
         table.cell(pan, 0, row, "ساختار " + trex.tfLabel(stTf), text_color=color.white, text_size=fz)
         table.cell(pan, 1, row, trendFa(stDir, stBr), text_color=trendColor(stDir, stBr), text_size=fz)
         table.cell(pan, 2, row, "Rev+FTC", text_color=color.silver, text_size=fz)
@@ -365,16 +396,16 @@ if barstate.islast
         table.cell(pan, 1, row, "—", text_color=color.gray, text_size=fz)
         table.cell(pan, 2, row, "—", text_color=color.gray, text_size=fz)
         row += 1
-    drawRow(row, showMn, "M", mnDir, mnSc, mnBr)
+    drawRow(row, showMn, "M", mnDir, mnSc, mnBr, false)
     row += showMn ? 1 : 0
-    drawRow(row, showW1, "W", wDir, wSc, wBr)
+    drawRow(row, showW1, "W", wDir, wSc, wBr, false)
     row += showW1 ? 1 : 0
-    drawRow(row, showD1, "D", dDir, dSc, dBr)
+    drawRow(row, showD1, "D", dDir, dSc, dBr, false)
     row += showD1 ? 1 : 0
-    drawRow(row, showH4, "240", h4Dir, h4Sc, h4Br)
+    drawRow(row, showH4, "240", h4Dir, h4Sc, h4Br, false)
     row += showH4 ? 1 : 0
-    drawRow(row, showH1, "60", h1Dir, h1Sc, h1Br)
+    drawRow(row, showH1, "60", h1Dir, h1Sc, h1Br, true)
     row += showH1 ? 1 : 0
-    drawRow(row, showM15, "15", m15Dir, m15Sc, m15Br)
+    drawRow(row, showM15, "15", m15Dir, m15Sc, m15Br, true)
     row += showM15 ? 1 : 0
-    drawRow(row, showM5, "5", m5Dir, m5Sc, m5Br)
+    drawRow(row, showM5, "5", m5Dir, m5Sc, m5Br, true)
