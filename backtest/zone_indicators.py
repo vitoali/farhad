@@ -461,7 +461,8 @@ def rsi_advanced_signals(
     rsi_v = rsi(out["close"], rsi_len)
     mfi_v = mfi(out, 14)
     vol_ma = sma(out["volume"], 20)
-    vol_ok = out["volume"] > vol_ma * 0.8
+    has_vol = bool(out["volume"].sum() > 0)
+    vol_ok = (out["volume"] > vol_ma * 0.8) if has_vol else pd.Series(True, index=out.index)
 
     breakout_barrier = out["high"].rolling(lookback_len).max().shift(1)
     oversold_zone = pd.Series(False, index=out.index)

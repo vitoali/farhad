@@ -1212,3 +1212,142 @@ def fib_ote_signals(df: pd.DataFrame, pivot_len: int = 10, tp_rr: float = 2.0) -
                 risk = max(sl - entry, a * 0.3)
                 signals.append(ZoneSignal(i, "short", entry, sl, entry - risk * tp_rr))
     return _zone_df(out, signals)
+
+
+# ---------------------------------------------------------------------------
+# Elliott Wave LuxAlgo — zigzag motive/corrective/wave-start alerts
+# ---------------------------------------------------------------------------
+
+def _zz_in_out(d: list, x: list, y: list, nd: int, x1: int, y1: float, x2: int, y2: float) -> None:
+    d.insert(0, nd)
+    x.insert(0, x2)
+    y.insert(0, y2)
+    d.pop()
+    x.pop()
+    y.pop()
+
+
+def _ew_signals_one_len(
+    highs: np.ndarray,
+    lows: np.ndarray,
+    closes: np.ndarray,
+    opens: np.ndarray,
+    left: int,
+    i_854: float = 0.854,
+) -> tuple[list[int], list[int]]:
+    n = len(highs)
+    hi, lo = highs, lows
+    d = [0] * 11
+    x = [0] * 11
+    y = [0.0] * 11
+    buy_bars: list[int] = []
+    sell_bars: list[int] = []
+    wave_dir = 0
+    wave_on = False
+    b5_x = b5_y = 0
+    bC_x = 0
+    bC_set = False
+
+    ph_s = pivot_high(pd.Series(highs), left, 1).values
+    pl_s = pivot_low(pd.Series(lows), left, 1).values
+
+    for i in range(left + 2, n):
+        x2 = i - 1
+
+        if not np.isnan(ph_s[i]):
+            dir0 = d[0]
+            x1_, y1_ = x[0], y[0]
+            y2 = hi[i - 1]
+            if dir0 < 1:
+                _zz_in_out(d, x, y, 1, x1_, y1_, x2, y2)
+            elif dir0 == 1 and y2 > y1_:
+                x[0], y[0] = x2, y2
+
+            _6x, _6y = x2, y2
+            _5x, _5y = x[1], y[1]
+            _4x, _4y = x[2], y[2]
+            _3x, _3y = x[3], y[3]
+            _2x, _2y = x[4], y[4]
+            _1x, _1y = x[5], y[5]
+            w5, w3, w1 = _6y - _5y, _4y - _3y, _2y - _1y
+            mn = min(w1, w3, w5)
+            if w3 != mn and _6y > _4y and _3y > _1y and _5y > _2y:
+                buy_bars.append(i)
+                wave_dir, wave_on = 1, True
+                b5_x, b5_y = _6x, _6y
+                bC_set = False
+
+            if wave_on and wave_dir == -1 and bC_set and _5x == bC_x and _6y > b5_y:
+                buy_bars.append(i)
+
+            if wave_on and wave_dir == 1 and _3x == b5_x:
+                diff = abs(b5_y - y[5]) if y[5] else abs(_6y - y[5])
+                if _6y > b5_y - diff * i_854 and _4y > b5_y - diff * i_854 and _5y < b5_y:
+                    buy_bars.append(i)
+                    bC_x, bC_set = _6x, True
+
+        if not np.isnan(pl_s[i]):
+            dir0 = d[0]
+            x1_, y1_ = x[0], y[0]
+            y2 = lo[i - 1]
+            if dir0 > -1:
+                _zz_in_out(d, x, y, -1, x1_, y1_, x2, y2)
+            elif dir0 == -1 and y2 < y1_:
+                x[0], y[0] = x2, y2
+
+            _6x, _6y = x2, y2
+            _5x, _5y = x[1], y[1]
+            _4x, _4y = x[2], y[2]
+            _3x, _3y = x[3], y[3]
+            _2x, _2y = x[4], y[4]
+            _1x, _1y = x[5], y[5]
+            w5, w3, w1 = _5y - _6y, _3y - _4y, _1y - _2y
+            mn = min(w1, w3, w5)
+            if w3 != mn and _4y > _6y and _1y > _3y and _2y > _5y:
+                sell_bars.append(i)
+                wave_dir, wave_on = -1, True
+                b5_x, b5_y = _6x, _6y
+                bC_set = False
+
+            if wave_on and wave_dir == 1 and bC_set and _5x == bC_x and _6y < b5_y:
+                sell_bars.append(i)
+
+            if wave_on and wave_dir == -1 and _3x == b5_x:
+                diff = abs(b5_y - y[5]) if y[5] else abs(b5_y - _6y)
+                if _6y < b5_y + diff * i_854 and _4y < b5_y + diff * i_854 and _5y > b5_y:
+                    sell_bars.append(i)
+                    bC_x, bC_set = _6x, True
+
+    return buy_bars, sell_bars
+
+
+def elliott_wave_lux_signals(
+    df: pd.DataFrame,
+    lengths: tuple[int, ...] = (4, 8, 16),
+    cooldown: int = 3,
+) -> pd.DataFrame:
+    """LuxAlgo Elliott Wave — motive/corrective/wave-start alerts as buy/sell."""
+    out = df.copy()
+    n = len(out)
+    highs = out["high"].values
+    lows = out["low"].values
+    closes = out["close"].values
+    opens = out["open"].values
+    buy = np.zeros(n, dtype=bool)
+    sell = np.zeros(n, dtype=bool)
+    last = -999
+
+    for left in lengths:
+        b_list, s_list = _ew_signals_one_len(highs, lows, closes, opens, left)
+        for b in b_list:
+            if b - last >= cooldown:
+                buy[b] = True
+                last = b
+        for s in s_list:
+            if s - last >= cooldown:
+                sell[s] = True
+                last = s
+
+    out["buy"] = buy
+    out["sell"] = sell
+    return out

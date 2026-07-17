@@ -20,7 +20,7 @@ GATE_TF = {"5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
 YF_TF = {"5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h", "1d": "1d"}
 
 CRYPTO_SYMBOLS = ["BTCUSDT", "HYPEUSDT", "BEATUSDT"]
-FOREX_YF = {"EURUSD": "EURUSD=X", "XAUUSD": "GC=F"}
+FOREX_YF = {"EURUSD": "EURUSD=X", "XAUUSD": "GC=F", "USDJPY": "USDJPY=X"}
 YF_CRYPTO_FALLBACK = {"BTCUSDT": "BTC-USD", "HYPEUSDT": "HYPE-USD", "BEATUSDT": "BEAT-USD"}
 
 
