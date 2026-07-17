@@ -1,0 +1,133 @@
+//@version=6
+strategy("GFv3 S0 Strategy [80.6% WR config]", shorttitle="GFv3_S0", overlay=true,
+     initial_capital=10000, pyramiding=0, process_orders_on_close=true,
+     commission_type=strategy.commission.percent, commission_value=0.02,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ═══════════════════════════════════════════════════════════════════
+// EXACT Python backtest config → 37 trades, ~80.6% WR (31 days, 5 symbols)
+// S0 only: green below zero + HTF | selective short (crypto 1h red hist only)
+// Chart: 15m | Forex long HTF≥3 | Crypto long HTF≥2
+// Note: Python total = sum across symbols; one chart = trades for THAT symbol only
+// ═══════════════════════════════════════════════════════════════════
+
+grp = "S0 Pattern (80.6% WR study)"
+htf1 = input.timeframe("60", "HTF 1 (1h)", group=grp)
+htf2 = input.timeframe("240", "HTF 2 (4h)", group=grp)
+confirmTf = input.timeframe("60", "Confirm TF (crypto short)", group=grp)
+cryptoLongMin = input.int(2, "Crypto long HTF min", minval=1, maxval=6, group=grp)
+forexLongMin = input.int(3, "Forex long HTF min", minval=1, maxval=6, group=grp)
+shortHtfMin = input.int(2, "Crypto short HTF min (4h)", minval=1, maxval=6, group=grp)
+forexLongOnly = input.bool(true, "Forex LONG only (selective 80WR)", group=grp)
+
+grpRisk = "Risk (matches Python backtest)"
+forexSlPips = input.float(3.0, "Forex SL (pips)", group=grpRisk)
+forexTpRR = input.float(1.0, "Forex TP risk:reward", group=grpRisk)
+cryptoSlPct = input.float(1.0, "Crypto SL %", group=grpRisk) / 100.0
+cryptoTpPct = input.float(2.0, "Crypto TP %", group=grpRisk) / 100.0
+
+grpVis = "Display"
+showTable = input.bool(true, "Show status table", group=grpVis)
+showMacdPane = input.bool(true, "Show MACD pane", group=grpVis)
+
+isCrypto = syminfo.type == "crypto"
+isForex = syminfo.type == "forex"
+marketTag = isCrypto ? "CRYPTO" : isForex ? "FOREX" : syminfo.type
+effLongMin = isCrypto ? cryptoLongMin : isForex ? forexLongMin : forexLongMin
+
+macdPack() =>
+    [m, s, h] = ta.macd(close, 12, 26, 9)
+    crossBull = ta.crossover(m, s)
+    crossBear = ta.crossunder(m, s)
+    bullAbove = m > s and m > 0
+    aqua = h > h[1] and h > 0
+    redHist = h < h[1] and h <= 0
+    redHistStart = redHist and not (h[1] < h[2] and h[1] <= 0)
+    greenBelow = crossBull and m < 0
+    redAbove = crossBear and m > 0
+    [m, s, h, greenBelow, redAbove, aqua, bullAbove, redHistStart, crossBull, crossBear]
+
+// HTF score — same as cm_macd_htf.py / analyze_cm_macd_signals.py
+htfScore(string tf, bool forLong) =>
+    [m, s, h, _, _, aqua, bullAbove, redHist, crossBull, crossBear] =
+         request.security(syminfo.tickerid, tf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
+    sc = 0
+    if forLong
+        sc += (aqua or bullAbove) ? 1 : 0
+        sc += crossBull ? 2 : 0
+    else
+        sc += (redHist or not bullAbove) ? 1 : 0
+        sc += crossBear ? 2 : 0
+    sc
+
+[macd, sig, hist, greenBelow, redAbove, _, _, _, _, _] = macdPack()
+
+// 15m long: HTF from 1h + 4h
+htfLong = htfScore(htf1, true) + htfScore(htf2, true)
+
+// Crypto short: 1h red hist start + 4h short score (signal TF = 1h → only 4h counts)
+[_, _, _, _, _, _, _, redHist1h, _, _] =
+     request.security(syminfo.tickerid, confirmTf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
+htfShort4h = htfScore(htf2, false)
+
+// ── S0 signals (exact Python hw_long / hw_short selective) ───────
+hwLong = greenBelow and htfLong >= effLongMin
+
+hwShort = false
+if isCrypto
+    hwShort := redHist1h and htfShort4h >= shortHtfMin
+else if isForex and not forexLongOnly
+    htfShort15 = htfScore(htf1, false) + htfScore(htf2, false)
+    hwShort := redAbove and htfShort15 >= shortHtfMin
+
+// ── SL / TP (Python: forex 3 pip SL 1:1 RR | crypto 1% SL 2% TP) ─
+pipVal = (str.contains(syminfo.ticker, "JPY") or close > 50) ? 0.01 : 0.0001
+forexSl = forexSlPips * pipVal
+forexTp = forexSl * forexTpRR
+cryptoSl = close * cryptoSlPct
+cryptoTp = close * cryptoTpPct
+
+slL = isForex ? close - forexSl : close - cryptoSl
+tpL = isForex ? close + forexTp : close + cryptoTp
+slS = isForex ? close + forexSl : close + cryptoSl
+tpS = isForex ? close - forexTp : close - cryptoTp
+
+if hwLong and strategy.position_size <= 0
+    strategy.entry("S0_Long", strategy.long)
+    strategy.exit("X_Long", "S0_Long", stop=slL, limit=tpL)
+
+if hwShort and strategy.position_size >= 0
+    strategy.entry("S0_Short", strategy.short)
+    strategy.exit("X_Short", "S0_Short", stop=slS, limit=tpS)
+
+plotshape(hwLong, "S0 Long", shape.triangleup, location.belowbar, color.lime, size=size.normal, text="S0▲")
+plotshape(hwShort, "S0 Short", shape.triangledown, location.abovebar, color.red, size=size.normal, text="S0▼")
+bgcolor(hwLong ? color.new(color.lime, 92) : hwShort ? color.new(color.red, 92) : na)
+
+plot(showMacdPane ? macd : na, "MACD", color=color.blue, display=display.pane)
+plot(showMacdPane ? sig : na, "Signal", color=color.orange, display=display.pane)
+plot(showMacdPane ? hist : na, "Hist", color=hist >= 0 ? color.aqua : color.maroon,
+     style=plot.style_columns, display=display.pane)
+plot(showMacdPane ? 0.0 : na, "Zero", color=color.gray, display=display.pane)
+
+if showTable and barstate.islast
+    var table t = table.new(position.top_right, 2, 7, bgcolor=color.new(color.black, 20))
+    table.cell(t, 0, 0, "Config", text_color=color.white)
+    table.cell(t, 1, 0, "S0 / 80.6% WR", text_color=color.yellow)
+    table.cell(t, 0, 1, "Symbol", text_color=color.white)
+    table.cell(t, 1, 1, syminfo.ticker, text_color=color.aqua)
+    table.cell(t, 0, 2, "Market", text_color=color.white)
+    table.cell(t, 1, 2, marketTag, text_color=isCrypto ? color.orange : color.teal)
+    table.cell(t, 0, 3, "HTF Long", text_color=color.white)
+    table.cell(t, 1, 3, str.tostring(htfLong) + " / " + str.tostring(effLongMin),
+         text_color=htfLong >= effLongMin ? color.lime : color.gray)
+    table.cell(t, 0, 4, "Forex long only", text_color=color.white)
+    table.cell(t, 1, 4, forexLongOnly ? "YES" : "no", text_color=forexLongOnly ? color.lime : color.gray)
+    table.cell(t, 0, 5, "Green<0", text_color=color.white)
+    table.cell(t, 1, 5, greenBelow ? "YES" : "no", text_color=greenBelow ? color.lime : color.gray)
+    table.cell(t, 0, 6, "Signal", text_color=color.white)
+    table.cell(t, 1, 6, hwLong ? "LONG" : hwShort ? "SHORT" : "—",
+         text_color=hwLong ? color.lime : hwShort ? color.red : color.gray)
+
+alertcondition(hwLong, "S0 Long", "GFv3 S0 LONG {{ticker}}")
+alertcondition(hwShort, "S0 Short", "GFv3 S0 SHORT {{ticker}}")
