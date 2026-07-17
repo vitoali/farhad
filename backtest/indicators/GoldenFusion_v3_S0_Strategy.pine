@@ -4,12 +4,7 @@ strategy("GFv3 S0 Strategy [80.6% WR config]", shorttitle="GFv3_S0", overlay=tru
      commission_type=strategy.commission.percent, commission_value=0.02,
      default_qty_type=strategy.percent_of_equity, default_qty_value=10)
 
-// ═══════════════════════════════════════════════════════════════════
-// EXACT Python backtest config → 37 trades, ~80.6% WR (31 days, 5 symbols)
-// S0 only: green below zero + HTF | selective short (crypto 1h red hist only)
-// Chart: 15m | Forex long HTF≥3 | Crypto long HTF≥2
-// Note: Python total = sum across symbols; one chart = trades for THAT symbol only
-// ═══════════════════════════════════════════════════════════════════
+// Chart: 15m | S0 signals only on price — NO MACD histogram on chart (clean view)
 
 grp = "S0 Pattern (80.6% WR study)"
 htf1 = input.timeframe("60", "HTF 1 (1h)", group=grp)
@@ -27,8 +22,9 @@ cryptoSlPct = input.float(1.0, "Crypto SL %", group=grpRisk) / 100.0
 cryptoTpPct = input.float(2.0, "Crypto TP %", group=grpRisk) / 100.0
 
 grpVis = "Display"
-showTable = input.bool(true, "Show status table", group=grpVis)
-showMacdPane = input.bool(true, "Show MACD pane", group=grpVis)
+showTable = input.bool(true, "Show info table", group=grpVis)
+showSignals = input.bool(true, "Show S0 arrows", group=grpVis)
+highlightBar = input.bool(false, "Highlight signal bars (bgcolor)", group=grpVis)
 
 isCrypto = syminfo.type == "crypto"
 isForex = syminfo.type == "forex"
@@ -47,7 +43,6 @@ macdPack() =>
     redAbove = crossBear and m > 0
     [m, s, h, greenBelow, redAbove, aqua, bullAbove, redHistStart, crossBull, crossBear]
 
-// HTF score — same as cm_macd_htf.py / analyze_cm_macd_signals.py
 htfScore(string tf, bool forLong) =>
     [m, s, h, _, _, aqua, bullAbove, redHist, crossBull, crossBear] =
          request.security(syminfo.tickerid, tf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
@@ -60,17 +55,14 @@ htfScore(string tf, bool forLong) =>
         sc += crossBear ? 2 : 0
     sc
 
-[macd, sig, hist, greenBelow, redAbove, _, _, _, _, _] = macdPack()
+[_, _, _, greenBelow, redAbove, _, _, _, _, _] = macdPack()
 
-// 15m long: HTF from 1h + 4h
 htfLong = htfScore(htf1, true) + htfScore(htf2, true)
 
-// Crypto short: 1h red hist start + 4h short score (signal TF = 1h → only 4h counts)
 [_, _, _, _, _, _, _, redHist1h, _, _] =
      request.security(syminfo.tickerid, confirmTf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
 htfShort4h = htfScore(htf2, false)
 
-// ── S0 signals (exact Python hw_long / hw_short selective) ───────
 hwLong = greenBelow and htfLong >= effLongMin
 
 hwShort = false
@@ -80,7 +72,6 @@ else if isForex and not forexLongOnly
     htfShort15 = htfScore(htf1, false) + htfScore(htf2, false)
     hwShort := redAbove and htfShort15 >= shortHtfMin
 
-// ── SL / TP (Python: forex 3 pip SL 1:1 RR | crypto 1% SL 2% TP) ─
 pipVal = (str.contains(syminfo.ticker, "JPY") or close > 50) ? 0.01 : 0.0001
 forexSl = forexSlPips * pipVal
 forexTp = forexSl * forexTpRR
@@ -100,15 +91,12 @@ if hwShort and strategy.position_size >= 0
     strategy.entry("S0_Short", strategy.short)
     strategy.exit("X_Short", "S0_Short", stop=slS, limit=tpS)
 
-plotshape(hwLong, "S0 Long", shape.triangleup, location.belowbar, color.lime, size=size.normal, text="S0▲")
-plotshape(hwShort, "S0 Short", shape.triangledown, location.abovebar, color.red, size=size.normal, text="S0▼")
-bgcolor(hwLong ? color.new(color.lime, 92) : hwShort ? color.new(color.red, 92) : na)
+plotshape(showSignals and hwLong, "S0 Long", shape.triangleup, location.belowbar,
+     color=color.lime, size=size.small, text="S0▲")
+plotshape(showSignals and hwShort, "S0 Short", shape.triangledown, location.abovebar,
+     color=color.red, size=size.small, text="S0▼")
 
-plot(showMacdPane ? macd : na, "MACD", color=color.blue, display=display.pane)
-plot(showMacdPane ? sig : na, "Signal", color=color.orange, display=display.pane)
-plot(showMacdPane ? hist : na, "Hist", color=hist >= 0 ? color.aqua : color.maroon,
-     style=plot.style_columns, display=display.pane)
-plot(showMacdPane ? 0.0 : na, "Zero", color=color.gray, display=display.pane)
+bgcolor(highlightBar and hwLong ? color.new(color.lime, 93) : highlightBar and hwShort ? color.new(color.red, 93) : na)
 
 if showTable and barstate.islast
     var table t = table.new(position.top_right, 2, 7, bgcolor=color.new(color.black, 20))
