@@ -1,0 +1,144 @@
+
+================================================================================
+GOLD 5M   (2026-05-07 .. 2026-07-17 = 71d, dots 566L/567S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L=566 S=567) : n=1133  win%=32  avg=-0.04%  total=-35.08%  PF=0.68  maxDD=-37.18%  timeout=2
+   TREND   (L=224 S=357) : n=581  win%=31  avg=-0.04%  total=-21.16%  PF=0.66  maxDD=-22.41%
+   HTF     (L=220 S=285) : n=505  win%=28  avg=-0.06%  total=-24.49%  PF=0.55  maxDD=-24.39%
+   T+H     (L=125 S=218) : n=343  win%=28  avg=-0.05%  total=-17.14%  PF=0.57  maxDD=-17.06%
+   T+H+C2  (L=112 S=203) : n=315  win%=28  avg=-0.05%  total=-14.53%  PF=0.60  maxDD=-16.71%
+
+ FIX SL2%/TP4%
+   BASE    (L=566 S=567) : n=1133  win%=42  avg=-0.00%  total=-28.45%  PF=1.00  maxDD=-99.73%  timeout=394
+   TREND   (L=224 S=357) : n=581  win%=45  avg=+0.15%  total=+97.62%  PF=1.15  maxDD=-93.95%  timeout=194
+   HTF     (L=220 S=285) : n=505  win%=47  avg=+0.16%  total=+93.02%  PF=1.17  maxDD=-88.66%  timeout=189
+   T+H     (L=125 S=218) : n=343  win%=48  avg=+0.30%  total=+153.34%  PF=1.33  maxDD=-79.67%  timeout=121
+   T+H+C2  (L=112 S=203) : n=315  win%=50  avg=+0.33%  total=+155.24%  PF=1.37  maxDD=-77.52%  timeout=115
+
+================================================================================
+GOLD 15M   (2026-05-08 .. 2026-07-17 = 69d, dots 181L/181S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L=181 S=181) : n=362  win%=33  avg=-0.04%  total=-12.47%  PF=0.81  maxDD=-15.05%  timeout=1
+   TREND   (L= 58 S=124) : n=182  win%=32  avg=-0.04%  total=-6.89%  PF=0.79  maxDD=-8.99%
+   HTF     (L= 58 S= 83) : n=141  win%=36  avg=-0.03%  total=-3.76%  PF=0.85  maxDD=-4.44%
+   T+H     (L= 21 S= 63) : n=84  win%=38  avg=-0.01%  total=-0.97%  PF=0.93  maxDD=-2.21%
+   T+H+C2  (L= 20 S= 59) : n=79  win%=41  avg=+0.03%  total=+2.00%  PF=1.16  maxDD=-4.10%
+
+ FIX SL2%/TP4%
+   BASE    (L=181 S=181) : n=362  win%=38  avg=+0.00%  total=-11.50%  PF=1.00  maxDD=-92.87%  timeout=43
+   TREND   (L= 58 S=124) : n=182  win%=42  avg=+0.19%  total=+32.00%  PF=1.16  maxDD=-66.55%  timeout=27
+   HTF     (L= 58 S= 83) : n=141  win%=42  avg=+0.22%  total=+28.84%  PF=1.19  maxDD=-54.58%  timeout=17
+   T+H     (L= 21 S= 63) : n=84  win%=40  avg=+0.09%  total=+5.06%  PF=1.08  maxDD=-37.38%  timeout=12
+   T+H+C2  (L= 20 S= 59) : n=79  win%=41  avg=+0.13%  total=+8.20%  PF=1.12  maxDD=-31.78%  timeout=12
+
+================================================================================
+GOLD 1H   (2026-04-19 .. 2026-07-17 = 88d, dots 62L/62S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L= 62 S= 62) : n=124  win%=40  avg=+0.06%  total=+7.02%  PF=1.19  maxDD=-8.02%
+   TREND   (L= 18 S= 44) : n=62  win%=45  avg=+0.13%  total=+7.94%  PF=1.45  maxDD=-3.36%
+   HTF     (L= 20 S= 25) : n=45  win%=42  avg=+0.13%  total=+5.91%  PF=1.48  maxDD=-3.85%
+   T+H     (L=  7 S= 20) : n=27  win%=44  avg=+0.15%  total=+4.02%  PF=1.55  maxDD=-2.35%
+   T+H+C2  (L=  8 S= 20) : n=28  win%=36  avg=+0.04%  total=+1.06%  PF=1.12  maxDD=-3.48%
+
+ FIX SL2%/TP4%
+   BASE    (L= 62 S= 62) : n=124  win%=38  avg=+0.17%  total=+16.93%  PF=1.13  maxDD=-52.07%  timeout=5
+   TREND   (L= 18 S= 44) : n=62  win%=32  avg=-0.23%  total=-14.97%  PF=0.84  maxDD=-29.39%  timeout=3
+   HTF     (L= 20 S= 25) : n=45  win%=38  avg=+0.21%  total=+7.80%  PF=1.17  maxDD=-29.08%  timeout=1
+   T+H     (L=  7 S= 20) : n=27  win%=41  avg=+0.36%  total=+8.89%  PF=1.30  maxDD=-11.43%  timeout=1
+   T+H+C2  (L=  8 S= 20) : n=28  win%=39  avg=+0.25%  total=+5.95%  PF=1.20  maxDD=-13.41%  timeout=1
+
+================================================================================
+GOLD 4H   (2026-04-19 .. 2026-07-17 = 88d, dots 17L/18S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L= 17 S= 18) : n=35  win%=31  avg=-0.12%  total=-4.27%  PF=0.83  maxDD=-5.32%
+   TREND   (L=  1 S= 17) : n=18  win%=39  avg=+0.07%  total=+1.04%  PF=1.11  maxDD=-4.20%
+   HTF     (L=  5 S=  8) : n=13  win%=23  avg=-0.32%  total=-4.13%  PF=0.58  maxDD=-3.72%
+   T+H     (L=  1 S=  8) : n=9  win%=33  avg=-0.04%  total=-0.42%  PF=0.94  maxDD=-3.26%
+   T+H+C2  (L=  1 S=  7) : n=8  win%=25  avg=-0.28%  total=-2.25%  PF=0.63  maxDD=-3.21%
+
+ FIX SL2%/TP4%
+   BASE    (L= 17 S= 18) : n=35  win%=40  avg=+0.33%  total=+10.83%  PF=1.28  maxDD=-13.64%  timeout=2
+   TREND   (L=  1 S= 17) : n=18  win%=50  avg=+0.91%  total=+16.90%  PF=1.95  maxDD=-4.29%  timeout=2
+   HTF     (L=  5 S=  8) : n=13  win%=15  avg=-1.12%  total=-13.87%  PF=0.35  maxDD=-12.09%
+   T+H     (L=  1 S=  8) : n=9  win%=22  avg=-0.71%  total=-6.47%  PF=0.55  maxDD=-8.16%
+   T+H+C2  (L=  1 S=  7) : n=8  win%=12  avg=-1.29%  total=-9.99%  PF=0.28  maxDD=-8.11%
+
+================================================================================
+EURUSD 5M   (2026-04-27 .. 2026-07-17 = 80d, dots 732L/732S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L=732 S=732) : n=1464  win%=31  avg=-0.02%  total=-24.49%  PF=0.23  maxDD=-24.45%  timeout=1
+   TREND   (L=328 S=411) : n=739  win%=30  avg=-0.02%  total=-13.26%  PF=0.22  maxDD=-13.27%
+   HTF     (L=319 S=350) : n=669  win%=28  avg=-0.02%  total=-12.74%  PF=0.20  maxDD=-12.70%  timeout=1
+   T+H     (L=196 S=246) : n=442  win%=27  avg=-0.02%  total=-8.60%  PF=0.21  maxDD=-8.61%
+   T+H+C2  (L=175 S=225) : n=400  win%=32  avg=-0.02%  total=-7.25%  PF=0.25  maxDD=-7.28%
+
+ FIX SL2%/TP4%
+   BASE    (L=732 S=732) : n=1464  win%=48  avg=-0.02%  total=-28.69%  PF=0.90  maxDD=-78.19%  timeout=1464
+   TREND   (L=328 S=411) : n=739  win%=46  avg=-0.04%  total=-23.95%  PF=0.84  maxDD=-55.60%  timeout=739
+   HTF     (L=319 S=350) : n=669  win%=47  avg=-0.01%  total=-10.26%  PF=0.93  maxDD=-49.28%  timeout=669
+   T+H     (L=196 S=246) : n=442  win%=45  avg=-0.03%  total=-11.77%  PF=0.87  maxDD=-29.77%  timeout=442
+   T+H+C2  (L=175 S=225) : n=400  win%=44  avg=-0.04%  total=-14.29%  PF=0.83  maxDD=-30.56%  timeout=400
+
+================================================================================
+EURUSD 15M   (2026-04-29 .. 2026-07-17 = 79d, dots 220L/220S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L=220 S=220) : n=440  win%=31  avg=-0.02%  total=-9.20%  PF=0.45  maxDD=-9.30%  timeout=1
+   TREND   (L= 94 S=124) : n=218  win%=31  avg=-0.02%  total=-4.70%  PF=0.45  maxDD=-4.94%  timeout=1
+   HTF     (L= 82 S= 92) : n=174  win%=32  avg=-0.02%  total=-3.75%  PF=0.45  maxDD=-3.83%
+   T+H     (L= 43 S= 67) : n=110  win%=35  avg=-0.02%  total=-1.99%  PF=0.53  maxDD=-2.16%
+   T+H+C2  (L= 44 S= 63) : n=107  win%=36  avg=-0.02%  total=-1.84%  PF=0.53  maxDD=-1.78%
+
+ FIX SL2%/TP4%
+   BASE    (L=220 S=220) : n=440  win%=48  avg=-0.04%  total=-16.06%  PF=0.89  maxDD=-72.08%  timeout=423
+   TREND   (L= 94 S=124) : n=218  win%=42  avg=-0.14%  total=-26.74%  PF=0.65  maxDD=-50.36%  timeout=204
+   HTF     (L= 82 S= 92) : n=174  win%=40  avg=-0.08%  total=-14.14%  PF=0.77  maxDD=-41.13%  timeout=169
+   T+H     (L= 43 S= 67) : n=110  win%=40  avg=-0.15%  total=-15.26%  PF=0.64  maxDD=-30.20%  timeout=105
+   T+H+C2  (L= 44 S= 63) : n=107  win%=35  avg=-0.23%  total=-22.18%  PF=0.49  maxDD=-32.51%  timeout=100
+
+================================================================================
+EURUSD 1H   (2026-04-19 .. 2026-07-17 = 88d, dots 61L/60S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L= 61 S= 60) : n=121  win%=41  avg=-0.00%  total=-0.08%  PF=0.99  maxDD=-1.75%  timeout=1
+   TREND   (L= 21 S= 37) : n=58  win%=36  avg=-0.01%  total=-0.82%  PF=0.79  maxDD=-1.79%  timeout=1
+   HTF     (L= 24 S= 22) : n=46  win%=37  avg=-0.01%  total=-0.62%  PF=0.80  maxDD=-1.84%
+   T+H     (L= 13 S= 19) : n=32  win%=34  avg=-0.02%  total=-0.65%  PF=0.72  maxDD=-1.58%
+   T+H+C2  (L= 14 S= 15) : n=29  win%=28  avg=-0.03%  total=-0.98%  PF=0.56  maxDD=-1.10%
+
+ FIX SL2%/TP4%
+   BASE    (L= 61 S= 60) : n=121  win%=45  avg=-0.03%  total=-4.56%  PF=0.93  maxDD=-39.47%  timeout=107
+   TREND   (L= 21 S= 37) : n=58  win%=50  avg=+0.07%  total=+3.66%  PF=1.17  maxDD=-15.56%  timeout=52
+   HTF     (L= 24 S= 22) : n=46  win%=39  avg=-0.25%  total=-11.21%  PF=0.56  maxDD=-20.69%  timeout=38
+   T+H     (L= 13 S= 19) : n=32  win%=41  avg=-0.14%  total=-4.54%  PF=0.69  maxDD=-11.08%  timeout=27
+   T+H+C2  (L= 14 S= 15) : n=29  win%=31  avg=-0.38%  total=-10.58%  PF=0.42  maxDD=-14.77%  timeout=22
+
+================================================================================
+EURUSD 4H   (2026-04-19 .. 2026-07-17 = 88d, dots 17L/17S)
+================================================================================
+
+ ATR55 SL1/TP2
+   BASE    (L= 17 S= 17) : n=34  win%=29  avg=-0.05%  total=-1.71%  PF=0.65  maxDD=-2.88%  timeout=1
+   TREND   (L=  4 S= 13) : n=17  win%=47  avg=+0.04%  total=+0.64%  PF=1.36  maxDD=-0.61%  timeout=1
+   HTF     (L=  5 S=  9) : n=14  win%=29  avg=-0.05%  total=-0.69%  PF=0.67  maxDD=-1.31%
+   T+H     (L=  0 S=  6) : n=6  win%=50  avg=+0.08%  total=+0.45%  PF=1.79  maxDD=-0.21%
+   T+H+C2  (L=  0 S=  5) : n=5  win%=20  avg=-0.08%  total=-0.40%  PF=0.49  maxDD=-0.38%
+
+ FIX SL2%/TP4%
+   BASE    (L= 17 S= 17) : n=34  win%=44  avg=-0.05%  total=-1.99%  PF=0.93  maxDD=-17.72%  timeout=24
+   TREND   (L=  4 S= 13) : n=17  win%=47  avg=+0.06%  total=+0.87%  PF=1.11  maxDD=-5.92%  timeout=13
+   HTF     (L=  5 S=  9) : n=14  win%=50  avg=+0.52%  total=+7.33%  PF=2.46  maxDD=-2.16%  timeout=12
+   T+H     (L=  0 S=  6) : n=6  win%=50  avg=+0.68%  total=+4.13%  PF=6.16  maxDD=-0.79%  timeout=6
+   T+H+C2  (L=  0 S=  5) : n=5  win%=60  avg=+0.78%  total=+3.96%  PF=5.21  maxDD=-0.93%  timeout=5
