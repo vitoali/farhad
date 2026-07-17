@@ -41,12 +41,14 @@ i_cooldown    = input.int(8, "Anti-Flip Cooldown Bars", minval=0, group=G1)
 //══════════════════════════════════════════════════════════════════
 // 2) SD MAGNET GATE (precondition)
 //══════════════════════════════════════════════════════════════════
-var string G2 = "2) SD Magnet Precondition"
-i_useSdGate   = input.bool(true, "Require SD Gate", group=G2)
-i_gateMode    = input.string("Near OR Magnet", "Gate Mode",
-     options=["Near Zone", "Magnet Direction", "Near OR Magnet", "Near AND Magnet"],
+var string G2 = "2) SD Magnet + PreBuy/Sell Gate"
+i_useSdGate   = input.bool(true, "Require Gate", group=G2)
+i_gateMode    = input.string("SD OR Pre", "Gate Mode",
+     options=["Near Zone", "Magnet Direction", "Near OR Magnet", "Near AND Magnet", "SD OR Pre", "SD AND Pre", "Pre Only"],
      group=G2,
-     tooltip="Recommended: Near OR Magnet.\nLong needs Demand proximity (with memory) and/or Magnet UP; Short needs Supply / Magnet DOWN.")
+     tooltip="SD OR Pre (recommended): Long if Near Demand OR Magnet UP OR Pre-Buy.\nShort if Near Supply OR Magnet DOWN OR Pre-Sell.")
+i_usePreGate  = input.bool(true, "Include EWO Pre-Buy / Pre-Sell", group=G2)
+i_preMemory   = input.int(8, "Pre Zone Memory (bars)", minval=0, group=G2)
 i_swingLen    = input.int(12, "Swing Length", minval=3, group=G2)
 i_minZoneDist = input.int(15, "Min Bars Between Zones", group=G2)
 i_uniHeight   = input.float(0.5, "Zone Height (ATR x)", step=0.05, group=G2)
@@ -275,6 +277,18 @@ if array.size(zones) > 0
 nearDemand = nearDemandNow or (not na(lastNearDemBar) and n - lastNearDemBar <= i_nearLookback)
 nearSupply = nearSupplyNow or (not na(lastNearSupBar) and n - lastNearSupBar <= i_nearLookback)
 
+// EWO/RSI Pre-Buy / Pre-Sell (from rsiew) + short memory
+preBuyRaw  = rsiVal < 40 and ewo > ewo[1] and ewo < 0
+preSellRaw = rsiVal > 60 and ewo < ewo[1] and ewo > 0
+var int lastPreBuyBar = na
+var int lastPreSellBar = na
+if preBuyRaw
+    lastPreBuyBar := n
+if preSellRaw
+    lastPreSellBar := n
+preBuy  = i_usePreGate and (preBuyRaw or (not na(lastPreBuyBar) and n - lastPreBuyBar <= i_preMemory))
+preSell = i_usePreGate and (preSellRaw or (not na(lastPreSellBar) and n - lastPreSellBar <= i_preMemory))
+
 // Gate
 gateLong = true
 gateShort = true
@@ -283,6 +297,8 @@ if i_useSdGate
     nearS = nearSupply
     magL = magUp
     magS = magDown
+    sdL = nearL or magL
+    sdS = nearS or magS
     switch i_gateMode
         "Near Zone" =>
             gateLong := nearL
@@ -291,11 +307,20 @@ if i_useSdGate
             gateLong := magL
             gateShort := magS
         "Near OR Magnet" =>
-            gateLong := nearL or magL
-            gateShort := nearS or magS
+            gateLong := sdL
+            gateShort := sdS
         "Near AND Magnet" =>
             gateLong := nearL and magL
             gateShort := nearS and magS
+        "SD OR Pre" =>
+            gateLong := sdL or preBuy
+            gateShort := sdS or preSell
+        "SD AND Pre" =>
+            gateLong := sdL and preBuy
+            gateShort := sdS and preSell
+        "Pre Only" =>
+            gateLong := preBuy
+            gateShort := preSell
 
 //══════════════════════════════════════════════════════════════════
 // ENTRIES
