@@ -1,0 +1,130 @@
+//@version=6
+indicator("Golden Fusion v3 HW [CM MACD 70-80% WR]", shorttitle="GFv3_HW", overlay=true,
+     max_labels_count=500, max_lines_count=500)
+
+// ═══════════════════════════════════════════════════════════════════
+// Golden Fusion v3 — INDICATOR (free TradingView plan)
+// Chart TF: 15m recommended
+// Long:  green cross below zero + HTF score >= min
+// Short: BTC only — 1h red histogram start + HTF score >= min (selective)
+// ═══════════════════════════════════════════════════════════════════
+
+grp = "Pattern"
+confirmTf = input.timeframe("60", "Confirm TF (1h for BTC short)", group=grp)
+htf1 = input.timeframe("60", "HTF 1", group=grp)
+htf2 = input.timeframe("240", "HTF 2", group=grp)
+longHtfMin = input.int(3, "Long HTF min score", minval=1, maxval=6, group=grp)
+shortHtfMin = input.int(2, "Short HTF min score", minval=1, maxval=6, group=grp)
+selectiveShort = input.bool(true, "Selective short (BTC 1h red hist only)", group=grp)
+btcLongHtfMin = input.int(2, "BTC long HTF min (override)", minval=1, maxval=6, group=grp)
+useBtcOverride = input.bool(true, "Auto BTC/EURUSD HTF tuning", group=grp)
+
+grpRisk = "SL / TP levels (visual only)"
+atrLen = input.int(14, "ATR length", group=grpRisk)
+slAtr = input.float(2.0, "SL × ATR", group=grpRisk)
+tpAtr = input.float(3.0, "TP × ATR", group=grpRisk)
+showSlTp = input.bool(true, "Show SL/TP lines on signal", group=grpRisk)
+
+grpVis = "Display"
+showHtf = input.bool(true, "Show HTF score table", group=grpVis)
+showMacdPane = input.bool(true, "Show MACD pane", group=grpVis)
+
+// ── MACD helpers ─────────────────────────────────────────────────
+macdPack() =>
+    [m, s, h] = ta.macd(close, 12, 26, 9)
+    crossBull = ta.crossover(m, s)
+    crossBear = ta.crossunder(m, s)
+    bullAbove = m > s and m > 0
+    aqua = h > h[1] and h > 0
+    redHist = h < h[1] and h <= 0
+    redHistStart = redHist and not (h[1] < h[2] and h[1] <= 0)
+    greenBelow = crossBull and m < 0
+    redAbove = crossBear and m > 0
+    [m, s, h, greenBelow, redAbove, aqua, bullAbove, redHistStart, crossBull, crossBear]
+
+htfScore(string tf, bool forLong) =>
+    [m, s, h, _, _, aqua, bullAbove, redHist, crossBull, crossBear] =
+         request.security(syminfo.tickerid, tf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
+    sc = 0
+    if forLong
+        sc += (aqua or bullAbove) ? 1 : 0
+        sc += crossBull ? 2 : 0
+    else
+        sc += (redHist or not bullAbove) ? 1 : 0
+        sc += crossBear ? 2 : 0
+    sc
+
+// ── Current chart (15m) ────────────────────────────────────────────
+[macd, sig, hist, greenBelow, redAbove, _, _, _, _, _] = macdPack()
+
+isBtc = str.contains(str.upper(syminfo.ticker), "BTC")
+isEur = str.contains(str.upper(syminfo.ticker), "EUR")
+effLongMin = useBtcOverride ? (isBtc ? btcLongHtfMin : isEur ? 3 : longHtfMin) : longHtfMin
+
+htfLong = htfScore(htf1, true) + htfScore(htf2, true)
+htfShort15 = htfScore(htf1, false) + htfScore(htf2, false)
+
+[_, _, _, _, _, _, _, redHist1h, _, _] =
+     request.security(syminfo.tickerid, confirmTf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
+htfShort1h = htfScore(htf2, false)
+
+// ── S0 signals ───────────────────────────────────────────────────
+hwLong = greenBelow and htfLong >= effLongMin
+
+hwShort = false
+if selectiveShort
+    hwShort := isBtc and redHist1h and htfShort1h >= shortHtfMin
+else
+    hwShort := redAbove and htfShort15 >= shortHtfMin
+
+// ── SL / TP (visual guide) ───────────────────────────────────────
+atrV = ta.atr(atrLen)
+slL = close - atrV * slAtr
+tpL = close + atrV * tpAtr
+slS = close + atrV * slAtr
+tpS = close - atrV * tpAtr
+
+if showSlTp and hwLong
+    label.new(bar_index, low, "S0 LONG\nSL:" + str.tostring(slL, format.mintick) + "\nTP:" + str.tostring(tpL, format.mintick),
+         style=label.style_label_up, color=color.new(color.lime, 10), textcolor=color.white, size=size.small)
+    line.new(bar_index, slL, bar_index + 8, slL, color=color.red, style=line.style_dashed)
+    line.new(bar_index, tpL, bar_index + 8, tpL, color=color.lime, style=line.style_dashed)
+
+if showSlTp and hwShort
+    label.new(bar_index, high, "S0 SHORT\nSL:" + str.tostring(slS, format.mintick) + "\nTP:" + str.tostring(tpS, format.mintick),
+         style=label.style_label_down, color=color.new(color.red, 10), textcolor=color.white, size=size.small)
+    line.new(bar_index, slS, bar_index + 8, slS, color=color.red, style=line.style_dashed)
+    line.new(bar_index, tpS, bar_index + 8, tpS, color=color.lime, style=line.style_dashed)
+
+// ── Chart visuals ────────────────────────────────────────────────
+plotshape(hwLong, title="S0 HW Long", style=shape.triangleup, location=location.belowbar,
+     color=color.lime, size=size.normal, text="S0▲")
+plotshape(hwShort, title="S0 HW Short", style=shape.triangledown, location=location.abovebar,
+     color=color.red, size=size.normal, text="S0▼")
+
+bgcolor(hwLong ? color.new(color.lime, 92) : hwShort ? color.new(color.red, 92) : na)
+
+plot(showMacdPane ? macd : na, "MACD", color=color.blue, display=display.pane)
+plot(showMacdPane ? sig : na, "Signal", color=color.orange, display=display.pane)
+plot(showMacdPane ? hist : na, "Hist", color=hist >= 0 ? color.aqua : color.maroon,
+     style=plot.style_columns, display=display.pane)
+hline(showMacdPane ? 0 : na, "Zero", color=color.gray, display=display.pane)
+
+if showHtf and barstate.islast
+    var table t = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 30))
+    table.cell(t, 0, 0, "HTF Long", text_color=color.white)
+    table.cell(t, 1, 0, str.tostring(htfLong) + " / " + str.tostring(effLongMin),
+         text_color=htfLong >= effLongMin ? color.lime : color.gray)
+    table.cell(t, 0, 1, "HTF Short", text_color=color.white)
+    table.cell(t, 1, 1, str.tostring(htfShort15), text_color=color.gray)
+    table.cell(t, 0, 2, "Green<0", text_color=color.white)
+    table.cell(t, 1, 2, greenBelow ? "YES" : "no", text_color=greenBelow ? color.lime : color.gray)
+    table.cell(t, 0, 3, "Mode", text_color=color.white)
+    table.cell(t, 1, 3, selectiveShort ? "selective" : "full", text_color=color.aqua)
+    table.cell(t, 0, 4, "Signal", text_color=color.white)
+    table.cell(t, 1, 4, hwLong ? "LONG" : hwShort ? "SHORT" : "—",
+         text_color=hwLong ? color.lime : hwShort ? color.red : color.gray)
+
+// Alerts (free plan — use these for notifications)
+alertcondition(hwLong, "S0 HW Long", "GFv3: S0 LONG — green below zero + HTF OK")
+alertcondition(hwShort, "S0 HW Short", "GFv3: S0 SHORT — red hist / red above zero + HTF OK")
