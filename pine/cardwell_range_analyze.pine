@@ -31,11 +31,13 @@ i_tp2Mult       = input.float(2.0, "TP2 ATR Mult", minval=0.1, step=0.1, group=G
 i_tp3Mult       = input.float(3.0, "TP3 ATR Mult", minval=0.1, step=0.1, group=GRP_TT)
 i_lineExtBars   = input.int(50, "Level Line Extend Bars", minval=1, group=GRP_TT)
 i_closeOnSl     = input.bool(true, "Close trade on SL hit", group=GRP_TT)
+i_intrabarExit  = input.bool(true, "Detect SL/TP3 on live tick", group=GRP_TT)
 
 var string GRP_VIS = "🎨 Visuals"
 i_showCandles   = input.bool(true, "Color Candles", group=GRP_VIS)
 i_showSignals   = input.bool(true, "Show Buy/Sell Signals", group=GRP_VIS)
 i_showLevels    = input.bool(true, "Show Trade Levels", group=GRP_VIS)
+i_showCloseLbl  = input.bool(true, "Show TP3/SL close labels", group=GRP_VIS)
 
 var string GRP_DASH = "📊 Dashboard"
 i_showDash      = input.bool(true, "Show Dashboard", group=GRP_DASH)
@@ -136,33 +138,29 @@ var float activeEntry = na
 var float activeSl = na
 var float activeTp3 = na
 
-if longSignal and barstate.isconfirmed
-    tradeDir := 1
-    activeEntry := entryPrice
-    activeSl := slLongPrice
-    activeTp3 := tp3LongPrice
+// وضعیت باز معامله قبل از هر تغییر این کندل
+int openDir = tradeDir
+float openSl = activeSl
+float openTp3 = activeTp3
 
-if shortSignal and barstate.isconfirmed
-    tradeDir := -1
-    activeEntry := entryPrice
-    activeSl := slShortPrice
-    activeTp3 := tp3ShortPrice
+bool exitTick = barstate.isconfirmed or (i_intrabarExit and barstate.islast)
 
-bool slHitLong = tradeDir == 1 and not na(activeSl) and low <= activeSl
-bool slHitShort = tradeDir == -1 and not na(activeSl) and high >= activeSl
-bool tp3HitLong = tradeDir == 1 and not na(activeTp3) and high >= activeTp3
-bool tp3HitShort = tradeDir == -1 and not na(activeTp3) and low <= activeTp3
+bool slHitLong = openDir == 1 and not na(openSl) and low <= openSl
+bool slHitShort = openDir == -1 and not na(openSl) and high >= openSl
+bool tp3HitLong = openDir == 1 and not na(openTp3) and high >= openTp3
+bool tp3HitShort = openDir == -1 and not na(openTp3) and low <= openTp3
 
-bool closeLongTp3 = tp3HitLong and barstate.isconfirmed
-bool closeShortTp3 = tp3HitShort and barstate.isconfirmed
-bool closeLongSl = i_closeOnSl and slHitLong and barstate.isconfirmed
-bool closeShortSl = i_closeOnSl and slHitShort and barstate.isconfirmed
-bool closeLongOpp = shortSignal and barstate.isconfirmed and tradeDir == 1
-bool closeShortOpp = longSignal and barstate.isconfirmed and tradeDir == -1
+bool closeLongOpp = openDir == 1 and shortSignal and barstate.isconfirmed
+bool closeShortOpp = openDir == -1 and longSignal and barstate.isconfirmed
+bool closeLongTp3 = openDir == 1 and tp3HitLong and exitTick
+bool closeShortTp3 = openDir == -1 and tp3HitShort and exitTick
+bool closeLongSl = openDir == 1 and i_closeOnSl and slHitLong and exitTick
+bool closeShortSl = openDir == -1 and i_closeOnSl and slHitShort and exitTick
 
 bool closeLongSignal = closeLongTp3 or closeLongSl or closeLongOpp
 bool closeShortSignal = closeShortTp3 or closeShortSl or closeShortOpp
 
+// اول بستن، بعد ورود جدید
 if closeLongSignal
     tradeDir := 0
     activeEntry := na
@@ -174,6 +172,18 @@ if closeShortSignal
     activeEntry := na
     activeSl := na
     activeTp3 := na
+
+if longSignal and barstate.isconfirmed
+    tradeDir := 1
+    activeEntry := close[1]
+    activeSl := close[1] - atrVal * i_slMult
+    activeTp3 := close[1] + atrVal * i_tp3Mult
+
+if shortSignal and barstate.isconfirmed
+    tradeDir := -1
+    activeEntry := close[1]
+    activeSl := close[1] + atrVal * i_slMult
+    activeTp3 := close[1] - atrVal * i_tp3Mult
 
 // ── ALERTS ──────────────────────────────────────────────────────
 string _mt741a = str.format(
@@ -225,6 +235,8 @@ alertcondition(closeLongSignal, "Close Long Signal", "MarkitTick — Close Long"
 alertcondition(closeShortSignal, "Close Short Signal", "MarkitTick — Close Short")
 alertcondition(closeLongTp3, "TP3 Close Long", "MarkitTick — TP3 Close Long")
 alertcondition(closeShortTp3, "TP3 Close Short", "MarkitTick — TP3 Close Short")
+alertcondition(closeLongSl, "SL Close Long", "MarkitTick — SL Close Long")
+alertcondition(closeShortSl, "SL Close Short", "MarkitTick — SL Close Short")
 
 // ── VISUALS ─────────────────────────────────────────────────────
 plotcandle(open, high, low, close,
@@ -237,6 +249,15 @@ var label _mt741b = na
 if i_showSignals and (longSignal or shortSignal) and barstate.isconfirmed
     label.delete(_mt741b)
     _mt741b := longSignal ? label.new(bar_index, low,  "BUY",  style=label.style_label_up,   yloc=yloc.belowbar, color=c_buySig,  textcolor=color.white, size=size.small) : label.new(bar_index, high, "SELL", style=label.style_label_down, yloc=yloc.abovebar, color=c_sellSig, textcolor=color.white, size=size.small)
+
+if i_showCloseLbl and closeLongTp3
+    label.new(bar_index, high, "TP3 ✓", style=label.style_label_down, yloc=yloc.abovebar, color=c_tp3Color, textcolor=color.white, size=size.tiny)
+if i_showCloseLbl and closeShortTp3
+    label.new(bar_index, low, "TP3 ✓", style=label.style_label_up, yloc=yloc.belowbar, color=c_tp3Color, textcolor=color.white, size=size.tiny)
+if i_showCloseLbl and closeLongSl
+    label.new(bar_index, low, "SL ✕", style=label.style_label_up, yloc=yloc.belowbar, color=c_slColor, textcolor=color.white, size=size.tiny)
+if i_showCloseLbl and closeShortSl
+    label.new(bar_index, high, "SL ✕", style=label.style_label_down, yloc=yloc.abovebar, color=c_slColor, textcolor=color.white, size=size.tiny)
 
 var line slLine = na
 var line entryLine = na
@@ -321,7 +342,7 @@ f_bar(float val, float maxVal) =>
         bar += i <= filled ? "█" : "░"
     bar + "  " + str.tostring(math.round(val / maxVal * 100)) + "%"
 
-var table dash = table.new(i_dashPos, 2, 14, border_width=1)
+var table dash = table.new(i_dashPos, 2, 16, border_width=1)
 
 if i_showDash
     table.cell(dash, 0, 0, "MarkitTick — Cardwell RSI", text_color=c_dashValTxt, bgcolor=c_dashHeaderBg, text_size=size.normal)
@@ -378,3 +399,8 @@ if i_showDash
     string tradeTxt = tradeDir == 1 ? "LONG OPEN" : tradeDir == -1 ? "SHORT OPEN" : "FLAT"
     color tradeClr = tradeDir == 1 ? c_bullCandle : tradeDir == -1 ? c_bearCandle : c_neutCandle
     table.cell(dash, 1, 13, tradeTxt, text_color=tradeClr, bgcolor=c_dashValBg, text_size=size.small)
+    if openDir != 0 and not na(openTp3)
+        table.cell(dash, 0, 14, "Active TP3", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
+        table.cell(dash, 1, 14, str.tostring(openTp3, format.mintick), text_color=c_dashValTxt, bgcolor=c_dashValBg, text_size=size.small)
+        table.cell(dash, 0, 15, "Active SL", text_color=c_dashLabelTxt, bgcolor=c_dashBg, text_size=size.small)
+        table.cell(dash, 1, 15, str.tostring(openSl, format.mintick), text_color=c_dashValTxt, bgcolor=c_dashValBg, text_size=size.small)
