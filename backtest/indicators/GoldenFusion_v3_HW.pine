@@ -1,0 +1,125 @@
+//@version=6
+strategy("Golden Fusion v3 HW [CM MACD 70-80% WR]", shorttitle="GFv3_HW", overlay=true,
+     initial_capital=10000, pyramiding=0,
+     commission_type=strategy.commission.percent, commission_value=0.02,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// ═══════════════════════════════════════════════════════════════════
+// Golden Fusion v3 — high-WR CM MACD patterns (backtest ~80% WR)
+// Chart TF: 15m recommended
+// Long:  green cross below zero + HTF score >= min
+// Short: BTC only — 1h red histogram start + HTF score >= min (selective)
+// ═══════════════════════════════════════════════════════════════════
+
+grp = "Pattern"
+confirmTf = input.timeframe("60", "Confirm TF (1h for BTC short)", group=grp)
+htf1 = input.timeframe("60", "HTF 1", group=grp)
+htf2 = input.timeframe("240", "HTF 2", group=grp)
+longHtfMin = input.int(3, "Long HTF min score", minval=1, maxval=6, group=grp)
+shortHtfMin = input.int(2, "Short HTF min score", minval=1, maxval=6, group=grp)
+selectiveShort = input.bool(true, "Selective short (BTC 1h red hist only)", group=grp)
+btcLongHtfMin = input.int(2, "BTC long HTF min (override)", minval=1, maxval=6, group=grp)
+useBtcOverride = input.bool(true, "Auto BTC/EURUSD HTF tuning", group=grp)
+
+grpRisk = "Risk"
+atrLen = input.int(14, "ATR length", group=grpRisk)
+slAtr = input.float(2.0, "SL × ATR", group=grpRisk)
+tpAtr = input.float(3.0, "TP × ATR", group=grpRisk)
+
+grpVis = "Display"
+showHtf = input.bool(true, "Show HTF score table", group=grpVis)
+
+// ── MACD helpers ─────────────────────────────────────────────────
+macdPack() =>
+    [m, s, h] = ta.macd(close, 12, 26, 9)
+    crossBull = ta.crossover(m, s)
+    crossBear = ta.crossunder(m, s)
+    bullAbove = m > s and m > 0
+    aqua = h > h[1] and h > 0
+    redHist = h < h[1] and h <= 0
+    redHistStart = redHist and not (h[1] < h[2] and h[1] <= 0)
+    greenBelow = crossBull and m < 0
+    redAbove = crossBear and m > 0
+    [m, s, h, greenBelow, redAbove, aqua, bullAbove, redHistStart, crossBull, crossBear]
+
+// HTF confluence score (matches Python cm_macd_htf.py)
+htfScore(string tf, bool forLong) =>
+    [m, s, h, _, _, aqua, bullAbove, redHist, crossBull, crossBear] =
+         request.security(syminfo.tickerid, tf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
+    sc = 0
+    if forLong
+        sc += (aqua or bullAbove) ? 1 : 0
+        sc += crossBull ? 2 : 0
+    else
+        sc += (redHist or not bullAbove) ? 1 : 0
+        sc += crossBear ? 2 : 0
+    sc
+
+// ── Current chart (15m) ────────────────────────────────────────────
+[macd, sig, hist, greenBelow, redAbove, _, _, _, _, _] = macdPack()
+
+isBtc = str.contains(str.upper(syminfo.ticker), "BTC")
+isEur = str.contains(str.upper(syminfo.ticker), "EUR")
+effLongMin = useBtcOverride ? (isBtc ? btcLongHtfMin : isEur ? 3 : longHtfMin) : longHtfMin
+
+htfLong = htfScore(htf1, true) + htfScore(htf2, true)
+htfShort15 = htfScore(htf1, false) + htfScore(htf2, false)
+
+// 1h confirm: red histogram start (BTC short pattern)
+[_, _, _, _, _, _, _, redHist1h, _, _] =
+     request.security(syminfo.tickerid, confirmTf, macdPack(), barmerge.gaps_off, barmerge.lookahead_off)
+// Short score on 1h signal uses only TFs above 1h (typically 4h)
+htfShort1h = htfScore(htf2, false)
+
+// ── S0 patterns (study-backed) ───────────────────────────────────
+hwLong = greenBelow and htfLong >= effLongMin
+
+hwShort = false
+if selectiveShort
+  // BTC: 1h red histogram start + HTF
+    hwShort := isBtc and redHist1h and htfShort1h >= shortHtfMin
+else
+    hwShort := redAbove and htfShort15 >= shortHtfMin
+
+// ── Entries / exits ───────────────────────────────────────────────
+atrV = ta.atr(atrLen)
+slL = close - atrV * slAtr
+tpL = close + atrV * tpAtr
+slS = close + atrV * slAtr
+tpS = close - atrV * tpAtr
+
+if hwLong and strategy.position_size <= 0
+    strategy.entry("S0_Long", strategy.long)
+    strategy.exit("X_Long", "S0_Long", stop=slL, limit=tpL)
+
+if hwShort and strategy.position_size >= 0
+    strategy.entry("S0_Short", strategy.short)
+    strategy.exit("X_Short", "S0_Short", stop=slS, limit=tpS)
+
+// ── Visuals ──────────────────────────────────────────────────────
+plotshape(hwLong, title="S0 HW Long", style=shape.triangleup, location=location.belowbar,
+     color=color.lime, size=size.normal, text="S0▲")
+plotshape(hwShort, title="S0 HW Short", style=shape.triangledown, location=location.abovebar,
+     color=color.red, size=size.normal, text="S0▼")
+
+bgcolor(hwLong ? color.new(color.lime, 92) : hwShort ? color.new(color.red, 92) : na)
+
+plot(macd, "MACD", color=color.blue, display=display.pane)
+plot(sig, "Signal", color=color.orange, display=display.pane)
+plot(hist, "Hist", color=hist >= 0 ? color.aqua : color.maroon, style=plot.style_columns, display=display.pane)
+hline(0, "Zero", color=color.gray, display=display.pane)
+
+if showHtf and barstate.islast
+    var table t = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 30))
+    table.cell(t, 0, 0, "HTF Long", text_color=color.white)
+    table.cell(t, 1, 0, str.tostring(htfLong) + " / " + str.tostring(effLongMin), text_color=htfLong >= effLongMin ? color.lime : color.gray)
+    table.cell(t, 0, 1, "HTF Short", text_color=color.white)
+    table.cell(t, 1, 1, str.tostring(htfShort15), text_color=color.gray)
+    table.cell(t, 0, 2, "Green<0", text_color=color.white)
+    table.cell(t, 1, 2, greenBelow ? "YES" : "no", text_color=greenBelow ? color.lime : color.gray)
+    table.cell(t, 0, 3, "Mode", text_color=color.white)
+    table.cell(t, 1, 3, selectiveShort ? "selective" : "full", text_color=color.aqua)
+
+// Alerts
+alertcondition(hwLong, "S0 HW Long", "Golden Fusion v3: S0 HW Long — green below zero + HTF")
+alertcondition(hwShort, "S0 HW Short", "Golden Fusion v3: S0 HW Short — red hist / red above zero + HTF")
