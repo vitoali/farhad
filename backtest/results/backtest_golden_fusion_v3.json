@@ -1,0 +1,979 @@
+{
+  "period_days": 31,
+  "strategy": "Golden Fusion v3 (green below zero + HTF\u22653, 1h red hist + HTF\u22652 + Elliott)",
+  "patterns": {
+    "long": "15m green dot below zero + HTF\u22653 (BTC/EURUSD tuned)",
+    "short_btc": "1h red histogram start + HTF\u22652",
+    "short_other": "15m red dot above zero + HTF\u22652"
+  },
+  "hw_standalone": [
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 11,
+      "win_rate": 63.64,
+      "profit_factor": 4.266,
+      "avg_r": 0.094,
+      "max_drawdown_r": 0.115,
+      "notes": [],
+      "signals": 11,
+      "long_signals": 3,
+      "short_signals": 8,
+      "long_htf_min": 2,
+      "short_htf_min": 2,
+      "selective": false
+    },
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 0.833,
+      "avg_r": -0.009,
+      "max_drawdown_r": 0.205,
+      "notes": [],
+      "signals": 5,
+      "long_signals": 5,
+      "short_signals": 0,
+      "long_htf_min": 3,
+      "short_htf_min": 2,
+      "selective": false
+    },
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 1.313,
+      "avg_r": 0.078,
+      "max_drawdown_r": 1.0,
+      "notes": [],
+      "signals": 4,
+      "long_signals": 4,
+      "short_signals": 0,
+      "long_htf_min": 3,
+      "short_htf_min": 2,
+      "selective": false
+    },
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.059,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "long_signals": 1,
+      "short_signals": 0,
+      "long_htf_min": 3,
+      "short_htf_min": 2,
+      "selective": false
+    }
+  ],
+  "hw_standalone_summary": {
+    "total_trades": 20,
+    "avg_wr": 78.4,
+    "avg_pf": 1.603,
+    "symbols_with_trades": 4
+  },
+  "hw_selective_standalone": [
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 11,
+      "win_rate": 63.64,
+      "profit_factor": 4.266,
+      "avg_r": 0.094,
+      "max_drawdown_r": 0.115,
+      "notes": [],
+      "signals": 11,
+      "long_signals": 3,
+      "short_signals": 8,
+      "long_htf_min": 2,
+      "short_htf_min": 2,
+      "selective": true
+    },
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 0.833,
+      "avg_r": -0.009,
+      "max_drawdown_r": 0.205,
+      "notes": [],
+      "signals": 5,
+      "long_signals": 5,
+      "short_signals": 0,
+      "long_htf_min": 3,
+      "short_htf_min": 2,
+      "selective": true
+    },
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 1.313,
+      "avg_r": 0.078,
+      "max_drawdown_r": 1.0,
+      "notes": [],
+      "signals": 4,
+      "long_signals": 4,
+      "short_signals": 0,
+      "long_htf_min": 3,
+      "short_htf_min": 2,
+      "selective": true
+    },
+    {
+      "indicator": "hw_pattern_raw",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.059,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "long_signals": 1,
+      "short_signals": 0,
+      "long_htf_min": 3,
+      "short_htf_min": 2,
+      "selective": true
+    }
+  ],
+  "hw_selective_summary": {
+    "total_trades": 20,
+    "avg_wr": 78.4,
+    "avg_pf": 1.603,
+    "symbols_with_trades": 4
+  },
+  "comparison": {
+    "v1_baseline": {
+      "total_trades": 0,
+      "avg_wr": 0,
+      "avg_pf": 0,
+      "symbols_with_trades": 0
+    },
+    "v2_ultimate": {
+      "total_trades": 10,
+      "avg_wr": 58.3,
+      "avg_pf": 40.127,
+      "symbols_with_trades": 3
+    },
+    "v3_hw_patterns": {
+      "total_trades": 37,
+      "avg_wr": 80.6,
+      "avg_pf": 3.963,
+      "symbols_with_trades": 8
+    },
+    "v3_hw_selective": {
+      "total_trades": 37,
+      "avg_wr": 80.6,
+      "avg_pf": 3.963,
+      "symbols_with_trades": 8
+    }
+  },
+  "scenario_stats_v3": {
+    "4h": {
+      "BTCUSDT": [
+        {
+          "scenario": "S0_hw_short",
+          "trades": 5,
+          "wr": 40.0,
+          "pf": 0.063
+        },
+        {
+          "scenario": "S0_hw_long",
+          "trades": 2,
+          "wr": 100.0,
+          "pf": Infinity
+        }
+      ],
+      "SOLUSDT": [],
+      "EURUSD": [
+        {
+          "scenario": "S0_hw_long",
+          "trades": 4,
+          "wr": 75.0,
+          "pf": 0.833
+        }
+      ],
+      "XAUUSD": [
+        {
+          "scenario": "S0_hw_long",
+          "trades": 2,
+          "wr": 100.0,
+          "pf": Infinity
+        }
+      ],
+      "USDJPY": [
+        {
+          "scenario": "S0_hw_long",
+          "trades": 1,
+          "wr": 100.0,
+          "pf": Infinity
+        }
+      ]
+    },
+    "1h": {
+      "BTCUSDT": [
+        {
+          "scenario": "S0_hw_short",
+          "trades": 5,
+          "wr": 40.0,
+          "pf": 0.063
+        },
+        {
+          "scenario": "S0_hw_long",
+          "trades": 2,
+          "wr": 100.0,
+          "pf": Infinity
+        }
+      ],
+      "SOLUSDT": [],
+      "EURUSD": [
+        {
+          "scenario": "S0_hw_long",
+          "trades": 4,
+          "wr": 75.0,
+          "pf": 0.833
+        },
+        {
+          "scenario": "S1_bottom",
+          "trades": 1,
+          "wr": 0.0,
+          "pf": 0.0
+        }
+      ],
+      "XAUUSD": [
+        {
+          "scenario": "S0_hw_long",
+          "trades": 2,
+          "wr": 100.0,
+          "pf": Infinity
+        }
+      ],
+      "USDJPY": [
+        {
+          "scenario": "S0_hw_long",
+          "trades": 1,
+          "wr": 100.0,
+          "pf": Infinity
+        },
+        {
+          "scenario": "S1_bottom",
+          "trades": 8,
+          "wr": 62.5,
+          "pf": 6.831
+        }
+      ]
+    }
+  },
+  "results": [
+    {
+      "indicator": "fusion_v1_4h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v1_4h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v1_4h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v1_4h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v1_4h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v1_1h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v1_1h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v1_1h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v1_1h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v1_1h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v1",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v2_4h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v2_4h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v2_4h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v2_4h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v2_4h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v2_1h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v2_1h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 119.505,
+      "avg_r": 0.144,
+      "max_drawdown_r": 0.005,
+      "notes": [],
+      "signals": 4,
+      "scenarios": {
+        "S2_top": 4
+      },
+      "version": "v2",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v2_1h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 50.0,
+      "profit_factor": 0.067,
+      "avg_r": -0.04,
+      "max_drawdown_r": 0.162,
+      "notes": [],
+      "signals": 4,
+      "scenarios": {
+        "S1_bottom": 4
+      },
+      "version": "v2",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v2_1h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 50.0,
+      "profit_factor": 0.809,
+      "avg_r": -0.023,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "scenarios": {
+        "S1_bottom": 2
+      },
+      "version": "v2",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v2_1h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v2",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_4h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 7,
+      "win_rate": 71.43,
+      "profit_factor": 11.372,
+      "avg_r": 0.16,
+      "max_drawdown_r": 0.096,
+      "notes": [],
+      "signals": 7,
+      "scenarios": {
+        "S0_hw_short": 5,
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_4h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_4h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 0.833,
+      "avg_r": -0.009,
+      "max_drawdown_r": 0.205,
+      "notes": [],
+      "signals": 5,
+      "scenarios": {
+        "S0_hw_long": 5
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_4h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.657,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "scenarios": {
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_4h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.059,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "scenarios": {
+        "S0_hw_long": 1
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_1h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 7,
+      "win_rate": 71.43,
+      "profit_factor": 11.372,
+      "avg_r": 0.16,
+      "max_drawdown_r": 0.096,
+      "notes": [],
+      "signals": 7,
+      "scenarios": {
+        "S0_hw_short": 5,
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_1h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_1h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 5,
+      "win_rate": 60.0,
+      "profit_factor": 0.707,
+      "avg_r": -0.014,
+      "max_drawdown_r": 0.242,
+      "notes": [],
+      "signals": 6,
+      "scenarios": {
+        "S0_hw_long": 5,
+        "S1_bottom": 1
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_1h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.657,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "scenarios": {
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_1h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 9,
+      "win_rate": 66.67,
+      "profit_factor": 7.423,
+      "avg_r": 0.006,
+      "max_drawdown_r": 0.005,
+      "notes": [],
+      "signals": 9,
+      "scenarios": {
+        "S1_bottom": 8,
+        "S0_hw_long": 1
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_sel_4h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 7,
+      "win_rate": 71.43,
+      "profit_factor": 11.372,
+      "avg_r": 0.16,
+      "max_drawdown_r": 0.096,
+      "notes": [],
+      "signals": 7,
+      "scenarios": {
+        "S0_hw_short": 5,
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_sel_4h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_sel_4h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 4,
+      "win_rate": 75.0,
+      "profit_factor": 0.833,
+      "avg_r": -0.009,
+      "max_drawdown_r": 0.205,
+      "notes": [],
+      "signals": 5,
+      "scenarios": {
+        "S0_hw_long": 5
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_sel_4h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.657,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "scenarios": {
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_sel_4h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 1,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.059,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 1,
+      "scenarios": {
+        "S0_hw_long": 1
+      },
+      "version": "v3",
+      "structure_tf": "4h"
+    },
+    {
+      "indicator": "fusion_v3_sel_1h",
+      "symbol": "BTCUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 7,
+      "win_rate": 71.43,
+      "profit_factor": 11.372,
+      "avg_r": 0.16,
+      "max_drawdown_r": 0.096,
+      "notes": [],
+      "signals": 7,
+      "scenarios": {
+        "S0_hw_short": 5,
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_sel_1h",
+      "symbol": "SOLUSDT",
+      "timeframe": "15m",
+      "market": "crypto",
+      "total_trades": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "avg_r": 0.0,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 0,
+      "scenarios": {},
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_sel_1h",
+      "symbol": "EURUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 5,
+      "win_rate": 60.0,
+      "profit_factor": 0.707,
+      "avg_r": -0.014,
+      "max_drawdown_r": 0.242,
+      "notes": [],
+      "signals": 6,
+      "scenarios": {
+        "S0_hw_long": 5,
+        "S1_bottom": 1
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_sel_1h",
+      "symbol": "XAUUSD",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 2,
+      "win_rate": 100.0,
+      "profit_factor": 999,
+      "avg_r": 0.657,
+      "max_drawdown_r": 0.0,
+      "notes": [],
+      "signals": 2,
+      "scenarios": {
+        "S0_hw_long": 2
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    },
+    {
+      "indicator": "fusion_v3_sel_1h",
+      "symbol": "USDJPY",
+      "timeframe": "15m",
+      "market": "forex",
+      "total_trades": 9,
+      "win_rate": 66.67,
+      "profit_factor": 7.423,
+      "avg_r": 0.006,
+      "max_drawdown_r": 0.005,
+      "notes": [],
+      "signals": 9,
+      "scenarios": {
+        "S1_bottom": 8,
+        "S0_hw_long": 1
+      },
+      "version": "v3",
+      "structure_tf": "1h"
+    }
+  ]
+}

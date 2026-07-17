@@ -385,6 +385,8 @@ class GoldenSignal:
 
 
 SCENARIOS = {
+    "S0_hw_long": "خرید الگوی CM MACD (سبز زیر صفر + HTF≥3)",
+    "S0_hw_short": "فروش الگوی CM MACD (BTC: red hist 1h + HTF≥2)",
     "S1_bottom": "خرید کف مطلق (پایان موج ۵ نزولی)",
     "S2_top": "فروش سقف مطلق (پایان موج ۵ صعودی)",
     "S3_wave3": "خرید موج ۳ صعودی",
@@ -404,13 +406,18 @@ def golden_combo_signals(
     require_macd_div_s1s2: bool = True,
     use_cm_ultimate: bool = False,
     require_entry_ultimate_gold: bool = False,
+    use_cm_hw_patterns: bool = False,
+    hw_context: dict | None = None,
 ) -> pd.DataFrame:
     """
     Fuse 5 golden scenarios on 15m entry chart.
     Structure = Elliott (4h/1h), Confirm = MACD/CM Ultimate + Cardwell (1h), Entry = EWO/RSI (15m).
     use_cm_ultimate=True → Golden Fusion v2 (Silver/Gold OB/OS + built-in divergence).
+    use_cm_hw_patterns=True → Golden Fusion v3 (green below zero + HTF≥3, 1h red hist + HTF≥2).
     """
     entry = ewo_rsi_features(entry_df)
+    if use_cm_hw_patterns and hw_context is None:
+        raise ValueError("hw_context required when use_cm_hw_patterns=True")
     if use_cm_ultimate:
         confirm = cm_macd_ultimate_signals(confirm_df)
         entry_ult = cm_macd_ultimate_signals(entry_df)
@@ -421,6 +428,12 @@ def golden_combo_signals(
             struct_ult = cm_macd_ultimate_signals(structure_df)
         else:
             struct_ult = None
+    elif use_cm_hw_patterns:
+        confirm = macd_divergence_states(confirm_df)
+        cardwell = cardwell_range_states(confirm_df, trend_len=cardwell_trend_len)
+        for col in ("cardwell_bull_regime", "cardwell_bear_regime", "cardwell_regime", "cardwell_long_signal", "cardwell_short_signal"):
+            confirm[col] = cardwell[col].values
+        entry_ult = struct_ult = None
     else:
         confirm = macd_divergence_states(confirm_df)
         cardwell = cardwell_range_states(confirm_df, trend_len=cardwell_trend_len)
@@ -473,6 +486,18 @@ def golden_combo_signals(
         c_macd_bull_div = _align_bool(confirm, "macd_bull_div", entry)
         c_macd_bear_div = _align_bool(confirm, "macd_bear_div", entry)
 
+    if use_cm_hw_patterns and hw_context:
+        hw_long = np.asarray(hw_context["hw_long_pattern"], dtype=bool)
+        hw_short = np.asarray(hw_context["hw_short_pattern"], dtype=bool)
+        e_green_below = np.asarray(hw_context["entry_green_below"], dtype=bool)
+        c_red_hist = np.asarray(hw_context["confirm_red_hist"], dtype=bool)
+        htf_long_15m = hw_context["htf_long_15m"]
+        htf_short_15m = hw_context["htf_short_15m"]
+        htf_short_1h = hw_context["htf_short_1h"]
+    else:
+        hw_long = hw_short = e_green_below = c_red_hist = None
+        htf_long_15m = htf_short_15m = htf_short_1h = None
+
     if use_cm_ultimate:
         c_u_gold_long = _align_bool(confirm, "gold_long", entry)
         c_u_gold_short = _align_bool(confirm, "gold_short", entry)
@@ -518,7 +543,29 @@ def golden_combo_signals(
 
         atr = float(atr_v[i]) if not np.isnan(atr_v[i]) else closes[i] * 0.002
 
-        if use_cm_ultimate:
+        # S0 — high-WR CM MACD pattern entry (70–80% WR in study)
+        if use_cm_hw_patterns and hw_long[i]:
+            buy[i] = True
+            scenario_id[i] = "S0_hw_long"
+            sl_p[i] = s_sl_l[i] if not np.isnan(s_sl_l[i]) else closes[i] - atr * 2
+            tp_p[i] = s_tp_l[i] if not np.isnan(s_tp_l[i]) else closes[i] + atr * 3
+            continue
+        if use_cm_hw_patterns and hw_short[i]:
+            sell[i] = True
+            scenario_id[i] = "S0_hw_short"
+            sl_p[i] = s_sl_s[i] if not np.isnan(s_sl_s[i]) else closes[i] + atr * 2
+            tp_p[i] = s_tp_s[i] if not np.isnan(s_tp_s[i]) else closes[i] - atr * 3
+            continue
+
+        if use_cm_hw_patterns:
+            macd_bull_confirm = recent(hw_long, i, 24)
+            macd_bear_confirm = recent(hw_short, i, 32)
+            macd_wave3_confirm = recent(hw_long, i, 32)
+            macd_pullback_bull = recent(hw_long, i, 32)
+            macd_pullback_bear = recent(hw_short, i, 32)
+            s1_div_ok = s2_div_ok = True
+            entry_ult_long_ok = entry_ult_short_ok = True
+        elif use_cm_ultimate:
             # 1H Ultimate: gold preferred; silver acceptable with 4H structure alignment
             macd_bull_confirm = (
                 recent(c_u_gold_long, i, 32)
@@ -548,20 +595,23 @@ def golden_combo_signals(
             s2_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bear_div, i, 96)
             entry_ult_long_ok = entry_ult_short_ok = True
 
-        # S1/S2 Cardwell: skip at reversals when Ultimate handles OB/OS zones
-        if use_cm_ultimate:
+        # S1/S2 Cardwell: skip at reversals when Ultimate/HW patterns handle OB/OS
+        if use_cm_ultimate or use_cm_hw_patterns:
             cardwell_s1_ok = cardwell_s2_ok = True
         else:
             cardwell_s1_ok = (not use_cardwell) or (not c_cardwell_bear[i] and not recent(c_cardwell_bear, i, 8))
             cardwell_s2_ok = (not use_cardwell) or (not c_cardwell_bull[i] and not recent(c_cardwell_bull, i, 8))
         cardwell_trend_long_ok = (not use_cardwell) or c_cardwell_bull[i] or recent(c_cardwell_bull, i, 16) or recent(c_cardwell_long, i, 32)
         cardwell_trend_short_ok = (not use_cardwell) or c_cardwell_bear[i] or recent(c_cardwell_bear, i, 16) or recent(c_cardwell_short, i, 32)
-        if not use_cm_ultimate:
+        if not use_cm_ultimate and not use_cm_hw_patterns:
             s1_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bull_div, i, 96)
             s2_div_ok = (not require_macd_div_s1s2) or recent(c_macd_bear_div, i, 96)
 
-        # Entry layer: Ultimate 15m silver/gold can trigger when EWO silent
-        if use_cm_ultimate:
+        # Entry layer
+        if use_cm_hw_patterns:
+            e_long_trig = hw_long[i] or recent(hw_long, i, 8) or e_buy or e_pre_buy
+            e_short_trig = hw_short[i] or recent(hw_short, i, 8) or e_sell or e_pre_sell
+        elif use_cm_ultimate:
             e_long_trig = e_buy or e_pre_buy or e_u_silver_long[i] or e_u_gold_long[i] or recent(e_u_silver_long, i, 8) or recent(e_u_gold_long, i, 16)
             e_short_trig = e_sell or e_pre_sell or e_u_silver_short[i] or e_u_gold_short[i] or recent(e_u_silver_short, i, 8) or recent(e_u_gold_short, i, 16)
         else:
