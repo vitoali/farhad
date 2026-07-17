@@ -1,5 +1,7 @@
-// Trex Trend Panel — روند ساختاری خاکستر (Reverse + FTC ✓)
-// Publish first: KhaksterTrexAtrLib + MarketStructureEngine
+// Trex Trend Panel v2 — فلوچارت کامل خاکستر
+// 1) بالاترین TF → Reverse + FTC ✓ → روند
+// 2) تایم پترن → شکست خط روند داینامیک؟
+// 3) شکست بله → منتظر برگشت به FTC ساختار / در FTC → آماده ورود
 //
 //@version=6
 indicator("Trex Trend [Khakster]", overlay=true, max_labels_count=1)
@@ -7,7 +9,10 @@ indicator("Trex Trend [Khakster]", overlay=true, max_labels_count=1)
 import dorkadehali/KhaksterTrexAtrLib/1 as trex
 import dorkadehali/MarketStructureEngine/1 as mse
 
-grpTf = "Timeframes"
+grpPair = "Fractal stack (ستاپ)"
+pairMode = input.string("H4 + H1", "Structure + Pattern", options=["H4 + H1", "H1 + M5", "D + H1", "W + H4"], group=grpPair)
+
+grpTf = "Timeframes (جدول)"
 showMn = input.bool(true, "Mn", group=grpTf, inline="a")
 showW1 = input.bool(true, "W1", group=grpTf, inline="a")
 showD1 = input.bool(true, "D1", group=grpTf, inline="b")
@@ -24,8 +29,17 @@ reverseOnly = input.bool(true, "Only Reverse pivots", group=grpRule)
 grpUi = "Display"
 panelPos = input.string("Top Right", "Panel position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=grpUi)
 txtSize = input.string("Small", "Font", options=["Tiny", "Small", "Normal"], group=grpUi)
-tintChart = input.bool(true, "Tint chart by matching TF trend", group=grpUi)
-showOverall = input.bool(true, "Show HTF overall row", group=grpUi)
+tintChart = input.bool(true, "Tint chart by setup trend", group=grpUi)
+showSetup = input.bool(true, "Show setup flow (flowchart)", group=grpUi)
+
+pairTriplet(string mode) =>
+    switch mode
+        "H1 + M5" => ["60", "15", "5"]
+        "D + H1"   => ["D", "60", "240"]
+        "W + H4"   => ["W", "240", "D"]
+        => ["240", "60", "15"]
+
+[stTf, patTf, trTf] = pairTriplet(pairMode)
 
 mseS = mse.defaultMseSettings()
 mseS.atr := trex.settingsForSymbol(trex.defaultSettings())
@@ -36,29 +50,31 @@ fontSz(string sz) =>
 panelPosEnum(string p) =>
     p == "Top Left" ? position.top_left : p == "Bottom Right" ? position.bottom_right : p == "Bottom Left" ? position.bottom_left : position.top_right
 
-// ── Poll one TF: bear + bull spawn + HTF close ────────────────────────────────
+// ── Poll TF: pivots + FTC + OHLC ──────────────────────────────────────────────
 tfTrendPack(mse.MseSettings ms, string tf) =>
     int len = trex.lenForTf(tf, ms.atr)
     float boost = trex.thBoostForLen(len, ms.atr)
-    [bSig, bTop, bBot, _, bTime, _, _, _, _, _, bFc, bSc, bKind, _] = mse.bearLevelPack(ms, len, boost, tf)
-    [uSig, uTop, uBot, _, uTime, _, _, _, _, _, uFc, uSc, uKind, _] = mse.bullLevelPack(ms, len, boost, tf)
-    [bSig, bTop, bBot, bTime, bFc, bSc, bKind, uSig, uTop, uBot, uTime, uFc, uSc, uKind, close]
+    [bSig, bTop, bBot, bPrice, bTime, _, _, _, bFtcT, bFtcB, bFc, bSc, bKind, _] = mse.bearLevelPack(ms, len, boost, tf)
+    [uSig, uTop, uBot, uPrice, uTime, _, _, _, uFtcT, uFtcB, uFc, uSc, uKind, _] = mse.bullLevelPack(ms, len, boost, tf)
+    [bSig, bTop, bBot, bPrice, bTime, bFc, bSc, bKind, bFtcT, bFtcB, uSig, uTop, uBot, uPrice, uTime, uFc, uSc, uKind, uFtcT, uFtcB, high, low, close]
 
 kindOk(int k) =>
-    reverseOnly ? k == mse.PIVOT_REVERSE : k == mse.PIVOT_REVERSE or k == mse.PIVOT_PULLBACK or k == mse.PIVOT_SETTLEMENT  // 0=Rev 1=Pull 2=Sett
+    reverseOnly ? k == mse.PIVOT_REVERSE : k == mse.PIVOT_REVERSE or k == mse.PIVOT_PULLBACK or k == mse.PIVOT_SETTLEMENT
 
 credOk(int fc) =>
     requireFtc ? fc == 1 : true
 
-// dir: 1 bull, -1 bear, 0 unknown | broken: zone lost
-updateTrend(int dir, float zTop, float zBot, int score, bool broken,
-     int bSig, float bTop, float bBot, int bTime, int bFc, int bSc, int bKind,
-     int uSig, float uTop, float uBot, int uTime, int uFc, int uSc, int uKind, float c) =>
+// dir: 1 bull, -1 bear, 0 none
+updateTrend(int dir, float zTop, float zBot, int score, bool broken, float ftcT, float ftcB,
+     int bSig, float bTop, float bBot, int bTime, int bFc, int bSc, int bKind, float bFtcT, float bFtcB,
+     int uSig, float uTop, float uBot, int uTime, int uFc, int uSc, int uKind, float uFtcT, float uFtcB, float c) =>
     int nd = dir
     float nTop = zTop
     float nBot = zBot
     int nSc = score
     bool nBr = broken
+    float nFtcT = ftcT
+    float nFtcB = ftcB
     bool bOk = bSig == 1 and kindOk(bKind) and credOk(bFc) and bSc >= minScore
     bool uOk = uSig == 1 and kindOk(uKind) and credOk(uFc) and uSc >= minScore
     if bOk or uOk
@@ -70,16 +86,20 @@ updateTrend(int dir, float zTop, float zBot, int score, bool broken,
             nTop := bTop
             nBot := bBot
             nSc := bSc
+            nFtcT := bFtcT
+            nFtcB := bFtcB
         else
             nTop := uTop
             nBot := uBot
             nSc := uSc
+            nFtcT := uFtcT
+            nFtcB := uFtcB
         nBr := false
     if nd == -1 and not na(nTop) and c > nTop
         nBr := true
     else if nd == 1 and not na(nBot) and c < nBot
         nBr := true
-    [nd, nTop, nBot, nSc, nBr]
+    [nd, nTop, nBot, nSc, nBr, nFtcT, nFtcB]
 
 trendFa(int d, bool br) =>
     br ? "شکست" : d == 1 ? "صعودی ▲" : d == -1 ? "نزولی ▼" : "—"
@@ -87,20 +107,29 @@ trendFa(int d, bool br) =>
 trendColor(int d, bool br) =>
     br ? color.orange : d == 1 ? color.lime : d == -1 ? color.red : color.gray
 
-// ── MTF poll (fixed calls — no loop in security) ─────────────────────────────
-[mnBS, mnBT, mnBB, mnBTm, mnBFc, mnBSc, mnBK, mnUS, mnUT, mnUB, mnUTm, mnUFc, mnUSc, mnUK, mnC] =
+tlY(int t1, float p1, int t2, float p2, int tNow) =>
+    t2 == t1 ? p1 : p1 + (p2 - p1) * float(tNow - t1) / float(t2 - t1)
+
+tlBrokenBear(float c, int tNow, int t1, float p1, int t2, float p2) =>
+    t1 != 0 and t2 != 0 and not na(p1) and not na(p2) and c < tlY(t1, p1, t2, p2, tNow)
+
+tlBrokenBull(float c, int tNow, int t1, float p1, int t2, float p2) =>
+    t1 != 0 and t2 != 0 and not na(p1) and not na(p2) and c > tlY(t1, p1, t2, p2, tNow)
+
+// ── MTF poll ─────────────────────────────────────────────────────────────────
+[mnBS, mnBT, mnBB, mnBPr, mnBTm, mnBFc, mnBSc, mnBK, mnBFT, mnBFB, mnUS, mnUT, mnUB, mnUPr, mnUTm, mnUFc, mnUSc, mnUK, mnUFT, mnUFB, mnH, mnL, mnC] =
      request.security(syminfo.tickerid, "M", tfTrendPack(mseS, "M"), barmerge.gaps_off, barmerge.lookahead_off)
-[wBS, wBT, wBB, wBTm, wBFc, wBSc, wBK, wUS, wUT, wUB, wUTm, wUFc, wUSc, wUK, wC] =
+[wBS, wBT, wBB, wBPr, wBTm, wBFc, wBSc, wBK, wBFT, wBFB, wUS, wUT, wUB, wUPr, wUTm, wUFc, wUSc, wUK, wUFT, wUFB, wH, wL, wC] =
      request.security(syminfo.tickerid, "W", tfTrendPack(mseS, "W"), barmerge.gaps_off, barmerge.lookahead_off)
-[dBS, dBT, dBB, dBTm, dBFc, dBSc, dBK, dUS, dUT, dUB, dUTm, dUFc, dUSc, dUK, dC] =
+[dBS, dBT, dBB, dBPr, dBTm, dBFc, dBSc, dBK, dBFT, dBFB, dUS, dUT, dUB, dUPr, dUTm, dUFc, dUSc, dUK, dUFT, dUFB, dH, dL, dC] =
      request.security(syminfo.tickerid, "D", tfTrendPack(mseS, "D"), barmerge.gaps_off, barmerge.lookahead_off)
-[h4BS, h4BT, h4BB, h4BTm, h4BFc, h4BSc, h4BK, h4US, h4UT, h4UB, h4UTm, h4UFc, h4USc, h4UK, h4C] =
+[h4BS, h4BT, h4BB, h4BPr, h4BTm, h4BFc, h4BSc, h4BK, h4BFT, h4BFB, h4US, h4UT, h4UB, h4UPr, h4UTm, h4UFc, h4USc, h4UK, h4UFT, h4UFB, h4H, h4L, h4C] =
      request.security(syminfo.tickerid, "240", tfTrendPack(mseS, "240"), barmerge.gaps_off, barmerge.lookahead_off)
-[h1BS, h1BT, h1BB, h1BTm, h1BFc, h1BSc, h1BK, h1US, h1UT, h1UB, h1UTm, h1UFc, h1USc, h1UK, h1C] =
+[h1BS, h1BT, h1BB, h1BPr, h1BTm, h1BFc, h1BSc, h1BK, h1BFT, h1BFB, h1US, h1UT, h1UB, h1UPr, h1UTm, h1UFc, h1USc, h1UK, h1UFT, h1UFB, h1H, h1L, h1C] =
      request.security(syminfo.tickerid, "60", tfTrendPack(mseS, "60"), barmerge.gaps_off, barmerge.lookahead_off)
-[m15BS, m15BT, m15BB, m15BTm, m15BFc, m15BSc, m15BK, m15US, m15UT, m15UB, m15UTm, m15UFc, m15USc, m15UK, m15C] =
+[m15BS, m15BT, m15BB, m15BPr, m15BTm, m15BFc, m15BSc, m15BK, m15BFT, m15BFB, m15US, m15UT, m15UB, m15UPr, m15UTm, m15UFc, m15USc, m15UK, m15UFT, m15UFB, m15H, m15L, m15C] =
      request.security(syminfo.tickerid, "15", tfTrendPack(mseS, "15"), barmerge.gaps_off, barmerge.lookahead_off)
-[m5BS, m5BT, m5BB, m5BTm, m5BFc, m5BSc, m5BK, m5US, m5UT, m5UB, m5UTm, m5UFc, m5USc, m5UK, m5C] =
+[m5BS, m5BT, m5BB, m5BPr, m5BTm, m5BFc, m5BSc, m5BK, m5BFT, m5BFB, m5US, m5UT, m5UB, m5UPr, m5UTm, m5UFc, m5USc, m5UK, m5UFT, m5UFB, m5H, m5L, m5C] =
      request.security(syminfo.tickerid, "5", tfTrendPack(mseS, "5"), barmerge.gaps_off, barmerge.lookahead_off)
 
 var int mnDir = 0
@@ -108,125 +137,193 @@ var float mnTop = na
 var float mnBot = na
 var int mnSc = 0
 var bool mnBr = false
+var float mnFtcT = na
+var float mnFtcB = na
 var int wDir = 0
 var float wTop = na
 var float wBot = na
 var int wSc = 0
 var bool wBr = false
+var float wFtcT = na
+var float wFtcB = na
 var int dDir = 0
 var float dTop = na
 var float dBot = na
 var int dSc = 0
 var bool dBr = false
+var float dFtcT = na
+var float dFtcB = na
 var int h4Dir = 0
 var float h4Top = na
 var float h4Bot = na
 var int h4Sc = 0
 var bool h4Br = false
+var float h4FtcT = na
+var float h4FtcB = na
 var int h1Dir = 0
 var float h1Top = na
 var float h1Bot = na
 var int h1Sc = 0
 var bool h1Br = false
+var float h1FtcT = na
+var float h1FtcB = na
 var int m15Dir = 0
 var float m15Top = na
 var float m15Bot = na
 var int m15Sc = 0
 var bool m15Br = false
+var float m15FtcT = na
+var float m15FtcB = na
 var int m5Dir = 0
 var float m5Top = na
 var float m5Bot = na
 var int m5Sc = 0
 var bool m5Br = false
+var float m5FtcT = na
+var float m5FtcB = na
 
-[mnDirN, mnTopN, mnBotN, mnScN, mnBrN] = updateTrend(mnDir, mnTop, mnBot, mnSc, mnBr, mnBS, mnBT, mnBB, mnBTm, mnBFc, mnBSc, mnBK, mnUS, mnUT, mnUB, mnUTm, mnUFc, mnUSc, mnUK, mnC)
+[mnDirN, mnTopN, mnBotN, mnScN, mnBrN, mnFtcTN, mnFtcBN] = updateTrend(mnDir, mnTop, mnBot, mnSc, mnBr, mnFtcT, mnFtcB, mnBS, mnBT, mnBB, mnBTm, mnBFc, mnBSc, mnBK, mnBFT, mnBFB, mnUS, mnUT, mnUB, mnUTm, mnUFc, mnUSc, mnUK, mnUFT, mnUFB, mnC)
 mnDir := mnDirN
 mnTop := mnTopN
 mnBot := mnBotN
 mnSc := mnScN
 mnBr := mnBrN
-[wDirN, wTopN, wBotN, wScN, wBrN] = updateTrend(wDir, wTop, wBot, wSc, wBr, wBS, wBT, wBB, wBTm, wBFc, wBSc, wBK, wUS, wUT, wUB, wUTm, wUFc, wUSc, wUK, wC)
+mnFtcT := mnFtcTN
+mnFtcB := mnFtcBN
+[wDirN, wTopN, wBotN, wScN, wBrN, wFtcTN, wFtcBN] = updateTrend(wDir, wTop, wBot, wSc, wBr, wFtcT, wFtcB, wBS, wBT, wBB, wBTm, wBFc, wBSc, wBK, wBFT, wBFB, wUS, wUT, wUB, wUTm, wUFc, wUSc, wUK, wUFT, wUFB, wC)
 wDir := wDirN
 wTop := wTopN
 wBot := wBotN
 wSc := wScN
 wBr := wBrN
-[dDirN, dTopN, dBotN, dScN, dBrN] = updateTrend(dDir, dTop, dBot, dSc, dBr, dBS, dBT, dBB, dBTm, dBFc, dBSc, dBK, dUS, dUT, dUB, dUTm, dUFc, dUSc, dUK, dC)
+wFtcT := wFtcTN
+wFtcB := wFtcBN
+[dDirN, dTopN, dBotN, dScN, dBrN, dFtcTN, dFtcBN] = updateTrend(dDir, dTop, dBot, dSc, dBr, dFtcT, dFtcB, dBS, dBT, dBB, dBTm, dBFc, dBSc, dBK, dBFT, dBFB, dUS, dUT, dUB, dUTm, dUFc, dUSc, dUK, dUFT, dUFB, dC)
 dDir := dDirN
 dTop := dTopN
 dBot := dBotN
 dSc := dScN
 dBr := dBrN
-[h4DirN, h4TopN, h4BotN, h4ScN, h4BrN] = updateTrend(h4Dir, h4Top, h4Bot, h4Sc, h4Br, h4BS, h4BT, h4BB, h4BTm, h4BFc, h4BSc, h4BK, h4US, h4UT, h4UB, h4UTm, h4UFc, h4USc, h4UK, h4C)
+dFtcT := dFtcTN
+dFtcB := dFtcBN
+[h4DirN, h4TopN, h4BotN, h4ScN, h4BrN, h4FtcTN, h4FtcBN] = updateTrend(h4Dir, h4Top, h4Bot, h4Sc, h4Br, h4FtcT, h4FtcB, h4BS, h4BT, h4BB, h4BTm, h4BFc, h4BSc, h4BK, h4BFT, h4BFB, h4US, h4UT, h4UB, h4UTm, h4UFc, h4USc, h4UK, h4UFT, h4UFB, h4C)
 h4Dir := h4DirN
 h4Top := h4TopN
 h4Bot := h4BotN
 h4Sc := h4ScN
 h4Br := h4BrN
-[h1DirN, h1TopN, h1BotN, h1ScN, h1BrN] = updateTrend(h1Dir, h1Top, h1Bot, h1Sc, h1Br, h1BS, h1BT, h1BB, h1BTm, h1BFc, h1BSc, h1BK, h1US, h1UT, h1UB, h1UTm, h1UFc, h1USc, h1UK, h1C)
+h4FtcT := h4FtcTN
+h4FtcB := h4FtcBN
+[h1DirN, h1TopN, h1BotN, h1ScN, h1BrN, h1FtcTN, h1FtcBN] = updateTrend(h1Dir, h1Top, h1Bot, h1Sc, h1Br, h1FtcT, h1FtcB, h1BS, h1BT, h1BB, h1BTm, h1BFc, h1BSc, h1BK, h1BFT, h1BFB, h1US, h1UT, h1UB, h1UTm, h1UFc, h1USc, h1UK, h1UFT, h1UFB, h1C)
 h1Dir := h1DirN
 h1Top := h1TopN
 h1Bot := h1BotN
 h1Sc := h1ScN
 h1Br := h1BrN
-[m15DirN, m15TopN, m15BotN, m15ScN, m15BrN] = updateTrend(m15Dir, m15Top, m15Bot, m15Sc, m15Br, m15BS, m15BT, m15BB, m15BTm, m15BFc, m15BSc, m15BK, m15US, m15UT, m15UB, m15UTm, m15UFc, m15USc, m15UK, m15C)
+h1FtcT := h1FtcTN
+h1FtcB := h1FtcBN
+[m15DirN, m15TopN, m15BotN, m15ScN, m15BrN, m15FtcTN, m15FtcBN] = updateTrend(m15Dir, m15Top, m15Bot, m15Sc, m15Br, m15FtcT, m15FtcB, m15BS, m15BT, m15BB, m15BTm, m15BFc, m15BSc, m15BK, m15BFT, m15BFB, m15US, m15UT, m15UB, m15UTm, m15UFc, m15USc, m15UK, m15UFT, m15UFB, m15C)
 m15Dir := m15DirN
 m15Top := m15TopN
 m15Bot := m15BotN
 m15Sc := m15ScN
 m15Br := m15BrN
-[m5DirN, m5TopN, m5BotN, m5ScN, m5BrN] = updateTrend(m5Dir, m5Top, m5Bot, m5Sc, m5Br, m5BS, m5BT, m5BB, m5BTm, m5BFc, m5BSc, m5BK, m5US, m5UT, m5UB, m5UTm, m5UFc, m5USc, m5UK, m5C)
+m15FtcT := m15FtcTN
+m15FtcB := m15FtcBN
+[m5DirN, m5TopN, m5BotN, m5ScN, m5BrN, m5FtcTN, m5FtcBN] = updateTrend(m5Dir, m5Top, m5Bot, m5Sc, m5Br, m5FtcT, m5FtcB, m5BS, m5BT, m5BB, m5BTm, m5BFc, m5BSc, m5BK, m5BFT, m5BFB, m5US, m5UT, m5UB, m5UTm, m5UFc, m5USc, m5UK, m5UFT, m5UFB, m5C)
 m5Dir := m5DirN
 m5Top := m5TopN
 m5Bot := m5BotN
 m5Sc := m5ScN
 m5Br := m5BrN
+m5FtcT := m5FtcTN
+m5FtcB := m5FtcBN
 
-// HTF overall: highest TF with known direction (not broken preferred)
-overallTrend() =>
-    int d = 0
-    string src = "—"
-    if showMn and mnDir != 0 and not mnBr
-        d := mnDir
-        src := "Mn"
-    else if showW1 and wDir != 0 and not wBr
-        d := wDir
-        src := "W1"
-    else if showD1 and dDir != 0 and not dBr
-        d := dDir
-        src := "D1"
-    else if showH4 and h4Dir != 0 and not h4Br
-        d := h4Dir
-        src := "H4"
-    else if showH1 and h1Dir != 0 and not h1Br
-        d := h1Dir
-        src := "H1"
-    else if showM15 and m15Dir != 0 and not m15Br
-        d := m15Dir
-        src := "M15"
-    else if showM5 and m5Dir != 0 and not m5Br
-        d := m5Dir
-        src := "M5"
-    [d, src]
+// ── Pattern TF: حافظه دو پیوت برای خط روند ───────────────────────────────────
+pickPat() =>
+    patTf == "60" ? [h1BS, h1US, h1BPr, h1BTm, h1BK, h1BFc, h1BSc, h1UPr, h1UTm, h1UK, h1UFc, h1USc, h1H, h1L, h1C] :
+     patTf == "15" ? [m15BS, m15US, m15BPr, m15BTm, m15BK, m15BFc, m15BSc, m15UPr, m15UTm, m15UK, m15UFc, m15USc, m15H, m15L, m15C] :
+     patTf == "240" ? [h4BS, h4US, h4BPr, h4BTm, h4BK, h4BFc, h4BSc, h4UPr, h4UTm, h4UK, h4UFc, h4USc, h4H, h4L, h4C] :
+     patTf == "D" ? [dBS, dUS, dBPr, dBTm, dBK, dBFc, dBSc, dUPr, dUTm, dUK, dUFc, dUSc, dH, dL, dC] :
+     [m5BS, m5US, m5BPr, m5BTm, m5BK, m5BFc, m5BSc, m5UPr, m5UTm, m5UK, m5UFc, m5USc, m5H, m5L, m5C]
 
-[ovDir, ovSrc] = overallTrend()
+[patBS, patUS, patBPr, patBTm, patBK, patBFc, patBSc, patUPr, patUTm, patUK, patUFc, patUSc, patH, patL, patC] = pickPat()
 
-chartTfCode() =>
-    timeframe.ismonthly ? "M" : timeframe.isweekly ? "W" : timeframe.isdaily ? "D" : timeframe.isintraday and timeframe.multiplier == 240 ? "240" : timeframe.isintraday and timeframe.multiplier == 60 ? "60" : timeframe.isintraday and timeframe.multiplier == 15 ? "15" : timeframe.isintraday and timeframe.multiplier == 5 ? "5" : ""
+var float patHi1 = na
+var float patHi2 = na
+var int patHt1 = 0
+var int patHt2 = 0
+var float patLo1 = na
+var float patLo2 = na
+var int patLt1 = 0
+var int patLt2 = 0
 
-chartTrend() =>
-    string c = chartTfCode()
-    c == "M" ? mnDir : c == "W" ? wDir : c == "D" ? dDir : c == "240" ? h4Dir : c == "60" ? h1Dir : c == "15" ? m15Dir : c == "5" ? m5Dir : ovDir
+bool patBearOk = patBS == 1 and kindOk(patBK) and credOk(patBFc) and patBSc >= minScore
+bool patBullOk = patUS == 1 and kindOk(patUK) and credOk(patUFc) and patUSc >= minScore
+if patBearOk
+    patHi2 := patHi1
+    patHt2 := patHt1
+    patHi1 := patBPr
+    patHt1 := patBTm
+if patBullOk
+    patLo2 := patLo1
+    patLt2 := patLt1
+    patLo1 := patUPr
+    patLt1 := patUTm
 
-chartBroken() =>
-    string c = chartTfCode()
-    c == "M" ? mnBr : c == "W" ? wBr : c == "D" ? dBr : c == "240" ? h4Br : c == "60" ? h1Br : c == "15" ? m15Br : c == "5" ? m5Br : false
+// ── Setup stack از فلوچارت ────────────────────────────────────────────────────
+pickSt(int dir, bool br, float fT, float fB, float hi, float lo) =>
+    stTf == "M" ? [mnDir, mnBr, mnFtcT, mnFtcB, mnH, mnL] :
+     stTf == "W" ? [wDir, wBr, wFtcT, wFtcB, wH, wL] :
+     stTf == "D" ? [dDir, dBr, dFtcT, dFtcB, dH, dL] :
+     stTf == "240" ? [h4Dir, h4Br, h4FtcT, h4FtcB, h4H, h4L] :
+     stTf == "60" ? [h1Dir, h1Br, h1FtcT, h1FtcB, h1H, h1L] :
+     [dir, br, fT, fB, hi, lo]
 
-int ct = chartTrend()
-bool cbr = chartBroken()
-bgcolor(tintChart and ct == 1 and not cbr ? color.new(color.lime, 93) : tintChart and ct == -1 and not cbr ? color.new(color.red, 93) : na, title="Trend tint")
+[stDir, stBr, stFtcT, stFtcB, stH, stL] = pickSt(0, false, na, na, high, low)
 
-var table pan = table.new(panelPosEnum(panelPos), 3, 10, bgcolor=color.new(color.black, 82), border_width=1)
+int patNow = time
+bool tlBr = stDir == -1 ? tlBrokenBear(patC, patNow, patHt1, patHi1, patHt2, patHi2) : stDir == 1 ? tlBrokenBull(patC, patNow, patLt1, patLo1, patLt2, patLo2) : false
+
+var bool tlWasBroken = false
+var bool ftcTouched = false
+if stDir == 0 or stBr
+    tlWasBroken := false
+    ftcTouched := false
+else
+    if tlBr
+        tlWasBroken := true
+    if tlWasBroken and not na(stFtcT) and mse.priceInZone(stH, stL, stFtcT, stFtcB)
+        ftcTouched := true
+
+setupStatus() =>
+    string s = "—"
+    color c = color.gray
+    if stDir == 0
+        s := "بدون پیوت"
+    else if stBr
+        s := "شکست ساختار"
+        c := color.orange
+    else if not tlWasBroken
+        s := "صبر — تریگر نیامده"
+        c := color.yellow
+    else if not ftcTouched
+        s := "خط شکست ✓ — منتظر FTC"
+        c := color.aqua
+    else if stDir == -1
+        s := "FTC → فروش"
+        c := color.red
+    else
+        s := "FTC → خرید"
+        c := color.lime
+    [s, c]
+
+[setupTxt, setupCol] = setupStatus()
+
+bgcolor(tintChart and stDir == 1 and not stBr ? color.new(color.lime, 93) : tintChart and stDir == -1 and not stBr ? color.new(color.red, 93) : na, title="Setup tint")
+
+// ── Panel ─────────────────────────────────────────────────────────────────────
+var table pan = table.new(panelPosEnum(panelPos), 3, 14, bgcolor=color.new(color.black, 82), border_width=1)
 fz = fontSz(txtSize)
 
 drawRow(int row, bool en, string tf, int dir, int sc, bool br) =>
@@ -241,10 +338,26 @@ if barstate.islast
     table.cell(pan, 1, 0, "روند", text_color=color.gray, text_size=fz)
     table.cell(pan, 2, 0, "امتیاز", text_color=color.gray, text_size=fz)
     int row = 1
-    if showOverall
-        table.cell(pan, 0, row, "کلان (" + ovSrc + ")", text_color=color.yellow, text_size=fz)
-        table.cell(pan, 1, row, trendFa(ovDir, false), text_color=trendColor(ovDir, false), text_size=fz)
-        table.cell(pan, 2, row, ovDir == 0 ? "—" : "HTF", text_color=color.silver, text_size=fz)
+    if showSetup
+        table.cell(pan, 0, row, "ستاپ", text_color=color.yellow, text_size=fz)
+        table.cell(pan, 1, row, pairMode, text_color=color.white, text_size=fz)
+        table.cell(pan, 2, row, trex.tfLabel(trTf) + " trg", text_color=color.silver, text_size=fz)
+        row += 1
+        table.cell(pan, 0, row, "ساختار " + trex.tfLabel(stTf), text_color=color.white, text_size=fz)
+        table.cell(pan, 1, row, trendFa(stDir, stBr), text_color=trendColor(stDir, stBr), text_size=fz)
+        table.cell(pan, 2, row, "Rev+FTC", text_color=color.silver, text_size=fz)
+        row += 1
+        table.cell(pan, 0, row, "پترن " + trex.tfLabel(patTf), text_color=color.white, text_size=fz)
+        table.cell(pan, 1, row, tlWasBroken ? "خط شکسته ✓" : "خط سالم", text_color=tlWasBroken ? color.lime : color.gray, text_size=fz)
+        table.cell(pan, 2, row, "TL", text_color=color.silver, text_size=fz)
+        row += 1
+        table.cell(pan, 0, row, "وضعیت", text_color=color.yellow, text_size=fz)
+        table.cell(pan, 1, row, setupTxt, text_color=setupCol, text_size=fz)
+        table.cell(pan, 2, row, ftcTouched ? "FTC✓" : "—", text_color=ftcTouched ? color.lime : color.gray, text_size=fz)
+        row += 1
+        table.cell(pan, 0, row, "—", text_color=color.gray, text_size=fz)
+        table.cell(pan, 1, row, "—", text_color=color.gray, text_size=fz)
+        table.cell(pan, 2, row, "—", text_color=color.gray, text_size=fz)
         row += 1
     drawRow(row, showMn, "M", mnDir, mnSc, mnBr)
     row += showMn ? 1 : 0
