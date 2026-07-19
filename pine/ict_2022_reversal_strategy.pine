@@ -1,0 +1,633 @@
+// ICT 2022 / Silver Reversal — M1 Strategy (Long + Short)
+// Spec: docs/ict-2022-reversal-spec.md
+// Sessions: America/New_York (independent of Iran local time)
+//
+// FVG detection core adapted from LuxAlgo Fair Value Gap
+//   © LuxAlgo — CC BY-NC-SA 4.0
+//   https://creativecommons.org/licenses/by-nc-sa/4.0/
+// Killzone session windows aligned with LuxAlgo ICT Killzones (+ NY 07:00–10:00 per spec)
+//
+//@version=5
+strategy("ICT 2022 Silver Reversal", shorttitle="ICT22 Rev", overlay=true,
+     pyramiding=0, max_labels_count=500, max_boxes_count=300, max_lines_count=300,
+     default_qty_type=strategy.percent_of_equity, default_qty_value=10,
+     initial_capital=10000, commission_type=strategy.commission.percent, commission_value=0.02,
+     process_orders_on_close=true, calc_on_every_tick=false)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Inputs
+//══════════════════════════════════════════════════════════════════════════════
+grpTf     = "Timeframes"
+grpPivot  = "Pivots"
+grpSmt    = "SMT"
+grpFvg    = "FVG"
+grpDisp   = "Displacement / Entry"
+grpRisk   = "Risk / Exits"
+grpSess   = "Sessions (New York)"
+grpUi     = "UI / Alerts"
+
+useH1Sweep = input.bool(true, "Allow H1 sweep", group=grpTf)
+useH4Sweep = input.bool(true, "Allow H4 sweep", group=grpTf)
+chartWarn  = input.bool(true, "Warn if chart ≠ M1", group=grpTf)
+
+pivotLeft  = input.int(5, "Pivot left bars", minval=1, maxval=20, group=grpPivot)
+pivotRight = input.int(5, "Pivot right bars", minval=1, maxval=20, group=grpPivot)
+
+corrSymbol = input.symbol("FX:GBPUSD", "Correlated symbol (SMT)", group=grpSmt)
+smtLookback = input.int(20, "SMT swing lookback (HTF bars)", minval=5, maxval=100, group=grpSmt)
+requireSmt = input.bool(true, "Require SMT", group=grpSmt)
+
+fvgThresholdPer = input.float(0.0, "FVG threshold %", minval=0, maxval=100, step=0.1, group=grpFvg)
+fvgAutoThresh   = input.bool(false, "FVG auto threshold (LuxAlgo)", group=grpFvg)
+
+atrLen       = input.int(10, "ATR length (M1)", minval=2, group=grpDisp)
+dispAtrMult  = input.float(1.5, "Displacement body ≥ ATR ×", minval=0.5, step=0.1, group=grpDisp)
+oteLow       = input.float(0.618, "OTE low", minval=0.5, maxval=0.9, step=0.001, group=grpDisp)
+oteHigh      = input.float(0.705, "OTE high", minval=0.5, maxval=0.95, step=0.001, group=grpDisp)
+limitExpireBars = input.int(30, "Cancel limit after N M1 bars", minval=5, group=grpDisp)
+tradeLong    = input.bool(true, "Allow Long", group=grpDisp)
+tradeShort   = input.bool(true, "Allow Short", group=grpDisp)
+
+slBufferPips = input.float(2.0, "SL buffer (pips/ticks)", minval=0, step=0.5, group=grpRisk)
+minRr        = input.float(3.0, "Min R:R to TP1", minval=1.0, step=0.5, group=grpRisk)
+tp1QtyPct    = input.float(50.0, "TP1 qty %", minval=10, maxval=90, step=5, group=grpRisk)
+
+tz           = input.string("America/New_York", "Timezone", options=["America/New_York", "UTC-5", "UTC-4"], group=grpSess)
+lonSession   = input.session("0200-0500", "London Open KZ", group=grpSess)
+nySession    = input.session("0700-1000", "New York KZ", group=grpSess)
+asiaSession  = input.session("2000-0000", "Asian session", group=grpSess)
+dayResetHour = input.int(17, "Forex day reset hour (NY)", minval=0, maxval=23, group=grpSess)
+
+showBoxes    = input.bool(true, "Draw FVG / levels", group=grpUi)
+showDash     = input.bool(true, "Checklist dashboard", group=grpUi)
+showBg       = input.bool(true, "Killzone background", group=grpUi)
+bullCss      = input.color(color.new(#089981, 75), "Bull FVG", group=grpUi)
+bearCss      = input.color(color.new(#f23645, 75), "Bear FVG", group=grpUi)
+kzLonCss     = input.color(color.new(#00bcd4, 90), "London KZ bg", group=grpUi)
+kzNyCss      = input.color(color.new(#ff5d00, 90), "NY KZ bg", group=grpUi)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Helpers
+//══════════════════════════════════════════════════════════════════════════════
+pipSize() =>
+    string t = syminfo.ticker
+    bool jpy = str.contains(t, "JPY")
+    syminfo.type == "forex" ? (jpy ? 0.01 : 0.0001) : syminfo.mintick
+
+f_pip = pipSize()
+slBuf = slBufferPips * f_pip
+
+inSession(string sess) =>
+    not na(time(timeframe.period, sess, tz))
+
+isLonKz = inSession(lonSession)
+isNyKz  = inSession(nySession)
+isAsia  = inSession(asiaSession)
+inEntryKz = isLonKz or isNyKz
+
+nyHour = hour(time, tz)
+nyMinute = minute(time, tz)
+nyHm = nyHour * 100 + nyMinute
+
+// ICT / FX day key: rolls at dayResetHour America/New_York (default 17:00)
+fxDayKey() =>
+    int y = year(time, tz)
+    int m = month(time, tz)
+    int d = dayofmonth(time, tz)
+    int h = hour(time, tz)
+    int adj = timestamp(tz, y, m, d, h, 0, 0) - dayResetHour * 60 * 60 * 1000
+    year(adj, tz) * 10000 + month(adj, tz) * 100 + dayofmonth(adj, tz)
+
+curFxDay = fxDayKey()
+londonDone = nyHm >= 500  // after 05:00 NY → London Open range is fixed
+
+//══════════════════════════════════════════════════════════════════════════════
+// LuxAlgo-style FVG detect (CC BY-NC-SA attribution above)
+//══════════════════════════════════════════════════════════════════════════════
+detectFvg(float thrPer, bool auto) =>
+    float thr = auto ? ta.cum((high - low) / low) / math.max(bar_index, 1) : thrPer / 100.0
+    bool bull = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > thr
+    bool bear = high < low[2] and close[1] < low[2] and (low[2] - high) / high > thr
+    float bTop = bull ? low : na
+    float bBot = bull ? high[2] : na
+    float sTop = bear ? low[2] : na
+    float sBot = bear ? high : na
+    [bull, bear, bTop, bBot, sTop, sBot]
+
+// Fill rule: touch of zone (edge or CE inside) — not full LuxAlgo close-through mitigation
+fvgTouched(float top, float bot, float pxHigh, float pxLow) =>
+    float lo = math.min(top, bot)
+    float hi = math.max(top, bot)
+    pxLow <= hi and pxHigh >= lo
+
+//══════════════════════════════════════════════════════════════════════════════
+// HTF series via security (no lookahead)
+//══════════════════════════════════════════════════════════════════════════════
+// Confirmed HTF bar = [1] → no intrabar HTF repaint on M1
+htfBundle() =>
+    float ph = ta.pivothigh(high, pivotLeft, pivotRight)
+    float pl = ta.pivotlow(low, pivotLeft, pivotRight)
+    [bullF, bearF, bTop, bBot, sTop, sBot] = detectFvg(fvgThresholdPer, fvgAutoThresh)
+    [high[1], low[1], close[1], time[1], ph, pl, bullF, bearF, bTop, bBot, sTop, sBot]
+
+[h1_h, h1_l, h1_c, h1_t, h1_ph, h1_pl, h1_bullF, h1_bearF, h1_bTop, h1_bBot, h1_sTop, h1_sBot] =
+     request.security(syminfo.tickerid, "60", htfBundle(), barmerge.gaps_off, barmerge.lookahead_off)
+
+[h4_h, h4_l, h4_c, h4_t, h4_ph, h4_pl, h4_bullF, h4_bearF, h4_bTop, h4_bBot, h4_sTop, h4_sBot] =
+     request.security(syminfo.tickerid, "240", htfBundle(), barmerge.gaps_off, barmerge.lookahead_off)
+
+[m5_h, m5_l, m5_c, m5_t, m5_ph, m5_pl, m5_bullF, m5_bearF, m5_bTop, m5_bBot, m5_sTop, m5_sBot] =
+     request.security(syminfo.tickerid, "5", htfBundle(), barmerge.gaps_off, barmerge.lookahead_off)
+
+// Correlated HTF for SMT
+corrHtf() =>
+    [high[1], low[1], close[1], ta.highest(high[1], smtLookback), ta.lowest(low[1], smtLookback), ta.highest(high[2], smtLookback), ta.lowest(low[2], smtLookback)]
+
+[c1_h, c1_l, c1_c, c1_hiN, c1_loN, c1_hiP, c1_loP] =
+     request.security(corrSymbol, "60", corrHtf(), barmerge.gaps_off, barmerge.lookahead_off)
+
+[c4_h, c4_l, c4_c, c4_hiN, c4_loN, c4_hiP, c4_loP] =
+     request.security(corrSymbol, "240", corrHtf(), barmerge.gaps_off, barmerge.lookahead_off)
+
+[p1_hiN, p1_loN, p1_hiP, p1_loP] =
+     request.security(syminfo.tickerid, "60",
+         [ta.highest(high[1], smtLookback), ta.lowest(low[1], smtLookback), ta.highest(high[2], smtLookback), ta.lowest(low[2], smtLookback)],
+         barmerge.gaps_off, barmerge.lookahead_off)
+
+[p4_hiN, p4_loN, p4_hiP, p4_loP] =
+     request.security(syminfo.tickerid, "240",
+         [ta.highest(high[1], smtLookback), ta.lowest(low[1], smtLookback), ta.highest(high[2], smtLookback), ta.lowest(low[2], smtLookback)],
+         barmerge.gaps_off, barmerge.lookahead_off)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Track last confirmed HTF swing levels
+//══════════════════════════════════════════════════════════════════════════════
+var float h1SwingHigh = na
+var float h1SwingLow  = na
+var float h4SwingHigh = na
+var float h4SwingLow  = na
+var int   h1ShTime = na
+var int   h1SlTime = na
+var int   h4ShTime = na
+var int   h4SlTime = na
+
+var float lastH1BearFvgTop = na
+var float lastH1BearFvgBot = na
+var int   lastH1BearFvgT   = na
+var float lastH1BullFvgTop = na
+var float lastH1BullFvgBot = na
+var int   lastH1BullFvgT   = na
+var float lastH4BearFvgTop = na
+var float lastH4BearFvgBot = na
+var int   lastH4BearFvgT   = na
+var float lastH4BullFvgTop = na
+var float lastH4BullFvgBot = na
+var int   lastH4BullFvgT   = na
+
+// Update swings when new pivot prints (security series changes)
+if not na(h1_ph) and (na(h1ShTime) or h1_t != h1ShTime or h1_ph != h1SwingHigh)
+    // pivothigh value appears on confirmation bar; price is the pivot
+    h1SwingHigh := h1_ph
+    h1ShTime := h1_t
+if not na(h1_pl) and (na(h1SlTime) or h1_t != h1SlTime or h1_pl != h1SwingLow)
+    h1SwingLow := h1_pl
+    h1SlTime := h1_t
+if not na(h4_ph)
+    h4SwingHigh := h4_ph
+    h4ShTime := h4_t
+if not na(h4_pl)
+    h4SwingLow := h4_pl
+    h4SlTime := h4_t
+
+if h1_bearF
+    lastH1BearFvgTop := h1_sTop
+    lastH1BearFvgBot := h1_sBot
+    lastH1BearFvgT := h1_t
+if h1_bullF
+    lastH1BullFvgTop := h1_bTop
+    lastH1BullFvgBot := h1_bBot
+    lastH1BullFvgT := h1_t
+if h4_bearF
+    lastH4BearFvgTop := h4_sTop
+    lastH4BearFvgBot := h4_sBot
+    lastH4BearFvgT := h4_t
+if h4_bullF
+    lastH4BullFvgTop := h4_bTop
+    lastH4BullFvgBot := h4_bBot
+    lastH4BullFvgT := h4_t
+
+//══════════════════════════════════════════════════════════════════════════════
+// Daily state machine flags
+//══════════════════════════════════════════════════════════════════════════════
+var int   stateDay = na
+var int   sweepDir = 0          // 1 long, -1 short
+var string sweepTf = ""         // "H1" / "H4" / "H1+H4"
+var bool  stepSweep = false
+var bool  stepSmt   = false
+var bool  stepFvg   = false
+var bool  stepChoCh = false
+var bool  stepOte   = false
+var bool  stepEntry = false
+
+var float sweepLevel = na
+var float m5LegHigh = na
+var float m5LegLow  = na
+var float m5ChoChLevel = na
+var int   m5ChoChTime = na
+var float m5LastHl = na
+var float m5LastLh = na
+var float m5TrailHigh = na
+var float m5TrailLow  = na
+
+var float pendingLimit = na
+var float pendingSl    = na
+var float pendingTp1   = na
+var float pendingTp2   = na
+var int   pendingDir   = 0
+var int   pendingBornBar = na
+var float entryFvgTop = na
+var float entryFvgBot = na
+var bool  tp1Done = false
+var float activeSl = na
+
+var float asiaHigh = na
+var float asiaLow  = na
+var float lonHigh  = na
+var float lonLow   = na
+var int   asiaDay  = na
+var int   lonDay   = na
+
+var float pdHigh = na
+var float pdLow  = na
+var float curDayHigh = na
+var float curDayLow  = na
+var int   pdDayKey = na
+
+newFxDay = na(stateDay) or curFxDay != stateDay
+if newFxDay
+    stateDay := curFxDay
+    sweepDir := 0
+    sweepTf := ""
+    stepSweep := false
+    stepSmt := false
+    stepFvg := false
+    stepChoCh := false
+    stepOte := false
+    stepEntry := false
+    sweepLevel := na
+    m5LegHigh := na
+    m5LegLow := na
+    m5ChoChLevel := na
+    m5ChoChTime := na
+    pendingLimit := na
+    pendingSl := na
+    pendingTp1 := na
+    pendingTp2 := na
+    pendingDir := 0
+    pendingBornBar := na
+    entryFvgTop := na
+    entryFvgBot := na
+    strategy.cancel("ICT LMT")
+    // roll previous day high/low → PDH/PDL
+    if not na(curDayHigh)
+        pdHigh := curDayHigh
+        pdLow := curDayLow
+    curDayHigh := high
+    curDayLow := low
+    pdDayKey := curFxDay
+else
+    curDayHigh := math.max(nz(curDayHigh, high), high)
+    curDayLow := math.min(nz(curDayLow, low), low)
+
+// Session range trackers (M1)
+if isAsia
+    if na(asiaDay) or asiaDay != curFxDay
+        asiaDay := curFxDay
+        asiaHigh := high
+        asiaLow := low
+    else
+        asiaHigh := math.max(asiaHigh, high)
+        asiaLow := math.min(asiaLow, low)
+
+if isLonKz
+    if na(lonDay) or lonDay != curFxDay
+        lonDay := curFxDay
+        lonHigh := high
+        lonLow := low
+    else
+        lonHigh := math.max(lonHigh, high)
+        lonLow := math.min(lonLow, low)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Step 1 — HTF Sweep (confirmed HTF candle via security)
+//══════════════════════════════════════════════════════════════════════════════
+bearSweepH1 = useH1Sweep and not na(h1SwingHigh) and h1_h > h1SwingHigh and h1_c < h1SwingHigh
+bullSweepH1 = useH1Sweep and not na(h1SwingLow)  and h1_l < h1SwingLow  and h1_c > h1SwingLow
+bearSweepH4 = useH4Sweep and not na(h4SwingHigh) and h4_h > h4SwingHigh and h4_c < h4SwingHigh
+bullSweepH4 = useH4Sweep and not na(h4SwingLow)  and h4_l < h4SwingLow  and h4_c > h4SwingLow
+
+// Edge detect on HTF close change
+var float prevH1c = na
+var float prevH4c = na
+h1Closed = not na(prevH1c) and h1_c != prevH1c
+h4Closed = not na(prevH4c) and h4_c != prevH4c
+
+if not stepSweep
+    if (bearSweepH4 and h4Closed) or (bearSweepH1 and h1Closed)
+        if tradeShort
+            stepSweep := true
+            sweepDir := -1
+            bool h4s = bearSweepH4 and h4Closed
+            bool h1s = bearSweepH1 and h1Closed
+            sweepTf := h4s and h1s ? "H1+H4" : h4s ? "H4" : "H1"
+            sweepLevel := h4s ? h4SwingHigh : h1SwingHigh
+    if (bullSweepH4 and h4Closed) or (bullSweepH1 and h1Closed)
+        if tradeLong and not stepSweep
+            stepSweep := true
+            sweepDir := 1
+            bool h4s = bullSweepH4 and h4Closed
+            bool h1s = bullSweepH1 and h1Closed
+            sweepTf := h4s and h1s ? "H1+H4" : h4s ? "H4" : "H1"
+            sweepLevel := h4s ? h4SwingLow : h1SwingLow
+
+prevH1c := h1_c
+prevH4c := h4_c
+
+//══════════════════════════════════════════════════════════════════════════════
+// Step 2 — SMT (relative strength at sweep context)
+//══════════════════════════════════════════════════════════════════════════════
+smtBearH1 = p1_hiN > p1_hiP and not (c1_hiN > c1_hiP)
+smtBullH1 = p1_loN < p1_loP and not (c1_loN < c1_loP)
+smtBearH4 = p4_hiN > p4_hiP and not (c4_hiN > c4_hiP)
+smtBullH4 = p4_loN < p4_loP and not (c4_loN < c4_loP)
+
+if stepSweep and not stepSmt
+    if sweepDir < 0
+        stepSmt := requireSmt ? ((str.contains(sweepTf, "H4") and smtBearH4) or smtBearH1) : true
+    if sweepDir > 0
+        stepSmt := requireSmt ? ((str.contains(sweepTf, "H4") and smtBullH4) or smtBullH1) : true
+
+//══════════════════════════════════════════════════════════════════════════════
+// Step 3 — HTF FVG fill (priority rules)
+// H4 sweep → H4 or H1 FVG; H1-only sweep → H1 FVG only
+//══════════════════════════════════════════════════════════════════════════════
+allowH4Fvg = str.contains(sweepTf, "H4")
+allowH1Fvg = true
+
+bearFvgFill =
+     (allowH1Fvg and not na(lastH1BearFvgTop) and fvgTouched(lastH1BearFvgTop, lastH1BearFvgBot, high, low)) or
+     (allowH4Fvg and not na(lastH4BearFvgTop) and fvgTouched(lastH4BearFvgTop, lastH4BearFvgBot, high, low))
+
+bullFvgFill =
+     (allowH1Fvg and not na(lastH1BullFvgTop) and fvgTouched(lastH1BullFvgTop, lastH1BullFvgBot, high, low)) or
+     (allowH4Fvg and not na(lastH4BullFvgTop) and fvgTouched(lastH4BullFvgTop, lastH4BullFvgBot, high, low))
+
+if stepSweep and stepSmt and not stepFvg
+    if sweepDir < 0 and bearFvgFill
+        stepFvg := true
+    if sweepDir > 0 and bullFvgFill
+        stepFvg := true
+
+//══════════════════════════════════════════════════════════════════════════════
+// Step 4 — M5 CHoCH (body close beyond last HL / LH)
+// Track M5 swings; CHoCH after setup armed
+//══════════════════════════════════════════════════════════════════════════════
+if not na(m5_ph)
+    m5LastLh := m5_ph
+if not na(m5_pl)
+    m5LastHl := m5_pl
+
+var float prevM5c = na
+m5Closed = not na(prevM5c) and m5_c != prevM5c
+
+if stepFvg and not stepChoCh and m5Closed
+    if sweepDir < 0 and not na(m5LastHl) and m5_c < m5LastHl and m5_h > m5_l
+        // body close below HL
+        stepChoCh := true
+        m5ChoChLevel := m5LastHl
+        m5ChoChTime := m5_t
+        m5LegHigh := m5_h
+        m5LegLow := m5_l
+        m5TrailHigh := m5_h
+        m5TrailLow := m5_l
+    if sweepDir > 0 and not na(m5LastLh) and m5_c > m5LastLh
+        stepChoCh := true
+        m5ChoChLevel := m5LastLh
+        m5ChoChTime := m5_t
+        m5LegHigh := m5_h
+        m5LegLow := m5_l
+        m5TrailHigh := m5_h
+        m5TrailLow := m5_l
+
+// Extend displacement leg after CHoCH until retrace starts
+if stepChoCh and not stepOte and m5Closed
+    if sweepDir < 0
+        m5TrailLow := math.min(nz(m5TrailLow, m5_l), m5_l)
+        m5TrailHigh := math.max(nz(m5TrailHigh, m5_h), m5ChoChLevel)
+        m5LegLow := m5TrailLow
+        m5LegHigh := math.max(nz(m5LegHigh, m5ChoChLevel), m5ChoChLevel)
+    if sweepDir > 0
+        m5TrailHigh := math.max(nz(m5TrailHigh, m5_h), m5_h)
+        m5TrailLow := math.min(nz(m5TrailLow, m5_l), m5ChoChLevel)
+        m5LegHigh := m5TrailHigh
+        m5LegLow := math.min(nz(m5LegLow, m5ChoChLevel), m5ChoChLevel)
+
+prevM5c := m5_c
+
+//══════════════════════════════════════════════════════════════════════════════
+// Step 5 — M5 OTE retracement into 61.8–70.5
+//══════════════════════════════════════════════════════════════════════════════
+oteZone(float legHi, float legLo, int dir) =>
+    float rng = legHi - legLo
+    // For short: retrace up from low → price in [low+0.618r, low+0.705r]
+    // For long: retrace down from high → price in [high-0.705r, high-0.618r]
+    if dir < 0
+        [legLo + rng * oteLow, legLo + rng * oteHigh]
+    else
+        [legHi - rng * oteHigh, legHi - rng * oteLow]
+
+if stepChoCh and not stepOte and not na(m5LegHigh) and not na(m5LegLow) and m5LegHigh > m5LegLow
+    [zLo, zHi] = oteZone(m5LegHigh, m5LegLow, sweepDir)
+    // normalize
+    float lo = math.min(zLo, zHi)
+    float hi = math.max(zLo, zHi)
+    if high >= lo and low <= hi
+        stepOte := true
+
+//══════════════════════════════════════════════════════════════════════════════
+// Step 6 — M1 displacement + FVG → limit entry
+//══════════════════════════════════════════════════════════════════════════════
+[m1BullF, m1BearF, m1bTop, m1bBot, m1sTop, m1sBot] = detectFvg(fvgThresholdPer, fvgAutoThresh)
+atrM1 = ta.atr(atrLen)
+body = math.abs(close - open)
+isDispDown = close < open and body >= atrM1 * dispAtrMult
+isDispUp   = close > open and body >= atrM1 * dispAtrMult
+
+// 1m swing for SL
+m1Sh = ta.pivothigh(high, 3, 2)
+m1Sl = ta.pivotlow(low, 3, 2)
+var float lastM1Sh = na
+var float lastM1Sl = na
+if not na(m1Sh)
+    lastM1Sh := m1Sh
+if not na(m1Sl)
+    lastM1Sl := m1Sl
+
+tp1Price(int dir) =>
+    float lvl = na
+    if londonDone and not na(lonHigh) and not na(lonLow)
+        lvl := dir < 0 ? lonLow : lonHigh
+    else if not na(asiaHigh) and not na(asiaLow)
+        lvl := dir < 0 ? asiaLow : asiaHigh
+    else if not na(m5LastHl) and not na(m5LastLh)
+        lvl := dir < 0 ? m5LastHl : m5LastLh
+    lvl
+
+tp2Price(int dir) =>
+    dir < 0 ? pdLow : pdHigh
+
+rrOk(float entry, float sl, float tp1, int dir) =>
+    float risk = math.abs(entry - sl)
+    float reward = math.abs(tp1 - entry)
+    risk > 0 and reward / risk >= minRr and (dir < 0 ? tp1 < entry and sl > entry : tp1 > entry and sl < entry)
+
+if stepOte and not stepEntry and inEntryKz and barstate.isconfirmed and strategy.position_size == 0 and na(pendingLimit)
+    if sweepDir < 0 and tradeShort and isDispDown and m1BearF
+        float lim = m1sTop  // edge of bearish FVG (gap top = low[2] side... bear: top=low[2], bot=high → entry at opening edge in sell direction = top)
+        // Spec: limit on opening edge of 1m FVG in drop direction → for short, sell limit at FVG top (first touch)
+        float sl = (not na(lastM1Sh) ? lastM1Sh : high) + slBuf
+        float t1 = tp1Price(-1)
+        float t2 = tp2Price(-1)
+        if not na(t1) and not na(t2) and rrOk(lim, sl, t1, -1)
+            pendingLimit := lim
+            pendingSl := sl
+            pendingTp1 := t1
+            pendingTp2 := t2
+            pendingDir := -1
+            pendingBornBar := bar_index
+            entryFvgTop := m1sTop
+            entryFvgBot := m1sBot
+            stepEntry := true
+    if sweepDir > 0 and tradeLong and isDispUp and m1BullF and na(pendingLimit)
+        float lim = m1bBot  // bull FVG bottom edge (high[2]) — buy limit
+        float sl = (not na(lastM1Sl) ? lastM1Sl : low) - slBuf
+        float t1 = tp1Price(1)
+        float t2 = tp2Price(1)
+        if not na(t1) and not na(t2) and rrOk(lim, sl, t1, 1)
+            pendingLimit := lim
+            pendingSl := sl
+            pendingTp1 := t1
+            pendingTp2 := t2
+            pendingDir := 1
+            pendingBornBar := bar_index
+            entryFvgTop := m1bTop
+            entryFvgBot := m1bBot
+            stepEntry := true
+
+// Place / manage pending limit
+if not na(pendingLimit) and strategy.position_size == 0
+    if bar_index - pendingBornBar > limitExpireBars
+        strategy.cancel("ICT LMT")
+        pendingLimit := na
+        stepEntry := false
+    else if pendingDir < 0
+        strategy.entry("ICT Short", strategy.short, limit=pendingLimit)
+    else if pendingDir > 0
+        strategy.entry("ICT Long", strategy.long, limit=pendingLimit)
+
+// Invalidate pending if price closes through FVG against us
+if not na(pendingLimit) and strategy.position_size == 0 and barstate.isconfirmed
+    if pendingDir < 0 and close > entryFvgTop
+        strategy.cancel("ICT LMT")
+        pendingLimit := na
+        stepEntry := false
+    if pendingDir > 0 and close < entryFvgBot
+        strategy.cancel("ICT LMT")
+        pendingLimit := na
+        stepEntry := false
+
+// On fill: arm exits
+if strategy.position_size != 0 and strategy.position_size[1] == 0
+    tp1Done := false
+    activeSl := pendingSl
+    pendingLimit := na
+
+if strategy.position_size < 0
+    if not tp1Done and not na(pendingTp1) and low <= pendingTp1
+        tp1Done := true
+        activeSl := strategy.position_avg_price
+    strategy.exit("TP1 Short", from_entry="ICT Short", limit=pendingTp1, stop=activeSl, qty_percent=tp1QtyPct)
+    strategy.exit("TP2 Short", from_entry="ICT Short", limit=pendingTp2, stop=activeSl)
+
+if strategy.position_size > 0
+    if not tp1Done and not na(pendingTp1) and high >= pendingTp1
+        tp1Done := true
+        activeSl := strategy.position_avg_price
+    strategy.exit("TP1 Long", from_entry="ICT Long", limit=pendingTp1, stop=activeSl, qty_percent=tp1QtyPct)
+    strategy.exit("TP2 Long", from_entry="ICT Long", limit=pendingTp2, stop=activeSl)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    pendingDir := 0
+    tp1Done := false
+    activeSl := na
+
+//══════════════════════════════════════════════════════════════════════════════
+// Visuals
+//══════════════════════════════════════════════════════════════════════════════
+if showBg
+    bgcolor(isLonKz ? kzLonCss : isNyKz ? kzNyCss : na, title="Killzone")
+
+if showBoxes and stepEntry and not na(entryFvgTop)
+    box.new(bar_index - 2, entryFvgTop, bar_index + 8, entryFvgBot,
+         bgcolor=pendingDir < 0 ? bearCss : bullCss, border_color=na)
+
+plot(stepSweep ? sweepLevel : na, "Sweep level", color=color.orange, style=plot.style_linebr, linewidth=1)
+plot(strategy.position_size != 0 ? pendingSl : na, "SL", color=color.red, style=plot.style_linebr)
+plot(strategy.position_size != 0 ? pendingTp1 : na, "TP1", color=color.teal, style=plot.style_linebr)
+plot(strategy.position_size != 0 ? pendingTp2 : na, "TP2", color=color.green, style=plot.style_linebr)
+
+plotshape(stepChoCh and stepChoCh != stepChoCh[1] and sweepDir < 0, "CHoCH↓", shape.triangledown, location.abovebar, color.red, size=size.tiny)
+plotshape(stepChoCh and stepChoCh != stepChoCh[1] and sweepDir > 0, "CHoCH↑", shape.triangleup, location.belowbar, color.green, size=size.tiny)
+
+if chartWarn and timeframe.period != "1"
+    var label warn = na
+    if barstate.islast
+        if not na(warn)
+            label.delete(warn)
+        warn := label.new(bar_index, high, "ICT22: chart را روی M1 بگذارید",
+             style=label.style_label_left, color=color.black, textcolor=color.yellow, size=size.small)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Dashboard checklist
+//══════════════════════════════════════════════════════════════════════════════
+dot(bool on) => on ? "🟢" : "⚪"
+
+if showDash and barstate.islast
+    var table tb = table.new(position.top_right, 2, 10, bgcolor=#1e222d, border_color=#373a46, border_width=1)
+    table.cell(tb, 0, 0, "ICT 2022", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 0, syminfo.ticker, text_color=color.gray, text_size=size.small)
+    table.cell(tb, 0, 1, "HTF Sweep", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 1, stepSweep ? ("🟢 " + sweepTf) : "⚪", text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 2, "SMT", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 2, dot(stepSmt), text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 3, "HTF FVG", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 3, dot(stepFvg), text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 4, "5m CHoCH", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 4, dot(stepChoCh), text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 5, "5m OTE", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 5, dot(stepOte), text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 6, "1m Entry", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 6, dot(stepEntry), text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 7, "Dir / KZ", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 7, (sweepDir < 0 ? "SHORT" : sweepDir > 0 ? "LONG" : "-") + (inEntryKz ? " | KZ" : ""), text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 8, "TZ", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 8, tz, text_color=color.aqua, text_size=size.tiny)
+    table.cell(tb, 0, 9, "Corr", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 9, corrSymbol, text_color=color.gray, text_size=size.tiny)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Alerts
+//══════════════════════════════════════════════════════════════════════════════
+alertcondition(stepChoCh and not stepChoCh[1], "Step4 M5 CHoCH", "ICT22: 5m CHoCH — آماده شو برای ورود ۱ دقیقه")
+alertcondition(stepEntry and not stepEntry[1], "Step6 M1 Entry", "ICT22: لیمیت ورود ۱ دقیقه فعال شد")
+alertcondition(stepSweep and not stepSweep[1], "Step1 HTF Sweep", "ICT22: سوئیپ HTF")
