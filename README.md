@@ -11,6 +11,8 @@
 | `pine/ict_killzones_ny.pine` | نمایش Killzone |
 | `docs/ict-judas-dual-upgrade.md` | نظر مهندسی + مشخصات ارتقا |
 | `docs/ict-2022-reversal-spec.md` | مشخصات نسخه قبلی |
+| `tests/backtest_judas_dual_eurusd.py` | بک‌تست آفلاین Judas Dual (EURUSD ~۱ ماه) |
+| `tests/backtest_judas_dual_eurusd_results.json` | نتایج بک‌تست |
 
 ## ساعت و سشن (اگر در ایران هستی)
 
