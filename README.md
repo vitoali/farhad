@@ -1,14 +1,16 @@
-# ICT 2022 Silver Reversal
+# ICT 2022 / Judas Dual
 
-استراتژی / اندیکاتور **ICT 2022** (اسکالپ–دی‌ترید، Long + Short) برای TradingView.
+استراتژی‌های ICT برای TradingView (چارت **M1**، ساعت **America/New_York**).
 
 ## فایل‌ها
 
 | فایل | نقش |
 |------|-----|
-| `pine/ict_2022_reversal_strategy.pine` | Strategy کامل + بک‌تست + چک‌لیست + آلرت |
-| `pine/ict_killzones_ny.pine` | نمایش Killzone با `America/New_York` |
-| `docs/ict-2022-reversal-spec.md` | مشخصات مکانیکی |
+| `pine/ict_judas_dual_m5m1.pine` | **ارتقا:** شکار سشن قبلی (Judas) + ورود دوگانه M5/M1 |
+| `pine/ict_2022_reversal_strategy.pine` | نسخه ICT22 (HTF pivot sweep + M1 entry) |
+| `pine/ict_killzones_ny.pine` | نمایش Killzone |
+| `docs/ict-judas-dual-upgrade.md` | نظر مهندسی + مشخصات ارتقا |
+| `docs/ict-2022-reversal-spec.md` | مشخصات نسخه قبلی |
 
 ## ساعت و سشن (اگر در ایران هستی)
 
