@@ -1,0 +1,80 @@
+
+==============================================================================
+GOLD 1H
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L= 9 S= 3) : n=12  win%=17  avg=-0.55%  total=-6.39%  PF=0.29  maxDD=-6.69%
+   TREND     (L= 0 S= 2) : n=2  win%=0  avg=-0.80%  total=-1.59%  PF=0.00  maxDD=-0.75%
+   HTF       (L= 0 S= 2) : n=2  win%=0  avg=-0.80%  total=-1.59%  PF=0.00  maxDD=-0.75%
+   TREND+HTF (L= 0 S= 2) : n=2  win%=0  avg=-0.80%  total=-1.59%  PF=0.00  maxDD=-0.75%
+   V2-ZERO   (L= 2 S= 5) : n=7  win%=29  avg=-0.20%  total=-1.39%  PF=0.65  maxDD=-2.31%
+   V2-RECENT (L= 0 S= 3) : n=3  win%=33  avg=-0.07%  total=-0.23%  PF=0.87  maxDD=-1.59%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L= 9 S= 3) : n=12  win%=17  avg=-0.40%  total=-4.68%  PF=0.26  maxDD=-4.82%
+   TREND     (L= 0 S= 2) : n=2  win%=0  avg=-0.57%  total=-1.13%  PF=0.00  maxDD=-0.53%
+   HTF       (L= 0 S= 2) : n=2  win%=0  avg=-0.57%  total=-1.13%  PF=0.00  maxDD=-0.53%
+   TREND+HTF (L= 0 S= 2) : n=2  win%=0  avg=-0.57%  total=-1.13%  PF=0.00  maxDD=-0.53%
+   V2-ZERO   (L= 2 S= 5) : n=7  win%=29  avg=-0.16%  total=-1.15%  PF=0.58  maxDD=-1.64%
+   V2-RECENT (L= 0 S= 3) : n=3  win%=33  avg=-0.08%  total=-0.25%  PF=0.79  maxDD=-1.13%
+
+==============================================================================
+GOLD 15M
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L=28 S=13) : n=41  win%=32  avg=-0.08%  total=-3.29%  PF=0.75  maxDD=-6.07%
+   TREND     (L= 0 S= 3) : n=3  win%=33  avg=-0.02%  total=-0.06%  PF=0.94  maxDD=-0.88%
+   HTF       (L= 0 S= 2) : n=2  win%=50  avg=+0.18%  total=+0.35%  PF=1.74  maxDD=-0.48%
+   TREND+HTF (L= 0 S= 2) : n=2  win%=50  avg=+0.18%  total=+0.35%  PF=1.74  maxDD=-0.48%
+   V2-ZERO   (L= 7 S=12) : n=19  win%=42  avg=+0.06%  total=+1.02%  PF=1.17  maxDD=-3.97%
+   V2-RECENT (L= 0 S= 2) : n=2  win%=50  avg=+0.18%  total=+0.35%  PF=1.74  maxDD=-0.48%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L=28 S=13) : n=41  win%=39  avg=-0.03%  total=-1.06%  PF=0.88  maxDD=-2.55%
+   TREND     (L= 0 S= 3) : n=3  win%=67  avg=+0.16%  total=+0.47%  PF=2.35  maxDD=-0.35%
+   HTF       (L= 0 S= 2) : n=2  win%=50  avg=+0.08%  total=+0.17%  PF=1.48  maxDD=-0.35%
+   TREND+HTF (L= 0 S= 2) : n=2  win%=50  avg=+0.08%  total=+0.17%  PF=1.48  maxDD=-0.35%
+   V2-ZERO   (L= 7 S=12) : n=19  win%=26  avg=-0.09%  total=-1.69%  PF=0.71  maxDD=-3.44%
+   V2-RECENT (L= 0 S= 2) : n=2  win%=50  avg=+0.08%  total=+0.17%  PF=1.48  maxDD=-0.35%
+
+==============================================================================
+BTC 1H
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L=10 S= 8) : n=18  win%=22  avg=-0.56%  total=-9.74%  PF=0.40  maxDD=-10.26%
+   TREND     (L= 0 S= 1) : n=1  win%=0  avg=-1.31%  total=-1.31%  PF=0.00  maxDD=0.00%
+   HTF       (L= 0 S= 0) : no trades
+   TREND+HTF (L= 0 S= 0) : no trades
+   V2-ZERO   (L= 3 S= 4) : n=7  win%=29  avg=-0.11%  total=-0.85%  PF=0.83  maxDD=-3.34%
+   V2-RECENT (L= 1 S= 0) : n=1  win%=0  avg=-1.26%  total=-1.26%  PF=0.00  maxDD=0.00%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L=10 S= 8) : n=18  win%=28  avg=-0.35%  total=-6.17%  PF=0.44  maxDD=-6.77%
+   TREND     (L= 0 S= 1) : n=1  win%=0  avg=-0.91%  total=-0.91%  PF=0.00  maxDD=0.00%
+   HTF       (L= 0 S= 0) : no trades
+   TREND+HTF (L= 0 S= 0) : no trades
+   V2-ZERO   (L= 3 S= 4) : n=7  win%=14  avg=-0.36%  total=-2.51%  PF=0.36  maxDD=-3.04%
+   V2-RECENT (L= 1 S= 0) : n=1  win%=0  avg=-0.88%  total=-0.88%  PF=0.00  maxDD=0.00%
+
+==============================================================================
+BTC 15M
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L=35 S=31) : n=66  win%=26  avg=-0.20%  total=-12.28%  PF=0.55  maxDD=-12.43%
+   TREND     (L= 5 S= 5) : n=10  win%=10  avg=-0.38%  total=-3.70%  PF=0.20  maxDD=-4.22%
+   HTF       (L= 2 S= 1) : n=3  win%=33  avg=+0.03%  total=+0.10%  PF=1.12  maxDD=-0.44%
+   TREND+HTF (L= 2 S= 1) : n=3  win%=33  avg=+0.03%  total=+0.10%  PF=1.12  maxDD=-0.44%
+   V2-ZERO   (L=17 S=19) : n=36  win%=36  avg=-0.07%  total=-2.53%  PF=0.79  maxDD=-3.16%
+   V2-RECENT (L= 5 S= 7) : n=12  win%=33  avg=+0.03%  total=+0.29%  PF=1.08  maxDD=-1.29%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L=35 S=31) : n=66  win%=35  avg=-0.08%  total=-5.02%  PF=0.72  maxDD=-6.78%
+   TREND     (L= 5 S= 5) : n=10  win%=20  avg=-0.22%  total=-2.15%  PF=0.30  maxDD=-2.43%
+   HTF       (L= 2 S= 1) : n=3  win%=67  avg=+0.22%  total=+0.65%  PF=3.16  maxDD=0.00%
+   TREND+HTF (L= 2 S= 1) : n=3  win%=67  avg=+0.22%  total=+0.65%  PF=3.16  maxDD=0.00%
+   V2-ZERO   (L=17 S=19) : n=36  win%=36  avg=-0.07%  total=-2.53%  PF=0.71  maxDD=-3.01%
+   V2-RECENT (L= 5 S= 7) : n=12  win%=33  avg=-0.09%  total=-1.03%  PF=0.68  maxDD=-1.53%

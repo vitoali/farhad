@@ -1,0 +1,87 @@
+//@version=5
+// CM_MacD_Ult_MTF v2 — نسخهٔ فیلترشدهٔ اندیکاتور ChrisMoody بر اساس بک‌تست ۶ماههٔ طلا/بیت‌کوین/یورودلار:
+//   - رفع ری‌پینت حالت MTF (security با [1] و lookahead)
+//   - فیلتر روند EMA200 + هم‌جهتی MACD تایم‌فریم بالاتر (T+H) که وین‌ریت را بالا می‌برد
+//   - تأیید ۲کندله (اختیاری) برای حذف کراس‌های لحظه‌ای
+//   - خطوط SL/TP مبتنی بر ATR با دو پروفایل: High WinRate (SL2/TP1) و Trend RR2 (SL1.5/TP3)
+//   - alertcondition (نسخهٔ اصلی هیچ آلارمی نداشت)
+// نتیجهٔ بک‌تست ۶ماهه (1H): طلا با T+H و پروفایل High WinRate → وین‌ریت ۷۹٪، PF=1.48؛
+// با پروفایل RR2 و تأیید ۲کندله → PF=1.54. بیت‌کوین فقط با فیلترها به سربه‌سر می‌رسد؛ یورودلار لبه ندارد.
+indicator("CM_MacD_Ult_MTF_v2", overlay=false, max_labels_count=500)
+
+// ── Inputs ──────────────────────────────────────────────────────
+fastLength   = input.int(12, "Fast Length", minval=1, group="MACD")
+slowLength   = input.int(26, "Slow Length", minval=1, group="MACD")
+signalLength = input.int(9, "Signal Length (SMA)", minval=1, group="MACD")
+src          = input.source(close, "Source", group="MACD")
+
+useTrend   = input.bool(true, "EMA200 Trend Filter", group="Filters")
+trendLen   = input.int(200, "Trend EMA Length", minval=10, group="Filters")
+useHtf     = input.bool(true, "Higher-TF MACD Filter", group="Filters")
+htfTF      = input.timeframe("240", "Higher Timeframe", group="Filters")
+useConfirm = input.bool(false, "2-Bar Confirmation", group="Filters")
+
+profile   = input.string("High WinRate (SL2/TP1)", "Exit Profile",
+     options=["High WinRate (SL2/TP1)", "Trend RR2 (SL1.5/TP3)"], group="Trade Levels")
+atrLen    = input.int(14, "ATR Length", minval=1, group="Trade Levels")
+showLbl   = input.bool(true, "Show Entry/SL/TP label", group="Trade Levels")
+
+// ── MACD (منطق اصلی ChrisMoody: سیگنال = SMA نه EMA) ───────────
+macd   = ta.ema(src, fastLength) - ta.ema(src, slowLength)
+signal = ta.sma(macd, signalLength)
+hist   = macd - signal
+
+crossUp = ta.crossover(macd, signal)
+crossDn = ta.crossunder(macd, signal)
+
+// ── Filters ─────────────────────────────────────────────────────
+trendEma  = ta.ema(close, trendLen)
+chartUp   = not useTrend or close > trendEma
+chartDown = not useTrend or close < trendEma
+
+f_htfState() =>
+    _m = ta.ema(close, fastLength) - ta.ema(close, slowLength)
+    _s = ta.sma(_m, signalLength)
+    _m > _s ? 1 : -1
+// کندل بستهٔ HTF + lookahead → بدون ری‌پینت (برخلاف security خام نسخهٔ اصلی)
+htfState = request.security(syminfo.tickerid, htfTF, f_htfState()[1], lookahead=barmerge.lookahead_on)
+htfUp    = not useHtf or htfState == 1
+htfDown  = not useHtf or htfState == -1
+
+confirmLong  = not useConfirm ? crossUp  : crossUp[1] and macd > signal
+confirmShort = not useConfirm ? crossDn  : crossDn[1] and macd < signal
+
+longSignal  = confirmLong and chartUp and htfUp
+shortSignal = confirmShort and chartDown and htfDown
+
+// ── Plots (همان ظاهر نسخهٔ اصلی + نقاط فیلترشده) ────────────────
+histA_IsUp   = hist > hist[1] and hist > 0
+histA_IsDown = hist < hist[1] and hist > 0
+histB_IsDown = hist < hist[1] and hist <= 0
+histB_IsUp   = hist > hist[1] and hist <= 0
+histColor = histA_IsUp ? color.aqua : histA_IsDown ? color.blue : histB_IsDown ? color.red : histB_IsUp ? color.maroon : color.yellow
+
+plot(macd, "MACD", color=macd >= signal ? color.lime : color.red, linewidth=3)
+plot(signal, "Signal", color=color.yellow, linewidth=2)
+plot(hist, "Histogram", color=histColor, style=plot.style_histogram, linewidth=4)
+hline(0, "Zero", color=color.white)
+
+plotshape(longSignal[1] ? signal[1] : na, "Filtered BUY", style=shape.circle, location=location.absolute, color=color.new(color.lime, 0), size=size.small, offset=-1)
+plotshape(shortSignal[1] ? signal[1] : na, "Filtered SELL", style=shape.circle, location=location.absolute, color=color.new(color.red, 0), size=size.small, offset=-1)
+
+// ── ATR trade levels (روی پنل قیمت نیست؛ در لیبل نمایش داده می‌شود) ─
+atrVal = ta.atr(atrLen)
+slMult = profile == "High WinRate (SL2/TP1)" ? 2.0 : 1.5
+tpMult = profile == "High WinRate (SL2/TP1)" ? 1.0 : 3.0
+
+var label lv = na
+if showLbl and (longSignal or shortSignal) and barstate.isconfirmed
+    label.delete(lv)
+    float sl = longSignal ? close - atrVal * slMult : close + atrVal * slMult
+    float tp = longSignal ? close + atrVal * tpMult : close - atrVal * tpMult
+    string txt = (longSignal ? "BUY" : "SELL") + "  @" + str.tostring(close, format.mintick) + "\nSL " + str.tostring(sl, format.mintick) + "\nTP " + str.tostring(tp, format.mintick)
+    lv := label.new(bar_index, signal, txt, style=longSignal ? label.style_label_up : label.style_label_down, color=longSignal ? color.new(color.green, 20) : color.new(color.red, 20), textcolor=color.white, size=size.small)
+
+// ── Alerts ──────────────────────────────────────────────────────
+alertcondition(longSignal, "MTFv2 BUY", "CM MacD MTF v2 — filtered BUY")
+alertcondition(shortSignal, "MTFv2 SELL", "CM MacD MTF v2 — filtered SELL")

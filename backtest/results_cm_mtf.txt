@@ -1,0 +1,186 @@
+
+====================================================================================
+GOLD 1H — 6 months   (2026-01-19 .. 2026-07-17, dots: 120L/119S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L=120 S=119) : n=239  win%=40  avg=+0.12%  total=+28.90%  PF=1.22  maxDD=-13.94%
+   TREND    (L= 51 S= 68) : n=119  win%=43  avg=+0.14%  total=+17.35%  PF=1.28  maxDD=-15.23%
+   HTF      (L= 42 S= 48) : n=90  win%=39  avg=+0.15%  total=+13.32%  PF=1.28  maxDD=-10.15%
+   T+H      (L= 21 S= 32) : n=53  win%=40  avg=+0.13%  total=+6.57%  PF=1.24  maxDD=-10.38%
+   ZLINE    (L= 40 S= 51) : n=91  win%=46  avg=+0.22%  total=+21.20%  PF=1.46  maxDD=-10.78%
+   CONFIRM2 (L=113 S=111) : n=224  win%=43  avg=+0.22%  total=+61.27%  PF=1.44  maxDD=-11.78%
+   T+H+C2   (L= 22 S= 28) : n=50  win%=44  avg=+0.27%  total=+13.85%  PF=1.54  maxDD=-8.82%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L=120 S=119) : n=239  win%=53  avg=+0.02%  total=+5.05%  PF=1.06  maxDD=-18.92%
+   TREND    (L= 51 S= 68) : n=119  win%=58  avg=+0.06%  total=+7.03%  PF=1.16  maxDD=-10.25%
+   HTF      (L= 42 S= 48) : n=90  win%=57  avg=+0.09%  total=+8.20%  PF=1.25  maxDD=-8.43%
+   T+H      (L= 21 S= 32) : n=53  win%=62  avg=+0.16%  total=+8.60%  PF=1.45  maxDD=-4.57%
+   ZLINE    (L= 40 S= 51) : n=91  win%=59  avg=+0.08%  total=+7.19%  PF=1.22  maxDD=-8.96%
+   CONFIRM2 (L=113 S=111) : n=224  win%=54  avg=+0.03%  total=+4.93%  PF=1.06  maxDD=-14.26%
+   T+H+C2   (L= 22 S= 28) : n=50  win%=58  avg=+0.10%  total=+4.74%  PF=1.25  maxDD=-6.72%
+
+ RR0.5(SL2/TP1)
+   BASE     (L=120 S=119) : n=239  win%=68  avg=-0.02%  total=-4.90%  PF=0.95  maxDD=-21.54%
+   TREND    (L= 51 S= 68) : n=119  win%=73  avg=+0.03%  total=+2.72%  PF=1.08  maxDD=-8.69%
+   HTF      (L= 42 S= 48) : n=90  win%=71  avg=+0.04%  total=+3.69%  PF=1.13  maxDD=-8.51%
+   T+H      (L= 21 S= 32) : n=53  win%=79  avg=+0.13%  total=+7.20%  PF=1.48  maxDD=-3.75%
+   ZLINE    (L= 40 S= 51) : n=91  win%=77  avg=+0.07%  total=+6.72%  PF=1.25  maxDD=-5.99%
+   CONFIRM2 (L=113 S=111) : n=224  win%=66  avg=-0.06%  total=-13.61%  PF=0.85  maxDD=-22.98%
+   T+H+C2   (L= 22 S= 28) : n=50  win%=72  avg=+0.06%  total=+2.65%  PF=1.17  maxDD=-5.57%
+
+====================================================================================
+BTC 1H — 6 months   (2026-01-18 .. 2026-07-17, dots: 186L/186S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L=186 S=186) : n=372  win%=33  avg=-0.15%  total=-44.70%  PF=0.82  maxDD=-52.15%
+   TREND    (L= 73 S=110) : n=183  win%=38  avg=+0.04%  total=+5.55%  PF=1.06  maxDD=-16.26%
+   HTF      (L= 77 S= 73) : n=150  win%=33  avg=-0.12%  total=-17.77%  PF=0.85  maxDD=-27.20%
+   T+H      (L= 41 S= 54) : n=95  win%=39  avg=+0.08%  total=+6.08%  PF=1.11  maxDD=-10.47%
+   ZLINE    (L= 67 S= 79) : n=146  win%=38  avg=+0.08%  total=+9.45%  PF=1.11  maxDD=-14.76%
+   CONFIRM2 (L=173 S=170) : n=343  win%=32  avg=-0.18%  total=-47.71%  PF=0.78  maxDD=-55.98%
+   T+H+C2   (L= 39 S= 46) : n=85  win%=38  avg=+0.03%  total=+0.97%  PF=1.03  maxDD=-13.05%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L=186 S=186) : n=372  win%=48  avg=-0.13%  total=-40.83%  PF=0.78  maxDD=-41.29%
+   TREND    (L= 73 S=110) : n=183  win%=54  avg=-0.02%  total=-5.09%  PF=0.96  maxDD=-15.43%
+   HTF      (L= 77 S= 73) : n=150  win%=49  avg=-0.11%  total=-15.92%  PF=0.81  maxDD=-18.10%
+   T+H      (L= 41 S= 54) : n=95  win%=54  avg=-0.04%  total=-4.42%  PF=0.93  maxDD=-9.27%
+   ZLINE    (L= 67 S= 79) : n=146  win%=53  avg=-0.04%  total=-6.28%  PF=0.93  maxDD=-14.88%
+   CONFIRM2 (L=173 S=170) : n=343  win%=48  avg=-0.16%  total=-43.57%  PF=0.74  maxDD=-43.98%
+   T+H+C2   (L= 39 S= 46) : n=85  win%=52  avg=-0.12%  total=-10.25%  PF=0.80  maxDD=-13.03%
+
+ RR0.5(SL2/TP1)
+   BASE     (L=186 S=186) : n=372  win%=62  avg=-0.22%  total=-57.01%  PF=0.63  maxDD=-57.55%
+   TREND    (L= 73 S=110) : n=183  win%=67  avg=-0.11%  total=-19.54%  PF=0.77  maxDD=-20.04%
+   HTF      (L= 77 S= 73) : n=150  win%=60  avg=-0.24%  total=-30.76%  PF=0.60  maxDD=-31.95%
+   T+H      (L= 41 S= 54) : n=95  win%=62  avg=-0.22%  total=-19.22%  PF=0.63  maxDD=-18.66%
+   ZLINE    (L= 67 S= 79) : n=146  win%=64  avg=-0.15%  total=-19.90%  PF=0.73  maxDD=-20.77%
+   CONFIRM2 (L=173 S=170) : n=343  win%=63  avg=-0.17%  total=-45.97%  PF=0.69  maxDD=-48.84%
+   T+H+C2   (L= 39 S= 46) : n=85  win%=65  avg=-0.16%  total=-12.85%  PF=0.72  maxDD=-13.42%
+
+====================================================================================
+EURUSD 1H — 6 months   (2026-01-19 .. 2026-07-17, dots: 126L/125S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L=126 S=125) : n=251  win%=36  avg=-0.01%  total=-3.49%  PF=0.88  maxDD=-7.41%
+   TREND    (L= 50 S= 74) : n=124  win%=31  avg=-0.04%  total=-4.99%  PF=0.66  maxDD=-6.53%
+   HTF      (L= 48 S= 51) : n=99  win%=39  avg=-0.00%  total=-0.06%  PF=1.00  maxDD=-3.58%
+   T+H      (L= 27 S= 39) : n=66  win%=36  avg=-0.02%  total=-1.20%  PF=0.83  maxDD=-3.05%
+   ZLINE    (L= 36 S= 50) : n=86  win%=31  avg=-0.03%  total=-2.96%  PF=0.71  maxDD=-4.49%
+   CONFIRM2 (L=117 S=116) : n=233  win%=31  avg=-0.04%  total=-8.48%  PF=0.69  maxDD=-10.35%
+   T+H+C2   (L= 26 S= 32) : n=58  win%=38  avg=-0.00%  total=-0.26%  PF=0.96  maxDD=-1.75%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L=126 S=125) : n=251  win%=52  avg=-0.02%  total=-5.87%  PF=0.73  maxDD=-7.13%
+   TREND    (L= 50 S= 74) : n=124  win%=51  avg=-0.03%  total=-3.28%  PF=0.70  maxDD=-4.16%
+   HTF      (L= 48 S= 51) : n=99  win%=55  avg=-0.01%  total=-1.24%  PF=0.85  maxDD=-2.75%
+   T+H      (L= 27 S= 39) : n=66  win%=55  avg=-0.01%  total=-0.87%  PF=0.83  maxDD=-1.91%
+   ZLINE    (L= 36 S= 50) : n=86  win%=52  avg=-0.02%  total=-1.50%  PF=0.79  maxDD=-2.45%
+   CONFIRM2 (L=117 S=116) : n=233  win%=51  avg=-0.02%  total=-5.64%  PF=0.72  maxDD=-6.52%
+   T+H+C2   (L= 26 S= 32) : n=58  win%=59  avg=+0.01%  total=+0.34%  PF=1.09  maxDD=-0.89%
+
+ RR0.5(SL2/TP1)
+   BASE     (L=126 S=125) : n=251  win%=65  avg=-0.03%  total=-6.98%  PF=0.65  maxDD=-7.51%
+   TREND    (L= 50 S= 74) : n=124  win%=60  avg=-0.05%  total=-5.45%  PF=0.51  maxDD=-5.76%
+   HTF      (L= 48 S= 51) : n=99  win%=68  avg=-0.02%  total=-1.91%  PF=0.74  maxDD=-2.55%
+   T+H      (L= 27 S= 39) : n=66  win%=65  avg=-0.03%  total=-1.94%  PF=0.62  maxDD=-2.31%
+   ZLINE    (L= 36 S= 50) : n=86  win%=65  avg=-0.03%  total=-2.26%  PF=0.66  maxDD=-2.69%
+   CONFIRM2 (L=117 S=116) : n=233  win%=70  avg=-0.01%  total=-2.66%  PF=0.83  maxDD=-5.15%
+   T+H+C2   (L= 26 S= 32) : n=58  win%=71  avg=-0.01%  total=-0.44%  PF=0.88  maxDD=-1.14%
+
+====================================================================================
+GOLD 15M — 1 month   (2026-06-17 .. 2026-07-17, dots: 76L/77S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L= 76 S= 77) : n=153  win%=38  avg=+0.02%  total=+2.35%  PF=1.06  maxDD=-14.23%
+   TREND    (L= 23 S= 50) : n=73  win%=38  avg=+0.06%  total=+4.62%  PF=1.24  maxDD=-6.62%
+   HTF      (L= 22 S= 36) : n=58  win%=38  avg=-0.06%  total=-3.27%  PF=0.82  maxDD=-4.59%
+   T+H      (L=  9 S= 26) : n=35  win%=37  avg=-0.02%  total=-0.77%  PF=0.92  maxDD=-2.08%
+   ZLINE    (L= 19 S= 41) : n=60  win%=40  avg=+0.00%  total=+0.10%  PF=1.01  maxDD=-4.15%
+   CONFIRM2 (L= 69 S= 73) : n=142  win%=37  avg=+0.00%  total=+0.21%  PF=1.01  maxDD=-11.66%
+   T+H+C2   (L=  8 S= 23) : n=31  win%=35  avg=+0.00%  total=-0.01%  PF=1.01  maxDD=-2.96%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L= 76 S= 77) : n=153  win%=49  avg=-0.05%  total=-7.71%  PF=0.78  maxDD=-13.09%
+   TREND    (L= 23 S= 50) : n=73  win%=51  avg=-0.02%  total=-1.19%  PF=0.93  maxDD=-5.65%
+   HTF      (L= 22 S= 36) : n=58  win%=47  avg=-0.11%  total=-6.28%  PF=0.58  maxDD=-5.56%
+   T+H      (L=  9 S= 26) : n=35  win%=51  avg=-0.03%  total=-0.94%  PF=0.86  maxDD=-2.24%
+   ZLINE    (L= 19 S= 41) : n=60  win%=50  avg=-0.06%  total=-3.74%  PF=0.74  maxDD=-4.28%
+   CONFIRM2 (L= 69 S= 73) : n=142  win%=50  avg=-0.05%  total=-6.63%  PF=0.80  maxDD=-10.72%
+   T+H+C2   (L=  8 S= 23) : n=31  win%=52  avg=-0.02%  total=-0.71%  PF=0.89  maxDD=-2.30%
+
+ RR0.5(SL2/TP1)
+   BASE     (L= 76 S= 77) : n=153  win%=66  avg=-0.05%  total=-7.74%  PF=0.75  maxDD=-11.80%
+   TREND    (L= 23 S= 50) : n=73  win%=73  avg=+0.03%  total=+2.23%  PF=1.21  maxDD=-1.75%
+   HTF      (L= 22 S= 36) : n=58  win%=64  avg=-0.11%  total=-5.99%  PF=0.56  maxDD=-5.50%
+   T+H      (L=  9 S= 26) : n=35  win%=71  avg=-0.01%  total=-0.21%  PF=0.96  maxDD=-2.06%
+   ZLINE    (L= 19 S= 41) : n=60  win%=67  avg=-0.07%  total=-4.14%  PF=0.68  maxDD=-3.70%
+   CONFIRM2 (L= 69 S= 73) : n=142  win%=70  avg=-0.01%  total=-1.98%  PF=0.93  maxDD=-9.52%
+   T+H+C2   (L=  8 S= 23) : n=31  win%=71  avg=-0.01%  total=-0.25%  PF=0.96  maxDD=-2.22%
+
+====================================================================================
+BTC 15M — 1 month   (2026-06-17 .. 2026-07-17, dots: 129L/129S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L=129 S=129) : n=258  win%=35  avg=-0.09%  total=-21.94%  PF=0.73  maxDD=-28.12%
+   TREND    (L= 70 S= 59) : n=129  win%=39  avg=-0.04%  total=-5.51%  PF=0.87  maxDD=-11.66%
+   HTF      (L= 50 S= 52) : n=102  win%=37  avg=-0.06%  total=-6.00%  PF=0.82  maxDD=-12.17%
+   T+H      (L= 30 S= 25) : n=55  win%=42  avg=-0.03%  total=-1.57%  PF=0.92  maxDD=-5.31%
+   ZLINE    (L= 50 S= 47) : n=97  win%=41  avg=-0.03%  total=-3.16%  PF=0.90  maxDD=-9.05%
+   CONFIRM2 (L=121 S=123) : n=244  win%=33  avg=-0.12%  total=-25.91%  PF=0.66  maxDD=-27.59%
+   T+H+C2   (L= 27 S= 26) : n=53  win%=40  avg=-0.02%  total=-1.31%  PF=0.93  maxDD=-4.72%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L=129 S=129) : n=258  win%=48  avg=-0.12%  total=-26.60%  PF=0.57  maxDD=-29.49%
+   TREND    (L= 70 S= 59) : n=129  win%=54  avg=-0.08%  total=-10.38%  PF=0.66  maxDD=-12.27%
+   HTF      (L= 50 S= 52) : n=102  win%=47  avg=-0.13%  total=-12.61%  PF=0.52  maxDD=-14.37%
+   T+H      (L= 30 S= 25) : n=55  win%=55  avg=-0.11%  total=-5.74%  PF=0.60  maxDD=-7.42%
+   ZLINE    (L= 50 S= 47) : n=97  win%=57  avg=-0.07%  total=-6.85%  PF=0.68  maxDD=-9.33%
+   CONFIRM2 (L=121 S=123) : n=244  win%=50  avg=-0.09%  total=-19.49%  PF=0.66  maxDD=-22.17%
+   T+H+C2   (L= 27 S= 26) : n=53  win%=62  avg=-0.02%  total=-1.05%  PF=0.91  maxDD=-3.82%
+
+ RR0.5(SL2/TP1)
+   BASE     (L=129 S=129) : n=258  win%=66  avg=-0.10%  total=-23.18%  PF=0.55  maxDD=-24.96%
+   TREND    (L= 70 S= 59) : n=129  win%=67  avg=-0.09%  total=-11.32%  PF=0.57  maxDD=-12.97%
+   HTF      (L= 50 S= 52) : n=102  win%=65  avg=-0.11%  total=-11.15%  PF=0.49  maxDD=-11.85%
+   T+H      (L= 30 S= 25) : n=55  win%=71  avg=-0.09%  total=-4.77%  PF=0.59  maxDD=-6.08%
+   ZLINE    (L= 50 S= 47) : n=97  win%=71  avg=-0.06%  total=-5.89%  PF=0.66  maxDD=-7.33%
+   CONFIRM2 (L=121 S=123) : n=244  win%=66  avg=-0.09%  total=-19.05%  PF=0.60  maxDD=-20.45%
+   T+H+C2   (L= 27 S= 26) : n=53  win%=81  avg=+0.01%  total=+0.76%  PF=1.12  maxDD=-2.74%
+
+====================================================================================
+EURUSD 15M — 1 month   (2026-06-17 .. 2026-07-17, dots: 83L/83S)
+====================================================================================
+
+ RR2  (SL1.5/TP3)
+   BASE     (L= 83 S= 83) : n=166  win%=33  avg=-0.02%  total=-3.76%  PF=0.58  maxDD=-3.76%
+   TREND    (L= 32 S= 48) : n=80  win%=36  avg=-0.02%  total=-1.32%  PF=0.68  maxDD=-1.45%
+   HTF      (L= 26 S= 36) : n=62  win%=29  avg=-0.03%  total=-1.96%  PF=0.46  maxDD=-1.99%
+   T+H      (L= 11 S= 25) : n=36  win%=33  avg=-0.03%  total=-0.90%  PF=0.57  maxDD=-1.00%
+   ZLINE    (L= 24 S= 37) : n=61  win%=36  avg=-0.02%  total=-1.13%  PF=0.65  maxDD=-1.15%
+   CONFIRM2 (L= 73 S= 78) : n=151  win%=34  avg=-0.02%  total=-2.96%  PF=0.63  maxDD=-3.00%
+   T+H+C2   (L=  9 S= 26) : n=35  win%=34  avg=-0.02%  total=-0.80%  PF=0.60  maxDD=-1.07%
+
+ RR1  (SL1.5/TP1.5)
+   BASE     (L= 83 S= 83) : n=166  win%=47  avg=-0.02%  total=-3.85%  PF=0.45  maxDD=-3.96%
+   TREND    (L= 32 S= 48) : n=80  win%=45  avg=-0.03%  total=-2.34%  PF=0.35  maxDD=-2.37%
+   HTF      (L= 26 S= 36) : n=62  win%=42  avg=-0.03%  total=-2.05%  PF=0.31  maxDD=-1.97%
+   T+H      (L= 11 S= 25) : n=36  win%=36  avg=-0.04%  total=-1.50%  PF=0.25  maxDD=-1.54%
+   ZLINE    (L= 24 S= 37) : n=61  win%=48  avg=-0.03%  total=-1.67%  PF=0.38  maxDD=-1.67%
+   CONFIRM2 (L= 73 S= 78) : n=151  win%=49  avg=-0.02%  total=-3.26%  PF=0.48  maxDD=-3.39%
+   T+H+C2   (L=  9 S= 26) : n=35  win%=49  avg=-0.02%  total=-0.84%  PF=0.46  maxDD=-0.90%
+
+ RR0.5(SL2/TP1)
+   BASE     (L= 83 S= 83) : n=166  win%=62  avg=-0.02%  total=-3.91%  PF=0.35  maxDD=-4.00%
+   TREND    (L= 32 S= 48) : n=80  win%=62  avg=-0.03%  total=-2.03%  PF=0.31  maxDD=-2.04%
+   HTF      (L= 26 S= 36) : n=62  win%=63  avg=-0.03%  total=-1.61%  PF=0.32  maxDD=-1.55%
+   T+H      (L= 11 S= 25) : n=36  win%=64  avg=-0.03%  total=-0.93%  PF=0.35  maxDD=-0.96%
+   ZLINE    (L= 24 S= 37) : n=61  win%=64  avg=-0.03%  total=-1.52%  PF=0.33  maxDD=-1.46%
+   CONFIRM2 (L= 73 S= 78) : n=151  win%=61  avg=-0.03%  total=-3.93%  PF=0.33  maxDD=-4.00%
+   T+H+C2   (L=  9 S= 26) : n=35  win%=63  avg=-0.03%  total=-0.90%  PF=0.36  maxDD=-1.01%

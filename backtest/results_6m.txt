@@ -1,0 +1,112 @@
+
+==============================================================================
+GOLD 1H — 6 MONTHS   (2026-01-19 .. 2026-07-17)
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L= 32 S= 24) : n=56  win%=36  avg=-0.05%  total=-3.40%  PF=0.92  maxDD=-7.72%
+   TREND     (L=  0 S=  3) : n=3  win%=0  avg=-0.93%  total=-2.77%  PF=0.00  maxDD=-1.59%
+   HTF       (L=  0 S=  3) : n=3  win%=0  avg=-0.93%  total=-2.77%  PF=0.00  maxDD=-1.59%
+   TREND+HTF (L=  0 S=  3) : n=3  win%=0  avg=-0.93%  total=-2.77%  PF=0.00  maxDD=-1.59%
+   V2-ZERO   (L= 15 S= 18) : n=33  win%=48  avg=+0.21%  total=+6.82%  PF=1.45  maxDD=-3.14%
+   V2-RECENT (L=  2 S= 10) : n=12  win%=42  avg=+0.18%  total=+2.02%  PF=1.32  maxDD=-3.54%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L= 32 S= 24) : n=56  win%=39  avg=+0.07%  total=+3.61%  PF=1.17  maxDD=-5.41%
+   TREND     (L=  0 S=  3) : n=3  win%=0  avg=-0.65%  total=-1.95%  PF=0.00  maxDD=-1.13%
+   HTF       (L=  0 S=  3) : n=3  win%=0  avg=-0.65%  total=-1.95%  PF=0.00  maxDD=-1.13%
+   TREND+HTF (L=  0 S=  3) : n=3  win%=0  avg=-0.65%  total=-1.95%  PF=0.00  maxDD=-1.13%
+   V2-ZERO   (L= 15 S= 18) : n=33  win%=45  avg=+0.04%  total=+1.11%  PF=1.10  maxDD=-2.79%
+   V2-RECENT (L=  2 S= 10) : n=12  win%=33  avg=-0.15%  total=-1.82%  PF=0.69  maxDD=-1.76%
+
+ monthly breakdown (bracket 1.5/3.0):
+   BASE     :
+      2026-01: n=5   total= +3.50%  win%=60
+      2026-02: n=6   total= -3.12%  win%=33
+      2026-03: n=11  total= -0.58%  win%=27
+      2026-04: n=10  total= -2.07%  win%=30
+      2026-05: n=8   total= +4.05%  win%=62
+      2026-06: n=9   total= -3.52%  win%=22
+      2026-07: n=7   total= -1.43%  win%=29
+   V2-RECENT:
+      2026-02: n=1   total= -0.75%  win%=0
+      2026-03: n=3   total= -0.07%  win%=33
+      2026-04: n=2   total= +3.94%  win%=100
+      2026-05: n=2   total= +0.24%  win%=50
+      2026-06: n=2   total= +0.34%  win%=50
+      2026-07: n=2   total= -1.59%  win%=0
+
+==============================================================================
+BTC 1H — 6 MONTHS   (2026-01-18 .. 2026-07-17)
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L= 60 S= 44) : n=104  win%=29  avg=-0.27%  total=-25.57%  PF=0.71  maxDD=-28.27%
+   TREND     (L=  5 S=  6) : n=11  win%=18  avg=-0.53%  total=-5.72%  PF=0.33  maxDD=-6.90%
+   HTF       (L=  5 S=  6) : n=11  win%=27  avg=-0.22%  total=-2.45%  PF=0.67  maxDD=-3.67%
+   TREND+HTF (L=  5 S=  4) : n=9  win%=22  avg=-0.38%  total=-3.37%  PF=0.46  maxDD=-4.58%
+   V2-ZERO   (L= 18 S= 31) : n=49  win%=31  avg=-0.20%  total=-9.78%  PF=0.73  maxDD=-18.18%
+   V2-RECENT (L=  7 S= 14) : n=21  win%=14  avg=-0.68%  total=-13.41%  PF=0.28  maxDD=-14.20%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L= 60 S= 44) : n=104  win%=32  avg=-0.13%  total=-13.33%  PF=0.78  maxDD=-19.88%
+   TREND     (L=  5 S=  6) : n=11  win%=9  avg=-0.54%  total=-5.78%  PF=0.12  maxDD=-5.28%
+   HTF       (L=  5 S=  6) : n=11  win%=18  avg=-0.33%  total=-3.61%  PF=0.37  maxDD=-3.10%
+   TREND+HTF (L=  5 S=  4) : n=9  win%=11  avg=-0.47%  total=-4.16%  PF=0.17  maxDD=-3.65%
+   V2-ZERO   (L= 18 S= 31) : n=49  win%=24  avg=-0.34%  total=-15.51%  PF=0.42  maxDD=-16.80%
+   V2-RECENT (L=  7 S= 14) : n=21  win%=10  avg=-0.56%  total=-11.25%  PF=0.18  maxDD=-10.95%
+
+ monthly breakdown (bracket 1.5/3.0):
+   BASE     :
+      2026-01: n=9   total= +0.46%  win%=33
+      2026-02: n=17  total= +1.89%  win%=35
+      2026-03: n=18  total= -7.90%  win%=22
+      2026-04: n=14  total= +5.04%  win%=50
+      2026-05: n=18  total= -4.25%  win%=28
+      2026-06: n=17  total=-21.09%  win%=6
+      2026-07: n=11  total= -0.53%  win%=36
+   V2-RECENT:
+      2026-01: n=2   total= -1.75%  win%=0
+      2026-02: n=5   total= -7.36%  win%=0
+      2026-04: n=4   total= -0.81%  win%=25
+      2026-05: n=5   total= -1.90%  win%=20
+      2026-06: n=4   total= -0.99%  win%=25
+      2026-07: n=1   total= -1.26%  win%=0
+
+==============================================================================
+BTC 15M — 6 MONTHS   (2026-01-18 .. 2026-07-17)
+==============================================================================
+
+ bracket SL=1.5xATR TP=3.0xATR
+   BASE      (L=193 S=178) : n=371  win%=28  avg=-0.18%  total=-49.65%  PF=0.63  maxDD=-49.84%
+   TREND     (L= 20 S= 18) : n=38  win%=21  avg=-0.29%  total=-10.53%  PF=0.39  maxDD=-12.87%
+   HTF       (L= 10 S=  9) : n=19  win%=37  avg=-0.04%  total=-0.72%  PF=0.90  maxDD=-2.36%
+   TREND+HTF (L= 10 S=  7) : n=17  win%=35  avg=-0.08%  total=-1.47%  PF=0.77  maxDD=-2.75%
+   V2-ZERO   (L=101 S=112) : n=213  win%=33  avg=-0.14%  total=-26.20%  PF=0.64  maxDD=-28.56%
+   V2-RECENT (L= 32 S= 28) : n=60  win%=32  avg=-0.10%  total=-5.81%  PF=0.75  maxDD=-9.20%
+
+ bracket SL=1.0xATR TP=2.0xATR
+   BASE      (L=193 S=178) : n=371  win%=35  avg=-0.08%  total=-25.35%  PF=0.76  maxDD=-27.67%
+   TREND     (L= 20 S= 18) : n=38  win%=26  avg=-0.20%  total=-7.37%  PF=0.40  maxDD=-7.26%
+   HTF       (L= 10 S=  9) : n=19  win%=42  avg=-0.02%  total=-0.43%  PF=0.91  maxDD=-1.66%
+   TREND+HTF (L= 10 S=  7) : n=17  win%=41  avg=-0.05%  total=-0.87%  PF=0.80  maxDD=-1.66%
+   V2-ZERO   (L=101 S=112) : n=213  win%=34  avg=-0.10%  total=-20.05%  PF=0.62  maxDD=-19.97%
+   V2-RECENT (L= 32 S= 28) : n=60  win%=32  avg=-0.13%  total=-7.84%  PF=0.55  maxDD=-8.63%
+
+ monthly breakdown (bracket 1.5/3.0):
+   BASE     :
+      2026-01: n=22  total= -4.91%  win%=27
+      2026-02: n=56  total= -9.28%  win%=30
+      2026-03: n=69  total= +1.28%  win%=38
+      2026-04: n=61  total= -9.25%  win%=28
+      2026-05: n=61  total=-10.29%  win%=28
+      2026-06: n=64  total=-23.94%  win%=20
+      2026-07: n=38  total= -6.93%  win%=24
+   V2-RECENT:
+      2026-01: n=4   total= +2.58%  win%=75
+      2026-02: n=5   total= -2.15%  win%=20
+      2026-03: n=10  total= -3.89%  win%=20
+      2026-04: n=10  total= -3.49%  win%=10
+      2026-05: n=12  total= -0.24%  win%=42
+      2026-06: n=13  total= +1.50%  win%=38
+      2026-07: n=6   total= -0.10%  win%=33
