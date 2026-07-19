@@ -5,7 +5,7 @@
 // Window defaults aligned with LuxAlgo ICT Killzones (CC BY-NC-SA 4.0 © LuxAlgo)
 // + New York KZ extended to 07:00–10:00 per ICT 2022 strategy spec.
 //
-//@version=5
+//@version=6
 indicator("ICT Killzones NY", "KZ NY", overlay=true, max_labels_count=100)
 
 grp = "Killzones (New York)"

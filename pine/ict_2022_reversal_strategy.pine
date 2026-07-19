@@ -7,7 +7,7 @@
 //   https://creativecommons.org/licenses/by-nc-sa/4.0/
 // Killzone session windows aligned with LuxAlgo ICT Killzones (+ NY 07:00–10:00 per spec)
 //
-//@version=5
+//@version=6
 strategy("ICT 2022 Silver Reversal", shorttitle="ICT22 Rev", overlay=true,
      pyramiding=0, max_labels_count=500, max_boxes_count=300, max_lines_count=300,
      default_qty_type=strategy.percent_of_equity, default_qty_value=10,
@@ -104,8 +104,8 @@ londonDone = nyHm >= 500  // after 05:00 NY → London Open range is fixed
 //══════════════════════════════════════════════════════════════════════════════
 // LuxAlgo-style FVG detect (CC BY-NC-SA attribution above)
 //══════════════════════════════════════════════════════════════════════════════
-detectFvg(float thrPer, bool auto) =>
-    float thr = auto ? ta.cum((high - low) / low) / math.max(bar_index, 1) : thrPer / 100.0
+// Pure FVG geometry — threshold computed by caller every bar (ta.* consistency)
+detectFvg(float thr) =>
     bool bull = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > thr
     bool bear = high < low[2] and close[1] < low[2] and (low[2] - high) / high > thr
     float bTop = bull ? low : na
@@ -120,6 +120,10 @@ fvgTouched(float top, float bot, float pxHigh, float pxLow) =>
     float hi = math.max(top, bot)
     pxLow <= hi and pxHigh >= lo
 
+// M1 FVG threshold — ta.cum at global scope every bar
+autoThrM1 = ta.cum((high - low) / low) / math.max(bar_index, 1)
+m1FvgThr = fvgAutoThresh ? autoThrM1 : fvgThresholdPer / 100.0
+
 //══════════════════════════════════════════════════════════════════════════════
 // HTF series via security (no lookahead)
 //══════════════════════════════════════════════════════════════════════════════
@@ -127,7 +131,10 @@ fvgTouched(float top, float bot, float pxHigh, float pxLow) =>
 htfBundle() =>
     float ph = ta.pivothigh(high, pivotLeft, pivotRight)
     float pl = ta.pivotlow(low, pivotLeft, pivotRight)
-    [bullF, bearF, bTop, bBot, sTop, sBot] = detectFvg(fvgThresholdPer, fvgAutoThresh)
+    // ta.cum runs every HTF bar inside this security context
+    float autoThr = ta.cum((high - low) / low) / math.max(bar_index, 1)
+    float thr = fvgAutoThresh ? autoThr : fvgThresholdPer / 100.0
+    [bullF, bearF, bTop, bBot, sTop, sBot] = detectFvg(thr)
     [high[1], low[1], close[1], time[1], ph, pl, bullF, bearF, bTop, bBot, sTop, sBot]
 
 [h1_h, h1_l, h1_c, h1_t, h1_ph, h1_pl, h1_bullF, h1_bearF, h1_bTop, h1_bBot, h1_sTop, h1_sBot] =
@@ -457,7 +464,8 @@ if stepChoCh and not stepOte and not na(m5LegHigh) and not na(m5LegLow) and m5Le
 //══════════════════════════════════════════════════════════════════════════════
 // Step 6 — M1 displacement + FVG → limit entry
 //══════════════════════════════════════════════════════════════════════════════
-[m1BullF, m1BearF, m1bTop, m1bBot, m1sTop, m1sBot] = detectFvg(fvgThresholdPer, fvgAutoThresh)
+m1FvgThr = fvgThreshold()
+[m1BullF, m1BearF, m1bTop, m1bBot, m1sTop, m1sBot] = detectFvg(m1FvgThr)
 atrM1 = ta.atr(atrLen)
 body = math.abs(close - open)
 isDispDown = close < open and body >= atrM1 * dispAtrMult
@@ -574,8 +582,8 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 //══════════════════════════════════════════════════════════════════════════════
 // Visuals
 //══════════════════════════════════════════════════════════════════════════════
-if showBg
-    bgcolor(isLonKz ? kzLonCss : isNyKz ? kzNyCss : na, title="Killzone")
+// bgcolor cannot be inside local `if` scope — use conditional color at global scope
+bgcolor(showBg ? (isLonKz ? kzLonCss : isNyKz ? kzNyCss : na) : na, title="Killzone")
 
 if showBoxes and stepEntry and not na(entryFvgTop)
     box.new(bar_index - 2, entryFvgTop, bar_index + 8, entryFvgBot,
