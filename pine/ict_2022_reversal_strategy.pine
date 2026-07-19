@@ -464,7 +464,6 @@ if stepChoCh and not stepOte and not na(m5LegHigh) and not na(m5LegLow) and m5Le
 //══════════════════════════════════════════════════════════════════════════════
 // Step 6 — M1 displacement + FVG → limit entry
 //══════════════════════════════════════════════════════════════════════════════
-m1FvgThr = fvgThreshold()
 [m1BullF, m1BearF, m1bTop, m1bBot, m1sTop, m1sBot] = detectFvg(m1FvgThr)
 atrM1 = ta.atr(atrLen)
 body = math.abs(close - open)
