@@ -1,60 +1,62 @@
 {
-  "symbol": "EURUSD",
-  "correlated_smt": "GBPUSD",
-  "window_requested": "last ~1 month (2026-06-19 → 2026-07-17)",
-  "data": {
-    "source": "HistData ASCII M1 (May–Jun 2026) + Yahoo Finance M1 (≈Jul 9–17)",
-    "timezone_model": "UTC-5 fixed (HistData EST no-DST)",
-    "bars_m1_in_window": 18073
-  },
-  "strict_rules_match_pine_defaults": {
-    "params": {
-      "displacement_atr": 1.5,
-      "min_rr_to_tp1": 3.0,
-      "require_smt": true,
-      "ote": [0.618, 0.705],
-      "killzones_ny": ["02:00-05:00", "07:00-10:00"]
-    },
+  "after_gemini_fixes": {
+    "symbol": "EURUSD",
+    "corr": "GBPUSD",
+    "period_start": "2026-06-19 00:00:00-05:00",
+    "period_end": "2026-07-17 16:29:00-05:00",
+    "bars_m1": 18073,
     "trades": 0,
     "wins": 0,
     "losses": 0,
-    "winrate_pct": null,
+    "winrate_pct": 0.0,
+    "avg_R": 0.0,
+    "sum_R": 0.0,
     "funnel": {
       "sweep": 11,
       "smt": 7,
       "fvg": 4,
       "choch": 4,
       "ote": 3,
-      "disp_in_ote_kz": 1,
       "entry_signal": 0,
-      "fills": 0
+      "fills": 0,
+      "disp_in_ote_kz": 1,
+      "rr_fail": 0
     },
-    "interpretation": "در یک ماه اخیر با قوانین کامل استراتژی، هیچ معامله‌ای تا مرحله Entry پر نشده؛ بنابراین Win Rate قابل محاسبه نیست (نمونه=۰)."
+    "notes": [
+      "HistData M1 times treated as UTC-5 fixed (EST no DST), matching LuxAlgo-style session math.",
+      "July gap filled with Yahoo Finance M1 where available.",
+      "Offline port of Pine ICT22 logic \u2014 approximate vs TradingView ticks/broker feed."
+    ]
   },
-  "sensitivity_relaxed_same_window": {
-    "params": {
-      "displacement_atr": 1.0,
-      "min_rr_to_tp1": 2.0,
-      "require_smt": true
-    },
-    "trades": 1,
+  "trades": [],
+  "setup_kz_off": {
+    "symbol": "EURUSD",
+    "corr": "GBPUSD",
+    "period_start": "2026-06-19 00:00:00-05:00",
+    "period_end": "2026-07-17 16:29:00-05:00",
+    "bars_m1": 18073,
+    "trades": 0,
     "wins": 0,
-    "losses": 1,
+    "losses": 0,
     "winrate_pct": 0.0,
-    "sum_R": -1.0,
-    "trades_detail": [
-      {
-        "dir": "SHORT",
-        "entry_time": "2026-06-25 09:48:00-05:00",
-        "result": "SL",
-        "R": -1.0
-      }
-    ],
-    "note": "فقط برای دیدن حساسیت فیلترها؛ این تنظیمات با اسپک اصلی یکی نیست."
+    "avg_R": 0.0,
+    "sum_R": 0.0,
+    "funnel": {
+      "sweep": 11,
+      "smt": 7,
+      "fvg": 4,
+      "choch": 4,
+      "ote": 3,
+      "entry_signal": 0,
+      "fills": 0,
+      "disp_in_ote_kz": 1,
+      "rr_fail": 0
+    },
+    "notes": [
+      "HistData M1 times treated as UTC-5 fixed (EST no DST), matching LuxAlgo-style session math.",
+      "July gap filled with Yahoo Finance M1 where available.",
+      "Offline port of Pine ICT22 logic \u2014 approximate vs TradingView ticks/broker feed."
+    ]
   },
-  "caveats": [
-    "پورت آفلاین پایتون ≈ منطق Pine است؛ با تیک‌های TradingView/بروکر ۱۰۰٪ یکسان نیست.",
-    "Gap داده اوایل ژوئیه (۱–۸) روی HistData موجود نبود.",
-    "نمونه آماری خیلی کوچک است؛ برای Win Rate معتبر معمولاً ده‌ها تا صدها معامله لازم است."
-  ]
+  "setup_kz_off_trades": []
 }

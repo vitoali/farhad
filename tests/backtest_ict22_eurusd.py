@@ -29,6 +29,9 @@ PIP = 0.0001
 TP1_PCT = 0.50
 LIMIT_EXPIRE = 30
 REQUIRE_SMT = True
+REQUIRE_SETUP_KZ = True   # sweep must start in KZ
+REQUIRE_ARM_IN_KZ = False  # Disp+FVG arm can be outside KZ (Gemini #1)
+ALLOW_FILL_OUTSIDE_KZ = True
 
 
 def load_histdata_csv(path: Path) -> pd.DataFrame:
@@ -409,8 +412,8 @@ def run_backtest(eur: pd.DataFrame, gbp: pd.DataFrame, start: str, end: str) -> 
                     funnel["fills"] += 1
                     pending = None
 
-        # Step 1 sweep
-        if not step_sweep and j1 >= 1:
+        # Step 1 sweep (optionally only inside Killzone)
+        if not step_sweep and j1 >= 1 and (not REQUIRE_SETUP_KZ or in_entry):
             bear_h1 = (not np.isnan(h1_sh)) and h1_h > h1_sh and h1_c < h1_sh
             bull_h1 = (not np.isnan(h1_sl)) and h1_l < h1_sl and h1_c > h1_sl
             bear_h4 = (not np.isnan(h4_sh)) and h4_h > h4_sh and h4_c < h4_sh
@@ -517,11 +520,12 @@ def run_backtest(eur: pd.DataFrame, gbp: pd.DataFrame, start: str, end: str) -> 
         if not np.isnan(m1_pl[i]):
             last_m1_sl = m1_pl[i]
 
-        # Step 6 entry
+        # Step 6 entry — arm without forcing current bar inside KZ (unless REQUIRE_ARM_IN_KZ)
+        can_arm = (not REQUIRE_ARM_IN_KZ) or in_entry
         if (
             step_ote
             and not step_entry
-            and in_entry
+            and can_arm
             and position is None
             and pending is None
             and not np.isnan(atr1[i])
@@ -553,7 +557,7 @@ def run_backtest(eur: pd.DataFrame, gbp: pd.DataFrame, start: str, end: str) -> 
                 rr_ok = risk > 0 and not np.isnan(t1) and not np.isnan(t2) and t1 < lim and (lim - t1) / risk >= MIN_RR
                 if not rr_ok:
                     funnel["rr_fail"] += 1
-                elif rr_ok:
+                else:
                     pending = {
                         "dir": -1,
                         "limit": lim,
@@ -574,7 +578,7 @@ def run_backtest(eur: pd.DataFrame, gbp: pd.DataFrame, start: str, end: str) -> 
                 rr_ok = risk > 0 and not np.isnan(t1) and not np.isnan(t2) and t1 > lim and (t1 - lim) / risk >= MIN_RR
                 if not rr_ok:
                     funnel["rr_fail"] += 1
-                elif rr_ok:
+                else:
                     pending = {
                         "dir": 1,
                         "limit": lim,

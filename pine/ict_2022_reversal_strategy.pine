@@ -47,6 +47,10 @@ oteHigh      = input.float(0.705, "OTE high", minval=0.5, maxval=0.95, step=0.00
 limitExpireBars = input.int(30, "Cancel limit after N M1 bars", minval=5, group=grpDisp)
 tradeLong    = input.bool(true, "Allow Long", group=grpDisp)
 tradeShort   = input.bool(true, "Allow Short", group=grpDisp)
+requireSetupKz = input.bool(true, "Require Sweep start inside Killzone", group=grpDisp)
+// Once Displacement+FVG arms a limit in/after a valid setup, allow fill even if KZ ended
+allowFillOutsideKz = input.bool(true, "Allow limit FILL outside Killzone", group=grpDisp)
+requireArmInKz = input.bool(false, "Require 1m arm (Disp+FVG) inside Killzone", group=grpDisp)
 
 slBufferPips = input.float(2.0, "SL buffer (pips/ticks)", minval=0, step=0.5, group=grpRisk)
 minRr        = input.float(3.0, "Min R:R to TP1", minval=1.0, step=0.5, group=grpRisk)
@@ -83,7 +87,7 @@ inSession(string sess) =>
 isLonKz = inSession(lonSession)
 isNyKz  = inSession(nySession)
 isAsia  = inSession(asiaSession)
-inEntryKz = isLonKz or isNyKz
+inKillzone = isLonKz or isNyKz
 
 nyHour = hour(time, tz)
 nyMinute = minute(time, tz)
@@ -128,10 +132,10 @@ m1FvgThr = fvgAutoThresh ? autoThrM1 : fvgThresholdPer / 100.0
 // HTF series via security (no lookahead)
 //══════════════════════════════════════════════════════════════════════════════
 // Confirmed HTF bar = [1] → no intrabar HTF repaint on M1
+// Last expression IS the return value in Pine (tuple) — valid v5/v6; no syntax bug
 htfBundle() =>
     float ph = ta.pivothigh(high, pivotLeft, pivotRight)
     float pl = ta.pivotlow(low, pivotLeft, pivotRight)
-    // ta.cum runs every HTF bar inside this security context
     float autoThr = ta.cum((high - low) / low) / math.max(bar_index, 1)
     float thr = fvgAutoThresh ? autoThr : fvgThresholdPer / 100.0
     [bullF, bearF, bTop, bBot, sTop, sBot] = detectFvg(thr)
@@ -256,6 +260,8 @@ var float entryFvgTop = na
 var float entryFvgBot = na
 var bool  tp1Done = false
 var float activeSl = na
+var bool  orderSent = false
+var bool  entryArmedInKz = false
 
 var float asiaHigh = na
 var float asiaLow  = na
@@ -294,7 +300,10 @@ if newFxDay
     pendingBornBar := na
     entryFvgTop := na
     entryFvgBot := na
-    strategy.cancel("ICT LMT")
+    orderSent := false
+    entryArmedInKz := false
+    strategy.cancel("ICT Short")
+    strategy.cancel("ICT Long")
     // roll previous day high/low → PDH/PDL
     if not na(curDayHigh)
         pdHigh := curDayHigh
@@ -339,7 +348,8 @@ var float prevH4c = na
 h1Closed = not na(prevH1c) and h1_c != prevH1c
 h4Closed = not na(prevH4c) and h4_c != prevH4c
 
-if not stepSweep
+// Optional: only accept HTF sweep while Killzone is active (Gemini #1 — setup window)
+if not stepSweep and (not requireSetupKz or inKillzone)
     if (bearSweepH4 and h4Closed) or (bearSweepH1 and h1Closed)
         if tradeShort
             stepSweep := true
@@ -498,10 +508,11 @@ rrOk(float entry, float sl, float tp1, int dir) =>
     float reward = math.abs(tp1 - entry)
     risk > 0 and reward / risk >= minRr and (dir < 0 ? tp1 < entry and sl > entry : tp1 > entry and sl < entry)
 
-if stepOte and not stepEntry and inEntryKz and barstate.isconfirmed and strategy.position_size == 0 and na(pendingLimit)
+// Arm 1m limit once (Gemini #3). KZ on arm optional; fill may continue outside KZ (Gemini #1).
+bool canArmNow = not requireArmInKz or inKillzone
+if stepOte and not stepEntry and not orderSent and canArmNow and barstate.isconfirmed and strategy.position_size == 0
     if sweepDir < 0 and tradeShort and isDispDown and m1BearF
-        float lim = m1sTop  // edge of bearish FVG (gap top = low[2] side... bear: top=low[2], bot=high → entry at opening edge in sell direction = top)
-        // Spec: limit on opening edge of 1m FVG in drop direction → for short, sell limit at FVG top (first touch)
+        float lim = m1sTop
         float sl = (not na(lastM1Sh) ? lastM1Sh : high) + slBuf
         float t1 = tp1Price(-1)
         float t2 = tp2Price(-1)
@@ -515,8 +526,11 @@ if stepOte and not stepEntry and inEntryKz and barstate.isconfirmed and strategy
             entryFvgTop := m1sTop
             entryFvgBot := m1sBot
             stepEntry := true
-    if sweepDir > 0 and tradeLong and isDispUp and m1BullF and na(pendingLimit)
-        float lim = m1bBot  // bull FVG bottom edge (high[2]) — buy limit
+            orderSent := true
+            entryArmedInKz := inKillzone
+            strategy.entry("ICT Short", strategy.short, limit=lim)
+    if sweepDir > 0 and tradeLong and isDispUp and m1BullF and not orderSent
+        float lim = m1bBot
         float sl = (not na(lastM1Sl) ? lastM1Sl : low) - slBuf
         float t1 = tp1Price(1)
         float t2 = tp2Price(1)
@@ -530,53 +544,55 @@ if stepOte and not stepEntry and inEntryKz and barstate.isconfirmed and strategy
             entryFvgTop := m1bTop
             entryFvgBot := m1bBot
             stepEntry := true
+            orderSent := true
+            entryArmedInKz := inKillzone
+            strategy.entry("ICT Long", strategy.long, limit=lim)
 
-// Place / manage pending limit
-if not na(pendingLimit) and strategy.position_size == 0
-    if bar_index - pendingBornBar > limitExpireBars
-        strategy.cancel("ICT LMT")
+// Timeout / invalidate pending (do NOT re-send entry every bar)
+if orderSent and strategy.position_size == 0
+    bool expire = bar_index - pendingBornBar > limitExpireBars
+    bool breach = barstate.isconfirmed and ((pendingDir < 0 and close > entryFvgTop) or (pendingDir > 0 and close < entryFvgBot))
+    // If fill-outside disabled, cancel when KZ ends (unless already filled)
+    bool kzEnded = not allowFillOutsideKz and not inKillzone
+    if expire or breach or kzEnded
+        strategy.cancel("ICT Short")
+        strategy.cancel("ICT Long")
         pendingLimit := na
         stepEntry := false
-    else if pendingDir < 0
-        strategy.entry("ICT Short", strategy.short, limit=pendingLimit)
-    else if pendingDir > 0
-        strategy.entry("ICT Long", strategy.long, limit=pendingLimit)
+        orderSent := false
 
-// Invalidate pending if price closes through FVG against us
-if not na(pendingLimit) and strategy.position_size == 0 and barstate.isconfirmed
-    if pendingDir < 0 and close > entryFvgTop
-        strategy.cancel("ICT LMT")
-        pendingLimit := na
-        stepEntry := false
-    if pendingDir > 0 and close < entryFvgBot
-        strategy.cancel("ICT LMT")
-        pendingLimit := na
-        stepEntry := false
-
-// On fill: arm exits
+// On fill
 if strategy.position_size != 0 and strategy.position_size[1] == 0
     tp1Done := false
     activeSl := pendingSl
     pendingLimit := na
 
+// Gemini #4 — staged exits: before TP1 both bracketed; after TP1 remainder → TP2 + BE stop
 if strategy.position_size < 0
     if not tp1Done and not na(pendingTp1) and low <= pendingTp1
         tp1Done := true
         activeSl := strategy.position_avg_price
-    strategy.exit("TP1 Short", from_entry="ICT Short", limit=pendingTp1, stop=activeSl, qty_percent=tp1QtyPct)
-    strategy.exit("TP2 Short", from_entry="ICT Short", limit=pendingTp2, stop=activeSl)
+    if not tp1Done
+        strategy.exit("Ex1 Short", from_entry="ICT Short", qty_percent=tp1QtyPct, limit=pendingTp1, stop=activeSl)
+        strategy.exit("Ex2 Short", from_entry="ICT Short", limit=pendingTp2, stop=activeSl)
+    else
+        strategy.exit("Ex2 Short", from_entry="ICT Short", limit=pendingTp2, stop=activeSl)
 
 if strategy.position_size > 0
     if not tp1Done and not na(pendingTp1) and high >= pendingTp1
         tp1Done := true
         activeSl := strategy.position_avg_price
-    strategy.exit("TP1 Long", from_entry="ICT Long", limit=pendingTp1, stop=activeSl, qty_percent=tp1QtyPct)
-    strategy.exit("TP2 Long", from_entry="ICT Long", limit=pendingTp2, stop=activeSl)
+    if not tp1Done
+        strategy.exit("Ex1 Long", from_entry="ICT Long", qty_percent=tp1QtyPct, limit=pendingTp1, stop=activeSl)
+        strategy.exit("Ex2 Long", from_entry="ICT Long", limit=pendingTp2, stop=activeSl)
+    else
+        strategy.exit("Ex2 Long", from_entry="ICT Long", limit=pendingTp2, stop=activeSl)
 
 if strategy.position_size == 0 and strategy.position_size[1] != 0
     pendingDir := 0
     tp1Done := false
     activeSl := na
+    orderSent := false
 
 //══════════════════════════════════════════════════════════════════════════════
 // Visuals
@@ -595,6 +611,9 @@ plot(strategy.position_size != 0 ? pendingTp2 : na, "TP2", color=color.green, st
 
 plotshape(stepChoCh and stepChoCh != stepChoCh[1] and sweepDir < 0, "CHoCH↓", shape.triangledown, location.abovebar, color.red, size=size.tiny)
 plotshape(stepChoCh and stepChoCh != stepChoCh[1] and sweepDir > 0, "CHoCH↑", shape.triangleup, location.belowbar, color.green, size=size.tiny)
+// Real 1m entry arm marker (not CHoCH)
+plotshape(stepEntry and stepEntry != stepEntry[1] and pendingDir > 0, "1m Entry↑", shape.labelup, location.belowbar, color.new(#089981, 0), text="1m", textcolor=color.white, size=size.tiny)
+plotshape(stepEntry and stepEntry != stepEntry[1] and pendingDir < 0, "1m Entry↓", shape.labeldown, location.abovebar, color.new(#f23645, 0), text="1m", textcolor=color.white, size=size.tiny)
 
 if chartWarn and timeframe.period != "1"
     var label warn = na
@@ -626,7 +645,7 @@ if showDash and barstate.islast
     table.cell(tb, 0, 6, "1m Entry", text_color=color.white, text_size=size.small)
     table.cell(tb, 1, 6, dot(stepEntry), text_color=color.white, text_size=size.small)
     table.cell(tb, 0, 7, "Dir / KZ", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 7, (sweepDir < 0 ? "SHORT" : sweepDir > 0 ? "LONG" : "-") + (inEntryKz ? " | KZ" : ""), text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 7, (sweepDir < 0 ? "SHORT" : sweepDir > 0 ? "LONG" : "-") + (inKillzone ? " | KZ" : ""), text_color=color.white, text_size=size.small)
     table.cell(tb, 0, 8, "TZ", text_color=color.white, text_size=size.small)
     table.cell(tb, 1, 8, tz, text_color=color.aqua, text_size=size.tiny)
     table.cell(tb, 0, 9, "Corr", text_color=color.white, text_size=size.small)
