@@ -1,5 +1,7 @@
-// ICT Judas Dual Hunter — Multi-Session + M5/M1 Dual Entry
-// Upgrade over ICT22 Rev: previous-session liquidity sweep + dual trigger
+// ICT Judas Dual Hunter — Multi-Session + Classic Asia→London Judas
+// Modes (independent, one position max):
+//   A) Multi-session: Asia←prev NY/PD, London←Asia, NY←London + M5/M1 dual entry
+//   B) Classic Judas: Asia range hunt in London Open KZ; SL@sweep ext; TP1 Asia mid; TP2 opp Asia
 // Chart: M1 | Timezone: America/New_York
 //
 // FVG core adapted from LuxAlgo Fair Value Gap (CC BY-NC-SA 4.0 © LuxAlgo)
@@ -15,12 +17,16 @@ strategy("ICT Judas Dual M5/M1", shorttitle="Judas Dual", overlay=true,
 // Inputs
 //══════════════════════════════════════════════════════════════════════════════
 grpSess = "Sessions (New York)"
-grpSweep = "Sweep / Confirm"
+grpModes = "Signal Modes"
+grpSweep = "Sweep / Confirm (Multi)"
 grpEntry = "Dual Entry M5/M1"
+grpClassic = "Classic Judas (Asia→London)"
 grpRisk = "Risk"
 grpUi = "UI"
 
 tz = input.string("America/New_York", "Timezone", options=["America/New_York", "UTC-5", "UTC-4"], group=grpSess)
+enableMultiSession = input.bool(true, "Mode A: Multi-session hunt", group=grpModes)
+enableClassicJudas = input.bool(true, "Mode B: Classic Asia→London Judas", group=grpModes)
 // Range windows (can be wider than entry killzones)
 asiaRangeSess = input.session("2000-0000", "Asia RANGE", group=grpSess)
 lonRangeSess  = input.session("0200-0700", "London RANGE", group=grpSess)
@@ -55,13 +61,21 @@ allowFillOutsideHunt = input.bool(true, "Allow limit fill outside hunt window", 
 tradeLong = input.bool(true, "Long", group=grpEntry)
 tradeShort = input.bool(true, "Short", group=grpEntry)
 
+// Classic Judas: Asia range → London Open fake break → reclaim + CHoCH → FVG/OTE
+classicRequireChoCh = input.bool(true, "Classic: require 5m CHoCH", group=grpClassic)
+classicRequireOte = input.bool(false, "Classic: require OTE (looser if off)", group=grpClassic)
+classicRequireReclaim = input.bool(true, "Classic: reclaim inside Asia before entry", group=grpClassic)
+classicMinRr = input.float(1.5, "Classic: Min R:R to TP1 (Asia mid)", minval=1.0, step=0.5, group=grpClassic)
+classicExpireBars = input.int(60, "Classic: cancel limit after N M1 bars", minval=5, group=grpClassic)
+
 slBufferPips = input.float(2.0, "SL buffer pips", group=grpRisk)
-minRr = input.float(2.5, "Min R:R to TP1", minval=1.0, step=0.5, group=grpRisk)
+minRr = input.float(2.5, "Multi: Min R:R to TP1", minval=1.0, step=0.5, group=grpRisk)
 tp1QtyPct = input.float(50.0, "TP1 qty %", minval=10, maxval=90, group=grpRisk)
 
 showBg = input.bool(true, "Session background", group=grpUi)
 showDash = input.bool(true, "Dashboard", group=grpUi)
 showTargets = input.bool(true, "Plot session targets", group=grpUi)
+showAsiaBox = input.bool(true, "Plot locked Asia H/L/Mid (Classic)", group=grpUi)
 asiaCss = input.color(color.new(#00bcd4, 92), "Asia bg", group=grpUi)
 lonCss = input.color(color.new(#ff5d00, 92), "London bg", group=grpUi)
 nyCss = input.color(color.new(#9c27b0, 92), "NY bg", group=grpUi)
@@ -84,10 +98,11 @@ inSess(string sess) => not na(time(timeframe.period, sess, tz))
 isAsiaRange = inSess(asiaRangeSess)
 isLonRange = inSess(lonRangeSess)
 isNyRange = inSess(nyRangeSess)
-isAsiaHunt = useAsia and inSess(asiaHuntSess)
-isLonHunt = useLon and inSess(lonHuntSess)
-isNyHunt = useNy and inSess(nyHuntSess)
+isAsiaHunt = enableMultiSession and useAsia and inSess(asiaHuntSess)
+isLonHunt = enableMultiSession and useLon and inSess(lonHuntSess)
+isNyHunt = enableMultiSession and useNy and inSess(nyHuntSess)
 inHunt = isAsiaHunt or isLonHunt or isNyHunt
+isLonClassic = enableClassicJudas and inSess(lonHuntSess)  // London Open KZ for Classic Judas
 
 fxDayKey() =>
     int y = year(time, tz)
@@ -235,15 +250,42 @@ var int pendingDir = 0, var int pendingBornBar = na
 var float entryFvgTop = na, var float entryFvgBot = na
 var string entryTag = ""
 var bool orderSent = false, var bool tp1Done = false, var float activeSl = na
+var bool pendingIsClassic = false
+
+// Classic Judas state (Mode B) — independent of multi-session steps
+var bool cjSweep = false, var bool cjReclaim = false, var bool cjChoCh = false, var bool cjOte = false, var bool cjEntry = false
+var int cjDir = 0
+var float cjSweepExt = na, var float cjLevel = na
+var float cjLegHigh = na, var float cjLegLow = na, var float cjChoChLevel = na
+var float cjTrailHigh = na, var float cjTrailLow = na
+var int cjDay = na
+
+f_cancelAllPending() =>
+    strategy.cancel("M5_Long")
+    strategy.cancel("M5_Short")
+    strategy.cancel("M1_Long")
+    strategy.cancel("M1_Short")
+    strategy.cancel("CJ_M5_Long")
+    strategy.cancel("CJ_M5_Short")
+    strategy.cancel("CJ_M1_Long")
+    strategy.cancel("CJ_M1_Short")
 
 // Reset setup when hunt session changes or new FX day
 bool doReset = (huntName != activeHunt) or newFxDay
 if doReset
-    if orderSent and strategy.position_size == 0
-        strategy.cancel("M5_Long")
-        strategy.cancel("M5_Short")
-        strategy.cancel("M1_Long")
-        strategy.cancel("M1_Short")
+    if orderSent and strategy.position_size == 0 and not pendingIsClassic
+        f_cancelAllPending()
+        orderSent := false
+        pendingLimit := na
+        pendingSl := na
+        pendingTp1 := na
+        pendingTp2 := na
+        pendingDir := 0
+        pendingBornBar := na
+        entryFvgTop := na
+        entryFvgBot := na
+        entryTag := ""
+        pendingIsClassic := false
     stepSweep := false
     stepSmt := false
     stepChoCh := false
@@ -255,19 +297,33 @@ if doReset
     m5LegHigh := na
     m5LegLow := na
     m5ChoChLevel := na
-    pendingLimit := na
-    pendingSl := na
-    pendingTp1 := na
-    pendingTp2 := na
-    pendingDir := 0
-    pendingBornBar := na
-    entryFvgTop := na
-    entryFvgBot := na
-    entryTag := ""
-    orderSent := false
     tp1Done := false
     activeSl := na
     activeHunt := huntName
+
+// Classic: reset only on new FX day (allow CHoCH/entry shortly after 05:00 NY)
+bool cjNewDay = na(cjDay) or curFxDay != cjDay
+if cjNewDay
+    if orderSent and strategy.position_size == 0 and pendingIsClassic
+        f_cancelAllPending()
+        orderSent := false
+        pendingLimit := na
+        entryTag := ""
+        pendingIsClassic := false
+    cjSweep := false
+    cjReclaim := false
+    cjChoCh := false
+    cjOte := false
+    cjEntry := false
+    cjDir := 0
+    cjSweepExt := na
+    cjLevel := na
+    cjLegHigh := na
+    cjLegLow := na
+    cjChoChLevel := na
+    cjTrailHigh := na
+    cjTrailLow := na
+    cjDay := curFxDay
 
 // HTF close edges
 var float prevH1c = na, var float prevM5c = na
@@ -280,7 +336,7 @@ sweptBear(float lvl, bool useH1, bool useM5) =>
 sweptBull(float lvl, bool useH1, bool useM5) =>
     not na(lvl) and ((useH1 and h1Closed and h1_l < lvl and h1_c > lvl) or (useM5 and m5Closed and m5_l < lvl and m5_c > lvl))
 
-if inHunt and not stepSweep
+if enableMultiSession and inHunt and not stepSweep
     bool bearPri = sweptBear(targetHigh, true, true)
     bool bearAlt = sweptBear(altHigh, true, true)
     bool bullPri = sweptBull(targetLow, true, true)
@@ -390,10 +446,10 @@ tp1FromLiq(int dir) =>
 tp2FromLiq(int dir) =>
     dir < 0 ? pdLow : pdHigh
 
-bool ready = stepOte and not stepEntry and not orderSent and strategy.position_size == 0 and barstate.isconfirmed
+bool ready = enableMultiSession and stepOte and not stepEntry and not orderSent and strategy.position_size == 0 and barstate.isconfirmed
 bool canArm = inHunt or allowFillOutsideHunt
 
-// --- M5 trigger ---
+// --- Multi M5 trigger ---
 if ready and canArm and enableM5Entry
     if sweepDir < 0 and tradeShort and dispDnM5 and m5_bearF
         float lim = m5_sTop
@@ -410,6 +466,7 @@ if ready and canArm and enableM5Entry
             entryFvgTop := m5_sTop
             entryFvgBot := m5_sBot
             entryTag := "M5_Short"
+            pendingIsClassic := false
             stepEntry := true
             orderSent := true
             strategy.entry("M5_Short", strategy.short, limit=lim)
@@ -428,11 +485,12 @@ if ready and canArm and enableM5Entry
             entryFvgTop := m5_bTop
             entryFvgBot := m5_bBot
             entryTag := "M5_Long"
+            pendingIsClassic := false
             stepEntry := true
             orderSent := true
             strategy.entry("M5_Long", strategy.long, limit=lim)
 
-// --- M1 trigger (if M5 not taken / disabled) ---
+// --- Multi M1 trigger (if M5 not taken / disabled) ---
 bool allowM1 = enableM1Entry and (not m5Priority or not enableM5Entry or not orderSent)
 if ready and canArm and allowM1 and not orderSent
     if sweepDir < 0 and tradeShort and dispDnM1 and m1Bear
@@ -450,6 +508,7 @@ if ready and canArm and allowM1 and not orderSent
             entryFvgTop := m1sTop
             entryFvgBot := m1sBot
             entryTag := "M1_Short"
+            pendingIsClassic := false
             stepEntry := true
             orderSent := true
             strategy.entry("M1_Short", strategy.short, limit=lim)
@@ -468,22 +527,214 @@ if ready and canArm and allowM1 and not orderSent
             entryFvgTop := m1bTop
             entryFvgBot := m1bBot
             entryTag := "M1_Long"
+            pendingIsClassic := false
             stepEntry := true
             orderSent := true
             strategy.entry("M1_Long", strategy.long, limit=lim)
 
+//══════════════════════════════════════════════════════════════════════════════
+// Mode B — Classic Judas (Asia range → London Open)
+// SL behind hunt extreme | TP1 Asia mid (EQ) | TP2 opposite Asia
+//══════════════════════════════════════════════════════════════════════════════
+float asiaHi = not na(lockedAsiaH) ? lockedAsiaH : asiaH
+float asiaLo = not na(lockedAsiaL) ? lockedAsiaL : asiaL
+float asiaMid = not na(asiaHi) and not na(asiaLo) ? (asiaHi + asiaLo) / 2.0 : na
+
+rrOkClassic(float entry, float sl, float tp1, int dir) =>
+    float risk = math.abs(entry - sl)
+    float reward = math.abs(tp1 - entry)
+    risk > 0 and reward / risk >= classicMinRr and (dir < 0 ? tp1 < entry and sl > entry : tp1 > entry and sl < entry)
+
+// Track sweep extreme + reclaim inside Asia during London Open
+if isLonClassic and not na(asiaHi) and not na(asiaLo)
+    bool sweepHi = tradeShort and high > asiaHi
+    bool sweepLo = tradeLong and low < asiaLo
+    // If both sides tag same bar, prefer the larger penetration
+    if sweepHi and sweepLo
+        float penHi = high - asiaHi
+        float penLo = asiaLo - low
+        if penHi >= penLo
+            sweepLo := false
+        else
+            sweepHi := false
+    if sweepHi
+        if not cjSweep or cjDir != -1
+            cjSweep := true
+            cjDir := -1
+            cjLevel := asiaHi
+            cjSweepExt := high
+            cjReclaim := false
+            cjChoCh := false
+            cjOte := false
+            cjEntry := false
+        else
+            cjSweepExt := math.max(nz(cjSweepExt, high), high)
+    if sweepLo
+        if not cjSweep or cjDir != 1
+            cjSweep := true
+            cjDir := 1
+            cjLevel := asiaLo
+            cjSweepExt := low
+            cjReclaim := false
+            cjChoCh := false
+            cjOte := false
+            cjEntry := false
+        else
+            cjSweepExt := math.min(nz(cjSweepExt, low), low)
+    // Extend extreme while hunting same side
+    if cjSweep and cjDir < 0 and high > asiaHi
+        cjSweepExt := math.max(nz(cjSweepExt, high), high)
+    if cjSweep and cjDir > 0 and low < asiaLo
+        cjSweepExt := math.min(nz(cjSweepExt, low), low)
+
+    // Reclaim: close back inside Asia range
+    if cjSweep and not cjReclaim
+        if classicRequireReclaim
+            if cjDir < 0 and close < asiaHi and close > asiaLo
+                cjReclaim := true
+            if cjDir > 0 and close > asiaLo and close < asiaHi
+                cjReclaim := true
+        else
+            cjReclaim := true
+
+// Classic CHoCH + leg for OTE (reuse M5 pivots)
+if enableClassicJudas and cjSweep and cjReclaim and not cjChoCh and m5Closed
+    if not classicRequireChoCh
+        cjChoCh := true
+        cjChoChLevel := cjDir < 0 ? nz(m5LastHl, m5_l) : nz(m5LastLh, m5_h)
+        cjLegHigh := m5_h
+        cjLegLow := m5_l
+        cjTrailHigh := m5_h
+        cjTrailLow := m5_l
+    else
+        if cjDir < 0 and not na(m5LastHl) and m5_c < m5LastHl
+            cjChoCh := true
+            cjChoChLevel := m5LastHl
+            cjLegHigh := math.max(m5_h, cjChoChLevel)
+            cjLegLow := m5_l
+            cjTrailHigh := m5_h
+            cjTrailLow := m5_l
+        if cjDir > 0 and not na(m5LastLh) and m5_c > m5LastLh
+            cjChoCh := true
+            cjChoChLevel := m5LastLh
+            cjLegHigh := m5_h
+            cjLegLow := math.min(m5_l, cjChoChLevel)
+            cjTrailHigh := m5_h
+            cjTrailLow := m5_l
+
+if cjChoCh and not cjOte and m5Closed
+    if cjDir < 0
+        cjTrailLow := math.min(nz(cjTrailLow, m5_l), m5_l)
+        cjLegLow := cjTrailLow
+        cjLegHigh := math.max(nz(cjLegHigh, cjChoChLevel), cjChoChLevel)
+    if cjDir > 0
+        cjTrailHigh := math.max(nz(cjTrailHigh, m5_h), m5_h)
+        cjLegHigh := cjTrailHigh
+        cjLegLow := math.min(nz(cjLegLow, cjChoChLevel), cjChoChLevel)
+
+if cjChoCh and not cjOte and not na(cjLegHigh) and not na(cjLegLow) and cjLegHigh > cjLegLow
+    if not classicRequireOte
+        cjOte := true
+    else
+        float rngC = cjLegHigh - cjLegLow
+        float loC = cjDir < 0 ? cjLegLow + rngC * oteLow : cjLegHigh - rngC * oteHigh
+        float hiC = cjDir < 0 ? cjLegLow + rngC * oteHigh : cjLegHigh - rngC * oteLow
+        if high >= math.min(loC, hiC) and low <= math.max(loC, hiC)
+            cjOte := true
+
+// Classic dual entry — SL @ sweep extreme, TP1 Asia mid, TP2 opp Asia
+bool cjReady = enableClassicJudas and cjOte and not cjEntry and not orderSent and strategy.position_size == 0 and barstate.isconfirmed
+bool cjCanArm = isLonClassic or allowFillOutsideHunt
+if cjReady and cjCanArm and not na(asiaMid) and not na(cjSweepExt)
+    float t1c = asiaMid
+    float t2c = cjDir < 0 ? asiaLo : asiaHi
+    bool armedCj = false
+    if enableM5Entry and m5Closed
+        if cjDir < 0 and tradeShort and dispDnM5 and m5_bearF
+            float lim = m5_sTop
+            float sl = cjSweepExt + slBuf
+            if rrOkClassic(lim, sl, t1c, -1)
+                pendingLimit := lim
+                pendingSl := sl
+                pendingTp1 := t1c
+                pendingTp2 := t2c
+                pendingDir := -1
+                pendingBornBar := bar_index
+                entryFvgTop := m5_sTop
+                entryFvgBot := m5_sBot
+                entryTag := "CJ_M5_Short"
+                pendingIsClassic := true
+                cjEntry := true
+                orderSent := true
+                armedCj := true
+                strategy.entry("CJ_M5_Short", strategy.short, limit=lim)
+        if cjDir > 0 and tradeLong and not armedCj and dispUpM5 and m5_bullF
+            float lim = m5_bBot
+            float sl = cjSweepExt - slBuf
+            if rrOkClassic(lim, sl, t1c, 1)
+                pendingLimit := lim
+                pendingSl := sl
+                pendingTp1 := t1c
+                pendingTp2 := t2c
+                pendingDir := 1
+                pendingBornBar := bar_index
+                entryFvgTop := m5_bTop
+                entryFvgBot := m5_bBot
+                entryTag := "CJ_M5_Long"
+                pendingIsClassic := true
+                cjEntry := true
+                orderSent := true
+                armedCj := true
+                strategy.entry("CJ_M5_Long", strategy.long, limit=lim)
+    bool allowM1c = enableM1Entry and (not m5Priority or not enableM5Entry or not armedCj)
+    if allowM1c and not armedCj and not orderSent
+        if cjDir < 0 and tradeShort and dispDnM1 and m1Bear
+            float lim = m1sTop
+            float sl = cjSweepExt + slBuf
+            if rrOkClassic(lim, sl, t1c, -1)
+                pendingLimit := lim
+                pendingSl := sl
+                pendingTp1 := t1c
+                pendingTp2 := t2c
+                pendingDir := -1
+                pendingBornBar := bar_index
+                entryFvgTop := m1sTop
+                entryFvgBot := m1sBot
+                entryTag := "CJ_M1_Short"
+                pendingIsClassic := true
+                cjEntry := true
+                orderSent := true
+                strategy.entry("CJ_M1_Short", strategy.short, limit=lim)
+        if cjDir > 0 and tradeLong and not orderSent and dispUpM1 and m1Bull
+            float lim = m1bBot
+            float sl = cjSweepExt - slBuf
+            if rrOkClassic(lim, sl, t1c, 1)
+                pendingLimit := lim
+                pendingSl := sl
+                pendingTp1 := t1c
+                pendingTp2 := t2c
+                pendingDir := 1
+                pendingBornBar := bar_index
+                entryFvgTop := m1bTop
+                entryFvgBot := m1bBot
+                entryTag := "CJ_M1_Long"
+                pendingIsClassic := true
+                cjEntry := true
+                orderSent := true
+                strategy.entry("CJ_M1_Long", strategy.long, limit=lim)
+
 // Cancel pending
 if orderSent and strategy.position_size == 0
-    bool expire = bar_index - pendingBornBar > limitExpireBars
+    int expBars = pendingIsClassic ? classicExpireBars : limitExpireBars
+    bool expire = bar_index - pendingBornBar > expBars
     bool breach = barstate.isconfirmed and ((pendingDir < 0 and close > entryFvgTop) or (pendingDir > 0 and close < entryFvgBot))
-    bool huntEnded = not allowFillOutsideHunt and not inHunt
+    bool huntEnded = not allowFillOutsideHunt and (pendingIsClassic ? not isLonClassic : not inHunt)
     if expire or breach or huntEnded
-        strategy.cancel("M5_Long")
-        strategy.cancel("M5_Short")
-        strategy.cancel("M1_Long")
-        strategy.cancel("M1_Short")
+        f_cancelAllPending()
         orderSent := false
         stepEntry := false
+        cjEntry := false
+        pendingIsClassic := false
         pendingLimit := na
 
 if strategy.position_size != 0 and strategy.position_size[1] == 0
@@ -518,44 +769,63 @@ if strategy.position_size == 0 and strategy.position_size[1] != 0
 //══════════════════════════════════════════════════════════════════════════════
 // Visuals
 //══════════════════════════════════════════════════════════════════════════════
-bgcolor(showBg ? (isAsiaHunt ? asiaCss : isLonHunt ? lonCss : isNyHunt ? nyCss : na) : na)
+bool lonBg = isLonHunt or isLonClassic
+bool asiaBg = isAsiaRange or isAsiaHunt
+bgcolor(showBg ? (lonBg ? lonCss : isNyHunt ? nyCss : asiaBg ? asiaCss : na) : na)
 
 plot(showTargets ? targetHigh : na, "Prev session High", color=color.new(color.red, 0), style=plot.style_linebr, linewidth=2)
 plot(showTargets ? targetLow : na, "Prev session Low", color=color.new(color.green, 0), style=plot.style_linebr, linewidth=2)
+plot(showAsiaBox ? asiaHi : na, "Asia High", color=color.new(#00bcd4, 0), style=plot.style_linebr, linewidth=2)
+plot(showAsiaBox ? asiaLo : na, "Asia Low", color=color.new(#00bcd4, 40), style=plot.style_linebr, linewidth=2)
+plot(showAsiaBox ? asiaMid : na, "Asia Mid (EQ)", color=color.new(#ffeb3b, 20), style=plot.style_linebr, linewidth=1)
 plot(stepSweep ? sweepLevel : na, "Sweep", color=color.orange, style=plot.style_linebr)
+plot(cjSweep ? cjLevel : na, "Classic sweep lvl", color=color.new(#ff9800, 0), style=plot.style_linebr)
 plot(strategy.position_size != 0 ? activeSl : na, "SL", color=color.maroon, style=plot.style_linebr)
 plot(strategy.position_size != 0 ? pendingTp1 : na, "TP1", color=color.teal, style=plot.style_linebr)
 plot(strategy.position_size != 0 ? pendingTp2 : na, "TP2", color=color.lime, style=plot.style_linebr)
 
 plotshape(stepChoCh and stepChoCh != stepChoCh[1] and sweepDir > 0, "CHoCH↑", shape.triangleup, location.belowbar, color.green, size=size.tiny)
 plotshape(stepChoCh and stepChoCh != stepChoCh[1] and sweepDir < 0, "CHoCH↓", shape.triangledown, location.abovebar, color.red, size=size.tiny)
-plotshape(stepEntry and stepEntry != stepEntry[1] and pendingDir > 0, "Entry↑", shape.labelup, location.belowbar, color.new(#089981, 0), text="IN", textcolor=color.white, size=size.tiny)
-plotshape(stepEntry and stepEntry != stepEntry[1] and pendingDir < 0, "Entry↓", shape.labeldown, location.abovebar, color.new(#f23645, 0), text="IN", textcolor=color.white, size=size.tiny)
+plotshape(cjChoCh and cjChoCh != cjChoCh[1] and cjDir > 0, "CJ CHoCH↑", shape.triangleup, location.belowbar, color.new(#26a69a, 0), size=size.tiny)
+plotshape(cjChoCh and cjChoCh != cjChoCh[1] and cjDir < 0, "CJ CHoCH↓", shape.triangledown, location.abovebar, color.new(#ef5350, 0), size=size.tiny)
+plotshape(stepEntry and stepEntry != stepEntry[1] and pendingDir > 0 and not pendingIsClassic, "Entry↑", shape.labelup, location.belowbar, color.new(#089981, 0), text="IN", textcolor=color.white, size=size.tiny)
+plotshape(stepEntry and stepEntry != stepEntry[1] and pendingDir < 0 and not pendingIsClassic, "Entry↓", shape.labeldown, location.abovebar, color.new(#f23645, 0), text="IN", textcolor=color.white, size=size.tiny)
+plotshape(cjEntry and cjEntry != cjEntry[1] and pendingDir > 0, "CJ Entry↑", shape.labelup, location.belowbar, color.new(#00897b, 0), text="CJ", textcolor=color.white, size=size.tiny)
+plotshape(cjEntry and cjEntry != cjEntry[1] and pendingDir < 0, "CJ Entry↓", shape.labeldown, location.abovebar, color.new(#c62828, 0), text="CJ", textcolor=color.white, size=size.tiny)
 
 if showDash and barstate.islast
-    var table tb = table.new(position.top_right, 2, 9, bgcolor=#1e222d, border_color=#373a46, border_width=1)
+    var table tb = table.new(position.top_right, 2, 12, bgcolor=#1e222d, border_color=#373a46, border_width=1)
     table.cell(tb, 0, 0, "Judas Dual", text_color=color.white, text_size=size.small)
     table.cell(tb, 1, 0, huntName, text_color=color.yellow, text_size=size.small)
-    table.cell(tb, 0, 1, "Sweep", text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 1, "Multi Sweep", text_color=color.white, text_size=size.small)
     table.cell(tb, 1, 1, stepSweep ? ("🟢 " + sweepSrc) : "⚪", text_color=color.white, text_size=size.small)
-    table.cell(tb, 0, 2, "SMT", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 2, stepSmt ? "🟢" : "⚪", text_color=color.white, text_size=size.small)
-    table.cell(tb, 0, 3, "5m CHoCH", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 3, stepChoCh ? "🟢" : "⚪", text_color=color.white, text_size=size.small)
-    table.cell(tb, 0, 4, "5m OTE", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 4, stepOte ? "🟢" : "⚪", text_color=color.white, text_size=size.small)
-    table.cell(tb, 0, 5, "Entry", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 5, stepEntry ? entryTag : "⚪", text_color=color.orange, text_size=size.small)
-    table.cell(tb, 0, 6, "Dir", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 6, sweepDir < 0 ? "SHORT" : sweepDir > 0 ? "LONG" : "-", text_color=color.white, text_size=size.small)
-    table.cell(tb, 0, 7, "Target H", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 7, str.tostring(targetHigh, format.mintick), text_color=color.red, text_size=size.tiny)
-    table.cell(tb, 0, 8, "Target L", text_color=color.white, text_size=size.small)
-    table.cell(tb, 1, 8, str.tostring(targetLow, format.mintick), text_color=color.lime, text_size=size.tiny)
+    table.cell(tb, 0, 2, "Multi CHoCH", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 2, stepChoCh ? "🟢" : "⚪", text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 3, "Multi Entry", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 3, stepEntry and not pendingIsClassic ? entryTag : "⚪", text_color=color.orange, text_size=size.small)
+    table.cell(tb, 0, 4, "CJ Sweep", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 4, cjSweep ? (cjDir < 0 ? "🟢 ASH" : "🟢 ASL") : "⚪", text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 5, "CJ Reclaim", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 5, cjReclaim ? "🟢" : "⚪", text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 6, "CJ CHoCH", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 6, cjChoCh ? "🟢" : "⚪", text_color=color.white, text_size=size.small)
+    table.cell(tb, 0, 7, "CJ Entry", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 7, cjEntry ? entryTag : "⚪", text_color=color.aqua, text_size=size.small)
+    table.cell(tb, 0, 8, "Asia Mid", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 8, str.tostring(asiaMid, format.mintick), text_color=color.yellow, text_size=size.tiny)
+    table.cell(tb, 0, 9, "Asia H", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 9, str.tostring(asiaHi, format.mintick), text_color=color.red, text_size=size.tiny)
+    table.cell(tb, 0, 10, "Asia L", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 10, str.tostring(asiaLo, format.mintick), text_color=color.lime, text_size=size.tiny)
+    table.cell(tb, 0, 11, "Armed", text_color=color.white, text_size=size.small)
+    table.cell(tb, 1, 11, orderSent ? entryTag : "⚪", text_color=color.orange, text_size=size.small)
 
-alertcondition(stepSweep and not stepSweep[1], "Session Sweep", "Judas: previous-session sweep")
-alertcondition(stepChoCh and not stepChoCh[1], "5m CHoCH", "Judas: 5m CHoCH")
-alertcondition(stepEntry and not stepEntry[1], "Entry armed", "Judas: limit entry armed")
+alertcondition(stepSweep and not stepSweep[1], "Multi Session Sweep", "Judas Multi: previous-session sweep")
+alertcondition(stepChoCh and not stepChoCh[1], "Multi 5m CHoCH", "Judas Multi: 5m CHoCH")
+alertcondition(stepEntry and not stepEntry[1] and not pendingIsClassic, "Multi Entry armed", "Judas Multi: limit entry armed")
+alertcondition(cjSweep and not cjSweep[1], "Classic Judas Sweep", "Classic Judas: Asia liquidity swept")
+alertcondition(cjChoCh and not cjChoCh[1], "Classic Judas CHoCH", "Classic Judas: 5m CHoCH")
+alertcondition(cjEntry and not cjEntry[1], "Classic Judas Entry", "Classic Judas: CJ limit armed")
 
 if timeframe.period != "1"
     var label warn = na

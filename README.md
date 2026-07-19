@@ -6,13 +6,14 @@
 
 | فایل | نقش |
 |------|-----|
-| `pine/ict_judas_dual_m5m1.pine` | **ارتقا:** شکار سشن قبلی (Judas) + ورود دوگانه M5/M1 |
+| `pine/ict_judas_dual_m5m1.pine` | **دو Mode:** Multi-session + Classic Asia→London Judas (`IN` / `CJ`) |
 | `pine/ict_2022_reversal_strategy.pine` | نسخه ICT22 (HTF pivot sweep + M1 entry) |
 | `pine/ict_killzones_ny.pine` | نمایش Killzone |
 | `docs/ict-judas-dual-upgrade.md` | نظر مهندسی + مشخصات ارتقا |
 | `docs/ict-2022-reversal-spec.md` | مشخصات نسخه قبلی |
-| `tests/backtest_judas_dual_eurusd.py` | بک‌تست آفلاین Judas Dual (EURUSD ~۱ ماه) |
-| `tests/backtest_judas_dual_eurusd_results.json` | نتایج بک‌تست |
+| `tests/backtest_judas_dual_eurusd.py` | بک‌تست آفلاین Mode A Multi (EURUSD ~۱ ماه) |
+| `tests/backtest_classic_judas_eurusd.py` | بک‌تست آفلاین Mode B Classic Asia→London |
+| `tests/backtest_*_results.json` | نتایج بک‌تست |
 
 ## ساعت و سشن (اگر در ایران هستی)
 
