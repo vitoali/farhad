@@ -190,20 +190,23 @@ wasAsia := isAsiaRange
 wasLon := isLonRange
 wasNy := isNyRange
 
-// Active hunt targets
+// Active hunt targets (plot = primary liquidity pool)
 string huntName = isAsiaHunt ? "Asia" : isLonHunt ? "London" : isNyHunt ? "New York" : "—"
 float targetHigh = na
 float targetLow = na
+float altHigh = na  // secondary pool (e.g. PDH for Asia)
+float altLow = na
 if isAsiaHunt
-    // Prefer locked previous NY; fallback PDH/PDL
-    targetHigh := not na(lockedNyH) ? lockedNyH : pdHigh
-    targetLow := not na(lockedNyL) ? lockedNyL : pdLow
-    if asiaUsesPdh and not na(pdHigh)
-        // widen: sweep either prev NY or PD extremes (use furthest for plot = PD if available)
-        targetHigh := not na(lockedNyH) ? math.max(lockedNyH, nz(pdHigh, lockedNyH)) : pdHigh
-        targetLow := not na(lockedNyL) ? math.min(lockedNyL, nz(pdLow, lockedNyL)) : pdLow
+    targetHigh := lockedNyH
+    targetLow := lockedNyL
+    if asiaUsesPdh
+        altHigh := pdHigh
+        altLow := pdLow
+    // If prev NY not locked yet, fall back to PD
+    if na(targetHigh)
+        targetHigh := pdHigh
+        targetLow := pdLow
 if isLonHunt
-    // Asia locked, else live Asia if still forming overnight edge-case
     targetHigh := not na(lockedAsiaH) ? lockedAsiaH : asiaH
     targetLow := not na(lockedAsiaL) ? lockedAsiaL : asiaL
 if isNyHunt
@@ -233,7 +236,14 @@ var float entryFvgTop = na, var float entryFvgBot = na
 var string entryTag = ""
 var bool orderSent = false, var bool tp1Done = false, var float activeSl = na
 
-resetSetup() =>
+// Reset setup when hunt session changes or new FX day
+bool doReset = (huntName != activeHunt) or newFxDay
+if doReset
+    if orderSent and strategy.position_size == 0
+        strategy.cancel("M5_Long")
+        strategy.cancel("M5_Short")
+        strategy.cancel("M1_Long")
+        strategy.cancel("M1_Short")
     stepSweep := false
     stepSmt := false
     stepChoCh := false
@@ -257,46 +267,34 @@ resetSetup() =>
     orderSent := false
     tp1Done := false
     activeSl := na
-
-// Reset setup when hunt session changes
-if huntName != activeHunt
-    if orderSent and strategy.position_size == 0
-        strategy.cancel("M5_Long")
-        strategy.cancel("M5_Short")
-        strategy.cancel("M1_Long")
-        strategy.cancel("M1_Short")
-    resetSetup()
     activeHunt := huntName
-
-if newFxDay
-    if orderSent and strategy.position_size == 0
-        strategy.cancel("M5_Long")
-        strategy.cancel("M5_Short")
-        strategy.cancel("M1_Long")
-        strategy.cancel("M1_Short")
-    resetSetup()
 
 // HTF close edges
 var float prevH1c = na, var float prevM5c = na
 h1Closed = not na(prevH1c) and h1_c != prevH1c
 m5Closed = not na(prevM5c) and m5_c != prevM5c
 
-// Step 1 — previous-session liquidity sweep (confirmed H1 or M5)
-if inHunt and not stepSweep and not na(targetHigh) and not na(targetLow)
-    bool bearH1 = h1Closed and h1_h > targetHigh and h1_c < targetHigh
-    bool bullH1 = h1Closed and h1_l < targetLow and h1_c > targetLow
-    bool bearM5 = m5Closed and m5_h > targetHigh and m5_c < targetHigh
-    bool bullM5 = m5Closed and m5_l < targetLow and m5_c > targetLow
-    if tradeShort and (bearH1 or bearM5)
+// Step 1 — wick beyond liquidity + close back inside (confirmed H1 or M5)
+sweptBear(float lvl, bool useH1, bool useM5) =>
+    not na(lvl) and ((useH1 and h1Closed and h1_h > lvl and h1_c < lvl) or (useM5 and m5Closed and m5_h > lvl and m5_c < lvl))
+sweptBull(float lvl, bool useH1, bool useM5) =>
+    not na(lvl) and ((useH1 and h1Closed and h1_l < lvl and h1_c > lvl) or (useM5 and m5Closed and m5_l < lvl and m5_c > lvl))
+
+if inHunt and not stepSweep
+    bool bearPri = sweptBear(targetHigh, true, true)
+    bool bearAlt = sweptBear(altHigh, true, true)
+    bool bullPri = sweptBull(targetLow, true, true)
+    bool bullAlt = sweptBull(altLow, true, true)
+    if tradeShort and (bearPri or bearAlt)
         stepSweep := true
         sweepDir := -1
-        sweepLevel := targetHigh
-        sweepSrc := bearH1 ? "H1" : "M5"
-    if tradeLong and not stepSweep and (bullH1 or bullM5)
+        sweepLevel := bearPri ? targetHigh : altHigh
+        sweepSrc := (h1Closed and h1_h > sweepLevel and h1_c < sweepLevel) ? "H1" : "M5"
+    if tradeLong and not stepSweep and (bullPri or bullAlt)
         stepSweep := true
         sweepDir := 1
-        sweepLevel := targetLow
-        sweepSrc := bullH1 ? "H1" : "M5"
+        sweepLevel := bullPri ? targetLow : altLow
+        sweepSrc := (h1Closed and h1_l < sweepLevel and h1_c > sweepLevel) ? "H1" : "M5"
 
 // Step 2 — SMT (optional)
 smtBear = p1_hiN > p1_hiP and not (c1_hiN > c1_hiP)
