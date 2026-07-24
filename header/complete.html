@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>پیشرو جوش — هدر + محصولات + فوتر</title>
+  <title>پیشرو جوش — ترتیب صفحه: اسلایدر سایت + محصولات + بقیه</title>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
 
@@ -977,18 +977,122 @@ body.pj-page,
   }
 }
 
+
 html, body { margin: 0; padding: 0; background: #f6f6f6; }
-.pj-page-note {
+
+.pj-flow-note {
   width: min(1280px, calc(100% - 32px));
-  margin: 18px auto 0;
-  color: #555;
-  font-size: 13px;
+  margin: 14px auto 0;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  color: #333;
+  font-size: 13.5px;
+  line-height: 1.7;
   font-family: var(--pj-font);
   direction: rtl;
 }
+.pj-flow-note ol { margin: 8px 0 0; padding-inline-start: 22px; }
+.pj-flow-note b { color: #f37021; }
+
+.pj-site-hero-keep {
+  width: 100%;
+  margin: 0 0 8px;
+  background: #111;
+}
+.pj-site-hero-keep__frame {
+  position: relative;
+  width: min(1400px, 100%);
+  margin: 0 auto;
+  aspect-ratio: 21 / 8;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+.pj-site-hero-keep__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: brightness(0.92);
+}
+.pj-site-hero-keep__badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  font-family: var(--pj-font);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border-right: 3px solid #f37021;
+}
+.pj-site-hero-keep__cta {
+  position: absolute;
+  left: 8%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #c8102e;
+  color: #fff;
+  font-family: var(--pj-font);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 12px 22px;
+}
+.pj-site-hero-keep__dots {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+}
+.pj-site-hero-keep__dots span {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+}
+.pj-site-hero-keep__dots span.is-on { background: #1e3a5f; }
+
+.pj-cladding-demo {
+  width: min(1180px, calc(100% - 32px));
+  margin: 8px auto 48px;
+  direction: rtl;
+  font-family: var(--pj-font);
+}
+.pj-cladding-demo__link { text-decoration: none; color: inherit; display: block; }
+.pj-cladding-demo__box {
+  background: #111;
+  color: #fff;
+  overflow: hidden;
+}
+.pj-cladding-demo__box h2 {
+  margin: 0;
+  padding: 18px 22px;
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 800;
+}
+.pj-cladding-demo__box img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pj-cladding-demo__note {
+  margin: 12px 0 0;
+  color: #666;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .pj-site-hero-keep__frame { aspect-ratio: 16 / 10; }
+  .pj-site-hero-keep__cta { left: 16px; top: auto; bottom: 48px; transform: none; font-size: 13px; padding: 10px 14px; }
+}
+
   </style>
 </head>
 <body class="pj-page">
+
 <header class="pj-header" id="pjHeader">
   <div class="pj-header__inner">
         <div class="pj-header__logo">
@@ -1077,7 +1181,38 @@ html, body { margin: 0; padding: 0; background: #f6f6f6; }
     </div>
   </div>
 </header>
-<p class="pj-page-note">اسلایدر محصولات ویژه و پیشنهادی — قبل از بخش خدمات جوشکاری کلدینگ</p>
+
+<div class="pj-flow-note">
+  <b>ترتیب صفحه روی سایت واقعی:</b>
+  <ol>
+    <li>هدر جدید</li>
+    <li><b>اسلایدر اول سایت (همین اسلایدر فعلی شما)</b> — بدون تغییر</li>
+    <li>محصولات ویژه + محصولات پیشنهادی (جدید)</li>
+    <li>بقیهٔ محتوای خود سایت (کلدینگ، دسته‌ها، درباره ما، برندها، …)</li>
+    <li>فوتر تیره</li>
+  </ol>
+</div>
+
+
+<!-- ============================================================
+     اسلایدر اول سایت (image-carousel) — دست نزنید / همان v-carousel فعلی
+     در سایت واقعی همین بلوک موجود می‌ماند؛ اینجا فقط برای دمو نشان داده شده.
+     ============================================================ -->
+<section id="image-carousel" class="pj-site-hero-keep" aria-label="اسلایدر اصلی سایت">
+  <div class="pj-site-hero-keep__frame">
+    <img
+      src="http://pishrojoosh.com/storage/theme/14/r6ron2mrFM5MaSD8ciM4Dcn8pmKCSO4g4MEggQCQ.webp"
+      alt="اسلایدر فعلی سایت (نمونه)"
+    />
+    <div class="pj-site-hero-keep__badge">اسلایدر فعلی سایت — بدون تغییر</div>
+    <div class="pj-site-hero-keep__cta">اطلاعات بیشتر</div>
+    <div class="pj-site-hero-keep__dots" aria-hidden="true">
+      <span></span><span></span><span></span><span class="is-on"></span><span></span><span></span><span></span>
+    </div>
+  </div>
+</section>
+
+
 <section class="pj-prod-rails" aria-label="محصولات ویژه و پیشنهادی">
   <!-- ردیف ۱: محصولات ویژه -->
   <section class="pj-prod-rail" id="pjSpecialProducts" aria-labelledby="pjSpecialTitle">
@@ -1118,12 +1253,22 @@ html, body { margin: 0; padding: 0; background: #f6f6f6; }
   </section>
 </section>
 
-<section id="services-section" class="pj-cladding-demo" style="width:min(1180px,calc(100% - 32px));margin:10px auto 48px;direction:rtl;font-family:var(--pj-font);">
-  <div style="background:#111;color:#fff;border-radius:4px;overflow:hidden;">
-    <div style="padding:18px 22px;font-size:28px;font-weight:800;">خدمات جوشکاری کلدینگ</div>
-    <img src="http://pishrojoosh.com/storage/theme/13/WVgFV02Lramit7nyv3QbTK1FGM9eiL7tn66lBSEM.webp" alt="خدمات جوشکاری کلدینگ" style="display:block;width:100%;height:auto;" />
-  </div>
+
+<!-- ============================================================
+     از اینجا به بعد: همان محتوای فعلی سایت شما
+     (خدمات جوشکاری کلدینگ، محصولات و خدمات، درباره ما، برندها، ...)
+     چیزی حذف/جایگزین نشود — فقط اسلایدر محصولات بالای این بخش اضافه می‌شود.
+     ============================================================ -->
+<section id="services-section" class="pj-cladding-demo">
+  <a href="https://www.pishrojoosh.com/page/welding" class="pj-cladding-demo__link">
+    <div class="pj-cladding-demo__box">
+      <h2>خدمات جوشکاری کلدینگ</h2>
+      <img src="http://pishrojoosh.com/storage/theme/13/WVgFV02Lramit7nyv3QbTK1FGM9eiL7tn66lBSEM.webp" alt="خدمات جوشکاری کلدینگ" />
+    </div>
+  </a>
+  <p class="pj-cladding-demo__note">بقیهٔ صفحه (کلدینگ، دسته‌ها، درباره ما، برندها و …) همان محتوای خود سایت می‌ماند.</p>
 </section>
+
 
 <footer class="pj-footer">
   <div class="pj-footer__main">
@@ -1171,6 +1316,7 @@ html, body { margin: 0; padding: 0; background: #f6f6f6; }
     © پیشرو جوش خاورمیانه — طراحی فوتر با همان طرح تیره هدر
   </div>
 </footer>
+
 <script>
 (function () {
   var header = document.getElementById("pjHeader");
