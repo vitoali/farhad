@@ -8,7 +8,7 @@
     <div class="pj-header__logo">
       <a class="pj-header__logo-oval" href="{{ url('/') }}" aria-label="پیشرو جوش خاورمیانه">
         <img
-          src="{{ core()->getConfigData('general.design.admin_logo.logo_image') ? Storage::url(core()->getConfigData('general.design.admin_logo.logo_image')) : asset('images/logo.png') }}"
+          src="{{ asset('images/logo-white.png') }}"
           width="192" height="50" alt="{{ config('app.name') }}"
         />
       </a>
