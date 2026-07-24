@@ -63,7 +63,7 @@
         <span>مشاوره</span>
       </a>
 
-      <button type="button" class="pj-header__search-btn" id="pjSearchToggle" aria-label="جستجو">
+      <button type="button" class="pj-header__search-btn" id="pjSearchToggle" aria-label="جستجو" aria-expanded="false" aria-controls="pjSearchPanel">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       </button>
 
@@ -73,13 +73,15 @@
     </div>
   </div>
 
-  <div class="pj-header__search-panel" id="pjSearchPanel">
-    <form class="pj-header__search-form" action="{{ url('/search') }}" method="get">
-      <input type="search" name="query" placeholder="جستجوی محصولات..." required />
-      <button type="submit" aria-label="جستجو">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      </button>
-    </form>
+  <div class="pj-header__search-panel" id="pjSearchPanel" hidden>
+    <div class="pj-header__search-panel-inner">
+      <form class="pj-header__search-form" action="{{ url('/search') }}" method="get">
+        <input type="search" name="query" placeholder="جستجوی محصولات..." required />
+        <button type="submit" aria-label="جستجو">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+      </form>
+    </div>
   </div>
 </header>
 
@@ -89,11 +91,64 @@
     var burger = document.getElementById("pjBurger");
     var searchToggle = document.getElementById("pjSearchToggle");
     var searchPanel = document.getElementById("pjSearchPanel");
-    if (burger) burger.addEventListener("click", function () {
-      burger.setAttribute("aria-expanded", header.classList.toggle("is-nav-open"));
-    });
-    if (searchToggle && searchPanel) searchToggle.addEventListener("click", function () {
-      searchToggle.setAttribute("aria-expanded", searchPanel.classList.toggle("is-open"));
-    });
+
+    if (burger) {
+      burger.addEventListener("click", function () {
+        burger.setAttribute("aria-expanded", header.classList.toggle("is-nav-open"));
+      });
+    }
+
+    function slideToggle(el, open) {
+      if (open) {
+        el.hidden = false;
+        el.style.display = "block";
+        el.style.overflow = "hidden";
+        el.style.height = "0px";
+        el.style.paddingTop = "0px";
+        el.style.paddingBottom = "0px";
+        void el.offsetHeight;
+        el.style.transition = "height 0.35s ease, padding 0.35s ease";
+        el.style.height = el.scrollHeight + "px";
+        el.style.paddingTop = "";
+        el.style.paddingBottom = "";
+        el.classList.add("is-open");
+        setTimeout(function () {
+          el.style.height = "";
+          el.style.overflow = "";
+          el.style.transition = "";
+        }, 360);
+      } else {
+        el.style.overflow = "hidden";
+        el.style.height = el.scrollHeight + "px";
+        void el.offsetHeight;
+        el.style.transition = "height 0.3s ease, padding 0.3s ease";
+        el.style.height = "0px";
+        el.style.paddingTop = "0px";
+        el.style.paddingBottom = "0px";
+        el.classList.remove("is-open");
+        setTimeout(function () {
+          el.hidden = true;
+          el.style.display = "none";
+          el.style.height = "";
+          el.style.paddingTop = "";
+          el.style.paddingBottom = "";
+          el.style.overflow = "";
+          el.style.transition = "";
+        }, 310);
+      }
+    }
+
+    if (searchToggle && searchPanel) {
+      searchToggle.addEventListener("click", function (e) {
+        e.preventDefault();
+        var willOpen = !searchPanel.classList.contains("is-open");
+        slideToggle(searchPanel, willOpen);
+        searchToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+        if (willOpen) {
+          var input = searchPanel.querySelector("input");
+          if (input) setTimeout(function () { input.focus(); }, 320);
+        }
+      });
+    }
   })();
 </script>

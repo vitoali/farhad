@@ -5,7 +5,8 @@
    ========================================================= */
 
 :root {
-  --pj-lead-white: #e6e7e9;
+  /* سفید یکدست تا با بک‌گراند سفید لوگو هم‌رنگ شود */
+  --pj-lead-white: #ffffff;
   --pj-header-dark: #1d1d1d;
   --pj-accent: #fd7402;
   --pj-accent-hover: #ff8a2b;
@@ -37,20 +38,21 @@
   justify-content: flex-start;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 24px 0 16px;
+  /* لوگو چسبیده‌تر به لبه راست */
+  padding: 0 0 0 16px;
   min-height: var(--pj-header-height);
   position: relative;
 }
 
-/* ---------- Logo (lead-white slanted panel) ---------- */
+/* ---------- Logo (white slanted panel) ---------- */
 .pj-header__logo {
   position: relative;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   margin: 0;
-  /* Extra padding on the nav-facing side so the slant clears the logo */
-  padding: 16px 20px 16px 72px;
+  /* راست‌تر: پدینگ راست بیشتر، فاصله تا برش مورب از چپ */
+  padding: 16px 36px 16px 72px;
   z-index: 2;
 }
 
@@ -312,46 +314,65 @@
   stroke-width: 2;
 }
 
-/* Search panel (slides under header) */
+/*
+  Search strip — مثل ozmetalsan:
+  با کلیک ذره‌بین با slide به پایین باز می‌شود
+*/
 .pj-header__search-panel {
   display: none;
-  background: #111;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 14px 24px;
+  overflow: hidden;
+  background: var(--pj-accent);
+  padding: 10px 24px;
 }
 
 .pj-header__search-panel.is-open {
   display: block;
 }
 
+.pj-header__search-panel-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: flex-start; /* در RTL = سمت راست */
+}
+
 .pj-header__search-form {
   display: flex;
-  max-width: 640px;
-  margin: 0 auto;
+  align-items: center;
+  width: 100%;
+  max-width: 360px;
+  height: 35px;
   background: #fff;
+  border: 1px solid #fff;
   border-radius: 4px;
+  padding: 0 10px;
   overflow: hidden;
 }
 
 .pj-header__search-form input {
   flex: 1;
+  width: 87%;
   border: none;
   outline: none;
-  padding: 12px 16px;
+  background: none;
+  padding: 0 6px;
   font-family: inherit;
   font-size: 14px;
+  line-height: 35px;
   direction: rtl;
+  color: #222;
 }
 
 .pj-header__search-form button {
   border: none;
-  background: var(--pj-accent);
-  color: #fff;
-  padding: 0 18px;
+  background: none;
+  color: var(--pj-accent);
+  padding: 0 4px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .pj-header__search-form button svg {
@@ -374,7 +395,7 @@
   }
 
   .pj-header__logo {
-    padding: 12px 4px 12px 40px;
+    padding: 12px 16px 12px 40px;
   }
 
   .pj-header__logo img {
@@ -384,6 +405,14 @@
   .pj-header__logo::before {
     transform: skewX(28deg);
     height: 120%;
+  }
+
+  .pj-header__search-panel {
+    padding: 10px 14px;
+  }
+
+  .pj-header__search-form {
+    max-width: 100%;
   }
 
   .pj-header__nav {
