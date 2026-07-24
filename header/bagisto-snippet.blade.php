@@ -5,12 +5,16 @@
 
 <header class="pj-header" id="pjHeader">
   <div class="pj-header__inner">
-    <div class="pj-header__logo">
-      <a class="pj-header__logo-oval" href="{{ url('/') }}" aria-label="پیشرو جوش خاورمیانه">
-        <img
-          src="{{ asset('images/logo-white.png') }}"
-          width="192" height="50" alt="{{ config('app.name') }}"
-        />
+        <div class="pj-header__logo">
+      <a class="pj-logo" href="{{ url('/') }}" aria-label="پیشرو جوش خاورمیانه">
+        <svg class="pj-logo__mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <path fill="#F5A623" fill-rule="evenodd" d="M112 32C78 24 42 36 28 66C18 88 22 116 42 136C52 146 68 152 84 150L78 122C66 124 54 118 48 106C40 92 38 76 46 64C56 48 76 40 96 42Z M26 84h58v11H26Z M24 104h50v10H24Z M28 123h42v9.5H28Z"/>
+          <path fill="#2B4F82" fill-rule="evenodd" d="M88 168C122 176 158 164 172 134C182 112 178 84 158 64C148 54 132 48 116 50L122 78C134 76 146 82 152 94C160 108 162 124 154 136C144 152 124 160 104 158Z M116 66h58v11H116Z M126 86h50v10H126Z M130 105h42v9.5H130Z"/>
+        </svg>
+        <span class="pj-logo__text">
+          <span class="pj-logo__fa">پیشرو جوش خاورمیانه</span>
+          <span class="pj-logo__en">PISHRO JOOSH KHAVAR MIANEH</span>
+        </span>
       </a>
     </div>
 

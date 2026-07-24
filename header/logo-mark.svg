@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Pishro Joosh">
+  <!-- Orange crescent (left) with 3 cut stripes -->
+  <path fill="#F5A623" fill-rule="evenodd" d="
+    M 112 32
+    C 78 24, 42 36, 28 66
+    C 18 88, 22 116, 42 136
+    C 52 146, 68 152, 84 150
+    L 78 122
+    C 66 124, 54 118, 48 106
+    C 40 92, 38 76, 46 64
+    C 56 48, 76 40, 96 42
+    Z
+    M 26 84 h 58 v 11 H 26 Z
+    M 24 104 h 50 v 10 H 24 Z
+    M 28 123 h 42 v 9.5 H 28 Z
+  "/>
+  <!-- Blue crescent (right) with 3 cut stripes -->
+  <path fill="#2B4F82" fill-rule="evenodd" d="
+    M 88 168
+    C 122 176, 158 164, 172 134
+    C 182 112, 178 84, 158 64
+    C 148 54, 132 48, 116 50
+    L 122 78
+    C 134 76, 146 82, 152 94
+    C 160 108, 162 124, 154 136
+    C 144 152, 124 160, 104 158
+    Z
+    M 116 66 h 58 v 11 H 116 Z
+    M 126 86 h 50 v 10 H 126 Z
+    M 130 105 h 42 v 9.5 H 130 Z
+  "/>
+</svg>

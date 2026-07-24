@@ -53,52 +53,80 @@
   position: relative;
 }
 
-/* ---------- Logo in white oval (RTL right) ---------- */
+/* ---------- Logo: SVG mark + sharp web text ---------- */
 .pj-header__logo {
   position: relative;
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  /* لوگو سمت راست، بدون تداخل با برش */
-  padding: 10px 24px 10px 40px;
+  padding: 10px 20px 10px 28px;
   z-index: 3;
 }
 
-.pj-header__logo a,
-.pj-header__logo-oval {
-  position: relative;
-  z-index: 3;
-}
-
-/* برش مورب حذف شد تا با لوگو تداخل نکند */
 .pj-header__logo::before {
   display: none;
 }
 
-.pj-header__logo-oval {
+.pj-logo {
   position: relative;
   z-index: 3;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  /* بدون بیضی — فقط لوگو */
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 4px 8px;
-  width: auto;
-  height: auto;
+  gap: 12px;
+  direction: ltr;
   text-decoration: none;
+  color: #fff;
+  padding: 4px 6px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.pj-header__logo-oval img {
+.pj-logo__mark {
   display: block;
-  height: 50px;
-  width: auto;
-  max-width: 200px;
-  object-fit: contain;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  overflow: visible;
+  shape-rendering: geometricPrecision;
+}
+
+.pj-logo__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  text-align: left;
+  line-height: 1;
+}
+
+.pj-logo__fa {
+  display: block;
+  font-family: var(--pj-font);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.pj-logo__en {
+  display: block;
+  font-family: var(--pj-font);
+  font-weight: 700;
+  font-size: 9.5px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 720px) {
+  .pj-logo__mark { width: 46px; height: 46px; }
+  .pj-logo__fa { font-size: 14px; }
+  .pj-logo__en { font-size: 8px; letter-spacing: 0.03em; }
+  .pj-header__logo { padding: 8px 12px 8px 16px; }
 }
 
 /* ---------- Nav ---------- */
