@@ -25,15 +25,10 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-.pj-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  width: 100%;
-  direction: rtl;
-  font-family: var(--pj-font);
-  color: #fff;
-  /* تیره مدادی + بافت صنعتی */
+/* بافت مشترک هدر و فوتر */
+.pj-graphite-bg,
+.pj-header,
+.pj-footer {
   background-color: var(--pj-graphite);
   background-image:
     linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,0.28) 100%),
@@ -43,6 +38,16 @@
     linear-gradient(90deg, #1a1a1a, #262626 40%, #1d1d1d 70%, #222 100%);
   background-size: cover, auto, auto, cover, cover;
   background-repeat: no-repeat, repeat, repeat, no-repeat, no-repeat;
+}
+
+.pj-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  direction: rtl;
+  font-family: var(--pj-font);
+  color: #fff;
   box-shadow: none;
 }
 
@@ -376,7 +381,8 @@
   --pj-page-bg: #f6f6f6;       /* پس‌زمینه اصلی صفحه مثل ozmetalsan */
   --pj-page-muted: #ececec;
   --pj-section-dark: #1b222c;  /* باکس‌های تیره دسته‌بندی */
-  --pj-footer-bg: #161616;
+  --pj-footer-bg: #1d1d1d;
+  --pj-graphite: #1d1d1d;
   --pj-accent: #fd7402;
   --pj-title: #1a1a1a;
   --pj-font: "Vazirmatn", "IRANSansX", Tahoma, sans-serif;
@@ -549,17 +555,151 @@ body.pj-page,
   background: #111820;
 }
 
-/* فوتر تیره مثل ozmetalsan */
+/* =========================================================
+   فوتر — همان طرح و رنگ تیره هدر (گرافیتی مدادی)
+   ========================================================= */
 .pj-footer {
-  background: var(--pj-footer-bg);
-  color: #636363;
-  padding: 48px 20px 28px;
-  text-align: center;
-  font-size: 13px;
+  /* background از .pj-graphite-bg در header.css می‌آید */
+  color: #c8c8c8;
+  font-family: var(--pj-font);
+  direction: rtl;
+  margin-top: 36px;
 }
 
-.pj-footer strong {
+.pj-footer__main {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px 40px;
+  flex-wrap: wrap;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 52px 60px 40px;
+}
+
+.pj-footer__col {
+  flex: 1 1 160px;
+  min-width: 150px;
+}
+
+.pj-footer__col--news {
+  flex: 1 1 300px;
+  max-width: 420px;
+}
+
+.pj-footer__col--contact {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.pj-footer__title {
+  margin: 0 0 16px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.6;
+  color: #fff;
+}
+
+.pj-footer__sub {
+  margin: 0 0 18px;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.pj-footer__form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 420px;
+}
+
+.pj-footer__form input {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 110px 14px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  direction: ltr;
+  text-align: left;
+}
+
+.pj-footer__form input::placeholder {
+  color: #888;
+}
+
+.pj-footer__form button {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pj-footer__form button:hover {
+  background: var(--pj-accent);
+  color: #111;
+}
+
+.pj-footer__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.pj-footer__list a {
+  color: #cfcfcf;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.7;
+  transition: color 0.2s ease;
+}
+
+.pj-footer__list a:hover {
   color: var(--pj-accent);
+}
+
+.pj-footer__bottom {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 14px 60px;
+  text-align: center;
+  font-size: 12px;
+  color: #8a8a8a;
+  background: rgba(0,0,0,0.25);
+}
+
+.pj-footer__bottom a {
+  color: var(--pj-accent);
+  text-decoration: none;
+}
+
+@media (max-width: 1060px) {
+  .pj-footer__main {
+    padding: 36px 24px 28px;
+    flex-direction: column;
+  }
+  .pj-footer__col,
+  .pj-footer__col--news,
+  .pj-footer__col--contact {
+    max-width: none;
+  }
+  .pj-footer__bottom {
+    padding: 14px 20px;
+  }
 }
 
 @media (max-width: 900px) {
@@ -698,7 +838,50 @@ body.pj-page,
 </section>
 
 <footer class="pj-footer">
-  <p><strong>پیشرو جوش خاورمیانه</strong> · بک‌گراند صفحه مثل ozmetalsan: <code>#F6F6F6</code></p>
+  <div class="pj-footer__main">
+    <div class="pj-footer__col">
+      <ul class="pj-footer__list">
+        <li><a href="https://pishrojoosh.com/page/about-us">درباره ما</a></li>
+        <li><a href="https://pishrojoosh.com/contact-us">تماس با ما</a></li>
+        <li><a href="https://pishrojoosh.com/page/customer-service">خدمات مشتریان</a></li>
+        <li><a href="https://pishrojoosh.com/page/whats-new">چه خبر است</a></li>
+        <li><a href="https://pishrojoosh.com/page/terms-of-use">شرایط استفاده</a></li>
+        <li><a href="https://pishrojoosh.com/page/terms-conditions">شرایط و مقررات</a></li>
+      </ul>
+    </div>
+
+    <div class="pj-footer__col">
+      <ul class="pj-footer__list">
+        <li><a href="https://pishrojoosh.com/page/privacy-policy">سیاست حریم خصوصی</a></li>
+        <li><a href="https://pishrojoosh.com/page/payment-policy">سیاست پرداخت</a></li>
+        <li><a href="https://pishrojoosh.com/page/shipping-policy">سیاست حمل و نقل</a></li>
+        <li><a href="https://pishrojoosh.com/page/refund-policy">سیاست بازپرداخت</a></li>
+        <li><a href="https://pishrojoosh.com/page/return-policy">سیاست بازگشت</a></li>
+      </ul>
+    </div>
+
+    <div class="pj-footer__col pj-footer__col--contact">
+      <ul class="pj-footer__list">
+        <li><a href="https://pishrojoosh.com/">دفتر مرکزی: تهران - کیلومتر ۲۱ بزرگراه شهید لشکری</a></li>
+        <li><a href="tel:+982146079474">تلفن +۹۸ ۲۱ ۴۶۰۷۹۴۷۴ · ۴۶۰۷۹۳۳۱ · ۴۶۰۷۹۳۳۲</a></li>
+        <li><a href="https://pishrojoosh.com/">تهران - خیابان امام خمینی - پاساژ ابزار و یراق - طبقه همکف شماره ۱۰۵</a></li>
+        <li><a href="tel:+982166727135">تلفن +۹۸ ۲۱ ۶۶۷۲۷۱۳۵ · ۶۶۷۴۸۶۸۰ · ۶۶۷۰۵۳۸۷</a></li>
+      </ul>
+    </div>
+
+    <div class="pj-footer__col pj-footer__col--news">
+      <p class="pj-footer__title">برای دریافت خبرنامه‌ی جذاب ما آماده شوید!</p>
+      <p class="pj-footer__sub">برای ماندن در تماس عضو شوید.</p>
+      <form class="pj-footer__form" action="https://pishrojoosh.com/subscription" method="post">
+        <input type="email" name="email" placeholder="email@example.com" required aria-label="ایمیل" />
+        <button type="submit">عضویت</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="pj-footer__bottom">
+    © پیشرو جوش خاورمیانه — طراحی فوتر با همان طرح تیره هدر
+  </div>
 </footer>
 
 <script>

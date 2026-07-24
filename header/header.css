@@ -17,15 +17,10 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-.pj-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  width: 100%;
-  direction: rtl;
-  font-family: var(--pj-font);
-  color: #fff;
-  /* تیره مدادی + بافت صنعتی */
+/* بافت مشترک هدر و فوتر */
+.pj-graphite-bg,
+.pj-header,
+.pj-footer {
   background-color: var(--pj-graphite);
   background-image:
     linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,0.28) 100%),
@@ -35,6 +30,16 @@
     linear-gradient(90deg, #1a1a1a, #262626 40%, #1d1d1d 70%, #222 100%);
   background-size: cover, auto, auto, cover, cover;
   background-repeat: no-repeat, repeat, repeat, no-repeat, no-repeat;
+}
+
+.pj-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  direction: rtl;
+  font-family: var(--pj-font);
+  color: #fff;
   box-shadow: none;
 }
 
