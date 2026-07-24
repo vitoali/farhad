@@ -56,7 +56,7 @@
   align-items: stretch;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 8px 0 16px;
+  padding: 0 16px 0 16px;
   min-height: var(--pj-header-height);
   position: relative;
 }
@@ -67,19 +67,25 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  /* راست‌تر تا از برش مشکی مورب فاصله بگیرد */
-  padding: 10px 28px 10px 72px;
-  margin-inline-end: 8px;
+  /* فاصله بیشتر از برش مشکی — لوگو داخل ناحیه راست */
+  padding: 10px 36px 10px 88px;
+  margin-inline-end: 4px;
   z-index: 3;
 }
 
-/* برش مورب تیره مثل ozmetalsan، ولی هم‌خانواده گرافیتی */
+/* ---------- Logo (no oval) ---------- */
+.pj-header__logo a,
+.pj-header__logo-oval {
+  position: relative;
+  z-index: 3;
+}
+
 .pj-header__logo::before {
   content: "";
   position: absolute;
   top: 0;
-  /* برش را کمی چپ‌تر می‌کشد تا با لوگو تداخل نکند */
-  left: -6px;
+  /* برش را چپ‌تر می‌کشد تا زیر لوگو نیاید */
+  left: -28px;
   width: 2000px;
   height: 115%;
   background:
