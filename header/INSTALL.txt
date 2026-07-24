@@ -1,0 +1,27 @@
+نصب روی https://pishrojoosh.com/
+================================
+
+۱) هدر
+- فایل‌ها: header/header.css + header/bagisto-snippet.blade.php
+- snippet هدر را جای هدر فعلی قالب بگذارید / یا در theme customize
+
+۲) فوتر تیره
+- فایل header/bagisto-footer-override.css را بعد از CSS قالب لود کنید
+  (همین طرح گرافیتی هدر را روی فوتر فعلی اعمال می‌کند)
+
+۳) دو ردیف محصول (ویژه + پیشنهادی) — قبل از «خدمات جوشکاری کلدینگ»
+- CSS: header/products/product-carousels.css
+- JS:  header/products/product-carousels.js
+- HTML: header/products/bagisto-products-snippet.html
+  این HTML را در CMS، دقیقاً قبل از سکشن cladding قرار دهید.
+
+۴) ویرایش محصولات
+- داخل product-carousels.js آرایه‌های زیر را عوض کنید:
+  PJ_SPECIAL_PRODUCTS   → ۱۵ محصول ویژه
+  PJ_SUGGESTED_PRODUCTS → ۱۵ محصول پیشنهادی
+- هر آیتم: name, brand, url, image
+- عکس را از پنل محصول Bagisto بگیرید و url را به صفحه همان محصول بدهید.
+  (فعلاً API محصولات سایت خالی است؛ بعد از افزودن محصول لینک‌ها را واقعی کنید.)
+
+۵) دمو یک‌فایله
+- header/site-kit.html  (هدر + اسلایدرها + فوتر)
