@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>هدر پیشرو جوش</title>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>پیشرو جوش — استایل Ozmetalsan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
 /* =========================================================
    Pishro Joosh — Ozmetalsan-style header
    Dark graphite textured bar + white oval logo
@@ -367,10 +367,214 @@
   .pj-header__search-form { max-width: 100%; }
 }
 
-body { margin:0; background:#ececec; font-family: var(--pj-font); }
+/* =========================================================
+   Pishro Joosh — page background like ozmetalsan.com
+   Light gray canvas + dark industrial sections
+   ========================================================= */
+
+:root {
+  --pj-page-bg: #f6f6f6;       /* پس‌زمینه اصلی صفحه مثل ozmetalsan */
+  --pj-page-muted: #ececec;
+  --pj-section-dark: #1b222c;  /* باکس‌های تیره دسته‌بندی */
+  --pj-footer-bg: #161616;
+  --pj-accent: #fd7402;
+  --pj-title: #1a1a1a;
+  --pj-font: "Vazirmatn", "IRANSansX", Tahoma, sans-serif;
+}
+
+html {
+  background: var(--pj-page-bg);
+}
+
+body.pj-page,
+.pj-page {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--pj-page-bg);
+  color: #333;
+  font-family: var(--pj-font);
+}
+
+/* هیرو تیره زیر هدر (مثل اسلایدر ozmetalsan) */
+.pj-hero {
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #fff;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.72) 100%),
+    radial-gradient(ellipse at 70% 40%, rgba(253,116,2,0.18), transparent 50%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px),
+    linear-gradient(135deg, #0e0e0e 0%, #1a1a1a 45%, #121212 100%);
+  background-size: cover;
+}
+
+.pj-hero__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  padding: 48px 24px;
+}
+
+.pj-hero__eyebrow {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #111;
+  background: var(--pj-accent);
+}
+
+.pj-hero h1 {
+  margin: 0 0 14px;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.pj-hero h1 span {
+  color: var(--pj-accent);
+}
+
+.pj-hero p {
+  margin: 0 auto 22px;
+  max-width: 520px;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.9;
+  font-size: 0.98rem;
+}
+
+.pj-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--pj-accent);
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+  transition: filter 0.2s ease;
+}
+.pj-hero__cta:hover { filter: brightness(1.08); }
+
+/* بخش محتوا روی بک‌گراند روشن */
+.pj-section {
+  padding: 56px 20px;
+  background: var(--pj-page-bg);
+}
+
+.pj-section__title {
+  text-align: center;
+  margin: 0 0 36px;
+}
+
+.pj-section__title h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  color: var(--pj-title);
+  font-weight: 700;
+}
+
+.pj-section__title h2::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin: 12px auto 0;
+  background: var(--pj-accent);
+}
+
+.pj-section__title p {
+  margin: 14px 0 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.pj-cats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pj-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pj-cat__icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--pj-accent);
+  border: 3px solid #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: -28px;
+  z-index: 1;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  font-size: 28px;
+  font-weight: 800;
+  color: #111;
+}
+
+.pj-cat__box {
+  width: 100%;
+  background: var(--pj-section-dark);
+  color: #fff;
+  text-align: center;
+  padding: 44px 14px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 96px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.pj-cat:hover .pj-cat__box {
+  background: #111820;
+}
+
+/* فوتر تیره مثل ozmetalsan */
+.pj-footer {
+  background: var(--pj-footer-bg);
+  color: #636363;
+  padding: 48px 20px 28px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.pj-footer strong {
+  color: var(--pj-accent);
+}
+
+@media (max-width: 900px) {
+  .pj-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pj-hero { min-height: 320px; }
+}
+
+@media (max-width: 520px) {
+  .pj-cats { grid-template-columns: 1fr; max-width: 280px; }
+}
+
 </style>
 </head>
-<body>
+<body class="pj-page">
+
 <header class="pj-header" id="pjHeader">
   <div class="pj-header__inner">
     <div class="pj-header__logo">
@@ -386,7 +590,7 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
     <nav class="pj-header__nav" aria-label="منوی اصلی">
       <ul class="pj-header__menu">
         <li class="has-dropdown">
-          <a href="https://pishrojoosh.com/#product-carousel">محصولات</a>
+          <a href="#products">محصولات</a>
           <ul class="pj-header__dropdown pj-header__dropdown--products">
             <li><a href="https://pishrojoosh.com/page/welding-consumables">مواد مصرفی جوشکاری</a></li>
             <li><a href="https://pishrojoosh.com/page/ndt-materials-equipment">مواد و تجهیزات تست‌های غیرمخرب</a></li>
@@ -395,21 +599,16 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
             <li><a href="https://pishrojoosh.com/page/radiographic-films">فیلم‌های رادیوگرافی</a></li>
           </ul>
         </li>
-
         <li class="has-dropdown">
-          <a href="https://pishrojoosh.com/#services-section">خدمات مهندسی</a>
+          <a href="#services">خدمات مهندسی</a>
           <ul class="pj-header__dropdown">
-            <li><a href="https://pishrojoosh.com/#services-section">جوشکاری کلدینگ</a></li>
-            <li><a href="https://pishrojoosh.com/#services-section">مشاوره فنی</a></li>
+            <li><a href="#services">جوشکاری کلدینگ</a></li>
+            <li><a href="#services">مشاوره فنی</a></li>
           </ul>
         </li>
-
-        <li>
-          <a href="https://pishrojoosh.com/#price-inquiry-section">استعلام قیمت</a>
-        </li>
-
+        <li><a href="#inquiry">استعلام قیمت</a></li>
         <li class="has-dropdown">
-          <a href="#">برندها</a>
+          <a href="#brands">برندها</a>
           <ul class="pj-header__dropdown pj-header__dropdown--brands">
             <li><a class="brand-bohler" href="#">Bohler</a></li>
             <li><a class="brand-utp" href="#">UTP</a></li>
@@ -425,13 +624,8 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
             <li><a class="brand-fronius" href="#">Fronius</a></li>
           </ul>
         </li>
-
-        <li>
-          <a href="https://pishrojoosh.com/#about-us-section">درباره ما</a>
-        </li>
-        <li class="is-active">
-          <a href="https://pishrojoosh.com/contact-us">تماس با ما</a>
-        </li>
+        <li><a href="#about">درباره ما</a></li>
+        <li class="is-active"><a href="https://pishrojoosh.com/contact-us">تماس با ما</a></li>
       </ul>
     </nav>
 
@@ -442,17 +636,14 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
         </span>
         <span>مشاوره</span>
       </a>
-
       <button type="button" class="pj-header__lang" aria-label="زبان">
         <img class="pj-header__lang-flag" src="https://flagcdn.com/w40/ir.png" width="18" height="12" alt="" />
         <span>فارسی</span>
       </button>
-
-      <button type="button" class="pj-header__search-btn" id="pjSearchToggle" aria-label="جستجو" aria-expanded="false" aria-controls="pjSearchPanel">
+      <button type="button" class="pj-header__search-btn" id="pjSearchToggle" aria-label="جستجو">
         <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       </button>
-
-      <button type="button" class="pj-header__burger" id="pjBurger" aria-label="منو" aria-expanded="false">
+      <button type="button" class="pj-header__burger" id="pjBurger" aria-label="منو">
         <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
     </div>
@@ -469,6 +660,47 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
     </div>
   </div>
 </header>
+
+<!-- هیرو تیره مثل ozmetalsan -->
+<section class="pj-hero">
+  <div class="pj-hero__inner">
+    <span class="pj-hero__eyebrow">PISHRO JOOSH</span>
+    <h1>کامل‌ترین زنجیره تامین <span>متریال جوشکاری</span> در ایران</h1>
+    <p>تامین تجهیزات، مواد مصرفی و راهکارهای تخصصی جوشکاری، اتوماسیون و تست‌های غیرمخرب</p>
+    <a class="pj-hero__cta" href="#products">مشاهده محصولات</a>
+  </div>
+</section>
+
+<!-- محتوای روشن روی بک‌گراند #F6F6F6 -->
+<section class="pj-section" id="products">
+  <div class="pj-section__title">
+    <h2>دسته‌بندی محصولات</h2>
+    <p>مثل چیدمان دسته‌ها در ozmetalsan — روی بک‌گراند روشن صفحه</p>
+  </div>
+  <div class="pj-cats">
+    <a class="pj-cat" href="https://pishrojoosh.com/page/welding-consumables">
+      <div class="pj-cat__icon">۱</div>
+      <div class="pj-cat__box">مواد مصرفی جوشکاری</div>
+    </a>
+    <a class="pj-cat" href="https://pishrojoosh.com/page/welding-cutting-machines">
+      <div class="pj-cat__icon">۲</div>
+      <div class="pj-cat__box">دستگاه‌های جوش و برش</div>
+    </a>
+    <a class="pj-cat" href="https://pishrojoosh.com/page/welding-robots">
+      <div class="pj-cat__icon">۳</div>
+      <div class="pj-cat__box">ربات‌های جوشکاری</div>
+    </a>
+    <a class="pj-cat" href="https://pishrojoosh.com/page/ndt-materials-equipment">
+      <div class="pj-cat__icon">۴</div>
+      <div class="pj-cat__box">تست‌های غیرمخرب</div>
+    </a>
+  </div>
+</section>
+
+<footer class="pj-footer">
+  <p><strong>پیشرو جوش خاورمیانه</strong> · بک‌گراند صفحه مثل ozmetalsan: <code>#F6F6F6</code></p>
+</footer>
+
 <script>
 (function () {
   var header = document.getElementById("pjHeader");
@@ -484,40 +716,22 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
 
   function slideToggle(el, open) {
     if (open) {
-      el.hidden = false;
-      el.style.display = "block";
-      el.style.overflow = "hidden";
-      el.style.height = "0px";
-      el.style.paddingTop = "0px";
-      el.style.paddingBottom = "0px";
+      el.hidden = false; el.style.display = "block"; el.style.overflow = "hidden";
+      el.style.height = "0px"; el.style.paddingTop = "0px"; el.style.paddingBottom = "0px";
       void el.offsetHeight;
       el.style.transition = "height 0.35s ease, padding 0.35s ease";
-      el.style.height = el.scrollHeight + "px";
-      el.style.paddingTop = "";
-      el.style.paddingBottom = "";
+      el.style.height = el.scrollHeight + "px"; el.style.paddingTop = ""; el.style.paddingBottom = "";
       el.classList.add("is-open");
-      setTimeout(function () {
-        el.style.height = "";
-        el.style.overflow = "";
-        el.style.transition = "";
-      }, 360);
+      setTimeout(function () { el.style.height = ""; el.style.overflow = ""; el.style.transition = ""; }, 360);
     } else {
-      el.style.overflow = "hidden";
-      el.style.height = el.scrollHeight + "px";
-      void el.offsetHeight;
+      el.style.overflow = "hidden"; el.style.height = el.scrollHeight + "px"; void el.offsetHeight;
       el.style.transition = "height 0.3s ease, padding 0.3s ease";
-      el.style.height = "0px";
-      el.style.paddingTop = "0px";
-      el.style.paddingBottom = "0px";
+      el.style.height = "0px"; el.style.paddingTop = "0px"; el.style.paddingBottom = "0px";
       el.classList.remove("is-open");
       setTimeout(function () {
-        el.hidden = true;
-        el.style.display = "none";
-        el.style.height = "";
-        el.style.paddingTop = "";
-        el.style.paddingBottom = "";
-        el.style.overflow = "";
-        el.style.transition = "";
+        el.hidden = true; el.style.display = "none";
+        el.style.height = ""; el.style.paddingTop = ""; el.style.paddingBottom = "";
+        el.style.overflow = ""; el.style.transition = "";
       }, 310);
     }
   }
@@ -527,7 +741,6 @@ body { margin:0; background:#ececec; font-family: var(--pj-font); }
       e.preventDefault();
       var willOpen = !searchPanel.classList.contains("is-open");
       slideToggle(searchPanel, willOpen);
-      searchToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
       if (willOpen) {
         var input = searchPanel.querySelector("input");
         if (input) setTimeout(function () { input.focus(); }, 320);

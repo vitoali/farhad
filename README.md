@@ -6,26 +6,26 @@
 
 | ناحیه | رنگ / رفتار |
 |--------|-------------|
-| از ابتدای صفحه (راست در RTL) تا پایان لوگو | **سفید یکدست** `#FFFFFF` با برش مورب `skewX` (هم‌رنگ بک‌گراند لوگو) |
-| بقیه نوار منو | تیره `#1D1D1D` مثل ozmetalsan |
-| لینک‌های منو | سفید؛ هاور نارنجی برند `#FD7402` |
-| جستجو | آیکن دایره‌ای؛ با کلیک نوار نارنجی پایین هدر با `slideToggle` باز می‌شود (مثل ozmetalsan) |
+| بک‌گراند کل صفحه | `#F6F6F6` مثل ozmetalsan |
+| هیرو زیر هدر | تیره صنعتی |
+| هدر | تیره مدادی طرح‌دار + لوگو در بیضی سفید |
+| دراپ‌داون محصولات | سربی `#C5C6C8` |
+| دراپ‌داون برندها | رنگ‌های واقعی سایت |
+| فوتر | `#161616` |
+| جستجو | آیکن دایره‌ای؛ با کلیک نوار نارنجی با slide باز می‌شود |
 
 ## فایل‌ها
 
-- `header/index.html` — دمو زنده برای پیش‌نمایش
-- `header/header.css` — استایل کامل RTL
-- `header/bagisto-snippet.blade.php` — اسنیپت جایگزینی در قالب Bagisto
-- `assets/logo.png` — لوگوی فعلی سایت
-- `assets/pishro-header-mockup.png` — ماکاپ بصری
+- `header/complete.html` — یک فایل کامل آماده اجرا
+- `header/index.html` — دمو
+- `header/header.css` — استایل هدر
+- `header/page.css` — بک‌گراند صفحه / هیرو / دسته‌ها / فوتر
+- `header/bagisto-snippet.blade.php` — اسنیپت Bagisto
 
-## نصب سریع روی سایت
+## نصب روی Bagisto
 
-1. `header.css` را به عنوان مثلاً `public/css/pj-header.css` کپی کنید.
-2. محتوای هدر فعلی (بلوک `v-desktop-header` / Blade هدر) را با `bagisto-snippet.blade.php` عوض کنید.
-3. مسیر لوگو را با فایل واقعی storage تنظیم کنید.
-4. در صورت نیاز رنگ سفید سربی را از متغیر `--pj-lead-white` تغییر دهید.
+```css
+html, body { background: #f6f6f6 !important; }
+```
 
-## پیش‌نمایش محلی
-
-فایل `header/index.html` را در مرورگر باز کنید.
+و فایل‌های `header.css` + `page.css` را لود کنید.
