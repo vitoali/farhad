@@ -67,35 +67,20 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  /* فاصله بیشتر از برش مشکی — لوگو داخل ناحیه راست */
-  padding: 10px 36px 10px 88px;
-  margin-inline-end: 4px;
+  /* لوگو سمت راست، بدون تداخل با برش */
+  padding: 10px 24px 10px 40px;
   z-index: 3;
 }
 
-/* ---------- Logo (no oval) ---------- */
 .pj-header__logo a,
 .pj-header__logo-oval {
   position: relative;
   z-index: 3;
 }
 
+/* برش مورب حذف شد تا با لوگو تداخل نکند */
 .pj-header__logo::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  /* برش را چپ‌تر می‌کشد تا زیر لوگو نیاید */
-  left: -28px;
-  width: 2000px;
-  height: 115%;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.15)),
-    linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 55%, #222 100%);
-  transform: skewX(45deg);
-  transform-origin: top left;
-  z-index: 1;
-  pointer-events: none;
-  box-shadow: inset -8px 0 18px rgba(0,0,0,0.35);
+  display: none;
 }
 
 .pj-header__logo-oval {
