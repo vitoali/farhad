@@ -36,3 +36,24 @@
 
 ۵) دمو یک‌فایله
 - header/site-kit.html
+
+۶) تعویض تصویر «خدمات جوشکاری کلدینگ» (صفحه اصلی pishrojoosh.com)
+----------------------------------------------------------------
+سکشن زنده سایت: #services-section
+فایل فعلی:
+  storage/theme/13/WVgFV02Lramit7nyv3QbTK1FGM9eiL7tn66lBSEM.webp  (960×512)
+
+فایل جایگزین آماده (نسبت دقیق همان سکشن، کیفیت رتینا ۲×):
+  header/assets/cladding-service-graphite.webp  (1920×1024)
+  header/assets/cladding-service-graphite.jpg
+  header/assets/cladding-service-graphite.png
+
+در پنل Bagisto / Theme Customization:
+  1) بلوک HTML سکشن «خدمات جوشکاری کلدینگ» را باز کنید
+  2) تصویر theme/13 را با cladding-service-graphite.webp عوض کنید
+     (آپلود در Media → سپس src تصویر سکشن را به مسیر جدید بدهید)
+  3) یا همان فایل فعلی theme/13 را با این webp جایگزین کنید
+
+نکته: لینک منوی «استعلام قیمت» به #price-inquiry-section می‌رود ولی فعلاً
+id="price-inquiry-section" روی صفحه نیست. تصویر کلدینگ مربوط به
+#services-section است.
