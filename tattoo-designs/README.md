@@ -27,3 +27,14 @@
 - `21-forearm-print-ACTUAL-SIZE-5x8-300dpi.png` — برگه چاپ با اندازه واقعی ۵×۸ برای تتوکار
 
 چاپ: فایل `21` یا `20-...-300dpi` را با گزینه **Actual size / 100% / بدون Fit to page** چاپ کنید.
+
+## تابلوی رنگی (چاپ واقعی)
+نسبت ۵:۸ — همون طرح با قاب ویکتوریایی ساده + انگشتر فیروزه
+
+- `28-COLOR-wall-art-vivid-master.png/.jpg` — مستر باکیفیت ۴۵۰۰×۷۲۰۰ (پیشنهادی)
+- `29-COLOR-wall-art-classic-master.png/.jpg` — نسخه گرم‌تر/کلاسیک
+- چاپ آماده ۳۰۰ DPI:
+  - `30-COLOR-print-20x32cm-300dpi.jpg`
+  - `30-COLOR-print-30x48cm-300dpi.jpg`
+  - `30-COLOR-print-40x64cm-300dpi.jpg`
+  - `30-COLOR-print-50x80cm-300dpi.jpg`
