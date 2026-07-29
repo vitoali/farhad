@@ -38,3 +38,8 @@
   - `30-COLOR-print-30x48cm-300dpi.jpg`
   - `30-COLOR-print-40x64cm-300dpi.jpg`
   - `30-COLOR-print-50x80cm-300dpi.jpg`
+
+## تابلوی سیاه‌وسفید (چاپ واقعی)
+- `31-BW-wall-art-master.png/.jpg` — مستر ۴۵۰۰×۷۲۰۰ (پیشنهادی)
+- `32-BW-wall-art-from-tattoo-master.png/.jpg` — از نسخه تتو
+- چاپ ۳۰۰ DPI: `33-BW-print-20x32cm` · `30x48cm` · `40x64cm` · `50x80cm`
