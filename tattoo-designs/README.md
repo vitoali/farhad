@@ -14,3 +14,8 @@
 - `10-victorian-cameo-frame-tattoo.png` — قاب بیضی ویکتوریایی/کامئو
 - `04-classic-frame-4x5.png` — قاب ساده کلاسیک
 - `05-original-frame-bw-4x5.png` — قاب چوبی خود عکس
+
+## مادر قشقایی + کودک
+- `11-qashqai-standing-with-child-bw.png` — ایستاده، لباس محلی قشقایی، بچه فرفری (پشت به تصویر)
+- `12-qashqai-mother-child-tattoo.png` — نسخه تتویی دوم
+- `13-qashqai-mother-child-baroque-frame.png` — با قاب باروک اروپایی
