@@ -43,3 +43,8 @@
 - `31-BW-wall-art-master.png/.jpg` — مستر ۴۵۰۰×۷۲۰۰ (پیشنهادی)
 - `32-BW-wall-art-from-tattoo-master.png/.jpg` — از نسخه تتو
 - چاپ ۳۰۰ DPI: `33-BW-print-20x32cm` · `30x48cm` · `40x64cm` · `50x80cm`
+
+## تابلوی تمام‌رنگی (کامل)
+- `36-FULL-COLOR-wall-art-master.png/.jpg` — مستر ۴۵۰۰×۷۲۰۰ کاملاً رنگی (پیشنهادی)
+- `37-FULL-COLOR-wall-art-alt.png/.jpg` — نسخه جایگزین
+- چاپ ۳۰۰ DPI: `38-FULL-COLOR-print-20x32` · `30x48` · `40x64` · `50x80`
