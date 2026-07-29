@@ -19,3 +19,11 @@
 - `11-qashqai-standing-with-child-bw.png` — ایستاده، لباس محلی قشقایی، بچه فرفری (پشت به تصویر)
 - `12-qashqai-mother-child-tattoo.png` — نسخه تتویی دوم
 - `13-qashqai-mother-child-baroque-frame.png` — با قاب باروک اروپایی
+
+## نسخه ساعد ۵×۸ سانتی‌متر
+- `19-forearm-5x8-final.png` — فایل اصلی با کیفیت بالا (نسبت ۵:۸)
+- `20-forearm-final-stencil-5x8-300dpi.png` — استینسیل چاپ ۳۰۰ DPI اندازه واقعی
+- `20-forearm-final-stencil-5x8-600dpi.png` — استینسیل ۶۰۰ DPI
+- `21-forearm-print-ACTUAL-SIZE-5x8-300dpi.png` — برگه چاپ با اندازه واقعی ۵×۸ برای تتوکار
+
+چاپ: فایل `21` یا `20-...-300dpi` را با گزینه **Actual size / 100% / بدون Fit to page** چاپ کنید.
