@@ -1,5 +1,6 @@
 {
-  "mode": "userbot",
+  "mode": "bot",
+  "bot_token": "123456:ABCDEF-token-from-BotFather",
   "api_id": 0,
   "api_hash": "",
   "session_name": "dice67_session",
