@@ -1,14 +1,18 @@
 """
-Dice Bot 67
-اتوماسیون دسکتاپ برای زدن تاس 🎲 و اسلات 🎰 در تلگرام دسکتاپ.
+Dice Bot 67 — برای گروه Six Seven Chat
+
+دو حالت:
+  1) userbot (پیشنهادی): با Telethon مستقیم 🎲/🎰 می‌فرستد
+  2) desktop: با موس روی تلگرام دسکتاپ کلیک می‌کند
 
 اجرا:
   python main.py
+  python main.py --mode userbot
+  python main.py --mode desktop
   python main.py --calibrate
   python main.py --capture-templates
 
 F8 = شروع / توقف
-موس را به گوشه بالا-چپ ببرید برای توقف اضطراری (FAILSAFE)
 """
 
 from __future__ import annotations
@@ -43,6 +47,12 @@ def setup_logging(log_file: str) -> None:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Dice Bot 67")
+    p.add_argument(
+        "--mode",
+        choices=("userbot", "desktop"),
+        default=None,
+        help="userbot=Telethon | desktop=کلیک موس",
+    )
     p.add_argument("--calibrate", action="store_true", help="کالیبره مختصات موس")
     p.add_argument(
         "--capture-templates",
@@ -53,50 +63,27 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def main() -> int:
+def run_desktop(cfg: dict) -> int:
     from bot.actions import configure_pyautogui, perform_roll
-    from bot.calibrator import capture_templates, run_calibration
-    from bot.config import ensure_config, load_config
     from bot.timing import DelayScheduler
-
-    args = parse_args()
-    cfg_path = Path(args.config) if args.config else None
-    if cfg_path:
-        ensure_config(cfg_path)
-        cfg = load_config(cfg_path)
-    else:
-        ensure_config()
-        cfg = load_config()
-
-    setup_logging(str(cfg.get("log_file", "logs/dice_bot.log")))
-    log = logging.getLogger("dice67")
-
-    if args.calibrate:
-        run_calibration(cfg)
-        return 0
-
-    if args.capture_templates:
-        capture_templates(cfg)
-        return 0
 
     try:
         import keyboard
         import pyautogui
     except ImportError as exc:
-        print("وابستگی‌ها نصب نیستند. اجرا کنید:")
-        print("  pip install -r requirements.txt")
+        print("وابستگی دسکتاپ نصب نیست:")
+        print("  pip install pyautogui keyboard opencv-python-headless Pillow")
         print(exc)
         return 1
 
     configure_pyautogui(cfg)
-
     scheduler = DelayScheduler(
         min_delay=int(cfg.get("min_delay_sec", 61)),
         max_delay=int(cfg.get("max_delay_sec", 100)),
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
     )
-
     state = {"running": False}
+    log = logging.getLogger("dice67")
 
     def toggle() -> None:
         state["running"] = not state["running"]
@@ -114,19 +101,12 @@ def main() -> int:
     keyboard.add_hotkey(hotkey, toggle)
 
     print("=" * 56)
-    print(" Dice Bot 67 آماده است")
-    print(f" کلید شروع/توقف: {hotkey.upper()}")
-    print(f" تأخیر فعلی: {scheduler.current_delay} ثانیه")
-    print(f" تعویض تأخیر هر {scheduler.change_every} چرخه کامل (🎲+🎰)")
-    print(" تلگرام دسکتاپ را باز کنید و گروه بازی را جلو بگذارید.")
-    print(" موس به گوشه بالا-چپ = توقف اضطراری")
+    print(" Dice Bot 67 — حالت Desktop (کلیک موس)")
+    print(" گروه Six Seven Chat را جلو بگذارید.")
+    print(" Send = کلمه Send داخل باکس سیاه راهنما")
+    print(f" کلید: {hotkey.upper()} | موس گوشه بالا-چپ = اضطراری")
+    print(f" تأخیر فعلی: {scheduler.current_delay}s")
     print("=" * 56)
-
-    log.info(
-        "Bot started | delay=%ss | change_every=%s cycles",
-        scheduler.current_delay,
-        scheduler.change_every,
-    )
 
     try:
         while True:
@@ -136,37 +116,28 @@ def main() -> int:
 
             action = scheduler.next_action
             emoji = "🎲" if action == "dice" else "🎰"
-            log.info("=== اجرای %s (%s) ===", emoji, action)
             print(f"[{datetime.now():%H:%M:%S}] {emoji} {action}")
 
             try:
                 perform_roll(action, cfg)
             except pyautogui.FailSafeException:
-                log.error("FAILSAFE: موس به گوشه صفحه رفت. توقف.")
+                log.error("FAILSAFE فعال شد.")
                 state["running"] = False
                 continue
             except Exception:
-                log.exception("خطا در اجرای اکشن")
+                log.exception("خطا در اکشن")
                 state["running"] = False
-                print("خطا رخ داد — متوقف شد. F8 برای ادامه.")
+                print("خطا — متوقف شد.")
                 continue
 
             info = scheduler.mark_action_done()
-            log.info(
-                "تمام شد | actions=%s cycles=%s delay=%ss changed=%s",
-                info["actions_done"],
-                info["cycles_done"],
-                info["current_delay"],
-                info["delay_changed"],
-            )
             if info["delay_changed"]:
                 print(
-                    f"⏱ زمان جدید بعد از {info['cycles_done']} چرخه: "
-                    f"{info['previous_delay']}s → {info['current_delay']}s"
+                    f"⏱ زمان جدید: {info['previous_delay']}s → {info['current_delay']}s"
                 )
 
             wait_for = scheduler.wait_seconds()
-            print(f"صبر {wait_for} ثانیه... (F8=توقف)")
+            print(f"صبر {wait_for} ثانیه...")
             slept = 0.0
             while slept < wait_for:
                 if not state["running"]:
@@ -174,17 +145,44 @@ def main() -> int:
                 step = min(0.5, wait_for - slept)
                 time.sleep(step)
                 slept += step
-
     except KeyboardInterrupt:
         print("\nخروج...")
-        log.info("Interrupted by user")
     finally:
         try:
             keyboard.unhook_all_hotkeys()
         except Exception:
             pass
-
     return 0
+
+
+def main() -> int:
+    from bot.calibrator import capture_templates, run_calibration
+    from bot.config import ensure_config, load_config
+
+    args = parse_args()
+    cfg_path = Path(args.config) if args.config else None
+    if cfg_path:
+        ensure_config(cfg_path)
+        cfg = load_config(cfg_path)
+    else:
+        ensure_config()
+        cfg = load_config()
+
+    setup_logging(str(cfg.get("log_file", "logs/dice_bot.log")))
+
+    if args.calibrate:
+        run_calibration(cfg)
+        return 0
+    if args.capture_templates:
+        capture_templates(cfg)
+        return 0
+
+    mode = args.mode or str(cfg.get("mode") or "userbot")
+    if mode == "userbot":
+        from bot.userbot import run_userbot_sync
+
+        return run_userbot_sync(cfg)
+    return run_desktop(cfg)
 
 
 if __name__ == "__main__":
