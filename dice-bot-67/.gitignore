@@ -1,0 +1,15 @@
+config.json
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+logs/
+*.log
+dist/
+build/
+*.spec
+assets/dice.png
+assets/slot.png
+assets/send.png
+.DS_Store
