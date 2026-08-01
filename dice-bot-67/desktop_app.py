@@ -1,4 +1,4 @@
-"""Entry point: فقط کلیک روی 🎲/🎰 و مثلث ارسال. تایم‌بندی بین ارسال‌ها ثابت می‌ماند."""
+"""Desktop هوشمند: پیدا کردن 🎲/🎰 با تصویر + مثلث ارسال."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ def main() -> int:
     from bot.actions import configure_pyautogui, perform_roll
     from bot.calibrator import run_calibration
     from bot.config import load_config, save_config
+    from bot.finder import ensure_builtin_templates, find_with_opencv
     from bot.timing import DelayScheduler
 
     if getattr(sys, "frozen", False):
@@ -42,24 +43,24 @@ def main() -> int:
         print(f"config.json ساخته شد: {cfg_path}")
 
     cfg = load_config(cfg_path)
+    cfg["_base_dir"] = str(base)
     cfg["mode"] = "desktop"
-    cfg["use_opencv"] = False
+    cfg["use_opencv"] = True
+    cfg["smart_emoji"] = True
     cfg["open_emoji_panel_each_roll"] = False
-    # فاصله بین ارسال‌ها (همان تایم‌بندی قبلی)
     cfg.setdefault("min_delay_sec", 61)
     cfg.setdefault("max_delay_sec", 100)
     cfg.setdefault("delay_change_every_cycles", 10)
-    # فاصله کوتاه بین کلیک ایموجی و مثلث ارسال
     cfg["send_delay_min_sec"] = float(cfg.get("send_click_delay_min_sec", 0.4))
     cfg["send_delay_max_sec"] = float(cfg.get("send_click_delay_max_sec", 1.2))
-    cfg["mouse_jitter_px"] = int(cfg.get("mouse_jitter_px", 3))
-    cfg["pre_click_delay_min_sec"] = float(cfg.get("pre_click_delay_min_sec", 0.2))
-    cfg["pre_click_delay_max_sec"] = float(cfg.get("pre_click_delay_max_sec", 0.8))
+    cfg["mouse_jitter_px"] = int(cfg.get("mouse_jitter_px", 2))
+    cfg["pre_click_delay_min_sec"] = float(cfg.get("pre_click_delay_min_sec", 0.15))
+    cfg["pre_click_delay_max_sec"] = float(cfg.get("pre_click_delay_max_sec", 0.5))
+    cfg.setdefault("opencv_confidence", 0.58)
 
     log_file = base / "logs" / "dice_bot.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
     cfg["log_file"] = str(log_file)
-    save_config(cfg, cfg_path)
 
     logging.basicConfig(
         level=logging.INFO,
@@ -72,32 +73,45 @@ def main() -> int:
     log = logging.getLogger("desktop67")
 
     print("=" * 56)
-    print(" Dice Bot 67 — Desktop ساده")
-    print(" فقط ۳ کلیک‌پوینت: 🎲  +  🎰  +  مثلث ارسال")
-    print(" تایم بین ارسال‌ها: ۶۱ تا ۱۰۰ ثانیه (هر ۱۰ دور عوض می‌شود)")
+    print(" Dice Bot 67 — Desktop هوشمند")
+    print(" 🎲 و 🎰 را با تصویر روی صفحه پیدا می‌کند")
+    print(" فاصله ارسال: ۶۱–۱۰۰ ثانیه")
     print("=" * 56)
-    print("قبل از شروع:")
-    print("1) گروه Six Seven Chat را جلو بگذار")
-    print("2) پنل ایموجی را خودت باز کن و باز نگه دار")
-    print("3) بعد کالیبره / F8")
 
-    positions = cfg.get("positions") or {}
-    need_cal = any(k not in positions for k in ("dice", "slot", "send"))
-    if positions.get("dice") == [500, 500] and positions.get("send") == [900, 700]:
-        need_cal = True
-    # اگر هنوز emoji_button در کالیبره قدیمی هست، دوباره بگیر
-    if "emoji_button" in positions and not cfg.get("calibrated_v2"):
-        need_cal = True
+    print("در حال آماده‌سازی قالب‌ها...")
+    ensure_builtin_templates(base)
 
-    if need_cal:
-        print("\nاول یک‌بار کالیبره کن (۳ نقطه).")
-        input("پنل ایموجی را باز کن، بعد Enter بزن...")
+    assets_ok = (base / "assets" / "dice.png").exists() and (base / "assets" / "slot.png").exists()
+    taught = bool(cfg.get("calibrated_v2")) and assets_ok
+
+    print("\nقبل از شروع پنل ایموجی را در گروه Six Seven باز کن و باز نگه دار.")
+    if not taught:
+        print("بار اول باید یک‌بار یاد بگیرد (Teach) تا تصویر واقعی تلگرام را داشته باشد.")
+        input("پنل ایموجی باز است؟ Enter بزن...")
         cfg = run_calibration(cfg, cfg_path)
+        cfg["_base_dir"] = str(base)
     else:
-        ans = input("کالیبره دوباره؟ (y/N): ").strip().lower()
+        ans = input("Teach دوباره؟ (y = بله / Enter = نه): ").strip().lower()
         if ans == "y":
-            input("پنل ایموجی را باز کن، بعد Enter بزن...")
+            input("پنل ایموجی را باز کن، Enter...")
             cfg = run_calibration(cfg, cfg_path)
+            cfg["_base_dir"] = str(base)
+        else:
+            # تست سریع پیدا کردن
+            print("تست پیدا کردن هوشمند...")
+            input("پنل ایموجی باز باشد، Enter برای اسکن...")
+            d = find_with_opencv("dice", cfg)
+            s = find_with_opencv("slot", cfg)
+            print(f"  dice: {d}")
+            print(f"  slot: {s}")
+            if d is None or s is None:
+                print("پیدا نشد — Teach لازم است.")
+                cfg = run_calibration(cfg, cfg_path)
+                cfg["_base_dir"] = str(base)
+
+    # _base_dir را در فایل ذخیره نکن
+    to_save = {k: v for k, v in cfg.items() if k != "_base_dir"}
+    save_config(to_save, cfg_path)
 
     try:
         import keyboard
@@ -124,9 +138,8 @@ def main() -> int:
 
     print()
     print(f"آماده. {hotkey.upper()} = شروع/توقف")
-    print("مهم: پنل ایموجی را باز نگه دار")
-    print("موس گوشه بالا-چپ = توقف اضطراری")
-    print(f"فاصله ارسال‌ها الان: {scheduler.current_delay}s")
+    print("مهم: پنل ایموجی باز بماند")
+    print(f"فاصله ارسال‌ها: {scheduler.current_delay}s")
 
     try:
         while True:
@@ -136,22 +149,22 @@ def main() -> int:
 
             action = scheduler.next_action
             emoji = "🎲" if action == "dice" else "🎰"
-            print(f"[{datetime.now():%H:%M:%S}] {emoji} → مثلث ارسال")
+            print(f"[{datetime.now():%H:%M:%S}] جستجو {emoji} ...")
             try:
                 perform_roll(action, cfg)
             except pyautogui.FailSafeException:
-                print("FAILSAFE — متوقف شد")
+                print("FAILSAFE")
                 state["running"] = False
                 continue
             except Exception:
                 log.exception("action failed")
-                print("خطا — متوقف شد. F8 برای ادامه")
+                print("خطا — F8 برای ادامه. اگر تکرار شد Teach دوباره کن.")
                 state["running"] = False
                 continue
 
             info = scheduler.mark_action_done()
             if info["delay_changed"]:
-                print(f"⏱ فاصله جدید بین ارسال‌ها: {info['current_delay']}s")
+                print(f"⏱ فاصله جدید: {info['current_delay']}s")
 
             wait_for = scheduler.wait_seconds()
             print(f"صبر تا ارسال بعدی: {wait_for}s ...")
