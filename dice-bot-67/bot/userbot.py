@@ -15,12 +15,19 @@ DICE_EMOJI = {"dice": "🎲", "slot": "🎰"}
 
 
 async def run_userbot(cfg: dict[str, Any]) -> int:
+    import sys
+
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
     try:
         from telethon import TelegramClient
         from telethon.tl.types import InputMediaDice
     except ImportError:
-        print("Telethon نصب نیست. اجرا کنید:")
-        print("  pip install telethon")
+        print("Telethon is not installed. Run: pip install telethon")
         return 1
 
     api_id = int(cfg.get("api_id") or 0)
