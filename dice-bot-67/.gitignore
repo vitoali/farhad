@@ -6,9 +6,6 @@ __pycache__/
 .pytest_cache/
 logs/
 *.log
-dist/
-build/
-*.spec
 *.session
 *.session-journal
 assets/dice.png
@@ -16,3 +13,6 @@ assets/slot.png
 assets/send.png
 assets/emoji_button.png
 .DS_Store
+build/
+*.spec
+dist/DiceBot67/
