@@ -1,4 +1,4 @@
-"""کلیک با جابه‌جایی تصادفی موس و تأخیر انسانی."""
+"""کلیک با جابه‌جایی تصادفی موس — فقط ایموجی + مثلث ارسال."""
 
 from __future__ import annotations
 
@@ -20,19 +20,19 @@ def configure_pyautogui(cfg: dict[str, Any]) -> None:
 
 
 def click_with_variation(pos: tuple[int, int], cfg: dict[str, Any]) -> tuple[int, int]:
-    jitter = int(cfg.get("mouse_jitter_px", 5))
+    jitter = int(cfg.get("mouse_jitter_px", 3))
     x = pos[0] + random.randint(-jitter, jitter)
     y = pos[1] + random.randint(-jitter, jitter)
 
     duration = random.uniform(
-        float(cfg.get("mouse_move_min_sec", 0.2)),
-        float(cfg.get("mouse_move_max_sec", 0.5)),
+        float(cfg.get("mouse_move_min_sec", 0.15)),
+        float(cfg.get("mouse_move_max_sec", 0.4)),
     )
     pyautogui.moveTo(x, y, duration=duration)
 
     pre = random.uniform(
-        float(cfg.get("pre_click_delay_min_sec", 1)),
-        float(cfg.get("pre_click_delay_max_sec", 3)),
+        float(cfg.get("pre_click_delay_min_sec", 0.2)),
+        float(cfg.get("pre_click_delay_max_sec", 0.8)),
     )
     time.sleep(pre)
     pyautogui.click()
@@ -42,34 +42,24 @@ def click_with_variation(pos: tuple[int, int], cfg: dict[str, Any]) -> tuple[int
 
 def perform_roll(action: str, cfg: dict[str, Any]) -> None:
     """
-    action: 'dice' یا 'slot'
-
-    جریان واقعی تلگرام دسکتاپ (Six Seven):
-    1) باز کردن پنل ایموجی (اختیاری)
-    2) کلیک روی 🎲 یا 🎰
-    3) کلیک روی Send داخل باکس سیاه راهنما
+    فقط:
+    1) کلیک روی 🎲 یا 🎰  (پنل ایموجی از قبل توسط کاربر باز است)
+    2) کلیک روی مثلث ارسال
     """
     if action not in ("dice", "slot"):
         raise ValueError(f"اکشن نامعتبر: {action}")
 
-    if cfg.get("open_emoji_panel_each_roll", True):
-        try:
-            emoji_btn = find_target("emoji_button", cfg)
-            logger.info("باز کردن پنل ایموجی -> %s", emoji_btn)
-            click_with_variation(emoji_btn, cfg)
-            time.sleep(random.uniform(0.6, 1.4))
-        except KeyError:
-            logger.warning("مختصات emoji_button نیست — پنل ایموجی باز نمی‌شود.")
-
+    # عمداً پنل ایموجی را باز نمی‌کنیم
     target = find_target(action, cfg)
     logger.info("هدف %s -> %s", action, target)
     click_with_variation(target, cfg)
 
+    # فاصله کوتاه تا مثلث ارسال ظاهر/آماده شود
     send_wait = random.uniform(
-        float(cfg.get("send_delay_min_sec", 3)),
-        float(cfg.get("send_delay_max_sec", 10)),
+        float(cfg.get("send_delay_min_sec", 0.4)),
+        float(cfg.get("send_delay_max_sec", 1.2)),
     )
-    logger.info("صبر قبل از Send باکس سیاه: %.1f ثانیه", send_wait)
+    logger.info("صبر قبل از مثلث ارسال: %.2f ثانیه", send_wait)
     time.sleep(send_wait)
 
     send_pos = find_target("send", cfg)

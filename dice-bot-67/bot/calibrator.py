@@ -1,8 +1,7 @@
-"""کالیبره کردن مختصات با موس (حالت دسکتاپ)."""
+"""کالیبره ساده: فقط 🎲 و 🎰 و مثلث ارسال."""
 
 from __future__ import annotations
 
-import logging
 import time
 from typing import Any
 
@@ -10,34 +9,20 @@ import pyautogui
 
 from bot.config import clone_config, save_config
 
-logger = logging.getLogger(__name__)
-
-
 STEPS = (
-    (
-        "emoji_button",
-        "موس را روی دکمه ایموجی (کنار کادر پیام) بگذارید و Enter بزنید",
-    ),
-    (
-        "dice",
-        "پنل ایموجی را باز کنید، موس را روی 🎲 بگذارید و Enter بزنید",
-    ),
-    (
-        "slot",
-        "موس را روی 🎰 بگذارید و Enter بزنید",
-    ),
-    (
-        "send",
-        "باکس سیاه «Send a 🎲 emoji...» را باز کنید و موس را روی کلمه Send بگذارید، Enter",
-    ),
+    ("dice", "پنل ایموجی را باز کن، موس را روی 🎲 بگذار و Enter بزن"),
+    ("slot", "موس را روی 🎰 بگذار و Enter بزن"),
+    ("send", "یک‌بار روی 🎲 بزن تا مثلث ارسال بیاید، موس را روی مثلث ارسال بگذار و Enter بزن"),
 )
 
 
-def run_calibration(cfg: dict[str, Any]) -> dict[str, Any]:
+def run_calibration(cfg: dict[str, Any], config_path=None) -> dict[str, Any]:
     print("=" * 56)
-    print("کالیبره برای Six Seven Chat (تلگرام دسکتاپ)")
-    print("گروه Six Seven Chat را جلو بگذارید.")
-    print("Send یعنی دکمه داخل باکس سیاه راهنما — نه میکروفون.")
+    print("کالیبره ساده — فقط ۳ نقطه")
+    print("1) موقعیت 🎲")
+    print("2) موقعیت 🎰")
+    print("3) مثلث ارسال (همان که بعد از انتخاب ایموجی می‌آید)")
+    print("خودت پنل ایموجی را باز نگه دار. برنامه پنل را باز/بسته نمی‌کند.")
     print("انصراف: Ctrl+C")
     print("=" * 56)
 
@@ -51,8 +36,13 @@ def run_calibration(cfg: dict[str, Any]) -> dict[str, Any]:
         print(f"  ذخیره شد: {key} = ({x}, {y})")
         time.sleep(0.2)
 
+    # دیگر به دکمه باز کردن ایموجی نیاز نیست
+    positions.pop("emoji_button", None)
     updated["positions"] = positions
-    save_config(updated)
+    updated["open_emoji_panel_each_roll"] = False
+    updated["use_opencv"] = False
+    updated["calibrated_v2"] = True
+    save_config(updated, config_path)
     print("\nconfig.json ذخیره شد.")
     return updated
 
@@ -65,7 +55,7 @@ def capture_templates(cfg: dict[str, Any], size: int = 48) -> None:
     positions = cfg.get("positions") or {}
     half = size // 2
 
-    for name in ("emoji_button", "dice", "slot", "send"):
+    for name in ("dice", "slot", "send"):
         if name not in positions:
             continue
         x, y = positions[name]
@@ -80,6 +70,5 @@ def capture_templates(cfg: dict[str, Any], size: int = 48) -> None:
         print(f"  قالب {name} -> {path}")
 
     cfg["templates"] = templates
-    cfg["use_opencv"] = True
     save_config(cfg)
     print("قالب‌ها ذخیره شدند.")

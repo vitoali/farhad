@@ -1,4 +1,4 @@
-"""Entry point: اتوماسیون موس روی تلگرام دسکتاپ — بدون ربات و بدون api."""
+"""Entry point: فقط کلیک روی 🎲/🎰 و مثلث ارسال. تایم‌بندی بین ارسال‌ها ثابت می‌ماند."""
 
 from __future__ import annotations
 
@@ -43,7 +43,19 @@ def main() -> int:
 
     cfg = load_config(cfg_path)
     cfg["mode"] = "desktop"
-    cfg["use_opencv"] = False  # فقط مختصات کالیبره
+    cfg["use_opencv"] = False
+    cfg["open_emoji_panel_each_roll"] = False
+    # فاصله بین ارسال‌ها (همان تایم‌بندی قبلی)
+    cfg.setdefault("min_delay_sec", 61)
+    cfg.setdefault("max_delay_sec", 100)
+    cfg.setdefault("delay_change_every_cycles", 10)
+    # فاصله کوتاه بین کلیک ایموجی و مثلث ارسال
+    cfg["send_delay_min_sec"] = float(cfg.get("send_click_delay_min_sec", 0.4))
+    cfg["send_delay_max_sec"] = float(cfg.get("send_click_delay_max_sec", 1.2))
+    cfg["mouse_jitter_px"] = int(cfg.get("mouse_jitter_px", 3))
+    cfg["pre_click_delay_min_sec"] = float(cfg.get("pre_click_delay_min_sec", 0.2))
+    cfg["pre_click_delay_max_sec"] = float(cfg.get("pre_click_delay_max_sec", 0.8))
+
     log_file = base / "logs" / "dice_bot.log"
     log_file.parent.mkdir(parents=True, exist_ok=True)
     cfg["log_file"] = str(log_file)
@@ -60,29 +72,32 @@ def main() -> int:
     log = logging.getLogger("desktop67")
 
     print("=" * 56)
-    print(" Dice Bot 67 — حالت Desktop (کلیک موس)")
-    print(" بدون BotFather / بدون api_id")
-    print(" تلگرام دسکتاپ را باز کن و گروه Six Seven Chat را جلو بگذار")
+    print(" Dice Bot 67 — Desktop ساده")
+    print(" فقط ۳ کلیک‌پوینت: 🎲  +  🎰  +  مثلث ارسال")
+    print(" تایم بین ارسال‌ها: ۶۱ تا ۱۰۰ ثانیه (هر ۱۰ دور عوض می‌شود)")
     print("=" * 56)
+    print("قبل از شروع:")
+    print("1) گروه Six Seven Chat را جلو بگذار")
+    print("2) پنل ایموجی را خودت باز کن و باز نگه دار")
+    print("3) بعد کالیبره / F8")
 
     positions = cfg.get("positions") or {}
     need_cal = any(k not in positions for k in ("dice", "slot", "send"))
-    # default placeholder coords mean not calibrated
-    if (
-        positions.get("dice") == [500, 500]
-        and positions.get("send") == [900, 700]
-    ):
+    if positions.get("dice") == [500, 500] and positions.get("send") == [900, 700]:
+        need_cal = True
+    # اگر هنوز emoji_button در کالیبره قدیمی هست، دوباره بگیر
+    if "emoji_button" in positions and not cfg.get("calibrated_v2"):
         need_cal = True
 
-    ans = "y" if need_cal else ""
     if need_cal:
-        print("\nاول باید یک‌بار کالیبره کنی.")
-        input("تلگرام را جلو بگذار، بعد Enter بزن...")
-        cfg = run_calibration(cfg)
+        print("\nاول یک‌بار کالیبره کن (۳ نقطه).")
+        input("پنل ایموجی را باز کن، بعد Enter بزن...")
+        cfg = run_calibration(cfg, cfg_path)
     else:
         ans = input("کالیبره دوباره؟ (y/N): ").strip().lower()
         if ans == "y":
-            cfg = run_calibration(cfg)
+            input("پنل ایموجی را باز کن، بعد Enter بزن...")
+            cfg = run_calibration(cfg, cfg_path)
 
     try:
         import keyboard
@@ -109,9 +124,9 @@ def main() -> int:
 
     print()
     print(f"آماده. {hotkey.upper()} = شروع/توقف")
+    print("مهم: پنل ایموجی را باز نگه دار")
     print("موس گوشه بالا-چپ = توقف اضطراری")
-    print(f"تأخیر فعلی: {scheduler.current_delay}s")
-    print("Send = کلمه Send داخل باکس سیاه تلگرام")
+    print(f"فاصله ارسال‌ها الان: {scheduler.current_delay}s")
 
     try:
         while True:
@@ -121,7 +136,7 @@ def main() -> int:
 
             action = scheduler.next_action
             emoji = "🎲" if action == "dice" else "🎰"
-            print(f"[{datetime.now():%H:%M:%S}] {emoji}")
+            print(f"[{datetime.now():%H:%M:%S}] {emoji} → مثلث ارسال")
             try:
                 perform_roll(action, cfg)
             except pyautogui.FailSafeException:
@@ -136,10 +151,10 @@ def main() -> int:
 
             info = scheduler.mark_action_done()
             if info["delay_changed"]:
-                print(f"⏱ زمان جدید: {info['current_delay']}s")
+                print(f"⏱ فاصله جدید بین ارسال‌ها: {info['current_delay']}s")
 
             wait_for = scheduler.wait_seconds()
-            print(f"صبر {wait_for}s ...")
+            print(f"صبر تا ارسال بعدی: {wait_for}s ...")
             slept = 0.0
             while slept < wait_for:
                 if not state["running"]:
