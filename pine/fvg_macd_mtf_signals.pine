@@ -1,42 +1,39 @@
-// FVG Chart-TF Display + MTF Signal Zones + MACD (CM Ult)
-// FVG visual: ONLY current chart timeframe (keeps chart clean)
-// FVG signals: still check 15m / 1H / 4H / 1D zones (multi-timeframe logic)
-// MACD: ChrisMoody CM_MacD_Ult_MTF — EMA(12/26), Signal = SMA(9), cross dots
+// FVG chart-TF display + MTF signal zones + CM MACD Ult
 //@version=6
 indicator("FVG MTF + MACD Signals", "FVG+MACD", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
 
-//══════════════════════════════════════════════════════════════════════════════
-// Inputs
-//══════════════════════════════════════════════════════════════════════════════
-string GRP_FVG = "FVG Display (chart TF only)"
-float  i_thresholdPer = input.float(0.0, "Threshold %", minval = 0.0, maxval = 100.0, step = 0.1, group = GRP_FVG, tooltip = "0 = all gaps (LuxAlgo default).")
+// --- FVG display (current chart TF only) ---
+string GRP_FVG = "FVG Display"
+float  i_thresholdPer = input.float(0.0, "Threshold %", minval = 0.0, maxval = 100.0, step = 0.1, group = GRP_FVG)
 bool   i_autoThresh   = input.bool(false, "Auto Threshold", group = GRP_FVG)
-bool   i_showFvg      = input.bool(true, "Show FVG boxes (this chart TF only)", group = GRP_FVG)
+bool   i_showFvg      = input.bool(true, "Show FVG boxes (chart TF only)", group = GRP_FVG)
 int    i_maxFvg       = input.int(25, "Max Unmitigated FVG", minval = 5, maxval = 100, group = GRP_FVG)
 int    i_extendBars   = input.int(40, "Box Extend (bars)", minval = 0, maxval = 500, group = GRP_FVG)
 bool   i_mitigationLv = input.bool(false, "Draw Mitigation Lines", group = GRP_FVG)
 color  i_bullCss      = input.color(color.new(#089981, 70), "Bullish FVG", group = GRP_FVG)
 color  i_bearCss      = input.color(color.new(#f23645, 70), "Bearish FVG", group = GRP_FVG)
 
-string GRP_ZONE = "MTF Signal Zones (no boxes)"
-string i_zoneMode = input.string("CE Discount/Premium", "Zone Mode", options = ["CE Discount/Premium", "Full FVG", "CE Touch ± ATR"], group = GRP_ZONE, tooltip = "Buy ≤ CE of bullish FVG · Sell ≥ CE of bearish FVG")
+// --- MTF zones for signals (no boxes) ---
+string GRP_ZONE = "MTF Signal Zones"
+string i_zoneMode = input.string("CE Discount/Premium", "Zone Mode", options = ["CE Discount/Premium", "Full FVG", "CE Touch ATR"], group = GRP_ZONE)
 float  i_ceAtrMult = input.float(0.15, "CE Touch ATR Mult", minval = 0.01, step = 0.05, group = GRP_ZONE)
 bool   i_use15sig  = input.bool(true, "Use 15m FVG for signals", group = GRP_ZONE)
 bool   i_use1Hsig  = input.bool(true, "Use 1H FVG for signals", group = GRP_ZONE)
 bool   i_use4Hsig  = input.bool(true, "Use 4H FVG for signals", group = GRP_ZONE)
 bool   i_use1Dsig  = input.bool(true, "Use 1D FVG for signals", group = GRP_ZONE)
-bool   i_requireHtf= input.bool(false, "Require HTF (4H or 1D) confluence", group = GRP_ZONE)
+bool   i_requireHtf= input.bool(false, "Require HTF 4H or 1D confluence", group = GRP_ZONE)
 
-string GRP_MACD = "MACD (CM_MacD_Ult_MTF)"
-int    i_fast   = input.int(12, "Fast Length (EMA)", minval = 1, group = GRP_MACD)
-int    i_slow   = input.int(26, "Slow Length (EMA)", minval = 1, group = GRP_MACD)
-int    i_signal = input.int(9, "Signal Length (SMA)", minval = 1, group = GRP_MACD, tooltip = "CM Ult uses SMA on MACD line — not EMA.")
-bool   i_macdOnChart = input.bool(true, "Use Current Chart Resolution?", group = GRP_MACD, tooltip = "Same as CM Ult: on = chart TF, off = custom TF below.")
+// --- MACD CM Ult: EMA fast/slow, Signal = SMA ---
+string GRP_MACD = "MACD CM Ult"
+int    i_fast   = input.int(12, "Fast Length EMA", minval = 1, group = GRP_MACD)
+int    i_slow   = input.int(26, "Slow Length EMA", minval = 1, group = GRP_MACD)
+int    i_signal = input.int(9, "Signal Length SMA", minval = 1, group = GRP_MACD)
+bool   i_macdOnChart = input.bool(true, "Use Current Chart Resolution", group = GRP_MACD)
 string i_macdTf = input.timeframe("60", "MACD Timeframe", group = GRP_MACD)
 
 string GRP_SIG = "Signals"
 bool   i_showDots = input.bool(true, "Show Buy/Sell Dots", group = GRP_SIG)
-bool   i_minTf15  = input.bool(true, "Only on TF ≥ 15m", group = GRP_SIG)
+bool   i_minTf15  = input.bool(true, "Only on TF >= 15m", group = GRP_SIG)
 color  i_buyColor = input.color(color.new(#089981, 0), "Buy Dot", group = GRP_SIG)
 color  i_sellColor= input.color(color.new(#f23645, 0), "Sell Dot", group = GRP_SIG)
 bool   i_showCe   = input.bool(true, "Show CE on signal bar", group = GRP_SIG)
@@ -44,9 +41,6 @@ bool   i_showCe   = input.bool(true, "Show CE on signal bar", group = GRP_SIG)
 string GRP_DASH = "Dashboard"
 bool   i_showDash = input.bool(true, "Show Dashboard", group = GRP_DASH)
 
-//══════════════════════════════════════════════════════════════════════════════
-// Types
-//══════════════════════════════════════════════════════════════════════════════
 type FvgRec
     float top
     float bottom
@@ -55,61 +49,48 @@ type FvgRec
     string tf
     box   bx
 
-//══════════════════════════════════════════════════════════════════════════════
-// Helpers
-//══════════════════════════════════════════════════════════════════════════════
 chartTfOk() =>
-    not i_minTf15 or (not timeframe.isintraday) or (timeframe.multiplier >= 15)
+    not i_minTf15 or not timeframe.isintraday or timeframe.multiplier >= 15
 
-// Does this TF string match the chart period? (for drawing boxes)
-isChartTf(string tf) =>
-    string p = timeframe.period
-    (tf == "15" and p == "15") or (tf == "60" and p == "60") or (tf == "240" and p == "240") or (tf == "1D" and (p == "D" or p == "1D")) or (tf == "CHART" and true)
-
-// LuxAlgo-style 3-candle FVG
 detectFvg(float thrPer, bool autoThr) =>
     float autoThreshold = ta.cum((high - low) / low) / math.max(bar_index, 1)
     float fixedThreshold = thrPer / 100.0
     float threshold = autoThr ? autoThreshold : fixedThreshold
     bool bull = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > threshold
     bool bear = high < low[2] and close[1] < low[2] and (low[2] - high) / high > threshold
-    float top = bull ? low : bear ? low[2] : na
-    float bot = bull ? high[2] : bear ? high : na
-    int   t0  = time[2]
+    float top = na
+    float bot = na
+    if bull
+        top := low
+        bot := high[2]
+    if bear
+        top := low[2]
+        bot := high
+    int t0 = time[2]
     [bull, bear, top, bot, t0]
 
-// CM_MacD_Ult_MTF exact formula:
-//   macd   = EMA(close, fast) - EMA(close, slow)
-//   signal = SMA(macd, signalLen)   ← SMA, not EMA
-//   dots   on ta.cross(macd, signal)
 cmMacd(int fastLen, int slowLen, int sigLen) =>
     float macdLine = ta.ema(close, fastLen) - ta.ema(close, slowLen)
-    float sigLine  = ta.sma(macdLine, sigLen)
-    bool crossed   = ta.cross(macdLine, sigLine)
-    bool buyX      = crossed and macdLine > sigLine
-    bool sellX     = crossed and macdLine < sigLine
+    float sigLine = ta.sma(macdLine, sigLen)
+    bool crossed = ta.cross(macdLine, sigLine)
+    bool buyX = crossed and macdLine > sigLine
+    bool sellX = crossed and macdLine < sigLine
     [macdLine, sigLine, buyX, sellX]
 
-//══════════════════════════════════════════════════════════════════════════════
-// MACD — same options as CM Ult (chart TF or custom TF)
-//══════════════════════════════════════════════════════════════════════════════
 [macdChart, sigChart, buyChart, sellChart] = cmMacd(i_fast, i_slow, i_signal)
-[macdSec, sigSec, buySec, sellSec] = request.security(syminfo.tickerid, i_macdTf, cmMacd(i_fast, i_slow, i_signal), barmerge.gaps_off, barmerge.lookahead_off)
+[macdSec, sigSec, buySec, sellSec] = request.security(syminfo.tickerid, i_macdTf, cmMacd(i_fast, i_slow, i_signal), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
 
-float macdL   = i_macdOnChart ? macdChart : macdSec
-float sigL    = i_macdOnChart ? sigChart  : sigSec
-bool  macdBuy = i_macdOnChart ? buyChart  : buySec
-bool  macdSell= i_macdOnChart ? sellChart : sellSec
-float atr     = ta.atr(14)
+float macdL = i_macdOnChart ? macdChart : macdSec
+float sigL = i_macdOnChart ? sigChart : sigSec
+bool macdBuy = i_macdOnChart ? buyChart : buySec
+bool macdSell = i_macdOnChart ? sellChart : sellSec
+float atr = ta.atr(14)
 
-//══════════════════════════════════════════════════════════════════════════════
-// FVG: chart TF for DISPLAY + MTF for SIGNAL ZONES (boxes only on chart TF)
-//══════════════════════════════════════════════════════════════════════════════
 [bullC, bearC, topC, botC, tC] = detectFvg(i_thresholdPer, i_autoThresh)
-[bull15, bear15, top15, bot15, t15] = request.security(syminfo.tickerid, "15",  detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
-[bull60, bear60, top60, bot60, t60] = request.security(syminfo.tickerid, "60",  detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
-[bull240, bear240, top240, bot240, t240] = request.security(syminfo.tickerid, "240", detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
-[bullD, bearD, topD, botD, tD] = request.security(syminfo.tickerid, "1D", detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
+[bull15, bear15, top15, bot15, t15] = request.security(syminfo.tickerid, "15", detectFvg(i_thresholdPer, i_autoThresh), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+[bull60, bear60, top60, bot60, t60] = request.security(syminfo.tickerid, "60", detectFvg(i_thresholdPer, i_autoThresh), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+[bull240, bear240, top240, bot240, t240] = request.security(syminfo.tickerid, "240", detectFvg(i_thresholdPer, i_autoThresh), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
+[bullD, bearD, topD, botD, tD] = request.security(syminfo.tickerid, "1D", detectFvg(i_thresholdPer, i_autoThresh), gaps = barmerge.gaps_off, lookahead = barmerge.lookahead_off)
 
 var array<FvgRec> fvgs = array.new<FvgRec>()
 var int lastBullC = na
@@ -154,7 +135,6 @@ trimTf(string tf) =>
             break
     true
 
-// showBox only when this FVG's TF == chart TF (or CHART tag)
 addFvg(bool isBull, float top, float bot, int t0, string tf, bool showBox) =>
     bool exists = false
     int sz = array.size(fvgs)
@@ -166,62 +146,56 @@ addFvg(bool isBull, float top, float bot, int t0, string tf, bool showBox) =>
                 break
     if not exists and not na(top) and not na(bot) and not na(t0)
         color bg = isBull ? i_bullCss : i_bearCss
-        int rightT = time + i_extendBars * math.max(time - nz(time[1], time), 1)
-        box bx = showBox ? box.new(t0, top, rightT, bot, xloc = xloc.bar_time, border_color = color.new(bg, 35), bgcolor = bg) : box(na)
+        int barMs = math.max(time - nz(time[1], time), 1)
+        int rightT = time + i_extendBars * barMs
+        box bx = box(na)
+        if showBox
+            bx := box.new(t0, top, rightT, bot, xloc = xloc.bar_time, border_color = color.new(bg, 35), bgcolor = bg)
         array.unshift(fvgs, FvgRec.new(top, bot, isBull, t0, tf, bx))
         trimTf(tf)
     true
 
-// --- Chart TF FVG (ALWAYS the only drawn boxes) ---
-bool drawChart = i_showFvg
 if bullC and (na(lastBullC) or tC != lastBullC)
-    addFvg(true, topC, botC, tC, "CHART", drawChart)
+    addFvg(true, topC, botC, tC, "CHART", i_showFvg)
     lastBullC := tC
 if bearC and (na(lastBearC) or tC != lastBearC)
-    addFvg(false, topC, botC, tC, "CHART", drawChart)
+    addFvg(false, topC, botC, tC, "CHART", i_showFvg)
     lastBearC := tC
 
-// --- MTF FVG for signals only (draw box ONLY if chart is that TF — avoids duplicate with CHART) ---
-// When chart IS 15/60/240/D, CHART detect already draws it; skip drawing MTF copies.
-bool draw15  = false
-bool draw60  = false
-bool draw240 = false
-bool drawD   = false
-
 if i_use15sig and bull15 and (na(lastBull15) or t15 != lastBull15)
-    addFvg(true, top15, bot15, t15, "15", draw15)
+    addFvg(true, top15, bot15, t15, "15", false)
     lastBull15 := t15
 if i_use15sig and bear15 and (na(lastBear15) or t15 != lastBear15)
-    addFvg(false, top15, bot15, t15, "15", draw15)
+    addFvg(false, top15, bot15, t15, "15", false)
     lastBear15 := t15
 
 if i_use1Hsig and bull60 and (na(lastBull60) or t60 != lastBull60)
-    addFvg(true, top60, bot60, t60, "60", draw60)
+    addFvg(true, top60, bot60, t60, "60", false)
     lastBull60 := t60
 if i_use1Hsig and bear60 and (na(lastBear60) or t60 != lastBear60)
-    addFvg(false, top60, bot60, t60, "60", draw60)
+    addFvg(false, top60, bot60, t60, "60", false)
     lastBear60 := t60
 
 if i_use4Hsig and bull240 and (na(lastBull240) or t240 != lastBull240)
-    addFvg(true, top240, bot240, t240, "240", draw240)
+    addFvg(true, top240, bot240, t240, "240", false)
     lastBull240 := t240
 if i_use4Hsig and bear240 and (na(lastBear240) or t240 != lastBear240)
-    addFvg(false, top240, bot240, t240, "240", draw240)
+    addFvg(false, top240, bot240, t240, "240", false)
     lastBear240 := t240
 
 if i_use1Dsig and bullD and (na(lastBullD) or tD != lastBullD)
-    addFvg(true, topD, botD, tD, "1D", drawD)
+    addFvg(true, topD, botD, tD, "1D", false)
     lastBullD := tD
 if i_use1Dsig and bearD and (na(lastBearD) or tD != lastBearD)
-    addFvg(false, topD, botD, tD, "1D", drawD)
+    addFvg(false, topD, botD, tD, "1D", false)
     lastBearD := tD
 
-// Extend + mitigate
 if array.size(fvgs) > 0
     for i = array.size(fvgs) - 1 to 0
         FvgRec r = array.get(fvgs, i)
         if not na(r.bx)
-            box.set_right(r.bx, time + i_extendBars * math.max(time - nz(time[1], time), 1))
+            int barMs2 = math.max(time - nz(time[1], time), 1)
+            box.set_right(r.bx, time + i_extendBars * barMs2)
         bool mitigated = r.isBull ? close < r.bottom : close > r.top
         if mitigated
             if i_mitigationLv and not na(r.bx)
@@ -230,27 +204,36 @@ if array.size(fvgs) > 0
                 line.new(r.t, lv, time, lv, xloc = xloc.bar_time, color = lc, style = line.style_dashed)
             deleteAt(i)
 
-//══════════════════════════════════════════════════════════════════════════════
-// Zone tests on MTF (+ chart) FVG records
-//══════════════════════════════════════════════════════════════════════════════
 tfAllowedForSignal(string tf) =>
-    tf == "CHART" or (tf == "15" and i_use15sig) or (tf == "60" and i_use1Hsig) or (tf == "240" and i_use4Hsig) or (tf == "1D" and i_use1Dsig)
+    bool ok15 = tf == "15" and i_use15sig
+    bool ok60 = tf == "60" and i_use1Hsig
+    bool ok240 = tf == "240" and i_use4Hsig
+    bool okD = tf == "1D" and i_use1Dsig
+    tf == "CHART" or ok15 or ok60 or ok240 or okD
 
 inZoneBull(FvgRec r) =>
     float ce = (r.top + r.bottom) * 0.5
     bool overlap = low <= r.top and high >= r.bottom
-    bool fullOk = overlap
-    bool ceTouchOk = math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)
-    bool ceDiscOk = overlap and close <= ce
-    i_zoneMode == "Full FVG" ? fullOk : i_zoneMode == "CE Touch ± ATR" ? ceTouchOk : ceDiscOk
+    bool ok = false
+    if i_zoneMode == "Full FVG"
+        ok := overlap
+    else if i_zoneMode == "CE Touch ATR"
+        ok := math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)
+    else
+        ok := overlap and close <= ce
+    ok
 
 inZoneBear(FvgRec r) =>
     float ce = (r.top + r.bottom) * 0.5
     bool overlap = low <= r.top and high >= r.bottom
-    bool fullOk = overlap
-    bool ceTouchOk = math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)
-    bool cePremOk = overlap and close >= ce
-    i_zoneMode == "Full FVG" ? fullOk : i_zoneMode == "CE Touch ± ATR" ? ceTouchOk : cePremOk
+    bool ok = false
+    if i_zoneMode == "Full FVG"
+        ok := overlap
+    else if i_zoneMode == "CE Touch ATR"
+        ok := math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)
+    else
+        ok := overlap and close >= ce
+    ok
 
 bool bullZoneAny = false
 bool bearZoneAny = false
@@ -258,54 +241,32 @@ bool bullZoneHtf = false
 bool bearZoneHtf = false
 string hitBullTf = ""
 string hitBearTf = ""
-float  hitBullCe = na
-float  hitBearCe = na
+float hitBullCe = na
+float hitBearCe = na
 
 if array.size(fvgs) > 0
     for i = 0 to array.size(fvgs) - 1
         FvgRec r = array.get(fvgs, i)
-        // For signals: use MTF zones; CHART zone also counts as confluence on current TF
-        if tfAllowedForSignal(r.tf) and r.tf != "CHART"
+        if tfAllowedForSignal(r.tf)
             if r.isBull and inZoneBull(r)
                 bullZoneAny := true
                 if hitBullTf == ""
-                    hitBullTf := r.tf
+                    hitBullTf := r.tf == "CHART" ? timeframe.period : r.tf
                     hitBullCe := (r.top + r.bottom) * 0.5
                 if r.tf == "240" or r.tf == "1D"
                     bullZoneHtf := true
             if not r.isBull and inZoneBear(r)
                 bearZoneAny := true
                 if hitBearTf == ""
-                    hitBearTf := r.tf
+                    hitBearTf := r.tf == "CHART" ? timeframe.period : r.tf
                     hitBearCe := (r.top + r.bottom) * 0.5
                 if r.tf == "240" or r.tf == "1D"
                     bearZoneHtf := true
 
-// Also allow signal from chart-TF FVG itself (when price is in the visible box)
-bool chartBull = false
-bool chartBear = false
-if array.size(fvgs) > 0
-    for i = 0 to array.size(fvgs) - 1
-        FvgRec r = array.get(fvgs, i)
-        if r.tf == "CHART"
-            if r.isBull and inZoneBull(r)
-                chartBull := true
-                if hitBullTf == ""
-                    hitBullTf := timeframe.period
-                    hitBullCe := (r.top + r.bottom) * 0.5
-            if not r.isBull and inZoneBear(r)
-                chartBear := true
-                if hitBearTf == ""
-                    hitBearTf := timeframe.period
-                    hitBearCe := (r.top + r.bottom) * 0.5
-
-bullZoneAny := bullZoneAny or chartBull
-bearZoneAny := bearZoneAny or chartBear
-
 bool bullReady = bullZoneAny and (not i_requireHtf or bullZoneHtf)
 bool bearReady = bearZoneAny and (not i_requireHtf or bearZoneHtf)
 bool allowDots = chartTfOk()
-bool buySignal  = allowDots and macdBuy  and bullReady
+bool buySignal = allowDots and macdBuy and bullReady
 bool sellSignal = allowDots and macdSell and bearReady
 
 if i_showCe and buySignal and not na(hitBullCe)
@@ -313,36 +274,30 @@ if i_showCe and buySignal and not na(hitBullCe)
 if i_showCe and sellSignal and not na(hitBearCe)
     line.new(bar_index - 1, hitBearCe, bar_index + 3, hitBearCe, color = i_sellColor, style = line.style_dotted, width = 1)
 
-//══════════════════════════════════════════════════════════════════════════════
-// Plots
-//══════════════════════════════════════════════════════════════════════════════
-plotshape(i_showDots and buySignal,  title = "Buy",  style = shape.circle, location = location.belowbar, color = i_buyColor,  size = size.normal, text = "B", textcolor = i_buyColor)
+plotshape(i_showDots and buySignal, title = "Buy", style = shape.circle, location = location.belowbar, color = i_buyColor, size = size.normal, text = "B", textcolor = i_buyColor)
 plotshape(i_showDots and sellSignal, title = "Sell", style = shape.circle, location = location.abovebar, color = i_sellColor, size = size.normal, text = "S", textcolor = i_sellColor)
 bgcolor(buySignal ? color.new(i_buyColor, 92) : sellSignal ? color.new(i_sellColor, 92) : na, title = "Signal Tint")
 
-//══════════════════════════════════════════════════════════════════════════════
-// Dashboard
-//══════════════════════════════════════════════════════════════════════════════
 var table tb = table.new(position.top_right, 2, 8, bgcolor = #1e222d, border_color = #373a46, border_width = 1, frame_color = #373a46, frame_width = 1)
 
 if i_showDash and barstate.islast
     table.cell(tb, 0, 0, "FVG+MACD", text_color = color.white, text_size = size.small)
     table.cell(tb, 1, 0, "FVG:" + timeframe.period, text_color = #089981, text_size = size.small)
     table.cell(tb, 0, 1, "Zone", text_color = color.gray, text_size = size.tiny)
-    table.cell(tb, 1, 1, i_zoneMode == "CE Discount/Premium" ? "CE Disc/Prem" : i_zoneMode, text_color = color.white, text_size = size.tiny)
+    table.cell(tb, 1, 1, i_zoneMode, text_color = color.white, text_size = size.tiny)
     table.cell(tb, 0, 2, "Bull zone", text_color = color.gray, text_size = size.tiny)
-    table.cell(tb, 1, 2, bullReady ? ("YES " + hitBullTf) : "—", text_color = bullReady ? #089981 : color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 2, bullReady ? "YES " + hitBullTf : "-", text_color = bullReady ? #089981 : color.gray, text_size = size.tiny)
     table.cell(tb, 0, 3, "Bear zone", text_color = color.gray, text_size = size.tiny)
-    table.cell(tb, 1, 3, bearReady ? ("YES " + hitBearTf) : "—", text_color = bearReady ? #f23645 : color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 3, bearReady ? "YES " + hitBearTf : "-", text_color = bearReady ? #f23645 : color.gray, text_size = size.tiny)
     table.cell(tb, 0, 4, "MACD", text_color = color.gray, text_size = size.tiny)
     table.cell(tb, 1, 4, macdL >= sigL ? "Bullish" : "Bearish", text_color = macdL >= sigL ? #089981 : #f23645, text_size = size.tiny)
     table.cell(tb, 0, 5, "MACD TF", text_color = color.gray, text_size = size.tiny)
     table.cell(tb, 1, 5, i_macdOnChart ? timeframe.period : i_macdTf, text_color = color.white, text_size = size.tiny)
     table.cell(tb, 0, 6, "Buy now", text_color = color.gray, text_size = size.tiny)
-    table.cell(tb, 1, 6, buySignal ? "YES" : "—", text_color = buySignal ? #089981 : color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 6, buySignal ? "YES" : "-", text_color = buySignal ? #089981 : color.gray, text_size = size.tiny)
     table.cell(tb, 0, 7, "Sell now", text_color = color.gray, text_size = size.tiny)
-    table.cell(tb, 1, 7, sellSignal ? "YES" : "—", text_color = sellSignal ? #f23645 : color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 7, sellSignal ? "YES" : "-", text_color = sellSignal ? #f23645 : color.gray, text_size = size.tiny)
 
-alertcondition(buySignal,  "FVG+MACD Buy",  "Buy: CM MACD cross UP in bullish FVG discount (≤ CE)")
-alertcondition(sellSignal, "FVG+MACD Sell", "Sell: CM MACD cross DOWN in bearish FVG premium (≥ CE)")
+alertcondition(buySignal, "FVG+MACD Buy", "Buy: CM MACD cross UP in bullish FVG discount")
+alertcondition(sellSignal, "FVG+MACD Sell", "Sell: CM MACD cross DOWN in bearish FVG premium")
 alertcondition(buySignal or sellSignal, "FVG+MACD Any", "FVG+MACD signal")
