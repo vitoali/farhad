@@ -1,0 +1,390 @@
+//@version=5
+// HTF Liquidity FVG PA Strategy v1
+// Based on: Khakster PA triggers + HTF trend + Liquidity Sweep + FVG + Supply/Demand
+// Chart TF = trigger TF (use 5m or 15m). Strategy Tester enabled.
+//
+strategy("HTF Liquidity FVG PA Strategy v1",
+     overlay             = true,
+     pyramiding          = 0,
+     initial_capital     = 10000,
+     default_qty_type    = strategy.percent_of_equity,
+     default_qty_value   = 10,
+     commission_type     = strategy.commission.percent,
+     commission_value    = 0.04,
+     process_orders_on_close = true,
+     max_lines_count     = 100,
+     max_labels_count    = 100,
+     max_boxes_count     = 50)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Inputs
+//══════════════════════════════════════════════════════════════════════════════
+grpHtf = "HTF Confirmation"
+htfMode   = input.string("2 of 3", "HTF Confirmation Mode",
+     options = ["Single HTF", "2 of 3", "All HTF"], group = grpHtf)
+singleHTF = input.timeframe("60", "Single HTF", group = grpHtf)
+use1H     = input.bool(true, "Use 1H",  group = grpHtf, inline = "htf")
+use4H     = input.bool(true, "Use 4H",  group = grpHtf, inline = "htf")
+useD      = input.bool(true, "Use Daily", group = grpHtf, inline = "htf")
+
+grpScore = "Score / Filters"
+minScore     = input.int(70, "Minimum Score", minval = 50, maxval = 100, group = grpScore)
+useVolume    = input.bool(true,  "Use Volume Filter", group = grpScore)
+useLiq       = input.bool(true,  "Use Liquidity Sweep", group = grpScore)
+useFvg       = input.bool(true,  "Use FVG", group = grpScore)
+useSD        = input.bool(true,  "Use Supply/Demand", group = grpScore)
+useBos       = input.bool(true,  "Require BOS/CHoCH", group = grpScore)
+usePin       = input.bool(true,  "Allow Pin Bar", group = grpScore)
+useEngulf    = input.bool(true,  "Allow Engulfing", group = grpScore)
+volMaLen     = input.int(20, "Volume MA Length", minval = 5, group = grpScore)
+volMult      = input.float(1.0, "Volume > MA ×", minval = 0.5, step = 0.1, group = grpScore)
+
+grpStruct = "Structure / Zones"
+swingLen     = input.int(10, "Swing Lookback", minval = 3, group = grpStruct)
+liqLookback  = input.int(20, "Liquidity Lookback", minval = 5, group = grpStruct)
+fvgMaxAge    = input.int(30, "FVG Max Age (bars)", minval = 3, group = grpStruct)
+impulseMult  = input.float(1.8, "Impulse Body × ATR", minval = 1.0, step = 0.1, group = grpStruct)
+pinWickMult  = input.float(2.0, "Pin Wick ≥ Body ×", minval = 1.2, step = 0.1, group = grpStruct)
+pinBodyMax   = input.float(0.35, "Pin Body ≤ Range ×", minval = 0.1, maxval = 0.5, step = 0.05, group = grpStruct)
+
+grpRisk = "Risk / ATR"
+atrLen   = input.int(55, "ATR Length", minval = 5, group = grpRisk)
+atrSL    = input.float(1.5, "Stop ATR Multiplier", minval = 0.5, step = 0.1, group = grpRisk)
+tp1RR    = input.float(2.0, "TP1 RR", minval = 0.5, step = 0.1, group = grpRisk)
+tp2RR    = input.float(3.0, "TP2 RR", minval = 1.0, step = 0.1, group = grpRisk)
+tp1QtyPct = input.float(50.0, "Close % at TP1", minval = 0, maxval = 100, step = 5, group = grpRisk)
+atrMinMult = input.float(0.35, "Min ATR / Close % (dead market filter)", minval = 0.05, step = 0.05, group = grpRisk)
+
+grpUi = "UI"
+showSignals = input.bool(true, "Show BUY/SELL labels", group = grpUi)
+showLevels  = input.bool(true, "Draw Entry / SL / TP lines", group = grpUi)
+showTable   = input.bool(true, "Show info table", group = grpUi)
+showFvgBox  = input.bool(false, "Highlight active FVG", group = grpUi)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Helpers
+//══════════════════════════════════════════════════════════════════════════════
+atr = ta.atr(atrLen)
+volMa = ta.sma(volume, volMaLen)
+atrAlive = atr / close * 100.0 >= atrMinMult
+
+fEmaTrend() =>
+    e50  = ta.ema(close, 50)
+    e200 = ta.ema(close, 200)
+    e50 > e200 ? 1 : e50 < e200 ? -1 : 0
+
+// Non-repainting HTF trends
+trend1H = request.security(syminfo.tickerid, "60",  fEmaTrend(), barmerge.gaps_off, barmerge.lookahead_off)
+trend4H = request.security(syminfo.tickerid, "240", fEmaTrend(), barmerge.gaps_off, barmerge.lookahead_off)
+trendD  = request.security(syminfo.tickerid, "D",   fEmaTrend(), barmerge.gaps_off, barmerge.lookahead_off)
+trendSingle = request.security(syminfo.tickerid, singleHTF, fEmaTrend(), barmerge.gaps_off, barmerge.lookahead_off)
+
+//══════════════════════════════════════════════════════════════════════════════
+// HTF Confirmation (respects checkboxes)
+//══════════════════════════════════════════════════════════════════════════════
+bullVotes = (use1H and trend1H == 1 ? 1 : 0) + (use4H and trend4H == 1 ? 1 : 0) + (useD and trendD == 1 ? 1 : 0)
+bearVotes = (use1H and trend1H == -1 ? 1 : 0) + (use4H and trend4H == -1 ? 1 : 0) + (useD and trendD == -1 ? 1 : 0)
+enabledN  = (use1H ? 1 : 0) + (use4H ? 1 : 0) + (useD ? 1 : 0)
+
+bool bullHTF = false
+bool bearHTF = false
+
+if htfMode == "Single HTF"
+    bullHTF := trendSingle == 1
+    bearHTF := trendSingle == -1
+else if htfMode == "2 of 3"
+    need = math.min(2, math.max(1, enabledN))
+    bullHTF := enabledN > 0 and bullVotes >= need
+    bearHTF := enabledN > 0 and bearVotes >= need
+else  // All HTF among enabled
+    bullHTF := enabledN > 0 and bullVotes == enabledN
+    bearHTF := enabledN > 0 and bearVotes == enabledN
+
+//══════════════════════════════════════════════════════════════════════════════
+// Liquidity Sweep (wick beyond swing, close back inside)
+//══════════════════════════════════════════════════════════════════════════════
+swingLow  = ta.lowest(low, liqLookback)[1]
+swingHigh = ta.highest(high, liqLookback)[1]
+
+bullLiqSweep = useLiq and low < swingLow and close > swingLow and close > open
+bearLiqSweep = useLiq and high > swingHigh and close < swingHigh and close < open
+
+// recent sweep window (current or last few bars)
+bullLiqRecent = bullLiqSweep or bullLiqSweep[1] or bullLiqSweep[2] or bullLiqSweep[3]
+bearLiqRecent = bearLiqSweep or bearLiqSweep[1] or bearLiqSweep[2] or bearLiqSweep[3]
+
+//══════════════════════════════════════════════════════════════════════════════
+// Fair Value Gap (3-candle) + revisit
+//══════════════════════════════════════════════════════════════════════════════
+bullFvgFormed = low > high[2]
+bearFvgFormed = high < low[2]
+
+var float bullFvgTop = na
+var float bullFvgBot = na
+var int   bullFvgBar = na
+var float bearFvgTop = na
+var float bearFvgBot = na
+var int   bearFvgBar = na
+
+if bullFvgFormed
+    bullFvgBot := high[2]
+    bullFvgTop := low
+    bullFvgBar := bar_index
+
+if bearFvgFormed
+    bearFvgTop := low[2]
+    bearFvgBot := high
+    bearFvgBar := bar_index
+
+// invalidate when filled
+if not na(bullFvgBar) and low <= bullFvgBot
+    bullFvgTop := na
+    bullFvgBot := na
+    bullFvgBar := na
+
+if not na(bearFvgBar) and high >= bearFvgTop
+    bearFvgTop := na
+    bearFvgBot := na
+    bearFvgBar := na
+
+bullFvgActive = useFvg and not na(bullFvgBar) and (bar_index - bullFvgBar) <= fvgMaxAge
+bearFvgActive = useFvg and not na(bearFvgBar) and (bar_index - bearFvgBar) <= fvgMaxAge
+
+bullInFvg = bullFvgActive and low <= bullFvgTop and high >= bullFvgBot
+bearInFvg = bearFvgActive and high >= bearFvgBot and low <= bearFvgTop
+
+//══════════════════════════════════════════════════════════════════════════════
+// Supply / Demand (base candle before impulse)
+//══════════════════════════════════════════════════════════════════════════════
+body = math.abs(close - open)
+prevBody = math.abs(close[1] - open[1])
+
+bullImpulse = close > open and body > atr * impulseMult and close[1] < open[1]
+bearImpulse = close < open and body > atr * impulseMult and close[1] > open[1]
+
+var float demTop = na
+var float demBot = na
+var int   demBar = na
+var float supTop = na
+var float supBot = na
+var int   supBar = na
+
+if bullImpulse
+    demTop := high[1]
+    demBot := low[1]
+    demBar := bar_index
+
+if bearImpulse
+    supTop := high[1]
+    supBot := low[1]
+    supBar := bar_index
+
+// expire old zones
+if not na(demBar) and bar_index - demBar > fvgMaxAge * 2
+    demTop := na
+    demBot := na
+    demBar := na
+if not na(supBar) and bar_index - supBar > fvgMaxAge * 2
+    supTop := na
+    supBot := na
+    supBar := na
+
+bullInDemand = useSD and not na(demBar) and low <= demTop and high >= demBot
+bearInSupply = useSD and not na(supBar) and high >= supBot and low <= supTop
+
+//══════════════════════════════════════════════════════════════════════════════
+// BOS / CHoCH (break of swing structure)
+//══════════════════════════════════════════════════════════════════════════════
+ph = ta.pivothigh(high, swingLen, swingLen)
+pl = ta.pivotlow(low, swingLen, swingLen)
+
+var float lastPH = na
+var float lastPL = na
+if not na(ph)
+    lastPH := ph
+if not na(pl)
+    lastPL := pl
+
+bullBOS = useBos and not na(lastPH) and close > lastPH and close[1] <= lastPH
+bearBOS = useBos and not na(lastPL) and close < lastPL and close[1] >= lastPL
+bullBosRecent = not useBos or bullBOS or bullBOS[1] or bullBOS[2] or bullBOS[3] or bullBOS[4]
+bearBosRecent = not useBos or bearBOS or bearBOS[1] or bearBOS[2] or bearBOS[3] or bearBOS[4]
+
+//══════════════════════════════════════════════════════════════════════════════
+// Triggers — Pin Bar / Engulfing (Khakster-style)
+//══════════════════════════════════════════════════════════════════════════════
+range_ = high - low
+upperWick = high - math.max(open, close)
+lowerWick = math.min(open, close) - low
+
+bullPin = usePin and range_ > 0 and lowerWick >= body * pinWickMult and body <= range_ * pinBodyMax and close > open
+bearPin = usePin and range_ > 0 and upperWick >= body * pinWickMult and body <= range_ * pinBodyMax and close < open
+
+bullEngulf = useEngulf and close > open and close[1] < open[1] and close >= open[1] and open <= close[1] and body > prevBody
+bearEngulf = useEngulf and close < open and close[1] > open[1] and close <= open[1] and open >= close[1] and body > prevBody
+
+bullTrigger = bullPin or bullEngulf
+bearTrigger = bearPin or bearEngulf
+
+//══════════════════════════════════════════════════════════════════════════════
+// Volume
+//══════════════════════════════════════════════════════════════════════════════
+volOk = not useVolume or volume > volMa * volMult
+
+//══════════════════════════════════════════════════════════════════════════════
+// Scoring (redistributes when Volume off so max stays 100)
+//══════════════════════════════════════════════════════════════════════════════
+htfPts  = useVolume ? 25 : 28
+liqPts  = useVolume ? 20 : 23
+fvgPts  = useVolume ? 15 : 17
+sdPts   = useVolume ? 15 : 17
+trigPts = 10
+volPts  = useVolume ? 10 : 0
+atrPts  = 5
+
+scoreLong =
+     (bullHTF ? htfPts : 0) +
+     (bullLiqRecent ? liqPts : 0) +
+     (bullInFvg ? fvgPts : 0) +
+     (bullInDemand ? sdPts : 0) +
+     (bullTrigger ? trigPts : 0) +
+     ((useVolume and volOk) ? volPts : 0) +
+     (atrAlive ? atrPts : 0)
+
+scoreShort =
+     (bearHTF ? htfPts : 0) +
+     (bearLiqRecent ? liqPts : 0) +
+     (bearInFvg ? fvgPts : 0) +
+     (bearInSupply ? sdPts : 0) +
+     (bearTrigger ? trigPts : 0) +
+     ((useVolume and volOk) ? volPts : 0) +
+     (atrAlive ? atrPts : 0)
+
+// Zone confluence: at least one of Liq / FVG / S-D must be present (if that filter is on)
+bullZone = (not useLiq and not useFvg and not useSD) or bullLiqRecent or bullInFvg or bullInDemand
+bearZone = (not useLiq and not useFvg and not useSD) or bearLiqRecent or bearInFvg or bearInSupply
+
+longSignal  = barstate.isconfirmed and bullHTF and bullTrigger and bullZone and bullBosRecent and volOk and scoreLong  >= minScore and strategy.position_size == 0
+shortSignal = barstate.isconfirmed and bearHTF and bearTrigger and bearZone and bearBosRecent and volOk and scoreShort >= minScore and strategy.position_size == 0
+
+//══════════════════════════════════════════════════════════════════════════════
+// Trade management
+//══════════════════════════════════════════════════════════════════════════════
+float entryPx = na
+float slPx    = na
+float tp1Px   = na
+float tp2Px   = na
+int   sigDir  = 0   // 1 long, -1 short
+int   sigScore = 0
+
+if longSignal
+    entryPx  := close
+    slPx     := entryPx - atr * atrSL
+    float riskL = entryPx - slPx
+    tp1Px    := entryPx + riskL * tp1RR
+    tp2Px    := entryPx + riskL * tp2RR
+    sigDir   := 1
+    sigScore := scoreLong
+    strategy.entry("LONG", strategy.long)
+    if tp1QtyPct > 0 and tp1QtyPct < 100
+        strategy.exit("L-TP1", "LONG", stop = slPx, limit = tp1Px, qty_percent = tp1QtyPct)
+        strategy.exit("L-TP2", "LONG", stop = slPx, limit = tp2Px)
+    else
+        strategy.exit("L-TP2", "LONG", stop = slPx, limit = tp2Px)
+
+if shortSignal
+    entryPx  := close
+    slPx     := entryPx + atr * atrSL
+    float riskS = slPx - entryPx
+    tp1Px    := entryPx - riskS * tp1RR
+    tp2Px    := entryPx - riskS * tp2RR
+    sigDir   := -1
+    sigScore := scoreShort
+    strategy.entry("SHORT", strategy.short)
+    if tp1QtyPct > 0 and tp1QtyPct < 100
+        strategy.exit("S-TP1", "SHORT", stop = slPx, limit = tp1Px, qty_percent = tp1QtyPct)
+        strategy.exit("S-TP2", "SHORT", stop = slPx, limit = tp2Px)
+    else
+        strategy.exit("S-TP2", "SHORT", stop = slPx, limit = tp2Px)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Visuals
+//══════════════════════════════════════════════════════════════════════════════
+var line lnEntry = na
+var line lnSL    = na
+var line lnTP1   = na
+var line lnTP2   = na
+var label lbSig  = na
+
+if (longSignal or shortSignal) and showLevels
+    line.delete(lnEntry)
+    line.delete(lnSL)
+    line.delete(lnTP1)
+    line.delete(lnTP2)
+    lnEntry := line.new(bar_index, entryPx, bar_index + 20, entryPx, color = color.white,  width = 1, style = line.style_solid)
+    lnSL    := line.new(bar_index, slPx,    bar_index + 20, slPx,    color = color.red,    width = 2, style = line.style_solid)
+    lnTP1   := line.new(bar_index, tp1Px,   bar_index + 20, tp1Px,   color = color.green,  width = 1, style = line.style_dashed)
+    lnTP2   := line.new(bar_index, tp2Px,   bar_index + 20, tp2Px,   color = color.teal,   width = 2, style = line.style_dashed)
+
+if longSignal and showSignals
+    label.new(bar_index, low, "BUY\n" + str.tostring(sigScore),
+         style = label.style_label_up, color = color.new(color.green, 10), textcolor = color.white, size = size.small)
+
+if shortSignal and showSignals
+    label.new(bar_index, high, "SELL\n" + str.tostring(sigScore),
+         style = label.style_label_down, color = color.new(color.red, 10), textcolor = color.white, size = size.small)
+
+var box bxBullFvg = na
+var box bxBearFvg = na
+if showFvgBox
+    if bullFvgActive
+        if na(bxBullFvg)
+            bxBullFvg := box.new(bullFvgBar, bullFvgTop, bar_index, bullFvgBot, bgcolor = color.new(color.green, 85), border_color = color.new(color.green, 60))
+        else
+            box.set_lefttop(bxBullFvg, bullFvgBar, bullFvgTop)
+            box.set_rightbottom(bxBullFvg, bar_index, bullFvgBot)
+    else
+        box.delete(bxBullFvg)
+        bxBullFvg := na
+    if bearFvgActive
+        if na(bxBearFvg)
+            bxBearFvg := box.new(bearFvgBar, bearFvgTop, bar_index, bearFvgBot, bgcolor = color.new(color.red, 85), border_color = color.new(color.red, 60))
+        else
+            box.set_lefttop(bxBearFvg, bearFvgBar, bearFvgTop)
+            box.set_rightbottom(bxBearFvg, bar_index, bearFvgBot)
+    else
+        box.delete(bxBearFvg)
+        bxBearFvg := na
+
+// Info table
+var table info = table.new(position.top_right, 2, 10, bgcolor = color.new(color.black, 70), border_width = 1)
+if showTable and barstate.islast
+    strength = scoreLong >= 90 or scoreShort >= 90 ? "Very Strong" : scoreLong >= 80 or scoreShort >= 80 ? "Strong" : scoreLong >= minScore or scoreShort >= minScore ? "OK" : "Wait"
+    table.cell(info, 0, 0, "HTF Mode", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 0, htfMode, text_color = color.white, text_size = size.small)
+    table.cell(info, 0, 1, "1H / 4H / D", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 1,
+         (trend1H == 1 ? "▲" : trend1H == -1 ? "▼" : "•") + " / " +
+         (trend4H == 1 ? "▲" : trend4H == -1 ? "▼" : "•") + " / " +
+         (trendD  == 1 ? "▲" : trendD  == -1 ? "▼" : "•"),
+         text_color = color.white, text_size = size.small)
+    table.cell(info, 0, 2, "Bull HTF", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 2, bullHTF ? "YES" : "NO", text_color = bullHTF ? color.lime : color.red, text_size = size.small)
+    table.cell(info, 0, 3, "Bear HTF", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 3, bearHTF ? "YES" : "NO", text_color = bearHTF ? color.lime : color.red, text_size = size.small)
+    table.cell(info, 0, 4, "Score L / S", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 4, str.tostring(scoreLong) + " / " + str.tostring(scoreShort), text_color = color.white, text_size = size.small)
+    table.cell(info, 0, 5, "Min Score", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 5, str.tostring(minScore), text_color = color.white, text_size = size.small)
+    table.cell(info, 0, 6, "ATR55", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 6, str.tostring(atr, format.mintick), text_color = atrAlive ? color.lime : color.orange, text_size = size.small)
+    table.cell(info, 0, 7, "Volume", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 7, useVolume ? (volOk ? "OK" : "LOW") : "OFF", text_color = color.white, text_size = size.small)
+    table.cell(info, 0, 8, "SL / TP", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 8, "1.5×ATR | " + str.tostring(tp1RR) + "R / " + str.tostring(tp2RR) + "R", text_color = color.white, text_size = size.small)
+    table.cell(info, 0, 9, "Status", text_color = color.gray, text_size = size.small)
+    table.cell(info, 1, 9, strength, text_color = color.aqua, text_size = size.small)
+
+// Optional plots for debugging score
+plotshape(longSignal,  title = "Long",  style = shape.triangleup,   location = location.belowbar, color = color.lime, size = size.tiny)
+plotshape(shortSignal, title = "Short", style = shape.triangledown, location = location.abovebar, color = color.red,  size = size.tiny)
