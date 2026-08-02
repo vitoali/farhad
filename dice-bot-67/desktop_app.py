@@ -48,8 +48,12 @@ def main() -> int:
     cfg["use_opencv"] = True
     cfg["smart_emoji"] = True
     cfg["open_emoji_panel_each_roll"] = False
-    cfg.setdefault("min_delay_sec", 61)
-    cfg.setdefault("max_delay_sec", 100)
+    # تنظیمات درخواستی کاربر — همیشه همین‌ها اعمال شود
+    cfg["min_delay_sec"] = int(cfg.get("min_delay_sec", 61) or 61)
+    cfg["max_delay_sec"] = 80
+    cfg["dice_min"] = 10
+    cfg["dice_max"] = 15
+    cfg["slot_per_cycle"] = 5
     cfg.setdefault("delay_change_every_cycles", 10)
     cfg["send_delay_min_sec"] = float(cfg.get("send_click_delay_min_sec", 0.4))
     cfg["send_delay_max_sec"] = float(cfg.get("send_click_delay_max_sec", 1.2))
@@ -73,9 +77,9 @@ def main() -> int:
     log = logging.getLogger("desktop67")
 
     print("=" * 56)
-    print(" Dice Bot 67 — Desktop هوشمند")
-    print(" الگو: ۱۰ تا 🎲  بعد  ۵ تا 🎰  بعد تکرار")
-    print(" فاصله بین هر ارسال: ۶۱–۱۰۰ ثانیه")
+    print(" Dice Bot 67 — Desktop آماده اجرا")
+    print(" الگو: ۱۰ تا ۱۵ تاس رندوم 🎲  →  ۵ گردونه 🎰  → تکرار")
+    print(" فاصله بین هر ارسال: ۶۱–۸۰ ثانیه")
     print("=" * 56)
 
     print("در حال آماده‌سازی قالب‌ها...")
@@ -124,9 +128,10 @@ def main() -> int:
     configure_pyautogui(cfg)
     scheduler = DelayScheduler(
         min_delay=int(cfg.get("min_delay_sec", 61)),
-        max_delay=int(cfg.get("max_delay_sec", 100)),
+        max_delay=int(cfg.get("max_delay_sec", 80)),
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
-        dice_per_cycle=int(cfg.get("dice_per_cycle", 10)),
+        dice_min=int(cfg.get("dice_min", 10)),
+        dice_max=int(cfg.get("dice_max", 15)),
         slot_per_cycle=int(cfg.get("slot_per_cycle", 5)),
     )
     state = {"running": False}
@@ -141,7 +146,8 @@ def main() -> int:
     print()
     print(f"آماده. {hotkey.upper()} = شروع/توقف")
     print("مهم: پنل ایموجی باز بماند")
-    print(f"فاصله ارسال‌ها: {scheduler.current_delay}s")
+    print(f"این دور: {scheduler._cycle_dice} تاس + {scheduler.slot_per_cycle} گردونه")
+    print(f"فاصله ارسال‌ها: {scheduler.current_delay}s (۶۱–۸۰)")
 
     try:
         while True:
@@ -167,6 +173,10 @@ def main() -> int:
                 continue
 
             info = scheduler.mark_action_done()
+            if info.get("finished_cycle"):
+                print(
+                    f"✔ یک دور تمام شد. دور بعد: {info['cycle_dice']} تاس + ۵ گردونه"
+                )
             if info["delay_changed"]:
                 print(f"⏱ فاصله جدید: {info['current_delay']}s")
 

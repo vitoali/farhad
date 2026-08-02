@@ -108,9 +108,10 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
 
     scheduler = DelayScheduler(
         min_delay=int(cfg.get("min_delay_sec", 61)),
-        max_delay=int(cfg.get("max_delay_sec", 100)),
+        max_delay=int(cfg.get("max_delay_sec", 80)),
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
-        dice_per_cycle=int(cfg.get("dice_per_cycle", 10)),
+        dice_min=int(cfg.get("dice_min", cfg.get("dice_per_cycle", 10))),
+        dice_max=int(cfg.get("dice_max", cfg.get("dice_per_cycle", 15))),
         slot_per_cycle=int(cfg.get("slot_per_cycle", 5)),
     )
 
