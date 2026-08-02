@@ -39,8 +39,6 @@ bool   i_showDots   = input.bool(true, "Show Buy/Sell Dots", group = GRP_SIG)
 bool   i_minTf15    = input.bool(true, "Only on TF ≥ 15m", group = GRP_SIG)
 color  i_buyColor   = input.color(color.new(#089981, 0), "Buy Dot", group = GRP_SIG)
 color  i_sellColor  = input.color(color.new(#f23645, 0), "Sell Dot", group = GRP_SIG)
-string i_dotSize    = input.string("Normal", "Dot Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_SIG)
-
 string GRP_STY = "FVG Style"
 color  i_bull15 = input.color(color.new(#089981, 82), "Bull 15m", group = GRP_STY)
 color  i_bear15 = input.color(color.new(#f23645, 82), "Bear 15m", group = GRP_STY)
@@ -288,25 +286,10 @@ if i_showCe and sellSignal and not na(hitBearCe)
     line.new(bar_index - 1, hitBearCe, bar_index + 3, hitBearCe, color = i_sellColor, style = line.style_dotted, width = 1)
 
 //══════════════════════════════════════════════════════════════════════════════
-// Plots — size must be const; one plotshape per size option
+// Plots (size must be a compile-time const — do not pass input/function)
 //══════════════════════════════════════════════════════════════════════════════
-bool showBuy  = i_showDots and buySignal
-bool showSell = i_showDots and sellSignal
-bool szTiny   = i_dotSize == "Tiny"
-bool szSmall  = i_dotSize == "Small"
-bool szNormal = i_dotSize == "Normal"
-bool szLarge  = i_dotSize == "Large"
-
-plotshape(showBuy  and szTiny,   title = "Buy Tiny",   style = shape.circle, location = location.belowbar, color = i_buyColor,  size = size.tiny,   text = "B", textcolor = i_buyColor)
-plotshape(showBuy  and szSmall,  title = "Buy Small",  style = shape.circle, location = location.belowbar, color = i_buyColor,  size = size.small,  text = "B", textcolor = i_buyColor)
-plotshape(showBuy  and szNormal, title = "Buy Normal", style = shape.circle, location = location.belowbar, color = i_buyColor,  size = size.normal, text = "B", textcolor = i_buyColor)
-plotshape(showBuy  and szLarge,  title = "Buy Large",  style = shape.circle, location = location.belowbar, color = i_buyColor,  size = size.large,  text = "B", textcolor = i_buyColor)
-
-plotshape(showSell and szTiny,   title = "Sell Tiny",   style = shape.circle, location = location.abovebar, color = i_sellColor, size = size.tiny,   text = "S", textcolor = i_sellColor)
-plotshape(showSell and szSmall,  title = "Sell Small",  style = shape.circle, location = location.abovebar, color = i_sellColor, size = size.small,  text = "S", textcolor = i_sellColor)
-plotshape(showSell and szNormal, title = "Sell Normal", style = shape.circle, location = location.abovebar, color = i_sellColor, size = size.normal, text = "S", textcolor = i_sellColor)
-plotshape(showSell and szLarge,  title = "Sell Large",  style = shape.circle, location = location.abovebar, color = i_sellColor, size = size.large,  text = "S", textcolor = i_sellColor)
-
+plotshape(i_showDots and buySignal,  title = "Buy",  style = shape.circle, location = location.belowbar, color = i_buyColor,  size = size.normal, text = "B", textcolor = i_buyColor)
+plotshape(i_showDots and sellSignal, title = "Sell", style = shape.circle, location = location.abovebar, color = i_sellColor, size = size.normal, text = "S", textcolor = i_sellColor)
 bgcolor(buySignal ? color.new(i_buyColor, 92) : sellSignal ? color.new(i_sellColor, 92) : na, title = "Signal Tint")
 
 //══════════════════════════════════════════════════════════════════════════════
