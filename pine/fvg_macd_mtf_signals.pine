@@ -1,7 +1,7 @@
 // FVG Multi-TF + MACD Confluence Signals
 // FVG display inspired by LuxAlgo Fair Value Gap (CC BY-NC-SA 4.0)
 // MACD cross logic adapted from CM_MacD_Ult_MTF (ChrisMoody)
-//@version=5
+//@version=6
 indicator("FVG MTF + MACD Signals", "FVG+MACD", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
 
 //══════════════════════════════════════════════════════════════════════════════
@@ -82,8 +82,11 @@ bearCss(string tf) =>
     tf == "15" ? i_bear15 : tf == "60" ? i_bear1H : tf == "240" ? i_bear4H : i_bear1D
 
 // LuxAlgo-style 3-candle FVG
+// ta.cum must run every bar (not inside ternary)
 detectFvg(float thrPer, bool autoThr) =>
-    float threshold = autoThr ? ta.cum((high - low) / low) / math.max(bar_index, 1) : thrPer / 100.0
+    float autoThreshold = ta.cum((high - low) / low) / math.max(bar_index, 1)
+    float fixedThreshold = thrPer / 100.0
+    float threshold = autoThr ? autoThreshold : fixedThreshold
     bool bull = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > threshold
     bool bear = high < low[2] and close[1] < low[2] and (low[2] - high) / high > threshold
     float top = bull ? low : bear ? low[2] : na
@@ -137,11 +140,13 @@ countTf(string tf) =>
                 c += 1
     c
 
+// Keep return type consistent (void-like bool) — do not leak array.remove's FvgRec
 deleteAt(int idx) =>
     FvgRec old = array.get(fvgs, idx)
     if not na(old.bx)
         box.delete(old.bx)
-    array.remove(fvgs, idx)
+    FvgRec removed = array.remove(fvgs, idx)
+    true
 
 trimTf(string tf) =>
     while countTf(tf) > i_maxPerTf
@@ -154,8 +159,9 @@ trimTf(string tf) =>
                     break
         if idx >= 0
             deleteAt(idx)
-        else
+        if idx < 0
             break
+    true
 
 addFvg(bool isBull, float top, float bot, int t0, string tf, bool showBox) =>
     bool exists = false
@@ -169,9 +175,10 @@ addFvg(bool isBull, float top, float bot, int t0, string tf, bool showBox) =>
     if not exists and not na(top) and not na(bot) and not na(t0)
         color bg = isBull ? bullCss(tf) : bearCss(tf)
         int rightT = time + i_extendBars * math.max(time - nz(time[1], time), 1)
-        box bx = showBox ? box.new(t0, top, rightT, bot, xloc = xloc.bar_time, border_color = color.new(bg, 35), bgcolor = bg) : na
+        box bx = showBox ? box.new(t0, top, rightT, bot, xloc = xloc.bar_time, border_color = color.new(bg, 35), bgcolor = bg) : box(na)
         array.unshift(fvgs, FvgRec.new(top, bot, isBull, t0, tf, bx))
         trimTf(tf)
+    true
 
 // Register new FVGs when HTF timestamp changes
 bool track15 = i_show15 or i_use15sig
@@ -231,12 +238,18 @@ tfAllowedForSignal(string tf) =>
 inZoneBull(FvgRec r) =>
     float ce = (r.top + r.bottom) * 0.5
     bool overlap = low <= r.top and high >= r.bottom
-    i_zoneMode == "Full FVG" ? overlap : i_zoneMode == "CE Touch ± ATR" ? (math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)) : (overlap and close <= ce)
+    bool fullOk = overlap
+    bool ceTouchOk = math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)
+    bool ceDiscOk = overlap and close <= ce
+    i_zoneMode == "Full FVG" ? fullOk : i_zoneMode == "CE Touch ± ATR" ? ceTouchOk : ceDiscOk
 
 inZoneBear(FvgRec r) =>
     float ce = (r.top + r.bottom) * 0.5
     bool overlap = low <= r.top and high >= r.bottom
-    i_zoneMode == "Full FVG" ? overlap : i_zoneMode == "CE Touch ± ATR" ? (math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)) : (overlap and close >= ce)
+    bool fullOk = overlap
+    bool ceTouchOk = math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)
+    bool cePremOk = overlap and close >= ce
+    i_zoneMode == "Full FVG" ? fullOk : i_zoneMode == "CE Touch ± ATR" ? ceTouchOk : cePremOk
 
 bool bullZoneAny = false
 bool bearZoneAny = false
