@@ -1,0 +1,315 @@
+// FVG Multi-TF + MACD Confluence Signals
+// FVG display inspired by LuxAlgo Fair Value Gap (CC BY-NC-SA 4.0)
+// MACD cross logic adapted from CM_MacD_Ult_MTF (ChrisMoody)
+//@version=5
+indicator("FVG MTF + MACD Signals", "FVG+MACD", overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Inputs
+//══════════════════════════════════════════════════════════════════════════════
+string GRP_FVG = "FVG Detection"
+float  i_thresholdPer = input.float(0.0, "Threshold %", minval = 0.0, maxval = 100.0, step = 0.1, group = GRP_FVG, tooltip = "Minimum gap size as % of price. 0 = all gaps (LuxAlgo default).")
+bool   i_autoThresh   = input.bool(false, "Auto Threshold", group = GRP_FVG)
+bool   i_show15       = input.bool(true, "Show 15m FVG", group = GRP_FVG)
+bool   i_show1H       = input.bool(true, "Show 1H FVG", group = GRP_FVG)
+bool   i_show4H       = input.bool(true, "Show 4H FVG", group = GRP_FVG)
+bool   i_show1D       = input.bool(true, "Show 1D FVG", group = GRP_FVG)
+int    i_maxPerTf     = input.int(25, "Max Unmitigated FVG per TF", minval = 5, maxval = 100, group = GRP_FVG)
+int    i_extendBars   = input.int(40, "Box Extend (bars)", minval = 0, maxval = 500, group = GRP_FVG)
+bool   i_mitigationLv = input.bool(false, "Draw Mitigation Lines", group = GRP_FVG)
+
+string GRP_ZONE = "Entry Zone (ICT)"
+string i_zoneMode = input.string("CE Discount/Premium", "Zone Mode", options = ["CE Discount/Premium", "Full FVG", "CE Touch ± ATR"], group = GRP_ZONE, tooltip = "Recommended default (ICT): Buy only in lower half of bullish FVG (close ≤ CE 50%), Sell only in upper half of bearish FVG (close ≥ CE 50%).")
+float  i_ceAtrMult = input.float(0.15, "CE Touch ATR Mult", minval = 0.01, step = 0.05, group = GRP_ZONE)
+bool   i_use15sig  = input.bool(true, "Use 15m FVG for signals", group = GRP_ZONE)
+bool   i_use1Hsig  = input.bool(true, "Use 1H FVG for signals", group = GRP_ZONE)
+bool   i_use4Hsig  = input.bool(true, "Use 4H FVG for signals", group = GRP_ZONE)
+bool   i_use1Dsig  = input.bool(true, "Use 1D FVG for signals", group = GRP_ZONE)
+bool   i_requireHtf= input.bool(false, "Require HTF (4H or 1D) confluence", group = GRP_ZONE, tooltip = "If on, MACD signal must also sit inside a 4H or 1D FVG of the same side.")
+
+string GRP_MACD = "MACD (CM Ult style)"
+int    i_fast   = input.int(12, "Fast Length", minval = 1, group = GRP_MACD)
+int    i_slow   = input.int(26, "Slow Length", minval = 1, group = GRP_MACD)
+int    i_signal = input.int(9, "Signal Length (SMA)", minval = 1, group = GRP_MACD)
+bool   i_macdOnChart = input.bool(true, "MACD on Chart TF", group = GRP_MACD, tooltip = "Off = compute MACD on selected TF below.")
+string i_macdTf = input.timeframe("15", "MACD Timeframe", group = GRP_MACD)
+
+string GRP_SIG = "Signals"
+bool   i_showDots   = input.bool(true, "Show Buy/Sell Dots", group = GRP_SIG)
+bool   i_minTf15    = input.bool(true, "Only on TF ≥ 15m", group = GRP_SIG)
+color  i_buyColor   = input.color(color.new(#089981, 0), "Buy Dot", group = GRP_SIG)
+color  i_sellColor  = input.color(color.new(#f23645, 0), "Sell Dot", group = GRP_SIG)
+string i_dotSize    = input.string("Normal", "Dot Size", options = ["Tiny", "Small", "Normal", "Large"], group = GRP_SIG)
+
+string GRP_STY = "FVG Style"
+color  i_bull15 = input.color(color.new(#089981, 82), "Bull 15m", group = GRP_STY)
+color  i_bear15 = input.color(color.new(#f23645, 82), "Bear 15m", group = GRP_STY)
+color  i_bull1H = input.color(color.new(#26a69a, 75), "Bull 1H", group = GRP_STY)
+color  i_bear1H = input.color(color.new(#ef5350, 75), "Bear 1H", group = GRP_STY)
+color  i_bull4H = input.color(color.new(#00897b, 68), "Bull 4H", group = GRP_STY)
+color  i_bear4H = input.color(color.new(#e53935, 68), "Bear 4H", group = GRP_STY)
+color  i_bull1D = input.color(color.new(#004d40, 60), "Bull 1D", group = GRP_STY)
+color  i_bear1D = input.color(color.new(#b71c1c, 60), "Bear 1D", group = GRP_STY)
+bool   i_showCe = input.bool(true, "Show CE (50%) on signal bar", group = GRP_STY)
+
+string GRP_DASH = "Dashboard"
+bool   i_showDash = input.bool(true, "Show Dashboard", group = GRP_DASH)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Types
+//══════════════════════════════════════════════════════════════════════════════
+type FvgRec
+    float top
+    float bottom
+    bool  isBull
+    int   t
+    string tf
+    box   bx
+
+//══════════════════════════════════════════════════════════════════════════════
+// Helpers
+//══════════════════════════════════════════════════════════════════════════════
+dotSize() =>
+    i_dotSize == "Tiny" ? size.tiny : i_dotSize == "Small" ? size.small : i_dotSize == "Large" ? size.large : size.normal
+
+chartTfOk() =>
+    not i_minTf15 or (not timeframe.isintraday) or (timeframe.multiplier >= 15)
+
+bullCss(string tf) =>
+    tf == "15" ? i_bull15 : tf == "60" ? i_bull1H : tf == "240" ? i_bull4H : i_bull1D
+
+bearCss(string tf) =>
+    tf == "15" ? i_bear15 : tf == "60" ? i_bear1H : tf == "240" ? i_bear4H : i_bear1D
+
+// LuxAlgo-style 3-candle FVG
+detectFvg(float thrPer, bool autoThr) =>
+    float threshold = autoThr ? ta.cum((high - low) / low) / math.max(bar_index, 1) : thrPer / 100.0
+    bool bull = low > high[2] and close[1] > high[2] and (low - high[2]) / high[2] > threshold
+    bool bear = high < low[2] and close[1] < low[2] and (low[2] - high) / high > threshold
+    float top = bull ? low : bear ? low[2] : na
+    float bot = bull ? high[2] : bear ? high : na
+    int   t0  = time[2]
+    [bull, bear, top, bot, t0]
+
+macdPack(int fastLen, int slowLen, int sigLen) =>
+    float macdLine = ta.ema(close, fastLen) - ta.ema(close, slowLen)
+    float sigLine  = ta.sma(macdLine, sigLen)
+    bool buyX  = ta.crossover(macdLine, sigLine)
+    bool sellX = ta.crossunder(macdLine, sigLine)
+    [macdLine, sigLine, buyX, sellX]
+
+//══════════════════════════════════════════════════════════════════════════════
+// MACD
+//══════════════════════════════════════════════════════════════════════════════
+[macdChart, sigChart, buyChart, sellChart] = macdPack(i_fast, i_slow, i_signal)
+[macdHtf, sigHtf, buyHtf, sellHtf] = request.security(syminfo.tickerid, i_macdTf, macdPack(i_fast, i_slow, i_signal), barmerge.gaps_off, barmerge.lookahead_off)
+
+float macdL   = i_macdOnChart ? macdChart : macdHtf
+float sigL    = i_macdOnChart ? sigChart  : sigHtf
+bool  macdBuy = i_macdOnChart ? buyChart  : buyHtf
+bool  macdSell= i_macdOnChart ? sellChart : sellHtf
+float atr     = ta.atr(14)
+
+//══════════════════════════════════════════════════════════════════════════════
+// MTF FVG via request.security (always called — no conditional)
+//══════════════════════════════════════════════════════════════════════════════
+[bull15, bear15, top15, bot15, t15] = request.security(syminfo.tickerid, "15",  detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
+[bull60, bear60, top60, bot60, t60] = request.security(syminfo.tickerid, "60",  detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
+[bull240, bear240, top240, bot240, t240] = request.security(syminfo.tickerid, "240", detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
+[bullD, bearD, topD, botD, tD] = request.security(syminfo.tickerid, "1D", detectFvg(i_thresholdPer, i_autoThresh), barmerge.gaps_off, barmerge.lookahead_off)
+
+var array<FvgRec> fvgs = array.new<FvgRec>()
+var int lastBull15 = na
+var int lastBear15 = na
+var int lastBull60 = na
+var int lastBear60 = na
+var int lastBull240 = na
+var int lastBear240 = na
+var int lastBullD = na
+var int lastBearD = na
+
+countTf(string tf) =>
+    int c = 0
+    int sz = array.size(fvgs)
+    if sz > 0
+        for i = 0 to sz - 1
+            if array.get(fvgs, i).tf == tf
+                c += 1
+    c
+
+deleteAt(int idx) =>
+    FvgRec old = array.get(fvgs, idx)
+    if not na(old.bx)
+        box.delete(old.bx)
+    array.remove(fvgs, idx)
+
+trimTf(string tf) =>
+    while countTf(tf) > i_maxPerTf
+        int idx = -1
+        int sz = array.size(fvgs)
+        if sz > 0
+            for i = sz - 1 to 0
+                if array.get(fvgs, i).tf == tf
+                    idx := i
+                    break
+        if idx >= 0
+            deleteAt(idx)
+        else
+            break
+
+addFvg(bool isBull, float top, float bot, int t0, string tf, bool showBox) =>
+    bool exists = false
+    int sz = array.size(fvgs)
+    if sz > 0
+        for i = 0 to sz - 1
+            FvgRec r = array.get(fvgs, i)
+            if r.tf == tf and r.t == t0
+                exists := true
+                break
+    if not exists and not na(top) and not na(bot) and not na(t0)
+        color bg = isBull ? bullCss(tf) : bearCss(tf)
+        int rightT = time + i_extendBars * math.max(time - nz(time[1], time), 1)
+        box bx = showBox ? box.new(t0, top, rightT, bot, xloc = xloc.bar_time, border_color = color.new(bg, 35), bgcolor = bg) : na
+        array.unshift(fvgs, FvgRec.new(top, bot, isBull, t0, tf, bx))
+        trimTf(tf)
+
+// Register new FVGs when HTF timestamp changes
+bool track15 = i_show15 or i_use15sig
+bool track60 = i_show1H or i_use1Hsig
+bool track240 = i_show4H or i_use4Hsig
+bool trackD = i_show1D or i_use1Dsig
+
+if track15 and bull15 and (na(lastBull15) or t15 != lastBull15)
+    addFvg(true, top15, bot15, t15, "15", i_show15)
+    lastBull15 := t15
+if track15 and bear15 and (na(lastBear15) or t15 != lastBear15)
+    addFvg(false, top15, bot15, t15, "15", i_show15)
+    lastBear15 := t15
+
+if track60 and bull60 and (na(lastBull60) or t60 != lastBull60)
+    addFvg(true, top60, bot60, t60, "60", i_show1H)
+    lastBull60 := t60
+if track60 and bear60 and (na(lastBear60) or t60 != lastBear60)
+    addFvg(false, top60, bot60, t60, "60", i_show1H)
+    lastBear60 := t60
+
+if track240 and bull240 and (na(lastBull240) or t240 != lastBull240)
+    addFvg(true, top240, bot240, t240, "240", i_show4H)
+    lastBull240 := t240
+if track240 and bear240 and (na(lastBear240) or t240 != lastBear240)
+    addFvg(false, top240, bot240, t240, "240", i_show4H)
+    lastBear240 := t240
+
+if trackD and bullD and (na(lastBullD) or tD != lastBullD)
+    addFvg(true, topD, botD, tD, "1D", i_show1D)
+    lastBullD := tD
+if trackD and bearD and (na(lastBearD) or tD != lastBearD)
+    addFvg(false, topD, botD, tD, "1D", i_show1D)
+    lastBearD := tD
+
+// Extend boxes + mitigate (LuxAlgo rules)
+if array.size(fvgs) > 0
+    for i = array.size(fvgs) - 1 to 0
+        FvgRec r = array.get(fvgs, i)
+        if not na(r.bx)
+            box.set_right(r.bx, time + i_extendBars * math.max(time - nz(time[1], time), 1))
+
+        bool mitigated = r.isBull ? close < r.bottom : close > r.top
+        if mitigated
+            if i_mitigationLv
+                float lv = r.isBull ? r.bottom : r.top
+                color lc = r.isBull ? bullCss(r.tf) : bearCss(r.tf)
+                line.new(r.t, lv, time, lv, xloc = xloc.bar_time, color = lc, style = line.style_dashed)
+            deleteAt(i)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Zone tests — Buy below CE (discount), Sell above CE (premium)
+//══════════════════════════════════════════════════════════════════════════════
+tfAllowedForSignal(string tf) =>
+    (tf == "15" and i_use15sig) or (tf == "60" and i_use1Hsig) or (tf == "240" and i_use4Hsig) or (tf == "1D" and i_use1Dsig)
+
+inZoneBull(FvgRec r) =>
+    float ce = (r.top + r.bottom) * 0.5
+    bool overlap = low <= r.top and high >= r.bottom
+    i_zoneMode == "Full FVG" ? overlap : i_zoneMode == "CE Touch ± ATR" ? (math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)) : (overlap and close <= ce)
+
+inZoneBear(FvgRec r) =>
+    float ce = (r.top + r.bottom) * 0.5
+    bool overlap = low <= r.top and high >= r.bottom
+    i_zoneMode == "Full FVG" ? overlap : i_zoneMode == "CE Touch ± ATR" ? (math.abs(close - ce) <= atr * i_ceAtrMult or (low <= ce and high >= ce)) : (overlap and close >= ce)
+
+bool bullZoneAny = false
+bool bearZoneAny = false
+bool bullZoneHtf = false
+bool bearZoneHtf = false
+string hitBullTf = ""
+string hitBearTf = ""
+float  hitBullCe = na
+float  hitBearCe = na
+
+if array.size(fvgs) > 0
+    for i = 0 to array.size(fvgs) - 1
+        FvgRec r = array.get(fvgs, i)
+        if tfAllowedForSignal(r.tf)
+            if r.isBull and inZoneBull(r)
+                bullZoneAny := true
+                if hitBullTf == ""
+                    hitBullTf := r.tf
+                    hitBullCe := (r.top + r.bottom) * 0.5
+                if r.tf == "240" or r.tf == "1D"
+                    bullZoneHtf := true
+            if not r.isBull and inZoneBear(r)
+                bearZoneAny := true
+                if hitBearTf == ""
+                    hitBearTf := r.tf
+                    hitBearCe := (r.top + r.bottom) * 0.5
+                if r.tf == "240" or r.tf == "1D"
+                    bearZoneHtf := true
+
+bool bullReady = bullZoneAny and (not i_requireHtf or bullZoneHtf)
+bool bearReady = bearZoneAny and (not i_requireHtf or bearZoneHtf)
+bool allowDots = chartTfOk()
+bool buySignal  = allowDots and macdBuy  and bullReady
+bool sellSignal = allowDots and macdSell and bearReady
+
+if i_showCe and buySignal and not na(hitBullCe)
+    line.new(bar_index - 1, hitBullCe, bar_index + 3, hitBullCe, color = i_buyColor, style = line.style_dotted, width = 1)
+if i_showCe and sellSignal and not na(hitBearCe)
+    line.new(bar_index - 1, hitBearCe, bar_index + 3, hitBearCe, color = i_sellColor, style = line.style_dotted, width = 1)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Plots
+//══════════════════════════════════════════════════════════════════════════════
+plotshape(i_showDots and buySignal,  title = "Buy",  style = shape.circle, location = location.belowbar, color = i_buyColor,  size = dotSize(), text = "B", textcolor = i_buyColor)
+plotshape(i_showDots and sellSignal, title = "Sell", style = shape.circle, location = location.abovebar, color = i_sellColor, size = dotSize(), text = "S", textcolor = i_sellColor)
+bgcolor(buySignal ? color.new(i_buyColor, 92) : sellSignal ? color.new(i_sellColor, 92) : na, title = "Signal Tint")
+
+//══════════════════════════════════════════════════════════════════════════════
+// Dashboard
+//══════════════════════════════════════════════════════════════════════════════
+var table tb = table.new(position.top_right, 2, 8, bgcolor = #1e222d, border_color = #373a46, border_width = 1, frame_color = #373a46, frame_width = 1)
+
+if i_showDash and barstate.islast
+    table.cell(tb, 0, 0, "FVG+MACD", text_color = color.white, text_size = size.small)
+    table.cell(tb, 1, 0, allowDots ? "TF≥15" : "TF<15", text_color = allowDots ? #089981 : #f23645, text_size = size.small)
+    table.cell(tb, 0, 1, "Zone", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 1, i_zoneMode == "CE Discount/Premium" ? "CE Disc/Prem" : i_zoneMode, text_color = color.white, text_size = size.tiny)
+    table.cell(tb, 0, 2, "Bull zone", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 2, bullReady ? ("YES " + hitBullTf) : "—", text_color = bullReady ? #089981 : color.gray, text_size = size.tiny)
+    table.cell(tb, 0, 3, "Bear zone", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 3, bearReady ? ("YES " + hitBearTf) : "—", text_color = bearReady ? #f23645 : color.gray, text_size = size.tiny)
+    table.cell(tb, 0, 4, "MACD", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 4, macdL >= sigL ? "Bullish" : "Bearish", text_color = macdL >= sigL ? #089981 : #f23645, text_size = size.tiny)
+    table.cell(tb, 0, 5, "Open FVGs", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 5, str.tostring(array.size(fvgs)), text_color = color.white, text_size = size.tiny)
+    table.cell(tb, 0, 6, "Buy now", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 6, buySignal ? "YES" : "—", text_color = buySignal ? #089981 : color.gray, text_size = size.tiny)
+    table.cell(tb, 0, 7, "Sell now", text_color = color.gray, text_size = size.tiny)
+    table.cell(tb, 1, 7, sellSignal ? "YES" : "—", text_color = sellSignal ? #f23645 : color.gray, text_size = size.tiny)
+
+//══════════════════════════════════════════════════════════════════════════════
+// Alerts
+//══════════════════════════════════════════════════════════════════════════════
+alertcondition(buySignal,  "FVG+MACD Buy",  "Buy: MACD cross UP in bullish FVG discount (close ≤ CE)")
+alertcondition(sellSignal, "FVG+MACD Sell", "Sell: MACD cross DOWN in bearish FVG premium (close ≥ CE)")
+alertcondition(buySignal or sellSignal, "FVG+MACD Any", "FVG+MACD signal")
