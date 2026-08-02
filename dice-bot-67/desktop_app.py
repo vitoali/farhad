@@ -74,8 +74,8 @@ def main() -> int:
 
     print("=" * 56)
     print(" Dice Bot 67 — Desktop هوشمند")
-    print(" 🎲 و 🎰 را با تصویر روی صفحه پیدا می‌کند")
-    print(" فاصله ارسال: ۶۱–۱۰۰ ثانیه")
+    print(" الگو: ۱۰ تا 🎲  بعد  ۵ تا 🎰  بعد تکرار")
+    print(" فاصله بین هر ارسال: ۶۱–۱۰۰ ثانیه")
     print("=" * 56)
 
     print("در حال آماده‌سازی قالب‌ها...")
@@ -126,6 +126,8 @@ def main() -> int:
         min_delay=int(cfg.get("min_delay_sec", 61)),
         max_delay=int(cfg.get("max_delay_sec", 100)),
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
+        dice_per_cycle=int(cfg.get("dice_per_cycle", 10)),
+        slot_per_cycle=int(cfg.get("slot_per_cycle", 5)),
     )
     state = {"running": False}
 
@@ -149,7 +151,9 @@ def main() -> int:
 
             action = scheduler.next_action
             emoji = "🎲" if action == "dice" else "🎰"
-            print(f"[{datetime.now():%H:%M:%S}] جستجو {emoji} ...")
+            print(
+                f"[{datetime.now():%H:%M:%S}] {scheduler.progress_in_cycle} — جستجو {emoji} ..."
+            )
             try:
                 perform_roll(action, cfg)
             except pyautogui.FailSafeException:

@@ -9,6 +9,8 @@
   "min_delay_sec": 61,
   "max_delay_sec": 100,
   "delay_change_every_cycles": 10,
+  "dice_per_cycle": 10,
+  "slot_per_cycle": 5,
   "send_delay_min_sec": 3,
   "send_delay_max_sec": 10,
   "pre_click_delay_min_sec": 1,
@@ -30,7 +32,9 @@
     "slot": "assets/slot.png",
     "send": "assets/send.png"
   },
-  "open_emoji_panel_each_roll": true,
+  "open_emoji_panel_each_roll": false,
+  "send_click_delay_min_sec": 0.4,
+  "send_click_delay_max_sec": 1.2,
   "log_file": "logs/dice_bot.log",
   "pyautogui_pause": 0.15,
   "failsafe": true

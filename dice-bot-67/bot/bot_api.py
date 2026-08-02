@@ -110,6 +110,8 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
         min_delay=int(cfg.get("min_delay_sec", 61)),
         max_delay=int(cfg.get("max_delay_sec", 100)),
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
+        dice_per_cycle=int(cfg.get("dice_per_cycle", 10)),
+        slot_per_cycle=int(cfg.get("slot_per_cycle", 5)),
     )
 
     state = {"running": False}
