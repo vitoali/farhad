@@ -1,0 +1,65 @@
+<!--
+  =====================================================================
+  پیشرو جوش — دو ردیف اسلایدر محصول (ویژه + پیشنهادی)
+
+  ترتیب صفحه:
+    [هدر]
+    [اسلایدر اول سایت — دست نزنید]
+    >>> این بلوک را اینجا بچسبانید <<<
+    [خدمات جوشکاری کلدینگ و بقیهٔ محتوای فعلی سایت]
+
+  ۱) CSS را در قالب لود کنید
+  ۲) این HTML را بعد از image-carousel و قبل از cladding بگذارید
+  ۳) JS را انتهای صفحه لود کنید
+  ۴) محصولات را در product-carousels.js ویرایش کنید
+  =====================================================================
+-->
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="/themes/shop/default/assets/css/product-carousels.css" />
+<!-- اگر فایل را روی سرور نگذاشته‌اید، از raw گیت‌هاب موقتاً استفاده کنید: -->
+<!-- <link rel="stylesheet" href="https://raw.githubusercontent.com/vitoali/farhad/cursor/pishro-slanted-header-7149/header/products/product-carousels.css" /> -->
+
+<section class="pj-prod-rails" aria-label="محصولات ویژه و پیشنهادی">
+  <!-- ردیف ۱: محصولات ویژه -->
+  <section class="pj-prod-rail" id="pjSpecialProducts" aria-labelledby="pjSpecialTitle">
+    <div class="pj-prod-rail__head">
+      <h2 class="pj-prod-rail__title" id="pjSpecialTitle">محصولات ویژه</h2>
+      <div class="pj-prod-rail__nav">
+        <button type="button" class="pj-prod-rail__btn" data-dir="next" aria-label="بعدی">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="pj-prod-rail__btn" data-dir="prev" aria-label="قبلی">
+          <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="pj-prod-rail__viewport">
+      <div class="pj-prod-rail__track"></div>
+    </div>
+    <div class="pj-prod-rail__dots" aria-hidden="true"></div>
+  </section>
+
+  <!-- ردیف ۲: محصولات پیشنهادی -->
+  <section class="pj-prod-rail" id="pjSuggestedProducts" aria-labelledby="pjSuggestedTitle">
+    <div class="pj-prod-rail__head">
+      <h2 class="pj-prod-rail__title" id="pjSuggestedTitle">محصولات پیشنهادی</h2>
+      <div class="pj-prod-rail__nav">
+        <button type="button" class="pj-prod-rail__btn" data-dir="next" aria-label="بعدی">
+          <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" class="pj-prod-rail__btn" data-dir="prev" aria-label="قبلی">
+          <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="pj-prod-rail__viewport">
+      <div class="pj-prod-rail__track"></div>
+    </div>
+    <div class="pj-prod-rail__dots" aria-hidden="true"></div>
+  </section>
+</section>
+
+<script src="/themes/shop/default/assets/js/product-carousels.js" defer></script>
+<!-- یا: -->
+<!-- <script src="https://raw.githubusercontent.com/vitoali/farhad/cursor/pishro-slanted-header-7149/header/products/product-carousels.js" defer></script> -->
