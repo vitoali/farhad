@@ -1,0 +1,5 @@
+tests/data/*.csv
+tests/data/*.zip
+tests/data/*.txt
+tests/data/*_yf_1m.csv
+tests/__pycache__/

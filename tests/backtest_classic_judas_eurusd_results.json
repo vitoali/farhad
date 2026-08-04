@@ -1,0 +1,249 @@
+{
+  "default_classic": {
+    "symbol": "EURUSD",
+    "strategy": "Classic Judas Asia\u2192London",
+    "period_start": "2026-06-19 00:00:00-04:00",
+    "period_end": "2026-07-17 17:29:00-04:00",
+    "bars_m1": 18133,
+    "timezone": "America/New_York",
+    "params": {
+      "disp_atr_mult": 1.5,
+      "classic_min_rr": 1.5,
+      "require_choch": true,
+      "require_ote": false,
+      "require_reclaim": true
+    },
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winrate_pct": 0.0,
+    "avg_R": 0.0,
+    "sum_R": 0.0,
+    "by_tag": {},
+    "funnel": {
+      "sweep": 15,
+      "reclaim": 14,
+      "choch": 12,
+      "ote": 12,
+      "entry_m5": 0,
+      "entry_m1": 2,
+      "entry_signal": 2,
+      "fills": 0,
+      "rr_fail": 11,
+      "pending_cancel": 2
+    },
+    "trade_log": [],
+    "notes": [
+      "Classic Judas Mode B \u2014 Asia mid TP1, opposite Asia TP2, SL at sweep extreme.",
+      "Offline approximate vs TradingView."
+    ]
+  },
+  "sensitivity_disp1_rr2": {
+    "symbol": "EURUSD",
+    "strategy": "Classic Judas Asia\u2192London",
+    "period_start": "2026-06-19 00:00:00-04:00",
+    "period_end": "2026-07-17 17:29:00-04:00",
+    "bars_m1": 18133,
+    "timezone": "America/New_York",
+    "params": {
+      "disp_atr_mult": 1.0,
+      "classic_min_rr": 2.0,
+      "require_choch": true,
+      "require_ote": false,
+      "require_reclaim": true
+    },
+    "trades": 2,
+    "wins": 0,
+    "losses": 2,
+    "winrate_pct": 0.0,
+    "avg_R": -1.0,
+    "sum_R": -2.0,
+    "by_tag": {
+      "CJ_M1_Long": 2
+    },
+    "funnel": {
+      "sweep": 15,
+      "reclaim": 14,
+      "choch": 12,
+      "ote": 12,
+      "entry_m5": 0,
+      "entry_m1": 2,
+      "entry_signal": 2,
+      "fills": 2,
+      "rr_fail": 34,
+      "pending_cancel": 0
+    },
+    "trade_log": [
+      {
+        "dir": "LONG",
+        "tag": "CJ_M1_Long",
+        "entry_time": "2026-06-22 04:57:00-04:00",
+        "entry": 1.1445,
+        "sl": 1.14422,
+        "tp1": 1.14656,
+        "tp2": 1.14735,
+        "exit_time": "2026-06-22 05:07:00-04:00",
+        "exit": 1.14422,
+        "R": -1.0,
+        "win": false,
+        "note": "SL"
+      },
+      {
+        "dir": "LONG",
+        "tag": "CJ_M1_Long",
+        "entry_time": "2026-06-24 04:52:00-04:00",
+        "entry": 1.13564,
+        "sl": 1.13494,
+        "tp1": 1.1375,
+        "tp2": 1.13835,
+        "exit_time": "2026-06-24 05:12:00-04:00",
+        "exit": 1.13494,
+        "R": -1.0,
+        "win": false,
+        "note": "SL"
+      }
+    ],
+    "notes": [
+      "Classic Judas Mode B \u2014 Asia mid TP1, opposite Asia TP2, SL at sweep extreme.",
+      "Offline approximate vs TradingView."
+    ]
+  },
+  "retuned": {
+    "default_disp1.5_rr1.5": {
+      "symbol": "EURUSD",
+      "strategy": "Classic Judas Asia\u2192London",
+      "period_start": "2026-06-19 00:00:00-04:00",
+      "period_end": "2026-07-17 17:29:00-04:00",
+      "bars_m1": 18133,
+      "timezone": "America/New_York",
+      "params": {
+        "disp_atr_mult": 1.5,
+        "classic_min_rr": 1.5,
+        "require_choch": true,
+        "require_ote": false,
+        "require_reclaim": true
+      },
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "winrate_pct": 0.0,
+      "avg_R": 0.0,
+      "sum_R": 0.0,
+      "by_tag": {},
+      "funnel": {
+        "sweep": 15,
+        "reclaim": 14,
+        "choch": 12,
+        "ote": 12,
+        "entry_m5": 0,
+        "entry_m1": 2,
+        "entry_signal": 2,
+        "fills": 0,
+        "rr_fail": 11,
+        "pending_cancel": 2
+      },
+      "trade_log": []
+    },
+    "disp1.0_rr1.5": {
+      "symbol": "EURUSD",
+      "strategy": "Classic Judas Asia\u2192London",
+      "period_start": "2026-06-19 00:00:00-04:00",
+      "period_end": "2026-07-17 17:29:00-04:00",
+      "bars_m1": 18133,
+      "timezone": "America/New_York",
+      "params": {
+        "disp_atr_mult": 1.0,
+        "classic_min_rr": 1.5,
+        "require_choch": true,
+        "require_ote": false,
+        "require_reclaim": true
+      },
+      "trades": 2,
+      "wins": 0,
+      "losses": 2,
+      "winrate_pct": 0.0,
+      "avg_R": -1.0,
+      "sum_R": -2.0,
+      "by_tag": {
+        "CJ_M1_Long": 2
+      },
+      "funnel": {
+        "sweep": 15,
+        "reclaim": 14,
+        "choch": 12,
+        "ote": 12,
+        "entry_m5": 0,
+        "entry_m1": 2,
+        "entry_signal": 2,
+        "fills": 2,
+        "rr_fail": 34,
+        "pending_cancel": 0
+      },
+      "trade_log": [
+        {
+          "dir": "LONG",
+          "tag": "CJ_M1_Long",
+          "entry_time": "2026-06-22 04:57:00-04:00",
+          "entry": 1.1445,
+          "sl": 1.14422,
+          "tp1": 1.14656,
+          "tp2": 1.14735,
+          "exit_time": "2026-06-22 05:07:00-04:00",
+          "exit": 1.14422,
+          "R": -1.0,
+          "win": false,
+          "note": "SL"
+        },
+        {
+          "dir": "LONG",
+          "tag": "CJ_M1_Long",
+          "entry_time": "2026-06-24 04:52:00-04:00",
+          "entry": 1.13564,
+          "sl": 1.13494,
+          "tp1": 1.1375,
+          "tp2": 1.13835,
+          "exit_time": "2026-06-24 05:12:00-04:00",
+          "exit": 1.13494,
+          "R": -1.0,
+          "win": false,
+          "note": "SL"
+        }
+      ]
+    },
+    "disp1.5_rr2.0": {
+      "symbol": "EURUSD",
+      "strategy": "Classic Judas Asia\u2192London",
+      "period_start": "2026-06-19 00:00:00-04:00",
+      "period_end": "2026-07-17 17:29:00-04:00",
+      "bars_m1": 18133,
+      "timezone": "America/New_York",
+      "params": {
+        "disp_atr_mult": 1.5,
+        "classic_min_rr": 2.0,
+        "require_choch": true,
+        "require_ote": false,
+        "require_reclaim": true
+      },
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "winrate_pct": 0.0,
+      "avg_R": 0.0,
+      "sum_R": 0.0,
+      "by_tag": {},
+      "funnel": {
+        "sweep": 15,
+        "reclaim": 14,
+        "choch": 12,
+        "ote": 12,
+        "entry_m5": 0,
+        "entry_m1": 2,
+        "entry_signal": 2,
+        "fills": 0,
+        "rr_fail": 11,
+        "pending_cancel": 2
+      },
+      "trade_log": []
+    }
+  }
+}

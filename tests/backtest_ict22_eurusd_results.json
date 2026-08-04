@@ -1,0 +1,62 @@
+{
+  "after_gemini_fixes": {
+    "symbol": "EURUSD",
+    "corr": "GBPUSD",
+    "period_start": "2026-06-19 00:00:00-05:00",
+    "period_end": "2026-07-17 16:29:00-05:00",
+    "bars_m1": 18073,
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winrate_pct": 0.0,
+    "avg_R": 0.0,
+    "sum_R": 0.0,
+    "funnel": {
+      "sweep": 11,
+      "smt": 7,
+      "fvg": 4,
+      "choch": 4,
+      "ote": 3,
+      "entry_signal": 0,
+      "fills": 0,
+      "disp_in_ote_kz": 1,
+      "rr_fail": 0
+    },
+    "notes": [
+      "HistData M1 times treated as UTC-5 fixed (EST no DST), matching LuxAlgo-style session math.",
+      "July gap filled with Yahoo Finance M1 where available.",
+      "Offline port of Pine ICT22 logic \u2014 approximate vs TradingView ticks/broker feed."
+    ]
+  },
+  "trades": [],
+  "setup_kz_off": {
+    "symbol": "EURUSD",
+    "corr": "GBPUSD",
+    "period_start": "2026-06-19 00:00:00-05:00",
+    "period_end": "2026-07-17 16:29:00-05:00",
+    "bars_m1": 18073,
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winrate_pct": 0.0,
+    "avg_R": 0.0,
+    "sum_R": 0.0,
+    "funnel": {
+      "sweep": 11,
+      "smt": 7,
+      "fvg": 4,
+      "choch": 4,
+      "ote": 3,
+      "entry_signal": 0,
+      "fills": 0,
+      "disp_in_ote_kz": 1,
+      "rr_fail": 0
+    },
+    "notes": [
+      "HistData M1 times treated as UTC-5 fixed (EST no DST), matching LuxAlgo-style session math.",
+      "July gap filled with Yahoo Finance M1 where available.",
+      "Offline port of Pine ICT22 logic \u2014 approximate vs TradingView ticks/broker feed."
+    ]
+  },
+  "setup_kz_off_trades": []
+}

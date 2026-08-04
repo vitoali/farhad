@@ -1,0 +1,47 @@
+// ICT Killzones — America/New_York (DST-aware)
+// For traders in Iran (or anywhere): local PC clock does NOT matter.
+// Session math uses explicit timezone America/New_York.
+//
+// Window defaults aligned with LuxAlgo ICT Killzones (CC BY-NC-SA 4.0 © LuxAlgo)
+// + New York KZ extended to 07:00–10:00 per ICT 2022 strategy spec.
+//
+//@version=6
+indicator("ICT Killzones NY", "KZ NY", overlay=true, max_labels_count=100)
+
+grp = "Killzones (New York)"
+tz  = input.string("America/New_York", "Timezone", options=["America/New_York", "UTC-5", "UTC-4"], group=grp)
+
+showNy   = input.bool(true, "New York KZ", inline="ny", group=grp)
+nySess   = input.session("0700-1000", "", inline="ny", group=grp)
+nyCss    = input.color(color.new(#ff5d00, 85), "", inline="ny", group=grp)
+
+showLon  = input.bool(true, "London Open KZ", inline="lo", group=grp)
+lonSess  = input.session("0200-0500", "", inline="lo", group=grp)
+lonCss   = input.color(color.new(#00bcd4, 85), "", inline="lo", group=grp)
+
+showLc   = input.bool(true, "London Close", inline="lc", group=grp)
+lcSess   = input.session("1000-1200", "", inline="lc", group=grp)
+lcCss    = input.color(color.new(#2157f3, 85), "", inline="lc", group=grp)
+
+showAsia = input.bool(true, "Asian", inline="as", group=grp)
+asiaSess = input.session("2000-0000", "", inline="as", group=grp)
+asiaCss  = input.color(color.new(#e91e63, 85), "", inline="as", group=grp)
+
+showClock = input.bool(true, "Show NY clock on last bar", group=grp)
+
+inSess(string sess) =>
+    not na(time(timeframe.period, sess, tz))
+
+ny   = showNy and inSess(nySess)
+lon  = showLon and inSess(lonSess)
+lc   = showLc and inSess(lcSess)
+asia = showAsia and inSess(asiaSess)
+
+bgcolor(ny ? nyCss : na, title="NY")
+bgcolor(lon ? lonCss : na, title="London Open")
+bgcolor(lc ? lcCss : na, title="London Close")
+bgcolor(asia ? asiaCss : na, title="Asia")
+
+if showClock and barstate.islast
+    string clock = str.format("{0,number,00}:{1,number,00} NY | {2}", hour(time, tz), minute(time, tz), tz)
+    label.new(bar_index, high, clock, style=label.style_label_left, color=#1e222d, textcolor=color.white, size=size.small)
