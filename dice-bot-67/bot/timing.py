@@ -10,8 +10,8 @@ from dataclasses import dataclass, field
 class DelayScheduler:
     """
     هر چرخه:
-      - تعداد رندوم تاس بین dice_min..dice_max (پیش‌فرض ۱۰–۱۵)
-      - بعد slot_per_cycle گردونه (پیش‌فرض ۵)
+      - تعداد رندوم تاس بین dice_min..dice_max (پیش‌فرض ۱)
+      - بعد slot_per_cycle گردونه (پیش‌فرض ۱)
       - تکرار
 
     بین هر ارسال صبر min_delay..max_delay (پیش‌فرض ۶۱–۸۰).
@@ -21,9 +21,9 @@ class DelayScheduler:
     min_delay: int = 61
     max_delay: int = 80
     change_every: int = 10
-    dice_min: int = 10
-    dice_max: int = 15
-    slot_per_cycle: int = 5
+    dice_min: int = 1
+    dice_max: int = 1
+    slot_per_cycle: int = 1
     # سازگاری با کانفیگ قدیمی
     dice_per_cycle: int | None = None
 
@@ -41,7 +41,7 @@ class DelayScheduler:
             raise ValueError("change_every باید >= 1 باشد.")
 
         # اگر فقط dice_per_cycle آمده باشد، همان را ثابت استفاده کن
-        if self.dice_per_cycle is not None and self.dice_min == 10 and self.dice_max == 15:
+        if self.dice_per_cycle is not None:
             self.dice_min = int(self.dice_per_cycle)
             self.dice_max = int(self.dice_per_cycle)
 

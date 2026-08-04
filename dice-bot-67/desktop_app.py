@@ -51,9 +51,9 @@ def main() -> int:
     # تنظیمات درخواستی کاربر — همیشه همین‌ها اعمال شود
     cfg["min_delay_sec"] = int(cfg.get("min_delay_sec", 61) or 61)
     cfg["max_delay_sec"] = 80
-    cfg["dice_min"] = 10
-    cfg["dice_max"] = 15
-    cfg["slot_per_cycle"] = 5
+    cfg["dice_min"] = 1
+    cfg["dice_max"] = 1
+    cfg["slot_per_cycle"] = 1
     cfg.setdefault("delay_change_every_cycles", 10)
     cfg["send_delay_min_sec"] = float(cfg.get("send_click_delay_min_sec", 0.4))
     cfg["send_delay_max_sec"] = float(cfg.get("send_click_delay_max_sec", 1.2))
@@ -78,8 +78,9 @@ def main() -> int:
 
     print("=" * 56)
     print(" Dice Bot 67 — Desktop آماده اجرا")
-    print(" الگو: ۱۰ تا ۱۵ تاس رندوم 🎲  →  ۵ گردونه 🎰  → تکرار")
+    print(" الگو: یک 🎲  →  یک 🎰  → تکرار")
     print(" فاصله بین هر ارسال: ۶۱–۸۰ ثانیه")
+    print(" نکته: تشخیص عدد تاس در حالت کلیک موس دقیق نیست")
     print("=" * 56)
 
     print("در حال آماده‌سازی قالب‌ها...")
@@ -130,9 +131,9 @@ def main() -> int:
         min_delay=int(cfg.get("min_delay_sec", 61)),
         max_delay=int(cfg.get("max_delay_sec", 80)),
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
-        dice_min=int(cfg.get("dice_min", 10)),
-        dice_max=int(cfg.get("dice_max", 15)),
-        slot_per_cycle=int(cfg.get("slot_per_cycle", 5)),
+        dice_min=int(cfg.get("dice_min", 1)),
+        dice_max=int(cfg.get("dice_max", 1)),
+        slot_per_cycle=int(cfg.get("slot_per_cycle", 1)),
     )
     state = {"running": False}
 
