@@ -1,0 +1,262 @@
+<!--
+  ============================================================
+  پیشرو جوش | سکشن مقالات صفحه اصلی
+  جایگذاری: دقیقاً قبل از <div id="brands-section" ...>
+  الهام بصری: Böhler Welding “Latest News” + Lincoln Electric Newsroom
+  رنگ برند: #c8102e
+  ============================================================
+-->
+<style>
+.pj-articles {
+  background: #ffffff;
+  padding: 72px 0 80px;
+  direction: rtl;
+}
+.pj-articles__container {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+}
+.pj-articles__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 34px;
+  flex-wrap: wrap;
+}
+.pj-articles__header-text {
+  text-align: right;
+  max-width: 720px;
+}
+.pj-articles__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #c8102e;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pj-articles__eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 2px;
+  background: #c8102e;
+  display: inline-block;
+}
+.pj-articles__header h2 {
+  margin: 0 0 10px;
+  color: #111;
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 900;
+  line-height: 1.2;
+}
+.pj-articles__header p {
+  margin: 0;
+  color: #444;
+  font-size: 16px;
+  line-height: 1.8;
+}
+.pj-articles__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #c8102e;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color .2s ease, color .2s ease;
+}
+.pj-articles__all:hover {
+  color: #9c1d2d;
+  border-bottom-color: #9c1d2d;
+}
+.pj-articles__all span {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.pj-articles__grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 22px;
+}
+
+/* Featured big card (first) */
+.pj-article-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #0f0f0f;
+  overflow: hidden;
+  min-height: 420px;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: 0 18px 50px rgba(0,0,0,.12);
+  transition: transform .28s ease, box-shadow .28s ease;
+}
+.pj-article-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+}
+.pj-article-card__media {
+  position: absolute;
+  inset: 0;
+}
+.pj-article-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.02);
+  transition: transform .45s ease;
+}
+.pj-article-card:hover .pj-article-card__media img {
+  transform: scale(1.08);
+}
+.pj-article-card__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(0,0,0,.15) 0%,
+    rgba(0,0,0,.25) 35%,
+    rgba(0,0,0,.78) 100%);
+}
+.pj-article-card__body {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  padding: 28px 28px 30px;
+}
+.pj-article-card__tag {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 5px 10px;
+  background: #c8102e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.pj-article-card__title {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 900;
+  line-height: 1.35;
+  color: #fff;
+}
+.pj-article-card__excerpt {
+  margin: 0 0 16px;
+  color: rgba(255,255,255,.82);
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 36em;
+}
+.pj-article-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+.pj-article-card__cta i,
+.pj-article-card__cta em {
+  font-style: normal;
+  color: #ffb3bf;
+  font-size: 18px;
+}
+
+/* Side cards slightly shorter feel */
+.pj-articles__grid .pj-article-card:nth-child(2),
+.pj-articles__grid .pj-article-card:nth-child(3) {
+  min-height: 420px;
+}
+.pj-articles__grid .pj-article-card:nth-child(2) .pj-article-card__title,
+.pj-articles__grid .pj-article-card:nth-child(3) .pj-article-card__title {
+  font-size: clamp(18px, 1.7vw, 24px);
+}
+
+@media (max-width: 980px) {
+  .pj-articles__grid {
+    grid-template-columns: 1fr;
+  }
+  .pj-article-card,
+  .pj-articles__grid .pj-article-card:nth-child(2),
+  .pj-articles__grid .pj-article-card:nth-child(3) {
+    min-height: 340px;
+  }
+}
+@media (max-width: 768px) {
+  .pj-articles {
+    padding: 48px 0 56px;
+  }
+  .pj-article-card__body {
+    padding: 22px;
+  }
+}
+</style>
+
+<section class="pj-articles" id="articles-section" aria-label="مقالات">
+  <div class="pj-articles__container">
+    <div class="pj-articles__header">
+      <div class="pj-articles__header-text">
+        <p class="pj-articles__eyebrow">Knowledge Hub</p>
+        <h2>مقالات</h2>
+        <p>دانش فنی جوشکاری برای صنایع ایران؛ انتخاب سیم جوش، تنظیمات و مقایسه برندها.</p>
+      </div>
+      <!-- اگر صفحه آرشیو مقالات دارید لینک را عوض کنید -->
+      <a class="pj-articles__all" href="#articles-section">
+        همه مقالات
+        <span>‹</span>
+      </a>
+    </div>
+
+    <div class="pj-articles__grid">
+      <!-- کارت ۱ (بزرگ) -->
+      <a class="pj-article-card" href="/blog/types-of-welding-wire">
+        <div class="pj-article-card__media">
+          <img src="https://pishrojoosh.com/storage/theme/articles/article-card-wire-types.jpg" alt="انواع سیم جوش" loading="lazy" />
+        </div>
+        <div class="pj-article-card__body">
+          <span class="pj-article-card__tag">آموزش</span>
+          <h3 class="pj-article-card__title">راهنمای کامل انواع سیم جوش</h3>
+          <p class="pj-article-card__excerpt">توپر، توپودری، تیگ و زیرپودری؛ کدام برای پروژه شما درست است؟</p>
+          <span class="pj-article-card__cta">ادامه مطلب <em>‹</em></span>
+        </div>
+      </a>
+
+      <!-- کارت ۲ -->
+      <a class="pj-article-card" href="/blog/co2-mig-wire-guide">
+        <div class="pj-article-card__media">
+          <img src="https://pishrojoosh.com/storage/theme/articles/article-card-co2-mig.jpg" alt="سیم جوش CO2" loading="lazy" />
+        </div>
+        <div class="pj-article-card__body">
+          <span class="pj-article-card__tag">MIG/MAG</span>
+          <h3 class="pj-article-card__title">سیم جوش CO2؛ قطر، گاز و تنظیمات</h3>
+          <p class="pj-article-card__excerpt">چطور پاشش را کم و کیفیت جوش را بالا ببرید.</p>
+          <span class="pj-article-card__cta">ادامه مطلب <em>‹</em></span>
+        </div>
+      </a>
+
+      <!-- کارت ۳ -->
+      <a class="pj-article-card" href="/blog/brand-comparison">
+        <div class="pj-article-card__media">
+          <img src="https://pishrojoosh.com/storage/theme/articles/article-card-brands.jpg" alt="مقایسه برندهای سیم جوش" loading="lazy" />
+        </div>
+        <div class="pj-article-card__body">
+          <span class="pj-article-card__tag">برندها</span>
+          <h3 class="pj-article-card__title">Böhler و Lincoln در برابر بازار ایران</h3>
+          <p class="pj-article-card__excerpt">نقاط قوت و ضعف برندهای پیشرو جوش نسبت به گزینه‌های داخلی و وارداتی.</p>
+          <span class="pj-article-card__cta">ادامه مطلب <em>‹</em></span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
