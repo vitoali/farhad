@@ -1,0 +1,282 @@
+//@version=6
+// Cardwell Hybrid v2 — HIGH WINRATE Strategy
+// Why v1 WR looked low in TradingView:
+//   • Default Percent SL3%/TP5% → TP farther than SL → WR naturally ~30-40%
+//   • 5-pip stops on 1h/4h (or Gold with pip=0.01) get stopped out by noise
+//   • Filters were too loose for LTF chop
+// v2 defaults: ATR High-WR (SL wider, TP closer) + stricter quality filters
+strategy(
+     title                 = "Cardwell Hybrid v2 High WR",
+     shorttitle            = "Cardwell HWv2",
+     overlay               = true,
+     initial_capital       = 10000,
+     default_qty_type      = strategy.percent_of_equity,
+     default_qty_value     = 5,
+     commission_type       = strategy.commission.percent,
+     commission_value      = 0.04,
+     pyramiding            = 0,
+     process_orders_on_close = true,
+     calc_on_every_tick    = false,
+     max_labels_count      = 500,
+     max_lines_count       = 500)
+
+//══════════════════════════════════════════════════════════════════
+// PRESET
+//══════════════════════════════════════════════════════════════════
+var string GRP_PRE = "0) Preset (changes defaults below — set then tweak)"
+i_preset = input.string("High Winrate ATR", "Mode Preset",
+     options=["High Winrate ATR", "Balanced ATR", "BTC Percent 3/5", "Forex/Gold Pips"],
+     group=GRP_PRE,
+     tooltip="High Winrate ATR = recommended. SL wider than TP to push winrate up.")
+
+//══════════════════════════════════════════════════════════════════
+// CORE
+//══════════════════════════════════════════════════════════════════
+var string GRP_CORE = "1) Cardwell Core"
+i_rsiLen      = input.int(14, "RSI Length", minval=1, group=GRP_CORE)
+i_trendLen    = input.int(50, "Trend MA Length", minval=1, group=GRP_CORE)
+i_bullLo      = input.int(40, "Bull Range Low", group=GRP_CORE)
+i_bullHi      = input.int(80, "Bull Range High", group=GRP_CORE)
+i_bearLo      = input.int(20, "Bear Range Low", group=GRP_CORE)
+i_bearHi      = input.int(60, "Bear Range High", group=GRP_CORE)
+i_confirmBars = input.int(4, "Regime Confirm Bars", minval=1, group=GRP_CORE, tooltip="Higher = fewer but cleaner signals. 4–5 for high WR.")
+
+//══════════════════════════════════════════════════════════════════
+// FILTERS
+//══════════════════════════════════════════════════════════════════
+var string GRP_HYB = "2) Quality Filters"
+i_useMacd   = input.bool(true, "MACD Direction", group=GRP_HYB)
+i_macdFast  = input.int(12, "MACD Fast", group=GRP_HYB)
+i_macdSlow  = input.int(26, "MACD Slow", group=GRP_HYB)
+i_macdSig   = input.int(9, "MACD Signal", group=GRP_HYB)
+i_useEwo    = input.bool(true, "EWO Momentum Turn", group=GRP_HYB)
+i_ewoFast   = input.int(5, "EWO Fast", group=GRP_HYB)
+i_ewoSlow   = input.int(34, "EWO Slow", group=GRP_HYB)
+i_useAdx    = input.bool(true, "ADX Chop Filter", group=GRP_HYB)
+i_adxLen    = input.int(14, "ADX Length", group=GRP_HYB)
+i_adxMin    = input.int(25, "ADX Min", minval=1, group=GRP_HYB)
+i_useHtf    = input.bool(true, "HTF Regime Filter", group=GRP_HYB)
+i_htfTF     = input.timeframe("60", "HTF Timeframe", group=GRP_HYB)
+i_useSlope  = input.bool(true, "MA Slope Filter", group=GRP_HYB)
+i_slopeBars = input.int(3, "Slope Lookback", minval=1, group=GRP_HYB)
+i_useRsiEdge= input.bool(true, "Avoid RSI Range Edges", group=GRP_HYB)
+i_rsiEdge   = input.int(5, "RSI Edge Margin", minval=0, group=GRP_HYB)
+
+var string GRP_ANTI = "3) Anti-Flip"
+i_minFlipBars = input.int(12, "Cooldown Bars", minval=0, group=GRP_ANTI)
+i_blockSame   = input.bool(true, "Cooldown Blocks Same Direction Too", group=GRP_ANTI)
+
+//══════════════════════════════════════════════════════════════════
+// RISK
+//══════════════════════════════════════════════════════════════════
+var string GRP_RISK = "4) SL / TP"
+i_riskMode = input.string("ATR", "SL/TP Mode", options=["ATR", "Percent", "Pips"], group=GRP_RISK)
+i_atrLen   = input.int(14, "ATR Length", group=GRP_RISK)
+// High-WR defaults: SL 2.0 ATR, TP 1.0 ATR  → target WR 60-85%
+i_slAtr    = input.float(2.0, "SL ATR Mult", step=0.1, group=GRP_RISK)
+i_tpAtr    = input.float(1.0, "TP ATR Mult", step=0.1, group=GRP_RISK)
+i_slPct    = input.float(3.0, "SL Percent", step=0.1, group=GRP_RISK)
+i_tpPct    = input.float(5.0, "TP Percent", step=0.1, group=GRP_RISK)
+i_slPips   = input.float(10.0, "SL Pips", step=0.5, group=GRP_RISK)
+i_tpPips   = input.float(8.0, "TP Pips", step=0.5, group=GRP_RISK)
+i_pipSize  = input.float(0.0001, "Pip Size (EUR=0.0001, XAU=1.0)", step=0.0001, group=GRP_RISK)
+
+var string GRP_DIR = "5) Direction"
+i_allowLong  = input.bool(true, "Allow Long", group=GRP_DIR)
+i_allowShort = input.bool(true, "Allow Short", group=GRP_DIR)
+
+var string GRP_VIS = "6) Visuals"
+i_showCandles = input.bool(true, "Color Candles", group=GRP_VIS)
+i_showSignals = input.bool(true, "Show Signals", group=GRP_VIS)
+i_showLevels  = input.bool(true, "Show SL/TP", group=GRP_VIS)
+i_showDash    = input.bool(true, "Dashboard", group=GRP_VIS)
+i_dashPos     = input.string(position.top_right, "Dashboard Pos", options=[position.top_right, position.top_left, position.bottom_right, position.bottom_left], group=GRP_VIS)
+
+c_bull = #26a69a
+c_bear = #ef5350
+c_neut = #787b86
+c_buy  = #2196f3
+c_sell = #ff9800
+
+// Apply preset overrides (runtime effective params)
+effConfirm = i_preset == "High Winrate ATR" ? math.max(i_confirmBars, 4) : i_preset == "Balanced ATR" ? math.max(i_confirmBars, 3) : i_confirmBars
+effAdxMin  = i_preset == "High Winrate ATR" ? math.max(i_adxMin, 25) : i_preset == "Balanced ATR" ? math.max(i_adxMin, 20) : i_adxMin
+effCooldown= i_preset == "High Winrate ATR" ? math.max(i_minFlipBars, 12) : i_minFlipBars
+effRiskMode = switch i_preset
+    "BTC Percent 3/5" => "Percent"
+    "Forex/Gold Pips" => "Pips"
+    "High Winrate ATR" => "ATR"
+    "Balanced ATR" => "ATR"
+    => i_riskMode
+effSlAtr   = i_preset == "High Winrate ATR" ? 2.0 : i_preset == "Balanced ATR" ? 1.5 : i_slAtr
+effTpAtr   = i_preset == "High Winrate ATR" ? 1.0 : i_preset == "Balanced ATR" ? 1.5 : i_tpAtr
+effSlPct   = i_slPct
+effTpPct   = i_tpPct
+effSlPips  = i_preset == "Forex/Gold Pips" ? 10.0 : i_slPips
+effTpPips  = i_preset == "Forex/Gold Pips" ? 8.0 : i_tpPips
+effUseSlope= i_preset == "High Winrate ATR" ? true : i_useSlope
+effUseEdge = i_preset == "High Winrate ATR" ? true : i_useRsiEdge
+
+//══════════════════════════════════════════════════════════════════
+// REGIME
+//══════════════════════════════════════════════════════════════════
+rsiVal  = ta.rsi(close, i_rsiLen)
+trendMA = ta.sma(close, i_trendLen)
+isUp    = close > trendMA
+isDown  = close < trendMA
+
+bullRaw = isUp and rsiVal >= i_bullLo and rsiVal <= i_bullHi
+bearRaw = isDown and rsiVal >= i_bearLo and rsiVal <= i_bearHi
+
+var int bullCnt = 0
+var int bearCnt = 0
+bullCnt := bullRaw ? bullCnt + 1 : 0
+bearCnt := bearRaw ? bearCnt + 1 : 0
+
+bullRegime = bullRaw and bullCnt >= effConfirm
+bearRegime = bearRaw and bearCnt >= effConfirm
+regime     = bullRegime ? 1 : bearRegime ? -1 : 0
+prevRegime = regime[1]
+
+f_htf() =>
+    _r = ta.rsi(close, i_rsiLen)
+    _m = ta.sma(close, i_trendLen)
+    _br = close > _m and _r >= i_bullLo and _r <= i_bullHi
+    _er = close < _m and _r >= i_bearLo and _r <= i_bearHi
+    var int _bc = 0
+    var int _ec = 0
+    _bc := _br ? _bc + 1 : 0
+    _ec := _er ? _ec + 1 : 0
+    _br and _bc >= effConfirm ? 1 : _er and _ec >= effConfirm ? -1 : 0
+
+htfRegime = request.security(syminfo.tickerid, i_htfTF, f_htf()[1], lookahead=barmerge.lookahead_off)
+htfLongOk  = not i_useHtf or htfRegime == 1
+htfShortOk = not i_useHtf or htfRegime == -1
+
+[_, _, adxVal] = ta.dmi(i_adxLen, i_adxLen)
+chopOk = not i_useAdx or adxVal >= effAdxMin
+
+macdLine = ta.ema(close, i_macdFast) - ta.ema(close, i_macdSlow)
+macdSig  = ta.sma(macdLine, i_macdSig)
+macdLongOk  = not i_useMacd or macdLine > macdSig
+macdShortOk = not i_useMacd or macdLine < macdSig
+
+ewo = ta.sma(hl2, i_ewoFast) - ta.sma(hl2, i_ewoSlow)
+ewoLongOk  = not i_useEwo or ewo > ewo[1]
+ewoShortOk = not i_useEwo or ewo < ewo[1]
+
+slopeLongOk  = not effUseSlope or trendMA > trendMA[i_slopeBars]
+slopeShortOk = not effUseSlope or trendMA < trendMA[i_slopeBars]
+
+edgeLongOk  = not effUseEdge or (rsiVal <= i_bullHi - i_rsiEdge and rsiVal >= i_bullLo)
+edgeShortOk = not effUseEdge or (rsiVal >= i_bearLo + i_rsiEdge and rsiVal <= i_bearHi)
+
+rawLong  = regime == 1 and prevRegime != 1 and htfLongOk and chopOk and macdLongOk and ewoLongOk and slopeLongOk and edgeLongOk
+rawShort = regime == -1 and prevRegime != -1 and htfShortOk and chopOk and macdShortOk and ewoShortOk and slopeShortOk and edgeShortOk
+
+//══════════════════════════════════════════════════════════════════
+// ENTRIES — only when flat (after SL/TP → scan again)
+//══════════════════════════════════════════════════════════════════
+var int lastSigDir = 0
+var int lastSigBar = na
+
+flat = strategy.position_size == 0
+barsSince = na(lastSigBar) ? 999999 : bar_index - lastSigBar
+
+longBlocked  = (lastSigDir == -1 and barsSince < effCooldown) or (i_blockSame and lastSigDir == 1 and barsSince < effCooldown)
+shortBlocked = (lastSigDir == 1 and barsSince < effCooldown) or (i_blockSame and lastSigDir == -1 and barsSince < effCooldown)
+
+longSignal  = i_allowLong and flat and rawLong and not longBlocked and barstate.isconfirmed
+shortSignal = i_allowShort and flat and rawShort and not shortBlocked and barstate.isconfirmed
+
+atrVal = ta.atr(i_atrLen)
+
+f_slDist(float entry) =>
+    switch effRiskMode
+        "Percent" => entry * effSlPct / 100.0
+        "Pips"    => effSlPips * i_pipSize
+        => atrVal * effSlAtr
+
+f_tpDist(float entry) =>
+    switch effRiskMode
+        "Percent" => entry * effTpPct / 100.0
+        "Pips"    => effTpPips * i_pipSize
+        => atrVal * effTpAtr
+
+var float entryPx = na
+var float slPx = na
+var float tpPx = na
+
+if longSignal
+    entryPx := close
+    slPx := entryPx - f_slDist(entryPx)
+    tpPx := entryPx + f_tpDist(entryPx)
+    lastSigDir := 1
+    lastSigBar := bar_index
+    strategy.entry("Long", strategy.long, comment="BUY")
+    strategy.exit("XL", from_entry="Long", stop=slPx, limit=tpPx, comment_loss="SL", comment_profit="TP")
+
+if shortSignal
+    entryPx := close
+    slPx := entryPx + f_slDist(entryPx)
+    tpPx := entryPx - f_tpDist(entryPx)
+    lastSigDir := -1
+    lastSigBar := bar_index
+    strategy.entry("Short", strategy.short, comment="SELL")
+    strategy.exit("XS", from_entry="Short", stop=slPx, limit=tpPx, comment_loss="SL", comment_profit="TP")
+
+closedNow = strategy.position_size[1] != 0 and strategy.position_size == 0
+if closedNow
+    entryPx := na
+    slPx := na
+    tpPx := na
+
+if longSignal
+    alert('{"action":"long","entry":"' + str.tostring(entryPx) + '","sl":"' + str.tostring(slPx) + '","tp":"' + str.tostring(tpPx) + '"}', alert.freq_once_per_bar_close)
+if shortSignal
+    alert('{"action":"short","entry":"' + str.tostring(entryPx) + '","sl":"' + str.tostring(slPx) + '","tp":"' + str.tostring(tpPx) + '"}', alert.freq_once_per_bar_close)
+if closedNow and strategy.position_size[1] > 0
+    alert('{"action":"closelong"}', alert.freq_once_per_bar_close)
+if closedNow and strategy.position_size[1] < 0
+    alert('{"action":"closeshort"}', alert.freq_once_per_bar_close)
+
+//══════════════════════════════════════════════════════════════════
+// VISUALS
+//══════════════════════════════════════════════════════════════════
+body = bullRegime ? c_bull : bearRegime ? c_bear : c_neut
+plotcandle(i_showCandles ? open : na, i_showCandles ? high : na, i_showCandles ? low : na, i_showCandles ? close : na, color=body, wickcolor=body, bordercolor=color.black)
+plotshape(i_showSignals and longSignal, style=shape.labelup, location=location.belowbar, color=c_buy, textcolor=color.white, text="BUY", size=size.small)
+plotshape(i_showSignals and shortSignal, style=shape.labeldown, location=location.abovebar, color=c_sell, textcolor=color.white, text="SELL", size=size.small)
+plot(i_showLevels and strategy.position_size != 0 ? slPx : na, "SL", color=c_bear, style=plot.style_linebr, linewidth=2)
+plot(i_showLevels and strategy.position_size != 0 ? tpPx : na, "TP", color=c_bull, style=plot.style_linebr, linewidth=2)
+plot(i_showLevels and strategy.position_size != 0 ? entryPx : na, "Entry", color=c_buy, style=plot.style_linebr, linewidth=1)
+
+//══════════════════════════════════════════════════════════════════
+// DASHBOARD
+//══════════════════════════════════════════════════════════════════
+var table dash = table.new(i_dashPos, 2, 11, border_width=1)
+if i_showDash and barstate.islast
+    wr = strategy.closedtrades > 0 ? 100.0 * strategy.wintrades / strategy.closedtrades : na
+    cd = barsSince < effCooldown ? effCooldown - barsSince : 0
+    table.cell(dash, 0, 0, "Cardwell HWv2  |  " + i_preset, text_color=color.white, bgcolor=color.new(#14b5cb, 20))
+    table.merge_cells(dash, 0, 0, 1, 0)
+    table.cell(dash, 0, 1, "Position", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 1, strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : "FLAT", text_color=strategy.position_size > 0 ? c_bull : strategy.position_size < 0 ? c_bear : c_neut, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 2, "Winrate", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 2, na(wr) ? "-" : str.tostring(wr, "#.#") + "%  (" + str.tostring(strategy.wintrades) + "/" + str.tostring(strategy.closedtrades) + ")", text_color=na(wr) ? c_neut : wr >= 55 ? c_bull : c_bear, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 3, "Risk", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 3, effRiskMode + (effRiskMode == "ATR" ? " SL" + str.tostring(effSlAtr) + "/TP" + str.tostring(effTpAtr) : ""), text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 4, "Regime", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 4, bullRegime ? "BULL" : bearRegime ? "BEAR" : "NEUT", text_color=bullRegime ? c_bull : bearRegime ? c_bear : c_neut, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 5, "ADX", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 5, str.tostring(adxVal, "#.#") + (chopOk ? " PASS" : " BLOCK"), text_color=chopOk ? c_bull : c_bear, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 6, "HTF", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 6, not i_useHtf ? "OFF" : htfRegime == 1 ? "BULL" : htfRegime == -1 ? "BEAR" : "NEUT", text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 7, "Cooldown", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 7, cd > 0 ? "WAIT " + str.tostring(cd) : "READY", text_color=cd > 0 ? c_bear : c_bull, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 8, "SL / TP", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 8, na(slPx) ? "-" : str.tostring(slPx, format.mintick) + " / " + str.tostring(tpPx, format.mintick), text_color=color.white, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 9, "Net P&L", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 9, str.tostring(strategy.netprofit, "#.##"), text_color=strategy.netprofit >= 0 ? c_bull : c_bear, bgcolor=color.new(#0d1117, 0))
+    table.cell(dash, 0, 10, "Tip", text_color=color.new(color.white, 30), bgcolor=color.new(#0a0f1a, 10))
+    table.cell(dash, 1, 10, "Use High WR ATR • fewer trades, higher WR", text_color=color.new(color.white, 20), bgcolor=color.new(#0d1117, 0))
