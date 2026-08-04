@@ -1,4 +1,4 @@
-"""ارسال تاس با BotFather توکن (بدون api_id / my.telegram.org)."""
+"""ارسال تاس با BotFather + خواندن عدد از API."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 from bot.timing import DelayScheduler
@@ -50,20 +51,16 @@ def api_call(token: str, method: str, params: dict[str, Any] | None = None) -> d
 
 
 def resolve_chat_id(token: str, target: str) -> int | str:
-    """target می‌تواند @username، عدد chat_id، یا نام گروه باشد."""
     target = str(target).strip()
     if not target:
         raise RuntimeError("target_chat خالی است.")
 
-    # numeric id
     if target.lstrip("-").isdigit():
         return int(target)
 
-    # @username
     if target.startswith("@"):
         return target
 
-    # try as public username without @
     if " " not in target and target.isascii():
         try:
             chat = api_call(token, "getChat", {"chat_id": f"@{target}"})
@@ -71,8 +68,6 @@ def resolve_chat_id(token: str, target: str) -> int | str:
         except Exception:
             pass
 
-    # search in getUpdates / getChat can't find by title easily.
-    # Ask user to use numeric id; still try getUpdates for recent chats.
     updates = api_call(token, "getUpdates", {"limit": 50, "timeout": 0})
     needle = target.casefold()
     for upd in reversed(updates):
@@ -80,39 +75,96 @@ def resolve_chat_id(token: str, target: str) -> int | str:
             msg = upd.get(key) or {}
             chat = msg.get("chat") or {}
             title = str(chat.get("title") or "")
-            if title.casefold() == needle or needle in title.casefold():
+            if title and (title.casefold() == needle or needle in title.casefold()):
+                return chat["id"]
+
+    # آخرین گروه دیده‌شده را پیشنهاد بده
+    for upd in reversed(updates):
+        for key in ("message", "my_chat_member"):
+            msg = upd.get(key) or {}
+            chat = msg.get("chat") or {}
+            if chat.get("type") in ("group", "supergroup") and chat.get("id"):
+                print(f"گروه پیدا شد از آپدیت‌ها: {chat.get('title')} ({chat['id']})")
                 return chat["id"]
 
     raise RuntimeError(
         "گروه پیدا نشد.\n"
-        "ربات را به گروه اضافه کن، یک پیام در گروه بفرست،\n"
-        "بعد در config مقدار target_chat را chat_id عددی بگذار\n"
-        "(مثلاً -1001234567890). برای گرفتن آیدی از @userinfobot یا @RawDataBot استفاده کن."
+        "1) ربات را به گروه اضافه کن\n"
+        "2) در گروه یک پیام بفرست یا ربات را ادمین کن\n"
+        "3) target_chat را chat_id عددی بگذار (مثل -100123...)\n"
+        "   با @RawDataBot یا @userinfobot می‌توانی آیدی بگیری"
     )
+
+
+def format_dice_value(emoji: str, value: int | None) -> str:
+    if value is None:
+        return "؟"
+    if emoji == "🎲":
+        return f"{value} (تاس ۱–۶)"
+    if emoji == "🎰":
+        # slot values 1-64; Telegram documents mapping but raw value is enough
+        return f"{value} (گردونه ۱–۶۴)"
+    return str(value)
 
 
 async def run_bot_api(cfg: dict[str, Any]) -> int:
     _fix_console()
     token = str(cfg.get("bot_token") or "").strip()
-    if not token:
-        print("bot_token خالی است. از @BotFather توکن بگیر و در config.json بگذار.")
+    if not token or token.startswith("123456"):
+        print("bot_token را در config.json از @BotFather بگذار.")
         return 1
+
+    # الگوی فعلی کاربر
+    cfg["min_delay_sec"] = int(cfg.get("min_delay_sec", 61) or 61)
+    cfg["max_delay_sec"] = 80
+    cfg["dice_min"] = 1
+    cfg["dice_max"] = 1
+    cfg["slot_per_cycle"] = 1
 
     target = cfg.get("target_chat") or "Six Seven Chat 8"
     print("در حال بررسی توکن...")
     me = api_call(token, "getMe")
     print(f"ربات: @{me.get('username')} ({me.get('first_name')})")
 
-    chat_id = resolve_chat_id(token, str(target))
+    try:
+        chat_id = resolve_chat_id(token, str(target))
+    except Exception as exc:
+        print(exc)
+        print("\nاگر آیدی عددی گروه را داری اینجا وارد کن (یا Enter برای خروج):")
+        manual = input("> ").strip()
+        if not manual:
+            return 1
+        chat_id = int(manual) if manual.lstrip("-").isdigit() else manual
+        cfg["target_chat"] = str(chat_id)
+
     print(f"هدف: {chat_id}")
 
+    # ذخیره chat_id برای دفعات بعد
+    save_path = cfg.get("_config_path")
+    if save_path:
+        try:
+            from bot.config import save_config
+
+            to_save = {k: v for k, v in cfg.items() if not str(k).startswith("_")}
+            to_save["mode"] = "bot"
+            to_save["bot_token"] = token
+            to_save["target_chat"] = str(chat_id)
+            to_save["min_delay_sec"] = 61
+            to_save["max_delay_sec"] = 80
+            to_save["dice_min"] = 1
+            to_save["dice_max"] = 1
+            to_save["slot_per_cycle"] = 1
+            save_config(to_save, Path(save_path))
+        except Exception:
+            pass
+
     scheduler = DelayScheduler(
-        min_delay=int(cfg.get("min_delay_sec", 61)),
-        max_delay=int(cfg.get("max_delay_sec", 80)),
+        min_delay=61,
+        max_delay=80,
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
-        dice_min=int(cfg.get("dice_min", cfg.get("dice_per_cycle", 10))),
-        dice_max=int(cfg.get("dice_max", cfg.get("dice_per_cycle", 15))),
-        slot_per_cycle=int(cfg.get("slot_per_cycle", 5)),
+        dice_min=1,
+        dice_max=1,
+        slot_per_cycle=1,
     )
 
     state = {"running": False}
@@ -132,13 +184,16 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
         state["running"] = True
 
     print("=" * 56)
-    print(" Dice Bot 67 — حالت BotFather")
+    print(" Dice Bot 67 — BotFather")
+    print(" الگو: یک 🎲 → یک 🎰 → تکرار")
+    print(" فاصله: ۶۱–۸۰ ثانیه")
+    print(" عدد تاس/گردونه از API خوانده می‌شود")
     print(f" تأخیر فعلی: {scheduler.current_delay}s")
     if hotkeys_ok:
-        print(f" {hotkey.upper()} = شروع/توقف | Ctrl+C = خروج")
-        print(" الان STOPPED — برای شروع F8")
+        print(f" {hotkey.upper()} = شروع/توقف")
+        print(" الان STOPPED — F8 برای شروع")
     print("=" * 56)
-    print("نکته: اگر بازی امتیاز نداد، یعنی فقط اکانت واقعی قبول می‌کند.")
+    print("نکته: اگر بازی امتیاز نداد، یعنی فقط اکانت واقعی را قبول می‌کند.")
 
     try:
         while True:
@@ -150,7 +205,13 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
             emoji = DICE_EMOJI[action]
             print(f"ارسال {emoji} ...")
             try:
-                api_call(token, "sendDice", {"chat_id": str(chat_id), "emoji": emoji})
+                result = api_call(
+                    token, "sendDice", {"chat_id": str(chat_id), "emoji": emoji}
+                )
+                dice = result.get("dice") or {}
+                value = dice.get("value")
+                print(f"  نتیجه: {format_dice_value(emoji, value)}")
+                logger.info("sent %s value=%s", emoji, value)
             except Exception as exc:
                 logger.exception("sendDice failed")
                 print(f"خطا: {exc}")
@@ -159,15 +220,13 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
 
             await asyncio.sleep(
                 random.uniform(
-                    float(cfg.get("send_delay_min_sec", 3)),
-                    float(cfg.get("send_delay_max_sec", 10)),
+                    float(cfg.get("send_delay_min_sec", 1)),
+                    float(cfg.get("send_delay_max_sec", 3)),
                 )
             )
             info = scheduler.mark_action_done()
             if info["delay_changed"]:
-                print(
-                    f"⏱ زمان جدید: {info['previous_delay']}s → {info['current_delay']}s"
-                )
+                print(f"⏱ زمان جدید: {info['current_delay']}s")
 
             wait_for = scheduler.wait_seconds()
             print(f"صبر {wait_for} ثانیه...")
