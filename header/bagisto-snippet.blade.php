@@ -1,0 +1,100 @@
+<!--
+  Snippet Bagisto — هدر گرافیتی + بیضی سفید لوگو
+-->
+<link rel="stylesheet" href="{{ asset('css/pj-header.css') }}">
+
+<header class="pj-header" id="pjHeader">
+  <div class="pj-header__inner">
+        <div class="pj-header__logo">
+      <a class="pj-logo" href="{{ url('/') }}" aria-label="پیشرو جوش خاورمیانه">
+        <svg class="pj-logo__mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <path fill="#FAA933" fill-rule="evenodd" d="M 74.71 89.13 L 35.16 89.13 L 35.16 85.55 L 38.75 85.55 L 38.75 78.38 L 42.31 78.38 L 42.40 74.75 L 49.51 74.75 L 49.55 71.18 L 53.11 71.18 L 53.16 67.58 L 56.71 67.58 L 56.80 63.95 L 63.91 63.95 L 64.00 60.35 L 71.11 60.35 L 71.20 56.75 L 81.91 56.75 L 82.00 53.16 L 92.71 53.16 L 92.80 49.55 L 107.11 49.55 L 107.20 45.98 L 132.35 45.98 L 132.31 67.56 L 114.40 67.56 L 114.31 71.16 L 100.00 71.16 L 99.91 74.75 L 92.80 74.75 L 92.71 78.36 L 85.60 78.36 L 85.51 81.95 L 78.40 81.95 L 78.36 85.53 L 74.80 85.53 L 74.71 89.16 Z M 60.31 175.56 L 53.20 175.56 L 53.16 171.98 L 49.60 171.98 L 49.55 168.38 L 46.00 168.38 L 45.95 164.78 L 42.40 164.78 L 42.35 161.18 L 38.80 161.18 L 38.75 157.58 L 35.20 157.58 L 35.16 153.95 L 31.55 153.95 L 31.55 146.75 L 27.95 146.75 L 27.95 139.56 L 24.35 139.56 L 24.40 135.98 L 45.95 135.98 L 45.95 153.95 L 49.55 153.95 L 49.55 161.16 L 53.16 161.16 L 53.16 168.33 L 56.71 168.33 L 56.75 171.95 L 60.35 171.95 L 60.31 175.56 Z M 63.91 99.95 L 28.00 99.95 L 27.95 96.38 L 63.91 96.38 L 63.91 99.95 Z M 53.11 114.35 L 24.40 114.35 L 24.35 110.78 L 53.11 110.78 L 53.11 114.35 Z M 49.51 125.16 L 24.40 125.16 L 24.35 121.58 L 49.51 121.58 L 49.51 125.16 Z"/>
+          <path fill="#1D344F" fill-rule="evenodd" d="M 99.91 168.35 L 71.20 168.35 L 71.16 164.75 L 74.75 164.75 L 74.75 150.35 L 71.16 150.35 L 71.20 146.75 L 89.11 146.75 L 89.20 143.16 L 103.51 143.16 L 103.60 139.56 L 114.31 139.56 L 114.40 135.95 L 121.51 135.95 L 121.60 132.35 L 128.71 132.35 L 128.75 128.78 L 132.31 128.78 L 132.40 125.18 L 171.95 125.18 L 171.95 128.73 L 168.40 128.73 L 168.35 132.33 L 164.80 132.33 L 164.75 135.93 L 161.20 135.93 L 161.16 139.53 L 157.60 139.53 L 157.56 143.13 L 154.00 143.13 L 153.95 146.73 L 150.40 146.73 L 150.31 150.35 L 143.20 150.35 L 143.11 153.95 L 136.00 153.95 L 135.91 157.56 L 125.20 157.56 L 125.11 161.16 L 114.40 161.16 L 114.31 164.75 L 100.00 164.75 L 99.91 168.35 Z M 182.71 81.95 L 172.00 81.95 L 171.91 78.33 L 161.16 78.33 L 161.16 60.35 L 157.56 60.35 L 157.56 53.16 L 153.95 53.16 L 153.95 45.98 L 150.40 45.98 L 150.35 42.35 L 146.75 42.35 L 146.80 38.75 L 153.91 38.75 L 153.95 42.33 L 157.51 42.33 L 157.56 45.93 L 161.11 45.93 L 161.16 49.53 L 164.71 49.53 L 164.75 53.13 L 168.31 53.13 L 168.35 56.73 L 171.91 56.73 L 171.95 60.35 L 175.56 60.35 L 175.56 67.56 L 179.16 67.56 L 179.16 74.75 L 182.75 74.75 L 182.71 81.95 Z M 179.11 117.95 L 154.00 117.95 L 153.91 114.35 L 146.80 114.35 L 146.75 110.78 L 161.11 110.78 L 161.20 114.35 L 179.11 114.35 L 179.11 117.95 Z M 182.71 107.16 L 172.00 107.16 L 171.91 103.55 L 154.00 103.55 L 153.95 99.98 L 175.51 99.98 L 175.60 103.55 L 182.71 103.55 L 182.71 107.16 Z M 182.71 92.75 L 161.20 92.75 L 161.16 89.18 L 182.71 89.18 L 182.71 92.75 Z M 143.11 35.13 L 139.56 35.13 L 139.60 31.58 L 143.16 31.58 L 143.11 35.16 Z M 146.71 38.73 L 143.16 38.73 L 143.20 35.18 L 146.75 35.18 L 146.71 38.75 Z"/>
+        </svg>
+        <span class="pj-logo__text">
+          <span class="pj-logo__fa">پیشرو جوش خاورمیانه</span>
+          <span class="pj-logo__en">PISHRO JOOSH KHAVAR MIANEH</span>
+        </span>
+      </a>
+    </div>
+
+    <nav class="pj-header__nav" aria-label="منوی اصلی">
+      <ul class="pj-header__menu">
+        <li class="has-dropdown">
+          <a href="#product-carousel">محصولات</a>
+          <ul class="pj-header__dropdown pj-header__dropdown--products">
+            <li><a href="{{ url('/page/welding-consumables') }}">مواد مصرفی جوشکاری</a></li>
+            <li><a href="{{ url('/page/ndt-materials-equipment') }}">مواد و تجهیزات تست‌های غیرمخرب</a></li>
+            <li><a href="{{ url('/page/welding-robots') }}">ربات‌های جوشکاری</a></li>
+            <li><a href="{{ url('/page/welding-cutting-machines') }}">دستگاه‌های جوش و برش</a></li>
+            <li><a href="{{ url('/page/radiographic-films') }}">فیلم‌های رادیوگرافی</a></li>
+          </ul>
+        </li>
+        <li class="has-dropdown">
+          <a href="#services-section">خدمات مهندسی</a>
+          <ul class="pj-header__dropdown">
+            <li><a href="#services-section">جوشکاری کلدینگ</a></li>
+            <li><a href="#services-section">مشاوره فنی</a></li>
+          </ul>
+        </li>
+        <li><a href="#price-inquiry-section">استعلام قیمت</a></li>
+        <li class="has-dropdown">
+          <a href="#">برندها</a>
+          <ul class="pj-header__dropdown pj-header__dropdown--brands">
+            <li><a class="brand-bohler" href="#">Bohler</a></li>
+            <li><a class="brand-utp" href="#">UTP</a></li>
+            <li><a class="brand-esab" href="#">ESAB</a></li>
+            <li><a class="brand-lincoln" href="#">Lincoln Electric</a></li>
+            <li><a class="brand-magnaflux" href="#">Magnaflux</a></li>
+            <li><a class="brand-carestream" href="#">Carestream</a></li>
+            <li><a class="brand-welding-alloys" href="#">Welding Alloys</a></li>
+            <li><a class="brand-kobleco" href="#">Kobleco</a></li>
+            <li><a class="brand-polymet" href="#">Polymet</a></li>
+            <li><a class="brand-haynes" href="#">Haynes</a></li>
+            <li><a class="brand-sbg" href="#">SBG Welding</a></li>
+            <li><a class="brand-fronius" href="#">Fronius</a></li>
+          </ul>
+        </li>
+        <li><a href="#about-us-section">درباره ما</a></li>
+        <li><a href="{{ url('/contact-us') }}">تماس با ما</a></li>
+      </ul>
+    </nav>
+
+    <div class="pj-header__actions">
+      <a class="pj-header__consult" href="tel:+9821">
+        <span class="pj-header__consult-icon"><svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg></span>
+        <span>مشاوره</span>
+      </a>
+      <button type="button" class="pj-header__search-btn" id="pjSearchToggle" aria-label="جستجو">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+      <button type="button" class="pj-header__burger" id="pjBurger" aria-label="منو">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="pj-header__search-panel" id="pjSearchPanel" hidden>
+    <div class="pj-header__search-panel-inner">
+      <form class="pj-header__search-form" action="{{ url('/search') }}" method="get">
+        <input type="search" name="query" placeholder="جستجوی محصولات..." required />
+        <button type="submit" aria-label="جستجو"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<script>
+(function(){
+  var header=document.getElementById("pjHeader");
+  var burger=document.getElementById("pjBurger");
+  var searchToggle=document.getElementById("pjSearchToggle");
+  var searchPanel=document.getElementById("pjSearchPanel");
+  if(burger) burger.addEventListener("click",function(){burger.setAttribute("aria-expanded",header.classList.toggle("is-nav-open"));});
+  function slideToggle(el,open){
+    if(open){el.hidden=false;el.style.display="block";el.style.overflow="hidden";el.style.height="0px";el.style.paddingTop="0px";el.style.paddingBottom="0px";void el.offsetHeight;el.style.transition="height .35s ease,padding .35s ease";el.style.height=el.scrollHeight+"px";el.style.paddingTop="";el.style.paddingBottom="";el.classList.add("is-open");setTimeout(function(){el.style.height="";el.style.overflow="";el.style.transition="";},360);}
+    else{el.style.overflow="hidden";el.style.height=el.scrollHeight+"px";void el.offsetHeight;el.style.transition="height .3s ease,padding .3s ease";el.style.height="0px";el.style.paddingTop="0px";el.style.paddingBottom="0px";el.classList.remove("is-open");setTimeout(function(){el.hidden=true;el.style.display="none";el.style.height="";el.style.paddingTop="";el.style.paddingBottom="";el.style.overflow="";el.style.transition="";},310);}
+  }
+  if(searchToggle&&searchPanel) searchToggle.addEventListener("click",function(e){e.preventDefault();var o=!searchPanel.classList.contains("is-open");slideToggle(searchPanel,o);if(o){var i=searchPanel.querySelector("input");if(i)setTimeout(function(){i.focus();},320);}});
+})();
+</script>

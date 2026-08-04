@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>پیشرو جوش — استایل Ozmetalsan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+/* =========================================================
+   Pishro Joosh — Ozmetalsan-style header
+   Dark graphite textured bar + white oval logo
+   ========================================================= */
+
+:root {
+  --pj-graphite: #1d1d1d;
+  --pj-graphite-2: #2a2a2a;
+  --pj-accent: #fd7402;
+  --pj-nav-text: #ffffff;
+  --pj-lead: #c5c6c8;          /* سربی — dropdown محصولات */
+  --pj-lead-hover: #b3b4b6;
+  --pj-lead-text: #1a1a1a;
+  --pj-header-height: 95px;
+  --pj-font: "Vazirmatn", "IRANSansX", Tahoma, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* بافت مشترک هدر و فوتر */
+.pj-graphite-bg,
+.pj-header,
+.pj-footer {
+  background-color: var(--pj-graphite);
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,0.28) 100%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(25deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 9px),
+    radial-gradient(ellipse at 20% 50%, rgba(80,80,85,0.35), transparent 55%),
+    linear-gradient(90deg, #1a1a1a, #262626 40%, #1d1d1d 70%, #222 100%);
+  background-size: cover, auto, auto, cover, cover;
+  background-repeat: no-repeat, repeat, repeat, no-repeat, no-repeat;
+}
+
+.pj-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  direction: rtl;
+  font-family: var(--pj-font);
+  color: #fff;
+  box-shadow: none;
+}
+
+.pj-header__inner {
+  display: flex;
+  align-items: stretch;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 16px 0 16px;
+  min-height: var(--pj-header-height);
+  position: relative;
+}
+
+/* ---------- Logo: SVG mark + sharp web text ---------- */
+.pj-header__logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 10px 20px 10px 28px;
+  z-index: 3;
+}
+
+.pj-header__logo::before {
+  display: none;
+}
+
+.pj-logo {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  direction: ltr;
+  text-decoration: none;
+  color: #fff;
+  padding: 4px 6px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.pj-logo__mark {
+  display: block;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  overflow: visible;
+  shape-rendering: geometricPrecision;
+}
+
+.pj-logo__text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  text-align: left;
+  line-height: 1;
+}
+
+.pj-logo__fa {
+  display: block;
+  font-family: var(--pj-font);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.pj-logo__en {
+  display: block;
+  font-family: var(--pj-font);
+  font-weight: 700;
+  font-size: 9.5px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 720px) {
+  .pj-logo__mark { width: 46px; height: 46px; }
+  .pj-logo__fa { font-size: 14px; }
+  .pj-logo__en { font-size: 8px; letter-spacing: 0.03em; }
+  .pj-header__logo { padding: 8px 12px 8px 16px; }
+}
+
+/* ---------- Nav ---------- */
+.pj-header__nav {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-inline-start: 4px;
+  z-index: 2;
+}
+
+.pj-header__menu {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0;
+}
+
+.pj-header__menu > li {
+  position: relative;
+  line-height: var(--pj-header-height);
+  font-size: 14px;
+}
+
+.pj-header__menu > li > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  color: var(--pj-nav-text);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.25s ease;
+  letter-spacing: 0.01em;
+}
+
+.pj-header__menu > li > a:hover,
+.pj-header__menu > li.is-active > a,
+.pj-header__menu > li:hover > a {
+  color: var(--pj-accent);
+}
+
+.pj-header__menu > li.has-dropdown > a::after {
+  content: "";
+  width: 0;
+  height: 0;
+  border-inline-start: 4px solid transparent;
+  border-inline-end: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+/* ---------- Dropdowns ---------- */
+.pj-header__dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 240px;
+  margin: 0;
+  padding: 10px 0;
+  list-style: none;
+  background: #151515;
+  border-top: 2px solid var(--pj-accent);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
+  z-index: 60;
+}
+
+.pj-header__menu > li:hover > .pj-header__dropdown,
+.pj-header__menu > li:focus-within > .pj-header__dropdown {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.pj-header__dropdown a {
+  display: block;
+  padding: 11px 18px;
+  color: #ddd;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.pj-header__dropdown a:hover {
+  color: var(--pj-accent);
+  background: rgba(255,255,255,0.04);
+}
+
+/* محصولات — بک‌گراند سربی */
+.pj-header__dropdown--products {
+  background: var(--pj-lead);
+  border-top-color: #8e8f92;
+  min-width: 280px;
+}
+
+.pj-header__dropdown--products a {
+  color: var(--pj-lead-text);
+  font-weight: 600;
+}
+
+.pj-header__dropdown--products a:hover {
+  background: var(--pj-lead-hover);
+  color: #000;
+}
+
+/* برندها — رنگ‌های واقعی سایت */
+.pj-header__dropdown--brands {
+  background: #f2f2f3; /* روشن تا رنگ برندها خوب دیده شود */
+  border-top-color: var(--pj-accent);
+  min-width: 260px;
+  padding: 8px 0;
+}
+
+.pj-header__dropdown--brands a {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.pj-header__dropdown--brands a:hover {
+  background: rgba(0,0,0,0.05);
+  filter: brightness(0.92);
+}
+
+/* Brand color utilities (از سایت pishrojoosh) */
+.brand-bohler { color: #07234B !important; }
+.brand-utp { color: #FD7402 !important; }
+.brand-esab { color: #E6B800 !important; }
+.brand-lincoln { color: #111111 !important; }
+.brand-magnaflux { color: #1B8A3E !important; }
+.brand-carestream { color: #FD7402 !important; }
+.brand-welding-alloys { color: #1B8A3E !important; }
+.brand-kobleco { color: #003087 !important; }
+.brand-polymet { color: #C8102E !important; }
+.brand-haynes { color: #C8102E !important; }
+.brand-sbg { color: #E6B800 !important; }
+.brand-fronius { color: #E30613 !important; }
+
+/* ---------- Actions ---------- */
+.pj-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding-inline-start: 12px;
+  z-index: 2;
+}
+
+.pj-header__consult {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pj-header__consult:hover { color: var(--pj-accent); }
+
+.pj-header__consult-icon {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #c8102e; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pj-header__consult-icon svg { width: 14px; height: 14px; fill: currentColor; }
+
+.pj-header__search-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.85);
+  background: transparent; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: 0.2s ease;
+}
+.pj-header__search-btn:hover {
+  border-color: var(--pj-accent); color: var(--pj-accent);
+}
+.pj-header__search-btn svg {
+  width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2;
+}
+
+.pj-header__lang {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #fff; background: transparent; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 500; padding: 0;
+}
+.pj-header__lang:hover { color: var(--pj-accent); }
+.pj-header__lang-flag { width: 18px; height: 12px; object-fit: cover; border-radius: 1px; }
+
+.pj-header__burger {
+  display: none; width: 42px; height: 42px;
+  border: 1px solid rgba(255,255,255,0.35); background: transparent;
+  color: #fff; border-radius: 6px; cursor: pointer;
+  align-items: center; justify-content: center;
+}
+.pj-header__burger svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* Search strip — ozmetalsan style */
+.pj-header__search-panel {
+  display: none; overflow: hidden;
+  background: var(--pj-accent); padding: 10px 24px;
+}
+.pj-header__search-panel.is-open { display: block; }
+.pj-header__search-panel-inner {
+  max-width: 1400px; margin: 0 auto; display: flex; justify-content: flex-start;
+}
+.pj-header__search-form {
+  display: flex; align-items: center; width: 100%; max-width: 360px; height: 35px;
+  background: #fff; border: 1px solid #fff; border-radius: 4px; padding: 0 10px;
+}
+.pj-header__search-form input {
+  flex: 1; border: none; outline: none; background: none; padding: 0 6px;
+  font-family: inherit; font-size: 14px; direction: rtl; color: #222;
+}
+.pj-header__search-form button {
+  border: none; background: none; color: var(--pj-accent); cursor: pointer;
+  display: inline-flex; align-items: center;
+}
+.pj-header__search-form button svg {
+  width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 1024px) {
+  :root { --pj-header-height: 76px; }
+  .pj-header__inner { padding: 0 12px; align-items: center; }
+  .pj-header__logo { padding: 8px 16px 8px 24px; }
+  .pj-header__logo-oval { width: auto; height: auto; padding: 2px 4px; }
+  .pj-header__logo-oval img { height: 40px; }
+  .pj-header__logo::before { display: none; }
+  .pj-header__nav {
+    display: none; position: absolute; top: 100%; right: 0; left: 0;
+    background: #151515; padding: 12px 16px 20px;
+  }
+  .pj-header.is-nav-open .pj-header__nav { display: block; }
+  .pj-header__menu { flex-direction: column; align-items: stretch; }
+  .pj-header__menu > li { line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .pj-header__menu > li > a { padding: 14px 8px; width: 100%; }
+  .pj-header__dropdown {
+    position: static; opacity: 1; visibility: visible; transform: none;
+    display: none; box-shadow: none; border-top: none;
+  }
+  .pj-header__menu > li.is-open > .pj-header__dropdown { display: block; }
+  .pj-header__consult span:not(.pj-header__consult-icon),
+  .pj-header__lang span { display: none; }
+  .pj-header__burger { display: inline-flex; }
+  .pj-header__search-form { max-width: 100%; }
+}
+
+/* =========================================================
+   Pishro Joosh — page background like ozmetalsan.com
+   Light gray canvas + dark industrial sections
+   ========================================================= */
+
+:root {
+  --pj-page-bg: #f6f6f6;       /* پس‌زمینه اصلی صفحه مثل ozmetalsan */
+  --pj-page-muted: #ececec;
+  --pj-section-dark: #1b222c;  /* باکس‌های تیره دسته‌بندی */
+  --pj-footer-bg: #1d1d1d;
+  --pj-graphite: #1d1d1d;
+  --pj-accent: #fd7402;
+  --pj-title: #1a1a1a;
+  --pj-font: "Vazirmatn", "IRANSansX", Tahoma, sans-serif;
+}
+
+html {
+  background: var(--pj-page-bg);
+}
+
+body.pj-page,
+.pj-page {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--pj-page-bg);
+  color: #333;
+  font-family: var(--pj-font);
+}
+
+/* هیرو تیره زیر هدر (مثل اسلایدر ozmetalsan) */
+.pj-hero {
+  position: relative;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #fff;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.72) 100%),
+    radial-gradient(ellipse at 70% 40%, rgba(253,116,2,0.18), transparent 50%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 8px),
+    linear-gradient(135deg, #0e0e0e 0%, #1a1a1a 45%, #121212 100%);
+  background-size: cover;
+}
+
+.pj-hero__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  padding: 48px 24px;
+}
+
+.pj-hero__eyebrow {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #111;
+  background: var(--pj-accent);
+}
+
+.pj-hero h1 {
+  margin: 0 0 14px;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.pj-hero h1 span {
+  color: var(--pj-accent);
+}
+
+.pj-hero p {
+  margin: 0 auto 22px;
+  max-width: 520px;
+  color: rgba(255,255,255,0.82);
+  line-height: 1.9;
+  font-size: 0.98rem;
+}
+
+.pj-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  background: var(--pj-accent);
+  color: #111;
+  font-weight: 700;
+  text-decoration: none;
+  transition: filter 0.2s ease;
+}
+.pj-hero__cta:hover { filter: brightness(1.08); }
+
+/* بخش محتوا روی بک‌گراند روشن */
+.pj-section {
+  padding: 56px 20px;
+  background: var(--pj-page-bg);
+}
+
+.pj-section__title {
+  text-align: center;
+  margin: 0 0 36px;
+}
+
+.pj-section__title h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.3rem, 2.5vw, 1.8rem);
+  color: var(--pj-title);
+  font-weight: 700;
+}
+
+.pj-section__title h2::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin: 12px auto 0;
+  background: var(--pj-accent);
+}
+
+.pj-section__title p {
+  margin: 14px 0 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.pj-cats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pj-cat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pj-cat__icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--pj-accent);
+  border: 3px solid #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: -28px;
+  z-index: 1;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  font-size: 28px;
+  font-weight: 800;
+  color: #111;
+}
+
+.pj-cat__box {
+  width: 100%;
+  background: var(--pj-section-dark);
+  color: #fff;
+  text-align: center;
+  padding: 44px 14px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 96px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.pj-cat:hover .pj-cat__box {
+  background: #111820;
+}
+
+/* =========================================================
+   فوتر — همان طرح و رنگ تیره هدر (گرافیتی مدادی)
+   ========================================================= */
+.pj-footer {
+  /* background از .pj-graphite-bg در header.css می‌آید */
+  color: #c8c8c8;
+  font-family: var(--pj-font);
+  direction: rtl;
+  margin-top: 36px;
+}
+
+.pj-footer__main {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px 40px;
+  flex-wrap: wrap;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 52px 60px 40px;
+}
+
+.pj-footer__col {
+  flex: 1 1 160px;
+  min-width: 150px;
+}
+
+.pj-footer__col--news {
+  flex: 1 1 300px;
+  max-width: 420px;
+}
+
+.pj-footer__col--contact {
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.pj-footer__title {
+  margin: 0 0 16px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.6;
+  color: #fff;
+}
+
+.pj-footer__sub {
+  margin: 0 0 18px;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.pj-footer__form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 420px;
+}
+
+.pj-footer__form input {
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 110px 14px 18px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  direction: ltr;
+  text-align: left;
+}
+
+.pj-footer__form input::placeholder {
+  color: #888;
+}
+
+.pj-footer__form button {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: #fff;
+  color: #111;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.pj-footer__form button:hover {
+  background: var(--pj-accent);
+  color: #111;
+}
+
+.pj-footer__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.pj-footer__list a {
+  color: #cfcfcf;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.7;
+  transition: color 0.2s ease;
+}
+
+.pj-footer__list a:hover {
+  color: var(--pj-accent);
+}
+
+.pj-footer__bottom {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 14px 60px;
+  text-align: center;
+  font-size: 12px;
+  color: #8a8a8a;
+  background: rgba(0,0,0,0.25);
+}
+
+.pj-footer__bottom a {
+  color: var(--pj-accent);
+  text-decoration: none;
+}
+
+@media (max-width: 1060px) {
+  .pj-footer__main {
+    padding: 36px 24px 28px;
+    flex-direction: column;
+  }
+  .pj-footer__col,
+  .pj-footer__col--news,
+  .pj-footer__col--contact {
+    max-width: none;
+  }
+  .pj-footer__bottom {
+    padding: 14px 20px;
+  }
+}
+
+@media (max-width: 900px) {
+  .pj-cats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pj-hero { min-height: 320px; }
+}
+
+@media (max-width: 520px) {
+  .pj-cats { grid-template-columns: 1fr; max-width: 280px; }
+}
+
+</style>
+</head>
+<body class="pj-page">
+
+<header class="pj-header" id="pjHeader">
+  <div class="pj-header__inner">
+        <div class="pj-header__logo">
+      <a class="pj-logo" href="https://pishrojoosh.com/" aria-label="پیشرو جوش خاورمیانه">
+        <svg class="pj-logo__mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+          <path fill="#FAA933" fill-rule="evenodd" d="M 74.71 89.13 L 35.16 89.13 L 35.16 85.55 L 38.75 85.55 L 38.75 78.38 L 42.31 78.38 L 42.40 74.75 L 49.51 74.75 L 49.55 71.18 L 53.11 71.18 L 53.16 67.58 L 56.71 67.58 L 56.80 63.95 L 63.91 63.95 L 64.00 60.35 L 71.11 60.35 L 71.20 56.75 L 81.91 56.75 L 82.00 53.16 L 92.71 53.16 L 92.80 49.55 L 107.11 49.55 L 107.20 45.98 L 132.35 45.98 L 132.31 67.56 L 114.40 67.56 L 114.31 71.16 L 100.00 71.16 L 99.91 74.75 L 92.80 74.75 L 92.71 78.36 L 85.60 78.36 L 85.51 81.95 L 78.40 81.95 L 78.36 85.53 L 74.80 85.53 L 74.71 89.16 Z M 60.31 175.56 L 53.20 175.56 L 53.16 171.98 L 49.60 171.98 L 49.55 168.38 L 46.00 168.38 L 45.95 164.78 L 42.40 164.78 L 42.35 161.18 L 38.80 161.18 L 38.75 157.58 L 35.20 157.58 L 35.16 153.95 L 31.55 153.95 L 31.55 146.75 L 27.95 146.75 L 27.95 139.56 L 24.35 139.56 L 24.40 135.98 L 45.95 135.98 L 45.95 153.95 L 49.55 153.95 L 49.55 161.16 L 53.16 161.16 L 53.16 168.33 L 56.71 168.33 L 56.75 171.95 L 60.35 171.95 L 60.31 175.56 Z M 63.91 99.95 L 28.00 99.95 L 27.95 96.38 L 63.91 96.38 L 63.91 99.95 Z M 53.11 114.35 L 24.40 114.35 L 24.35 110.78 L 53.11 110.78 L 53.11 114.35 Z M 49.51 125.16 L 24.40 125.16 L 24.35 121.58 L 49.51 121.58 L 49.51 125.16 Z"/>
+          <path fill="#1D344F" fill-rule="evenodd" d="M 99.91 168.35 L 71.20 168.35 L 71.16 164.75 L 74.75 164.75 L 74.75 150.35 L 71.16 150.35 L 71.20 146.75 L 89.11 146.75 L 89.20 143.16 L 103.51 143.16 L 103.60 139.56 L 114.31 139.56 L 114.40 135.95 L 121.51 135.95 L 121.60 132.35 L 128.71 132.35 L 128.75 128.78 L 132.31 128.78 L 132.40 125.18 L 171.95 125.18 L 171.95 128.73 L 168.40 128.73 L 168.35 132.33 L 164.80 132.33 L 164.75 135.93 L 161.20 135.93 L 161.16 139.53 L 157.60 139.53 L 157.56 143.13 L 154.00 143.13 L 153.95 146.73 L 150.40 146.73 L 150.31 150.35 L 143.20 150.35 L 143.11 153.95 L 136.00 153.95 L 135.91 157.56 L 125.20 157.56 L 125.11 161.16 L 114.40 161.16 L 114.31 164.75 L 100.00 164.75 L 99.91 168.35 Z M 182.71 81.95 L 172.00 81.95 L 171.91 78.33 L 161.16 78.33 L 161.16 60.35 L 157.56 60.35 L 157.56 53.16 L 153.95 53.16 L 153.95 45.98 L 150.40 45.98 L 150.35 42.35 L 146.75 42.35 L 146.80 38.75 L 153.91 38.75 L 153.95 42.33 L 157.51 42.33 L 157.56 45.93 L 161.11 45.93 L 161.16 49.53 L 164.71 49.53 L 164.75 53.13 L 168.31 53.13 L 168.35 56.73 L 171.91 56.73 L 171.95 60.35 L 175.56 60.35 L 175.56 67.56 L 179.16 67.56 L 179.16 74.75 L 182.75 74.75 L 182.71 81.95 Z M 179.11 117.95 L 154.00 117.95 L 153.91 114.35 L 146.80 114.35 L 146.75 110.78 L 161.11 110.78 L 161.20 114.35 L 179.11 114.35 L 179.11 117.95 Z M 182.71 107.16 L 172.00 107.16 L 171.91 103.55 L 154.00 103.55 L 153.95 99.98 L 175.51 99.98 L 175.60 103.55 L 182.71 103.55 L 182.71 107.16 Z M 182.71 92.75 L 161.20 92.75 L 161.16 89.18 L 182.71 89.18 L 182.71 92.75 Z M 143.11 35.13 L 139.56 35.13 L 139.60 31.58 L 143.16 31.58 L 143.11 35.16 Z M 146.71 38.73 L 143.16 38.73 L 143.20 35.18 L 146.75 35.18 L 146.71 38.75 Z"/>
+        </svg>
+        <span class="pj-logo__text">
+          <span class="pj-logo__fa">پیشرو جوش خاورمیانه</span>
+          <span class="pj-logo__en">PISHRO JOOSH KHAVAR MIANEH</span>
+        </span>
+      </a>
+    </div>
+
+    <nav class="pj-header__nav" aria-label="منوی اصلی">
+      <ul class="pj-header__menu">
+        <li class="has-dropdown">
+          <a href="#products">محصولات</a>
+          <ul class="pj-header__dropdown pj-header__dropdown--products">
+            <li><a href="https://pishrojoosh.com/page/welding-consumables">مواد مصرفی جوشکاری</a></li>
+            <li><a href="https://pishrojoosh.com/page/ndt-materials-equipment">مواد و تجهیزات تست‌های غیرمخرب</a></li>
+            <li><a href="https://pishrojoosh.com/page/welding-robots">ربات‌های جوشکاری</a></li>
+            <li><a href="https://pishrojoosh.com/page/welding-cutting-machines">دستگاه‌های جوش و برش</a></li>
+            <li><a href="https://pishrojoosh.com/page/radiographic-films">فیلم‌های رادیوگرافی</a></li>
+          </ul>
+        </li>
+        <li class="has-dropdown">
+          <a href="#services">خدمات مهندسی</a>
+          <ul class="pj-header__dropdown">
+            <li><a href="#services">جوشکاری کلدینگ</a></li>
+            <li><a href="#services">مشاوره فنی</a></li>
+          </ul>
+        </li>
+        <li><a href="#inquiry">استعلام قیمت</a></li>
+        <li class="has-dropdown">
+          <a href="#brands">برندها</a>
+          <ul class="pj-header__dropdown pj-header__dropdown--brands">
+            <li><a class="brand-bohler" href="#">Bohler</a></li>
+            <li><a class="brand-utp" href="#">UTP</a></li>
+            <li><a class="brand-esab" href="#">ESAB</a></li>
+            <li><a class="brand-lincoln" href="#">Lincoln Electric</a></li>
+            <li><a class="brand-magnaflux" href="#">Magnaflux</a></li>
+            <li><a class="brand-carestream" href="#">Carestream</a></li>
+            <li><a class="brand-welding-alloys" href="#">Welding Alloys</a></li>
+            <li><a class="brand-kobleco" href="#">Kobleco</a></li>
+            <li><a class="brand-polymet" href="#">Polymet</a></li>
+            <li><a class="brand-haynes" href="#">Haynes</a></li>
+            <li><a class="brand-sbg" href="#">SBG Welding</a></li>
+            <li><a class="brand-fronius" href="#">Fronius</a></li>
+          </ul>
+        </li>
+        <li><a href="#about">درباره ما</a></li>
+        <li class="is-active"><a href="https://pishrojoosh.com/contact-us">تماس با ما</a></li>
+      </ul>
+    </nav>
+
+    <div class="pj-header__actions">
+      <a class="pj-header__consult" href="tel:+9821" aria-label="مشاوره">
+        <span class="pj-header__consult-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.2 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8z"/></svg>
+        </span>
+        <span>مشاوره</span>
+      </a>
+      <button type="button" class="pj-header__lang" aria-label="زبان">
+        <img class="pj-header__lang-flag" src="https://flagcdn.com/w40/ir.png" width="18" height="12" alt="" />
+        <span>فارسی</span>
+      </button>
+      <button type="button" class="pj-header__search-btn" id="pjSearchToggle" aria-label="جستجو">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      </button>
+      <button type="button" class="pj-header__burger" id="pjBurger" aria-label="منو">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="pj-header__search-panel" id="pjSearchPanel" hidden>
+    <div class="pj-header__search-panel-inner">
+      <form class="pj-header__search-form" action="https://pishrojoosh.com/search" method="get">
+        <input type="search" name="query" placeholder="جستجوی محصولات..." required />
+        <button type="submit" aria-label="جستجو">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<!-- هیرو تیره مثل ozmetalsan -->
+<section class="pj-hero">
+  <div class="pj-hero__inner">
+    <span class="pj-hero__eyebrow">PISHRO JOOSH</span>
+    <h1>کامل‌ترین زنجیره تامین <span>متریال جوشکاری</span> در ایران</h1>
+    <p>تامین تجهیزات، مواد مصرفی و راهکارهای تخصصی جوشکاری، اتوماسیون و تست‌های غیرمخرب</p>
+    <a class="pj-hero__cta" href="#products">مشاهده محصولات</a>
+  </div>
+</section>
+
+<!-- محتوای روشن روی بک‌گراند #F6F6F6 -->
+<section class="pj-section" id="products">
+  <div class="pj-section__title">
+    <h2>دسته‌بندی محصولات</h2>
+    <p>مثل چیدمان دسته‌ها در ozmetalsan — روی بک‌گراند روشن صفحه</p>
+  </div>
+  <div class="pj-cats">
+    <a class="pj-cat" href="https://pishrojoosh.com/page/welding-consumables">
+      <div class="pj-cat__icon">۱</div>
+      <div class="pj-cat__box">مواد مصرفی جوشکاری</div>
+    </a>
+    <a class="pj-cat" href="https://pishrojoosh.com/page/welding-cutting-machines">
+      <div class="pj-cat__icon">۲</div>
+      <div class="pj-cat__box">دستگاه‌های جوش و برش</div>
+    </a>
+    <a class="pj-cat" href="https://pishrojoosh.com/page/welding-robots">
+      <div class="pj-cat__icon">۳</div>
+      <div class="pj-cat__box">ربات‌های جوشکاری</div>
+    </a>
+    <a class="pj-cat" href="https://pishrojoosh.com/page/ndt-materials-equipment">
+      <div class="pj-cat__icon">۴</div>
+      <div class="pj-cat__box">تست‌های غیرمخرب</div>
+    </a>
+  </div>
+</section>
+
+<footer class="pj-footer">
+  <div class="pj-footer__main">
+    <div class="pj-footer__col">
+      <ul class="pj-footer__list">
+        <li><a href="https://pishrojoosh.com/page/about-us">درباره ما</a></li>
+        <li><a href="https://pishrojoosh.com/contact-us">تماس با ما</a></li>
+        <li><a href="https://pishrojoosh.com/page/customer-service">خدمات مشتریان</a></li>
+        <li><a href="https://pishrojoosh.com/page/whats-new">چه خبر است</a></li>
+        <li><a href="https://pishrojoosh.com/page/terms-of-use">شرایط استفاده</a></li>
+        <li><a href="https://pishrojoosh.com/page/terms-conditions">شرایط و مقررات</a></li>
+      </ul>
+    </div>
+
+    <div class="pj-footer__col">
+      <ul class="pj-footer__list">
+        <li><a href="https://pishrojoosh.com/page/privacy-policy">سیاست حریم خصوصی</a></li>
+        <li><a href="https://pishrojoosh.com/page/payment-policy">سیاست پرداخت</a></li>
+        <li><a href="https://pishrojoosh.com/page/shipping-policy">سیاست حمل و نقل</a></li>
+        <li><a href="https://pishrojoosh.com/page/refund-policy">سیاست بازپرداخت</a></li>
+        <li><a href="https://pishrojoosh.com/page/return-policy">سیاست بازگشت</a></li>
+      </ul>
+    </div>
+
+    <div class="pj-footer__col pj-footer__col--contact">
+      <ul class="pj-footer__list">
+        <li><a href="https://pishrojoosh.com/">دفتر مرکزی: تهران - کیلومتر ۲۱ بزرگراه شهید لشکری</a></li>
+        <li><a href="tel:+982146079474">تلفن +۹۸ ۲۱ ۴۶۰۷۹۴۷۴ · ۴۶۰۷۹۳۳۱ · ۴۶۰۷۹۳۳۲</a></li>
+        <li><a href="https://pishrojoosh.com/">تهران - خیابان امام خمینی - پاساژ ابزار و یراق - طبقه همکف شماره ۱۰۵</a></li>
+        <li><a href="tel:+982166727135">تلفن +۹۸ ۲۱ ۶۶۷۲۷۱۳۵ · ۶۶۷۴۸۶۸۰ · ۶۶۷۰۵۳۸۷</a></li>
+      </ul>
+    </div>
+
+    <div class="pj-footer__col pj-footer__col--news">
+      <p class="pj-footer__title">برای دریافت خبرنامه‌ی جذاب ما آماده شوید!</p>
+      <p class="pj-footer__sub">برای ماندن در تماس عضو شوید.</p>
+      <form class="pj-footer__form" action="https://pishrojoosh.com/subscription" method="post">
+        <input type="email" name="email" placeholder="email@example.com" required aria-label="ایمیل" />
+        <button type="submit">عضویت</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="pj-footer__bottom">
+    © پیشرو جوش خاورمیانه — طراحی فوتر با همان طرح تیره هدر
+  </div>
+</footer>
+
+<script>
+(function () {
+  var header = document.getElementById("pjHeader");
+  var burger = document.getElementById("pjBurger");
+  var searchToggle = document.getElementById("pjSearchToggle");
+  var searchPanel = document.getElementById("pjSearchPanel");
+
+  if (burger) {
+    burger.addEventListener("click", function () {
+      burger.setAttribute("aria-expanded", header.classList.toggle("is-nav-open"));
+    });
+  }
+
+  function slideToggle(el, open) {
+    if (open) {
+      el.hidden = false; el.style.display = "block"; el.style.overflow = "hidden";
+      el.style.height = "0px"; el.style.paddingTop = "0px"; el.style.paddingBottom = "0px";
+      void el.offsetHeight;
+      el.style.transition = "height 0.35s ease, padding 0.35s ease";
+      el.style.height = el.scrollHeight + "px"; el.style.paddingTop = ""; el.style.paddingBottom = "";
+      el.classList.add("is-open");
+      setTimeout(function () { el.style.height = ""; el.style.overflow = ""; el.style.transition = ""; }, 360);
+    } else {
+      el.style.overflow = "hidden"; el.style.height = el.scrollHeight + "px"; void el.offsetHeight;
+      el.style.transition = "height 0.3s ease, padding 0.3s ease";
+      el.style.height = "0px"; el.style.paddingTop = "0px"; el.style.paddingBottom = "0px";
+      el.classList.remove("is-open");
+      setTimeout(function () {
+        el.hidden = true; el.style.display = "none";
+        el.style.height = ""; el.style.paddingTop = ""; el.style.paddingBottom = "";
+        el.style.overflow = ""; el.style.transition = "";
+      }, 310);
+    }
+  }
+
+  if (searchToggle && searchPanel) {
+    searchToggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      var willOpen = !searchPanel.classList.contains("is-open");
+      slideToggle(searchPanel, willOpen);
+      if (willOpen) {
+        var input = searchPanel.querySelector("input");
+        if (input) setTimeout(function () { input.focus(); }, 320);
+      }
+    });
+  }
+
+  header.querySelectorAll(".pj-header__menu > li.has-dropdown > a").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      if (window.matchMedia("(max-width: 1024px)").matches) {
+        e.preventDefault();
+        link.parentElement.classList.toggle("is-open");
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

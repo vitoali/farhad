@@ -1,0 +1,59 @@
+نصب روی https://pishrojoosh.com/
+================================
+
+ترتیب نهایی صفحه اصلی
+---------------------
+1) هدر جدید
+2) اسلایدر اول سایت (همان image-carousel / v-carousel فعلی)  ← دست نزنید
+3) محصولات ویژه + محصولات پیشنهادی                         ← فقط این را اضافه کنید
+4) بقیهٔ محتوای فعلی سایت (کلدینگ، دسته‌ها، درباره ما، برندها، …) ← همان‌طور بماند
+5) فوتر تیره
+
+
+۱) هدر
+- فایل‌ها: header/header.css + header/bagisto-snippet.blade.php
+- snippet هدر را جای هدر فعلی قالب بگذارید
+
+۲) فوتر تیره
+- header/bagisto-footer-override.css را بعد از CSS قالب لود کنید
+
+۳) دو ردیف محصول — بعد از اسلایدر اول، قبل از «خدمات جوشکاری کلدینگ»
+- محل درست در صفحه اصلی:
+    [اسلایدر اول سایت]
+    >>> اینجا HTML اسلایدر محصولات <<<
+    [خدمات جوشکاری کلدینگ]
+    [بقیه محتوا…]
+- فایل‌ها:
+  CSS: header/products/product-carousels.css
+  JS:  header/products/product-carousels.js
+  HTML: header/products/bagisto-products-snippet.html
+
+۴) ویرایش محصولات
+- در product-carousels.js:
+  PJ_SPECIAL_PRODUCTS   → ۱۵ محصول ویژه
+  PJ_SUGGESTED_PRODUCTS → ۱۵ محصول پیشنهادی
+- فیلدها: name, brand, url, image
+
+۵) دمو یک‌فایله
+- header/site-kit.html
+
+۶) تعویض تصویر «خدمات جوشکاری کلدینگ» (صفحه اصلی pishrojoosh.com)
+----------------------------------------------------------------
+سکشن زنده سایت: #services-section
+فایل فعلی:
+  storage/theme/13/WVgFV02Lramit7nyv3QbTK1FGM9eiL7tn66lBSEM.webp  (960×512)
+
+فایل جایگزین آماده (نسبت دقیق همان سکشن، کیفیت رتینا ۲×):
+  header/assets/cladding-service-graphite.webp  (1920×1024)
+  header/assets/cladding-service-graphite.jpg
+  header/assets/cladding-service-graphite.png
+
+در پنل Bagisto / Theme Customization:
+  1) بلوک HTML سکشن «خدمات جوشکاری کلدینگ» را باز کنید
+  2) تصویر theme/13 را با cladding-service-graphite.webp عوض کنید
+     (آپلود در Media → سپس src تصویر سکشن را به مسیر جدید بدهید)
+  3) یا همان فایل فعلی theme/13 را با این webp جایگزین کنید
+
+نکته: لینک منوی «استعلام قیمت» به #price-inquiry-section می‌رود ولی فعلاً
+id="price-inquiry-section" روی صفحه نیست. تصویر کلدینگ مربوط به
+#services-section است.

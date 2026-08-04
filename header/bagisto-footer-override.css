@@ -1,0 +1,76 @@
+/**
+ * Override فوتر Bagisto فعلی pishrojoosh
+ * همان طرح/رنگ تیره مدادی هدر
+ *
+ * این فایل را بعد از CSS قالب لود کنید.
+ */
+
+footer.mt-9.bg-lightOrange,
+footer.bg-lightOrange,
+footer.mt-9 {
+  background-color: #1d1d1d !important;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0) 42%, rgba(0,0,0,0.28) 100%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(25deg, rgba(0,0,0,0.18) 0 1px, transparent 1px 9px),
+    radial-gradient(ellipse at 20% 50%, rgba(80,80,85,0.35), transparent 55%),
+    linear-gradient(90deg, #1a1a1a, #262626 40%, #1d1d1d 70%, #222 100%) !important;
+  background-size: cover, auto, auto, cover, cover !important;
+  color: #cfcfcf !important;
+}
+
+/* نوار کپی‌رایت پایین فوتر */
+footer .bg-\[\#F1EADF\],
+footer [class*="bg-[#F1EADF]"] {
+  background: rgba(0, 0, 0, 0.28) !important;
+  color: #9a9a9a !important;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+footer .text-navyBlue,
+footer [class*="text-navyBlue"] {
+  color: #ffffff !important;
+}
+
+footer a {
+  color: #cfcfcf !important;
+}
+
+footer a:hover {
+  color: #fd7402 !important;
+}
+
+footer .text-zinc-600,
+footer .text-xs,
+footer p {
+  color: #a3a3a3 !important;
+}
+
+/* اینپوت خبرنامه */
+footer input[type="email"],
+footer input[name="email"] {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.18) !important;
+  color: #fff !important;
+}
+
+footer input[type="email"]::placeholder {
+  color: #888 !important;
+}
+
+footer button[type="submit"] {
+  background: #fff !important;
+  color: #111 !important;
+}
+
+footer button[type="submit"]:hover {
+  background: #fd7402 !important;
+}
+
+/* آکاردئون موبایل داخل فوتر */
+footer .bg-\[\#F1EADF\].font-medium,
+footer [class*="border-[#e9decc]"] {
+  background: rgba(255,255,255,0.06) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+  color: #fff !important;
+}
