@@ -1,0 +1,4 @@
+# PDF و خروجی استخراج — حجم بالا، فقط برای توسعه محلی
+*.pdf
+nison-farsi*.txt
+nison-english*.txt

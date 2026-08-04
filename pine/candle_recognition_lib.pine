@@ -1,0 +1,563 @@
+// کتابخانه کندل‌شناس (Candle Recognition Library)
+// Steve Nison — Japanese Candlestick Charting Techniques
+// 64 patterns | formulas: body/range ratios, wick/body, midpoint pierce, trend context
+//
+// Strategy usage:
+//   import YOUR_USER/CandleRecognitionLib/1 as cr
+//   s = cr.defaultSettings()
+//   if cr.isPatternActive(37, s) and cr.patternKind(37) == 0 ...
+//
+//@version=5
+library("CandleRecognitionLib", overlay=true)
+
+// ── Tunable thresholds (Nison allows subjectivity; these are sensible defaults) ──
+export type Settings
+    float dojiPct
+    float smallBodyPct
+    float longBodyPct
+    float shadowRatio
+    float piercePct
+    float starBodyPct
+    float tweezerPct
+    float haramiMaxBodyRatio
+    float maxOppWickRatio
+    float bodyEdgePct
+    int trendBars
+    int longTermBars
+
+export defaultSettings() =>
+    Settings.new(0.10, 0.30, 0.60, 2.0, 0.50, 0.30, 0.001, 0.60, 1.0, 0.25, 5, 20)
+
+// ── Candle anatomy ─────────────────────────────────────────────────────────────
+export body(float o, float c) =>
+    math.abs(c - o)
+
+export rng(float h, float l) =>
+    h - l
+
+export upperShadow(float o, float h, float c) =>
+    h - math.max(o, c)
+
+export lowerShadow(float o, float l, float c) =>
+    math.min(o, c) - l
+
+export isBull(float o, float c) =>
+    c > o
+
+export isBear(float o, float c) =>
+    c < o
+
+export isDoji(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and body(o, c) <= rng(h, l) * s.dojiPct
+
+export isSmallBody(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and body(o, c) <= rng(h, l) * s.smallBodyPct
+
+export isLongBody(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and body(o, c) >= rng(h, l) * s.longBodyPct
+
+export gapUp(float h1, float l0) =>
+    l0 > h1
+
+export gapDown(float l1, float h0) =>
+    h0 < l1
+
+export inUptrend(Settings s) =>
+    ta.rising(close, s.trendBars)
+
+export inDowntrend(Settings s) =>
+    ta.falling(close, s.trendBars)
+
+export nearEqual(float a, float b, float pct) =>
+    math.abs(a - b) <= math.max(math.abs(a), math.abs(b)) * pct
+
+// Nison: engulfing compares real bodies only (shadows excluded).
+export bodyEngulfs(float o0, float c0, float o1, float c1) =>
+    body(o0, c0) > body(o1, c1) and math.min(o0, c0) <= math.min(o1, c1) and math.max(o0, c0) >= math.max(o1, c1)
+
+export tinyRealBody(float o, float h, float l, float c, Settings s) =>
+    isSmallBody(o, h, l, c, s) or isDoji(o, h, l, c, s)
+
+// Body sits in upper/lower portion of range (Nison / Bulkowski hammer criteria).
+export bodyNearTop(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and upperShadow(o, h, c) <= rng(h, l) * s.bodyEdgePct
+
+export bodyNearBottom(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and lowerShadow(o, l, c) <= rng(h, l) * s.bodyEdgePct
+
+export bodyRatio(float o, float h, float l, float c) =>
+    rng(h, l) > 0 ? body(o, c) / rng(h, l) : 0.0
+
+export lowerWickRatio(float o, float h, float l, float c) =>
+    body(o, c) > 0 ? lowerShadow(o, l, c) / body(o, c) : 0.0
+
+export upperWickRatio(float o, float h, float l, float c) =>
+    body(o, c) > 0 ? upperShadow(o, h, c) / body(o, c) : 0.0
+
+// ── Single-candle patterns (Chapter 3–4, 8) ────────────────────────────────────
+export patDoji(float o, float h, float l, float c, Settings s) =>
+    isDoji(o, h, l, c, s)
+
+export patLongLeggedDoji(float o, float h, float l, float c, Settings s) =>
+    isDoji(o, h, l, c, s) and upperShadow(o, h, c) > body(o, c) and lowerShadow(o, l, c) > body(o, c)
+
+export patGravestoneDoji(float o, float h, float l, float c, Settings s) =>
+    isDoji(o, h, l, c, s) and upperShadow(o, h, c) > rng(h, l) * 0.60 and lowerShadow(o, l, c) <= rng(h, l) * 0.10
+
+export patDragonflyDoji(float o, float h, float l, float c, Settings s) =>
+    isDoji(o, h, l, c, s) and lowerShadow(o, l, c) > rng(h, l) * 0.60 and upperShadow(o, h, c) <= rng(h, l) * 0.10
+
+export patRickshawMan(float o, float h, float l, float c, Settings s) =>
+    patLongLeggedDoji(o, h, l, c, s)
+
+export patSpinningTop(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and isSmallBody(o, h, l, c, s) and upperShadow(o, h, c) > body(o, c) and lowerShadow(o, l, c) > body(o, c)
+
+export patHammer(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and isSmallBody(o, h, l, c, s) and lowerShadow(o, l, c) >= body(o, c) * s.shadowRatio and upperShadow(o, h, c) <= body(o, c) * s.maxOppWickRatio and bodyNearTop(o, h, l, c, s)
+
+export patHangingMan(float o, float h, float l, float c, Settings s) =>
+    patHammer(o, h, l, c, s)
+
+export patShootingStar(float o, float h, float l, float c, Settings s) =>
+    rng(h, l) > 0 and isSmallBody(o, h, l, c, s) and upperShadow(o, h, c) >= body(o, c) * s.shadowRatio and lowerShadow(o, l, c) <= body(o, c) * s.maxOppWickRatio and bodyNearBottom(o, h, l, c, s)
+
+export patInvertedHammer(float o, float h, float l, float c, Settings s) =>
+    patShootingStar(o, h, l, c, s)
+
+export patBullishMarubozu(float o, float h, float l, float c, Settings s) =>
+    isBull(o, c) and isLongBody(o, h, l, c, s) and upperShadow(o, h, c) <= rng(h, l) * 0.05 and lowerShadow(o, l, c) <= rng(h, l) * 0.05
+
+export patBearishMarubozu(float o, float h, float l, float c, Settings s) =>
+    isBear(o, c) and isLongBody(o, h, l, c, s) and upperShadow(o, h, c) <= rng(h, l) * 0.05 and lowerShadow(o, l, c) <= rng(h, l) * 0.05
+
+export patBullishBeltHold(float o, float h, float l, float c, Settings s) =>
+    isBull(o, c) and isLongBody(o, h, l, c, s) and math.abs(o - l) <= rng(h, l) * 0.05
+
+export patBearishBeltHold(float o, float h, float l, float c, Settings s) =>
+    isBear(o, c) and isLongBody(o, h, l, c, s) and math.abs(o - h) <= rng(h, l) * 0.05
+
+// ── Two-candle patterns (Chapter 4, 6, 7) ──────────────────────────────────────
+// Engulfing — Ch.4: opposite colors; exception if 1st body is doji-like (Nison p.38).
+export patBullishEngulfing(Settings s) =>
+    engulf = bodyEngulfs(open, close, open[1], close[1])
+    classic = isBear(open[1], close[1]) and isBull(open, close) and engulf
+    exception = tinyRealBody(open[1], high[1], low[1], close[1], s) and isBull(open[1], close[1]) and isBull(open, close) and engulf
+    classic or exception
+
+export patBearishEngulfing(Settings s) =>
+    engulf = bodyEngulfs(open, close, open[1], close[1])
+    classic = isBull(open[1], close[1]) and isBear(open, close) and engulf
+    exception = tinyRealBody(open[1], high[1], low[1], close[1], s) and isBear(open[1], close[1]) and isBear(open, close) and engulf
+    classic or exception
+
+// Dark Cloud — Ch.4: open above prior high; close below midpoint of white body.
+export patDarkCloudCover(Settings s) =>
+    isBull(open[1], close[1]) and isBear(open, close) and open > high[1] and close < (close[1] + open[1]) / 2 and close > open[1]
+
+export patPiercingPattern(Settings s) =>
+    isBear(open[1], close[1]) and isBull(open, close) and open < low[1] and close > (close[1] + open[1]) / 2 and close < open[1]
+
+export patBullishHarami(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and body(open, close) <= body(open[1], close[1]) * s.haramiMaxBodyRatio and high < open[1] and low > close[1]
+
+export patBearishHarami(Settings s) =>
+    isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and body(open, close) <= body(open[1], close[1]) * s.haramiMaxBodyRatio and high < close[1] and low > open[1]
+
+export patBullishHaramiCross(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isDoji(open, high, low, close, s) and high < open[1] and low > close[1]
+
+export patBearishHaramiCross(Settings s) =>
+    isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isDoji(open, high, low, close, s) and high < close[1] and low > open[1]
+
+export patTweezersTop(Settings s) =>
+    nearEqual(high, high[1], s.tweezerPct)
+
+export patTweezersBottom(Settings s) =>
+    nearEqual(low, low[1], s.tweezerPct)
+
+export patBullishCounterattack(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and open < low[1] and nearEqual(close, close[1], s.tweezerPct)
+
+export patBearishCounterattack(Settings s) =>
+    isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBear(open, close) and open > high[1] and nearEqual(close, close[1], s.tweezerPct)
+
+// On-neck / In-neck / Thrusting — Ch.4: partial white recovery after long black day.
+export patOnNeck(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and open < low[1] and nearEqual(close, low[1], s.tweezerPct)
+
+export patInNeck(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and open < low[1] and nearEqual(close, close[1], s.tweezerPct) and close <= close[1]
+
+export patThrusting(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and open < low[1] and close > close[1] and close < (open[1] + close[1]) / 2
+
+export patBullishSeparatingLines(Settings s) =>
+    isBear(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and nearEqual(open, open[1], s.tweezerPct) and close > close[1]
+
+export patBearishSeparatingLines(Settings s) =>
+    isBull(open[1], close[1]) and isLongBody(open[1], high[1], low[1], close[1], s) and isBear(open, close) and nearEqual(open, open[1], s.tweezerPct) and close < close[1]
+
+export patUpsideWindow(Settings s) =>
+    gapUp(high[1], low)
+
+export patDownsideWindow(Settings s) =>
+    gapDown(low[1], high)
+
+export patUpwardGappingTasuki(Settings s) =>
+    isBull(open[1], close[1]) and isBear(open, close) and gapUp(high[1], low) and open >= open[1] and open <= close[1] and close < open[1]
+
+export patDownwardGappingTasuki(Settings s) =>
+    isBear(open[1], close[1]) and isBull(open, close) and gapDown(low[1], high) and open <= open[1] and open >= close[1] and close > open[1]
+
+export patUpgapSideBySideWhite(Settings s) =>
+    isBull(open[1], close[1]) and isBull(open, close) and gapUp(high[1], low) and nearEqual(open, open[1], s.tweezerPct)
+
+export patDowngapSideBySideWhite(Settings s) =>
+    isBull(open[1], close[1]) and isBull(open, close) and gapDown(low[1], high) and nearEqual(open, open[1], s.tweezerPct)
+
+// ── Three-candle patterns (Chapters 5–7) ─────────────────────────────────────────
+export patMorningStar(Settings s) =>
+    isBear(open[2], close[2]) and isLongBody(open[2], high[2], low[2], close[2], s) and isSmallBody(open[1], high[1], low[1], close[1], s) and isBull(open, close) and close > (open[2] + close[2]) / 2 and close < open[2]
+
+export patEveningStar(Settings s) =>
+    isBull(open[2], close[2]) and isLongBody(open[2], high[2], low[2], close[2], s) and isSmallBody(open[1], high[1], low[1], close[1], s) and isBear(open, close) and close < (open[2] + close[2]) / 2 and close > open[2]
+
+export patMorningDojiStar(Settings s) =>
+    isBear(open[2], close[2]) and isLongBody(open[2], high[2], low[2], close[2], s) and isDoji(open[1], high[1], low[1], close[1], s) and isBull(open, close) and close > (open[2] + close[2]) / 2
+
+export patEveningDojiStar(Settings s) =>
+    isBull(open[2], close[2]) and isLongBody(open[2], high[2], low[2], close[2], s) and isDoji(open[1], high[1], low[1], close[1], s) and isBear(open, close) and close < (open[2] + close[2]) / 2
+
+export patAbandonedBabyTop(Settings s) =>
+    isBull(open[2], close[2]) and isDoji(open[1], high[1], low[1], close[1], s) and isBear(open, close) and gapUp(high[2], low[1]) and gapDown(low[1], high)
+
+export patAbandonedBabyBottom(Settings s) =>
+    isBear(open[2], close[2]) and isDoji(open[1], high[1], low[1], close[1], s) and isBull(open, close) and gapDown(low[2], high[1]) and gapUp(high[1], low)
+
+export patThreeBlackCrows(Settings s) =>
+    isBear(open[2], close[2]) and isBear(open[1], close[1]) and isBear(open, close) and open[1] <= open[2] and open[1] >= close[2] and open <= open[1] and open >= close[1] and close < close[1] and close < close[2] and close <= low[1] and close <= low
+
+export patUpsideGapTwoCrows(Settings s) =>
+    isBull(open[2], close[2]) and isBear(open[1], close[1]) and isBear(open, close) and gapUp(high[2], low[1]) and open[1] > open[2] and open <= open[1] and open >= close[1] and close < close[1] and close > open[2]
+
+export patThreeWhiteSoldiers(Settings s) =>
+    isBull(open[2], close[2]) and isBull(open[1], close[1]) and isBull(open, close) and close > close[1] and close[1] > close[2] and open[1] >= open[2] and open[1] <= close[2] and open >= open[1] and open <= close[1]
+
+export patAdvanceBlock(Settings s) =>
+    isBull(open[2], close[2]) and isBull(open[1], close[1]) and isBull(open, close) and close > close[1] and close[1] > close[2] and body(open, close) < body(open[1], close[1]) and body(open[1], close[1]) < body(open[2], close[2])
+
+export patStalledPattern(Settings s) =>
+    isBull(open[2], close[2]) and isBull(open[1], close[1]) and isLongBody(open[2], high[2], low[2], close[2], s) and isLongBody(open[1], high[1], low[1], close[1], s) and isSmallBody(open, high, low, close, s) and close > close[1] and close[1] > close[2]
+
+export patTriStarTop(Settings s) =>
+    isDoji(open[2], high[2], low[2], close[2], s) and isDoji(open[1], high[1], low[1], close[1], s) and isDoji(open, high, low, close, s) and gapUp(high[2], low[1]) and gapDown(low[1], high)
+
+export patTriStarBottom(Settings s) =>
+    isDoji(open[2], high[2], low[2], close[2], s) and isDoji(open[1], high[1], low[1], close[1], s) and isDoji(open, high, low, close, s) and gapDown(low[2], high[1]) and gapUp(high[1], low)
+
+export patUniqueThreeRiverBottom(Settings s) =>
+    isBear(open[2], close[2]) and isLongBody(open[2], high[2], low[2], close[2], s) and isBear(open[1], close[1]) and close[1] > close[2] and isBull(open, close) and isSmallBody(open, high, low, close, s)
+
+// ── Multi-candle continuation patterns ───────────────────────────────────────────
+export patRisingThreeMethods(Settings s) =>
+    isBull(open[4], close[4]) and isLongBody(open[4], high[4], low[4], close[4], s) and high[3] <= high[4] and low[3] >= low[4] and high[2] <= high[4] and low[2] >= low[4] and high[1] <= high[4] and low[1] >= low[4] and isBull(open, close) and close > close[4] and open > close[1]
+
+export patFallingThreeMethods(Settings s) =>
+    isBear(open[4], close[4]) and isLongBody(open[4], high[4], low[4], close[4], s) and high[3] <= high[4] and low[3] >= low[4] and high[2] <= high[4] and low[2] >= low[4] and high[1] <= high[4] and low[1] >= low[4] and isBear(open, close) and close < close[4] and open < close[1]
+
+export patMatHold(Settings s) =>
+    isBull(open[4], close[4]) and isLongBody(open[4], high[4], low[4], close[4], s) and gapUp(high[4], low[3]) and high[2] <= high[4] and low[2] >= low[4] and high[1] <= high[4] and low[1] >= low[4] and isBull(open, close) and close > close[4]
+
+export patHighPriceGappingPlay(Settings s) =>
+    isBull(open[3], close[3]) and isLongBody(open[3], high[3], low[3], close[3], s) and isSmallBody(open[2], high[2], low[2], close[2], s) and isSmallBody(open[1], high[1], low[1], close[1], s) and gapUp(high[1], low)
+
+export patLowPriceGappingPlay(Settings s) =>
+    isBear(open[3], close[3]) and isLongBody(open[3], high[3], low[3], close[3], s) and isSmallBody(open[2], high[2], low[2], close[2], s) and isSmallBody(open[1], high[1], low[1], close[1], s) and gapDown(low[1], high)
+
+// ── Longer-term reversal patterns (Chapter 6) ────────────────────────────────────
+export patThreeMountainTop(Settings s) =>
+    ta.highest(high, s.longTermBars) == high[10] and nearEqual(high, high[5], s.tweezerPct * 3) and nearEqual(high[5], high[10], s.tweezerPct * 3)
+
+export patThreeRiverBottom(Settings s) =>
+    ta.lowest(low, s.longTermBars) == low[10] and nearEqual(low, low[5], s.tweezerPct * 3) and nearEqual(low[5], low[10], s.tweezerPct * 3)
+
+export patThreeBuddhaTop(Settings s) =>
+    high[10] < high[5] and nearEqual(high, high[10], s.tweezerPct * 3) and high[5] > high and high[5] > high[10]
+
+export patInvertedThreeBuddhaBottom(Settings s) =>
+    low[10] > low[5] and nearEqual(low, low[10], s.tweezerPct * 3) and low[5] < low and low[5] < low[10]
+
+export patTowerTop(Settings s) =>
+    isLongBody(open[5], high[5], low[5], close[5], s) and isBull(open[5], close[5]) and isLongBody(open, high, low, close, s) and isBear(open, close) and ta.highest(high, 6) == high[5]
+
+export patTowerBottom(Settings s) =>
+    isLongBody(open[5], high[5], low[5], close[5], s) and isBear(open[5], close[5]) and isLongBody(open, high, low, close, s) and isBull(open, close) and ta.lowest(low, 6) == low[5]
+
+export patDumplingTop(Settings s) =>
+    ta.highest(high, s.longTermBars) == high[8] and isSmallBody(open[8], high[8], low[8], close[8], s) and isSmallBody(open[4], high[4], low[4], close[4], s) and isSmallBody(open, high, low, close, s) and gapDown(low[1], high)
+
+export patFryPanBottom(Settings s) =>
+    ta.lowest(low, s.longTermBars) == low[8] and isSmallBody(open[8], high[8], low[8], close[8], s) and isSmallBody(open[4], high[4], low[4], close[4], s) and isSmallBody(open, high, low, close, s) and gapUp(high[1], low)
+
+// ── Contextual single-candle (trend-aware) ───────────────────────────────────────
+export patHammerSignal(Settings s) =>
+    patHammer(open, high, low, close, s) and inDowntrend(s)
+
+export patHangingManSignal(Settings s) =>
+    patHangingMan(open, high, low, close, s) and inUptrend(s)
+
+export patShootingStarSignal(Settings s) =>
+    patShootingStar(open, high, low, close, s) and inUptrend(s)
+
+export patInvertedHammerSignal(Settings s) =>
+    patInvertedHammer(open, high, low, close, s) and inDowntrend(s)
+
+export patDojiAtTop(Settings s) =>
+    isDoji(open, high, low, close, s) and inUptrend(s) and isLongBody(open[1], high[1], low[1], close[1], s)
+
+export patDojiAtBottom(Settings s) =>
+    isDoji(open, high, low, close, s) and inDowntrend(s) and isLongBody(open[1], high[1], low[1], close[1], s)
+
+// ── Pattern count & name helpers for strategies ──────────────────────────────────
+export patternCount(Settings s) => 63
+
+export patternName(int id) =>
+    switch id
+        0  => "Doji"
+        1  => "Long-legged Doji"
+        2  => "Gravestone Doji"
+        3  => "Dragonfly Doji"
+        4  => "Rickshaw Man"
+        5  => "Spinning Top"
+        6  => "Hammer"
+        7  => "Hanging Man"
+        8  => "Shooting Star"
+        9  => "Inverted Hammer"
+        10 => "Bullish Marubozu"
+        11 => "Bearish Marubozu"
+        12 => "Bullish Belt Hold"
+        13 => "Bearish Belt Hold"
+        14 => "Bullish Engulfing"
+        15 => "Bearish Engulfing"
+        16 => "Dark Cloud Cover"
+        17 => "Piercing Pattern"
+        18 => "Bullish Harami"
+        19 => "Bearish Harami"
+        20 => "Bullish Harami Cross"
+        21 => "Bearish Harami Cross"
+        22 => "Tweezers Top"
+        23 => "Tweezers Bottom"
+        24 => "Bullish Counterattack"
+        25 => "Bearish Counterattack"
+        26 => "On-neck"
+        27 => "In-neck"
+        28 => "Thrusting"
+        29 => "Bullish Separating Lines"
+        30 => "Bearish Separating Lines"
+        31 => "Upside Window"
+        32 => "Downside Window"
+        33 => "Upward Gapping Tasuki"
+        34 => "Downward Gapping Tasuki"
+        35 => "Upgap Side-by-side White"
+        36 => "Downgap Side-by-side White"
+        37 => "Morning Star"
+        38 => "Evening Star"
+        39 => "Morning Doji Star"
+        40 => "Evening Doji Star"
+        41 => "Abandoned Baby Top"
+        42 => "Abandoned Baby Bottom"
+        43 => "Three Black Crows"
+        44 => "Upside Gap Two Crows"
+        45 => "Three White Soldiers"
+        46 => "Advance Block"
+        47 => "Stalled Pattern"
+        48 => "Tri-star Top"
+        49 => "Tri-star Bottom"
+        50 => "Unique Three River Bottom"
+        51 => "Rising Three Methods"
+        52 => "Falling Three Methods"
+        53 => "Mat-hold"
+        54 => "High-price Gapping Play"
+        55 => "Low-price Gapping Play"
+        56 => "Three Mountain Top"
+        57 => "Three River Bottom"
+        58 => "Three Buddha Top"
+        59 => "Inverted Three Buddha Bottom"
+        60 => "Tower Top"
+        61 => "Tower Bottom"
+        62 => "Dumpling Top"
+        63 => "Fry Pan Bottom"
+        => "Unknown"
+
+// Persian names — KohanFx / «الگوهای شمعی ژاپنی» (استیو نیسون)
+export patternNameFa(int id) =>
+    switch id
+        0  => "دوجی"
+        1  => "دوجی پابلند"
+        2  => "دوجی سنگ قبر"
+        3  => "دوجی سنجاقک"
+        4  => "مرد ریکشا"
+        5  => "فرفره"
+        6  => "چکش"
+        7  => "مرد آویزان"
+        8  => "ستاره ثاقب"
+        9  => "چکش واژگون"
+        10 => "ماروبوزو صعودی"
+        11 => "ماروبوزو نزولی"
+        12 => "کمر بند صعودی"
+        13 => "کمر بند نزولی"
+        14 => "در برگیرنده صعودی"
+        15 => "در برگیرنده نزولی"
+        16 => "پوشش ابر تیره"
+        17 => "الگوی نفوذ"
+        18 => "هارامی صعودی"
+        19 => "هارامی نزولی"
+        20 => "صلیب هارامی صعودی"
+        21 => "صلیب هارامی نزولی"
+        22 => "موچین سقف"
+        23 => "موچین کف"
+        24 => "خط ضدحمله صعودی"
+        25 => "خط ضدحمله نزولی"
+        26 => "روی گردن"
+        27 => "در گردن"
+        28 => "هل دادن"
+        29 => "خط جداساز صعودی"
+        30 => "خط جداساز نزولی"
+        31 => "پنجره صعودی"
+        32 => "پنجره نزولی"
+        33 => "تاسوکی فاصله بالا"
+        34 => "تاسوکی فاصله پایین"
+        35 => "خطوط سفید کنار هم (بالا)"
+        36 => "خطوط سفید کنار هم (پایین)"
+        37 => "ستاره صبحگاهی"
+        38 => "ستاره عصرگاهی"
+        39 => "ستاره صبحگاهی دوجی"
+        40 => "ستاره عصرگاهی دوجی"
+        41 => "نوزاد رها شده (سقف)"
+        42 => "نوزاد رها شده (کف)"
+        43 => "سه کلاغ مشکی"
+        44 => "دو کلاغ با فاصله بالا"
+        45 => "سه سرباز سفید"
+        46 => "مانع جلویی"
+        47 => "الگوی وقفه"
+        48 => "سه ستاره (سقف)"
+        49 => "سه ستاره (کف)"
+        50 => "سه رودخانه ته منحصر به فرد"
+        51 => "سه روش صعودی"
+        52 => "سه روش نزولی"
+        53 => "نگهدارنده (مَت‌هولد)"
+        54 => "بازی فاصله قیمت بالا"
+        55 => "بازی فاصله قیمت پایین"
+        56 => "سه کوه (سقف)"
+        57 => "سه رودخانه (کف)"
+        58 => "سه بودا (سقف)"
+        59 => "سه بودا معکوس (کف)"
+        60 => "رأس برج‌مانند"
+        61 => "ته برج‌مانند"
+        62 => "رأس گردو کوتاه"
+        63 => "ته ماهیتابه‌ای"
+        => "نامشخص"
+
+export patternDisplayName(int id, bool persian) =>
+    persian ? patternNameFa(id) : patternName(id)
+
+// 0 = Reversal (Ch.4–6), 1 = Continuation (Ch.7), 2 = Context-dependent (Ch.8 + warnings)
+export patternKind(int id) =>
+    id == 10 or id == 11 or id == 29 or id == 30 or id == 31 or id == 32 or id == 33 or id == 34 or id == 35 or id == 36 or id == 45 or id == 51 or id == 52 or id == 53 or id == 54 or id == 55 ? 1 : id == 0 or id == 1 or id == 2 or id == 3 or id == 4 or id == 5 or id == 46 or id == 47 ? 2 : 0
+
+export patternKindName(int id) =>
+    switch patternKind(id)
+        1 => "Continuation"
+        2 => "Context"
+        => "Reversal"
+
+export patternBullish(int id) =>
+    id == 6 or id == 9 or id == 10 or id == 12 or id == 14 or id == 17 or id == 18 or id == 20 or id == 23 or id == 24 or id == 29 or id == 31 or id == 33 or id == 35 or id == 37 or id == 39 or id == 42 or id == 45 or id == 49 or id == 50 or id == 51 or id == 53 or id == 54 or id == 57 or id == 59 or id == 61 or id == 63
+
+export patternBearish(int id) =>
+    id == 7 or id == 8 or id == 11 or id == 13 or id == 15 or id == 16 or id == 19 or id == 21 or id == 22 or id == 25 or id == 26 or id == 27 or id == 28 or id == 30 or id == 32 or id == 34 or id == 36 or id == 38 or id == 40 or id == 41 or id == 43 or id == 44 or id == 46 or id == 47 or id == 48 or id == 52 or id == 55 or id == 56 or id == 58 or id == 60 or id == 62
+
+export isPatternActive(int id, Settings s) =>
+    switch id
+        0  => patDoji(open, high, low, close, s)
+        1  => patLongLeggedDoji(open, high, low, close, s)
+        2  => patGravestoneDoji(open, high, low, close, s)
+        3  => patDragonflyDoji(open, high, low, close, s)
+        4  => patRickshawMan(open, high, low, close, s)
+        5  => patSpinningTop(open, high, low, close, s)
+        6  => patHammerSignal(s)
+        7  => patHangingManSignal(s)
+        8  => patShootingStarSignal(s)
+        9  => patInvertedHammerSignal(s)
+        10 => patBullishMarubozu(open, high, low, close, s)
+        11 => patBearishMarubozu(open, high, low, close, s)
+        12 => patBullishBeltHold(open, high, low, close, s)
+        13 => patBearishBeltHold(open, high, low, close, s)
+        14 => patBullishEngulfing(s)
+        15 => patBearishEngulfing(s)
+        16 => patDarkCloudCover(s)
+        17 => patPiercingPattern(s)
+        18 => patBullishHarami(s)
+        19 => patBearishHarami(s)
+        20 => patBullishHaramiCross(s)
+        21 => patBearishHaramiCross(s)
+        22 => patTweezersTop(s)
+        23 => patTweezersBottom(s)
+        24 => patBullishCounterattack(s)
+        25 => patBearishCounterattack(s)
+        26 => patOnNeck(s)
+        27 => patInNeck(s)
+        28 => patThrusting(s)
+        29 => patBullishSeparatingLines(s)
+        30 => patBearishSeparatingLines(s)
+        31 => patUpsideWindow(s)
+        32 => patDownsideWindow(s)
+        33 => patUpwardGappingTasuki(s)
+        34 => patDownwardGappingTasuki(s)
+        35 => patUpgapSideBySideWhite(s)
+        36 => patDowngapSideBySideWhite(s)
+        37 => patMorningStar(s)
+        38 => patEveningStar(s)
+        39 => patMorningDojiStar(s)
+        40 => patEveningDojiStar(s)
+        41 => patAbandonedBabyTop(s)
+        42 => patAbandonedBabyBottom(s)
+        43 => patThreeBlackCrows(s)
+        44 => patUpsideGapTwoCrows(s)
+        45 => patThreeWhiteSoldiers(s)
+        46 => patAdvanceBlock(s)
+        47 => patStalledPattern(s)
+        48 => patTriStarTop(s)
+        49 => patTriStarBottom(s)
+        50 => patUniqueThreeRiverBottom(s)
+        51 => patRisingThreeMethods(s)
+        52 => patFallingThreeMethods(s)
+        53 => patMatHold(s)
+        54 => patHighPriceGappingPlay(s)
+        55 => patLowPriceGappingPlay(s)
+        56 => patThreeMountainTop(s)
+        57 => patThreeRiverBottom(s)
+        58 => patThreeBuddhaTop(s)
+        59 => patInvertedThreeBuddhaBottom(s)
+        60 => patTowerTop(s)
+        61 => patTowerBottom(s)
+        62 => patDumplingTop(s)
+        63 => patFryPanBottom(s)
+        => false
+
+// Returns the first active pattern id on the current bar, or -1 if none.
+export firstActivePattern(Settings s) =>
+    int result = -1
+    for i = 0 to patternCount(s)
+        if result == -1 and isPatternActive(i, s)
+            result := i
+    result
+
+// Returns how many patterns are active on the current bar.
+export activePatternTotal(Settings s) =>
+    int total = 0
+    for i = 0 to patternCount(s)
+        if isPatternActive(i, s)
+            total += 1
+    total
