@@ -11,5 +11,8 @@
   "slot_per_cycle": 1,
   "send_delay_min_sec": 1,
   "send_delay_max_sec": 3,
-  "log_file": "logs/dice_bot.log"
+  "log_file": "logs/dice_bot.log",
+  "prefer_positions": true,
+  "use_opencv": false,
+  "smart_emoji": false
 }

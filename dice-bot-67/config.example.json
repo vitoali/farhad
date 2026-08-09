@@ -21,13 +21,22 @@
   "mouse_jitter_px": 3,
   "mouse_move_min_sec": 0.2,
   "mouse_move_max_sec": 0.5,
-  "use_opencv": true,
-  "smart_emoji": true,
+  "use_opencv": false,
+  "smart_emoji": false,
   "opencv_confidence": 0.58,
   "positions": {
-    "dice": [500, 500],
-    "slot": [560, 500],
-    "send": [900, 700]
+    "dice": [
+      500,
+      500
+    ],
+    "slot": [
+      560,
+      500
+    ],
+    "send": [
+      900,
+      700
+    ]
   },
   "templates": {
     "dice": "assets/dice.png",
@@ -37,5 +46,6 @@
   "open_emoji_panel_each_roll": false,
   "log_file": "logs/dice_bot.log",
   "pyautogui_pause": 0.15,
-  "failsafe": true
+  "failsafe": true,
+  "prefer_positions": true
 }

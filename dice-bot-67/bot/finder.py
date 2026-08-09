@@ -16,6 +16,21 @@ SEARCH_REGIONS = {
 
 
 def find_target(name: str, cfg: dict[str, Any]) -> tuple[int, int]:
+    """
+    برای یکی‌درمیان قابل اعتماد: اول مختصات Teach.
+    جستجوی تصویری فقط اگر prefer_positions خاموش باشد.
+    """
+    positions = cfg.get("positions") or {}
+    prefer_positions = bool(cfg.get("prefer_positions", True))
+
+    if prefer_positions and name in positions:
+        x, y = int(positions[name][0]), int(positions[name][1])
+        # مختصات پیش‌فرض نمونه را قبول نکن
+        if not (name in ("dice", "slot", "send") and [x, y] in ([500, 500], [560, 500], [900, 700])):
+            logger.info("مختصات Teach برای %s -> (%s,%s)", name, x, y)
+            print(f"  → کلیک {name} روی مختصات Teach ({x},{y})")
+            return x, y
+
     if cfg.get("use_opencv", True) or cfg.get("smart_emoji", True):
         found = find_with_opencv(name, cfg)
         if found is not None:
@@ -25,7 +40,6 @@ def find_target(name: str, cfg: dict[str, Any]) -> tuple[int, int]:
         logger.warning("هوشمند %s را پیدا نکرد؛ مختصات ثابت...", name)
         print(f"  ! {name} با تصویر پیدا نشد → مختصات ذخیره‌شده")
 
-    positions = cfg.get("positions") or {}
     if name not in positions:
         raise KeyError(f"'{name}' پیدا نشد. پنل ایموجی را باز کن یا Teach کن.")
     return int(positions[name][0]), int(positions[name][1])

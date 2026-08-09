@@ -45,15 +45,17 @@ def main() -> int:
     cfg = load_config(cfg_path)
     cfg["_base_dir"] = str(base)
     cfg["mode"] = "desktop"
-    cfg["use_opencv"] = True
-    cfg["smart_emoji"] = True
+    # یکی‌درمیان قطعی + مختصات Teach (نه تشخیص تصویری اشتباه)
+    cfg["use_opencv"] = False
+    cfg["smart_emoji"] = False
+    cfg["prefer_positions"] = True
     cfg["open_emoji_panel_each_roll"] = False
-    # تنظیمات درخواستی کاربر — همیشه همین‌ها اعمال شود
-    cfg["min_delay_sec"] = int(cfg.get("min_delay_sec", 61) or 61)
+    cfg["min_delay_sec"] = 61
     cfg["max_delay_sec"] = 80
     cfg["dice_min"] = 1
     cfg["dice_max"] = 1
     cfg["slot_per_cycle"] = 1
+    cfg.pop("dice_per_cycle", None)
     cfg.setdefault("delay_change_every_cycles", 10)
     cfg["send_delay_min_sec"] = float(cfg.get("send_click_delay_min_sec", 0.4))
     cfg["send_delay_max_sec"] = float(cfg.get("send_click_delay_max_sec", 1.2))
@@ -77,10 +79,10 @@ def main() -> int:
     log = logging.getLogger("desktop67")
 
     print("=" * 56)
-    print(" Dice Bot 67 — Desktop آماده اجرا")
-    print(" الگو: یک 🎲  →  یک 🎰  → تکرار")
+    print(" Dice Bot 67 — Desktop v4 ALTERNATE")
+    print(" الگو قطعی: 🎲  سپس 🎰  سپس 🎲  سپس 🎰 ...")
     print(" فاصله بین هر ارسال: ۶۱–۸۰ ثانیه")
-    print(" نکته: تشخیص عدد تاس در حالت کلیک موس دقیق نیست")
+    print(" از مختصات Teach استفاده می‌کند (پایدارتر)")
     print("=" * 56)
 
     print("در حال آماده‌سازی قالب‌ها...")
@@ -147,7 +149,7 @@ def main() -> int:
     print()
     print(f"آماده. {hotkey.upper()} = شروع/توقف")
     print("مهم: پنل ایموجی باز بماند")
-    print(f"این دور: {scheduler._cycle_dice} تاس + {scheduler.slot_per_cycle} گردونه")
+    print("ترتیب: تاس → گردونه → تاس → گردونه ...")
     print(f"فاصله ارسال‌ها: {scheduler.current_delay}s (۶۱–۸۰)")
 
     try:
@@ -158,9 +160,7 @@ def main() -> int:
 
             action = scheduler.next_action
             emoji = "🎲" if action == "dice" else "🎰"
-            print(
-                f"[{datetime.now():%H:%M:%S}] {scheduler.progress_in_cycle} — جستجو {emoji} ..."
-            )
+            print(f"[{datetime.now():%H:%M:%S}] {scheduler.progress_in_cycle} — ارسال {emoji}")
             try:
                 perform_roll(action, cfg)
             except pyautogui.FailSafeException:
@@ -175,9 +175,7 @@ def main() -> int:
 
             info = scheduler.mark_action_done()
             if info.get("finished_cycle"):
-                print(
-                    f"✔ یک دور تمام شد. دور بعد: {info['cycle_dice']} تاس + ۵ گردونه"
-                )
+                print("✔ جفت کامل (تاس+گردونه) تمام شد — دوباره از تاس")
             if info["delay_changed"]:
                 print(f"⏱ فاصله جدید: {info['current_delay']}s")
 

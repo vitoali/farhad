@@ -162,9 +162,6 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
         min_delay=61,
         max_delay=80,
         change_every=int(cfg.get("delay_change_every_cycles", 10)),
-        dice_min=1,
-        dice_max=1,
-        slot_per_cycle=1,
     )
 
     state = {"running": False}
@@ -184,8 +181,8 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
         state["running"] = True
 
     print("=" * 56)
-    print(" Dice Bot 67 — BotFather")
-    print(" الگو: یک 🎲 → یک 🎰 → تکرار")
+    print(" Dice Bot 67 — BotFather v4 ALTERNATE")
+    print(" الگو قطعی: 🎲 سپس 🎰 سپس 🎲 سپس 🎰 ...")
     print(" فاصله: ۶۱–۸۰ ثانیه")
     print(" عدد تاس/گردونه از API خوانده می‌شود")
     print(f" تأخیر فعلی: {scheduler.current_delay}s")
@@ -203,7 +200,7 @@ async def run_bot_api(cfg: dict[str, Any]) -> int:
 
             action = scheduler.next_action
             emoji = DICE_EMOJI[action]
-            print(f"ارسال {emoji} ...")
+            print(f"{scheduler.progress_in_cycle} — ارسال {emoji} ...")
             try:
                 result = api_call(
                     token, "sendDice", {"chat_id": str(chat_id), "emoji": emoji}
