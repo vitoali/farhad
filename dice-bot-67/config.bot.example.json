@@ -1,0 +1,18 @@
+{
+  "mode": "bot",
+  "bot_token": "",
+  "target_chat": "Six Seven Chat 8",
+  "hotkey_toggle": "f8",
+  "min_delay_sec": 61,
+  "max_delay_sec": 80,
+  "delay_change_every_cycles": 10,
+  "dice_min": 1,
+  "dice_max": 1,
+  "slot_per_cycle": 1,
+  "send_delay_min_sec": 1,
+  "send_delay_max_sec": 3,
+  "log_file": "logs/dice_bot.log",
+  "prefer_positions": true,
+  "use_opencv": false,
+  "smart_emoji": false
+}
