@@ -1,0 +1,211 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════
+// نقطه کور | Blind Spot — Pine Script v6
+// رفتارشناسی حرکت قیمت + ویدیوهای آموزشی نقطه کور (کلاسیک / لایو)
+// ═══════════════════════════════════════════════════════════════════════════
+indicator("نقطه کور | Blind Spot v6", overlay = true, max_boxes_count = 100, max_lines_count = 100, max_labels_count = 100)
+
+// ─── Inputs ────────────────────────────────────────────────────────────────
+string grpCalc = "محاسبات رنج"
+int    atrLen      = input.int(14, "دوره ATR", minval = 1, group = grpCalc)
+int    idrLen      = input.int(20, "دوره IDR (میانگین High-Low)", minval = 1, group = grpCalc)
+float  thPercent   = input.float(0.6666, "ضریب توان حرکتی TH (% قیمت)", step = 0.0001, group = grpCalc)
+string rangeSource = input.string("Auto (Max of TH/ATR/IDR)", "منبع فاصله نقطه کور", options = ["Auto (Max of TH/ATR/IDR)", "TH", "ATR", "IDR"], group = grpCalc)
+
+string grpClassic = "نقطه کور کلاسیک"
+bool   useClassic       = input.bool(true, "فعال‌سازی نقطه کور کلاسیک", group = grpClassic)
+int    swingLen         = input.int(5, "طول سوئینگ برای تشخیص سطح", minval = 1, group = grpClassic)
+float  minBreakBodyPct  = input.float(50.0, "حداقل درصد رنج کندل شکست نسبت به ATR", minval = 0.0, group = grpClassic)
+int    classicValidBars = input.int(1, "اعتبار اردر (تعداد کندل بعدی)", minval = 1, group = grpClassic)
+float  entryOffsetPct   = input.float(80.0, "ورود در چند٪ فاصله رنج (مثلاً ۸۰)", minval = 50.0, maxval = 100.0, group = grpClassic)
+float  tpMult           = input.float(2.0, "تارگت × رنج", step = 0.1, group = grpClassic)
+string slMode           = input.string("Remainder to 100%", "مد استاپ", options = ["Remainder to 100%", "Beyond swing"], group = grpClassic)
+
+string grpLive = "نقطه کور لایو"
+bool   useLive      = input.bool(true, "فعال‌سازی نقطه کور لایو", group = grpLive)
+float  liveFillPct  = input.float(100.0, "حداقل پرشدگی رنج لایو (%)", minval = 50.0, group = grpLive)
+float  minRemainPct = input.float(25.0, "حداقل زمان باقی‌مانده کندل (%)", minval = 0.0, group = grpLive)
+bool   showPrevOC   = input.bool(true, "نمایش ناحیه Open/Close کندل قبلی", group = grpLive)
+
+string grpVis = "نمایش"
+bool  showDash    = input.bool(true, "پنل داشبورد", group = grpVis)
+bool  showSignals = input.bool(true, "لیبل سیگنال", group = grpVis)
+color bullColor   = input.color(color.new(#22c55e, 0), "رنگ صعودی", group = grpVis)
+color bearColor   = input.color(color.new(#ef4444, 0), "رنگ نزولی", group = grpVis)
+color zoneColor   = input.color(color.new(#f59e0b, 75), "رنگ ناحیه نقطه کور", group = grpVis)
+color levelColor  = input.color(color.new(#38bdf8, 0), "رنگ سطح شکسته‌شده", group = grpVis)
+
+// ─── Core metrics ───────────────────────────────────────────────────────────
+float atrVal = ta.atr(atrLen)
+float idrVal = ta.sma(high - low, idrLen)
+float thVal  = close * (thPercent / 100.0)
+
+float autoRange = math.max(thVal, math.max(atrVal, idrVal))
+float rangeVal = switch rangeSource
+    "TH"  => thVal
+    "ATR" => atrVal
+    "IDR" => idrVal
+    => autoRange
+
+float liveRange = high - low
+float liveFill  = rangeVal > 0.0 ? liveRange / rangeVal * 100.0 : 0.0
+
+int   tfSecs     = timeframe.in_seconds()
+float barElapsed = time_close > time ? (timenow - time) / 1000.0 : float(tfSecs)
+float remainPct  = tfSecs > 0 ? math.max(0.0, 100.0 * (1.0 - barElapsed / float(tfSecs))) : 0.0
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+pipSize() =>
+    float mt = syminfo.mintick
+    mt * (syminfo.type == "forex" ? (mt < 0.001 ? 10.0 : 1.0) : 1.0)
+
+toPips(float v) =>
+    v / pipSize()
+
+f_isLongBar(float cHigh, float cLow, float atrRef) =>
+    (cHigh - cLow) >= atrRef * (minBreakBodyPct / 100.0)
+
+// ─── Classic Blind Spot ─────────────────────────────────────────────────────
+float ph = ta.pivothigh(high, swingLen, swingLen)
+float pl = ta.pivotlow(low, swingLen, swingLen)
+
+var float resistLevel = na
+var float supportLevel = na
+
+if not na(ph)
+    resistLevel := ph
+if not na(pl)
+    supportLevel := pl
+
+bool brokeDown = useClassic and not na(resistLevel) and close[1] < resistLevel and close[2] >= resistLevel and f_isLongBar(high[1], low[1], atrVal[1])
+bool brokeUp   = useClassic and not na(supportLevel) and close[1] > supportLevel and close[2] <= supportLevel and f_isLongBar(high[1], low[1], atrVal[1])
+
+var float bsLevel = na
+var int   bsDir = 0                 // 1 = Buy Limit ، -1 = Sell Limit
+var int   bsBreakBar = na
+var float bsRangeAtBreak = na
+var bool  bsArmed = false
+var bool  bsTriggered = false
+var box   bsBox = na
+var line  bsLevelLine = na
+var line  bsEntryLine = na
+var line  bsSlLine = na
+var line  bsTpLine = na
+
+if brokeDown
+    bsLevel := resistLevel
+    bsDir := -1
+    bsBreakBar := bar_index - 1
+    bsRangeAtBreak := rangeVal[1]
+    bsArmed := false
+    bsTriggered := false
+
+if brokeUp
+    bsLevel := supportLevel
+    bsDir := 1
+    bsBreakBar := bar_index - 1
+    bsRangeAtBreak := rangeVal[1]
+    bsArmed := false
+    bsTriggered := false
+
+if not na(bsLevel) and not na(bsBreakBar) and not bsTriggered
+    float dist = bsDir == -1 ? bsLevel - low : high - bsLevel
+    if not na(bsRangeAtBreak) and dist >= bsRangeAtBreak
+        bsArmed := true
+
+int barsSinceBreak = not na(bsBreakBar) ? bar_index - bsBreakBar : 999999
+bool inValidWindow = bsArmed and barsSinceBreak >= 1 and barsSinceBreak <= classicValidBars
+
+float entryPrice = na
+float slPrice = na
+float tpPrice = na
+if not na(bsLevel) and not na(bsRangeAtBreak) and bsDir != 0
+    float offset = bsRangeAtBreak * ((100.0 - entryOffsetPct) / 100.0)
+    float rem = bsRangeAtBreak - offset
+    if bsDir == -1
+        entryPrice := bsLevel - offset
+        slPrice := slMode == "Remainder to 100%" ? entryPrice + rem : bsLevel + rem
+        tpPrice := entryPrice - bsRangeAtBreak * tpMult
+    else
+        entryPrice := bsLevel + offset
+        slPrice := slMode == "Remainder to 100%" ? entryPrice - rem : bsLevel - rem
+        tpPrice := entryPrice + bsRangeAtBreak * tpMult
+
+bool classicHit = false
+if inValidWindow and not bsTriggered and not na(entryPrice)
+    classicHit := bsDir == -1 ? high >= entryPrice : low <= entryPrice
+    if classicHit
+        bsTriggered := true
+        if showSignals
+            label.new(bar_index, entryPrice, bsDir == -1 ? "SELL LIMIT BS" : "BUY LIMIT BS", style = bsDir == -1 ? label.style_label_down : label.style_label_up, color = bsDir == -1 ? bearColor : bullColor, textcolor = color.white, size = size.small)
+
+if not na(bsBreakBar) and barsSinceBreak > classicValidBars and not bsTriggered
+    bsArmed := false
+
+if barstate.islast and useClassic and not na(bsLevel) and not na(entryPrice) and bsArmed and inValidWindow
+    if not na(bsBox)
+        box.delete(bsBox)
+    if not na(bsLevelLine)
+        line.delete(bsLevelLine)
+    if not na(bsEntryLine)
+        line.delete(bsEntryLine)
+    if not na(bsSlLine)
+        line.delete(bsSlLine)
+    if not na(bsTpLine)
+        line.delete(bsTpLine)
+    float topZ = math.max(bsLevel, entryPrice)
+    float botZ = math.min(bsLevel, entryPrice)
+    bsBox := box.new(bar_index - 3, topZ, bar_index + 3, botZ, bgcolor = zoneColor, border_color = color.new(#f59e0b, 0))
+    bsLevelLine := line.new(bar_index - 10, bsLevel, bar_index + 5, bsLevel, color = levelColor, style = line.style_dashed, width = 2)
+    bsEntryLine := line.new(bar_index - 5, entryPrice, bar_index + 5, entryPrice, color = bsDir == -1 ? bearColor : bullColor, width = 2)
+    bsSlLine := line.new(bar_index - 5, slPrice, bar_index + 5, slPrice, color = color.new(#ef4444, 0), style = line.style_dotted)
+    bsTpLine := line.new(bar_index - 5, tpPrice, bar_index + 5, tpPrice, color = color.new(#22c55e, 0), style = line.style_dotted)
+
+// ─── Live Blind Spot ────────────────────────────────────────────────────────
+float prevOCTop = math.max(open[1], close[1])
+float prevOCBot = math.min(open[1], close[1])
+bool  liveReady = useLive and liveFill >= liveFillPct and remainPct >= minRemainPct
+bool  liveTouch = liveReady and low <= prevOCTop and high >= prevOCBot
+
+var box liveBox = na
+var label liveLab = na
+
+if barstate.islast and useLive
+    if not na(liveBox)
+        box.delete(liveBox)
+    if not na(liveLab)
+        label.delete(liveLab)
+    if showPrevOC
+        liveBox := box.new(bar_index - 1, prevOCTop, bar_index + 2, prevOCBot, bgcolor = liveReady ? color.new(#a855f7, 70) : color.new(#64748b, 85), border_color = liveReady ? color.new(#a855f7, 0) : color.new(#64748b, 0))
+    if liveReady
+        liveLab := label.new(bar_index, high, "LIVE BS READY\nReturn to Prev O/C", style = label.style_label_down, color = color.new(#a855f7, 0), textcolor = color.white, size = size.small)
+
+plotshape(liveTouch and showSignals, title = "Live BS Touch", style = shape.diamond, location = location.belowbar, color = color.new(#a855f7, 0), size = size.tiny)
+
+// ─── Dashboard ──────────────────────────────────────────────────────────────
+var table dash = table.new(position.top_right, 2, 9, bgcolor = color.new(#0f172a, 15), border_width = 1, border_color = color.new(#334155, 0))
+if showDash and barstate.islast
+    table.cell(dash, 0, 0, "متریک", text_color = color.silver, text_size = size.small)
+    table.cell(dash, 1, 0, "مقدار (پیپ)", text_color = color.silver, text_size = size.small)
+    table.cell(dash, 0, 1, "TH توان حرکتی", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 1, str.tostring(toPips(thVal), "#.#"), text_color = #38bdf8, text_size = size.small)
+    table.cell(dash, 0, 2, "ATR", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 2, str.tostring(toPips(atrVal), "#.#"), text_color = #38bdf8, text_size = size.small)
+    table.cell(dash, 0, 3, "IDR", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 3, str.tostring(toPips(idrVal), "#.#"), text_color = #38bdf8, text_size = size.small)
+    table.cell(dash, 0, 4, "Range منبع", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 4, str.tostring(toPips(rangeVal), "#.#"), text_color = #fbbf24, text_size = size.small)
+    table.cell(dash, 0, 5, "Live Range", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 5, str.tostring(toPips(liveRange), "#.#") + " (" + str.tostring(liveFill, "#.#") + "%)", text_color = liveReady ? #22c55e : color.white, text_size = size.small)
+    table.cell(dash, 0, 6, "زمان باقی‌مانده", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 6, str.tostring(remainPct, "#.#") + "%", text_color = color.white, text_size = size.small)
+    table.cell(dash, 0, 7, "کلاسیک BS", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 7, inValidWindow ? (bsDir == -1 ? "SELL ZONE" : "BUY ZONE") : "—", text_color = inValidWindow ? #f59e0b : color.gray, text_size = size.small)
+    table.cell(dash, 0, 8, "لایو BS", text_color = color.white, text_size = size.small)
+    table.cell(dash, 1, 8, liveReady ? "READY" : "WAIT", text_color = liveReady ? #a855f7 : color.gray, text_size = size.small)
+
+// ─── Alerts ─────────────────────────────────────────────────────────────────
+alertcondition(inValidWindow and not bsTriggered, title = "Classic Blind Spot Armed", message = "نقطه کور کلاسیک فعال شد — اردر لیمیت روی ناحیه")
+alertcondition(classicHit, title = "Classic Blind Spot Triggered", message = "نقطه کور کلاسیک تریگر شد")
+alertcondition(liveReady, title = "Live Blind Spot Ready", message = "نقطه کور لایو آماده — انتظار بازگشت به O/C قبلی")
+alertcondition(liveTouch, title = "Live Blind Spot Touch", message = "قیمت ناحیه نقطه کور لایو را تاچ کرد")
